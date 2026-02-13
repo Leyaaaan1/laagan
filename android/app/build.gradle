@@ -112,6 +112,7 @@ dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
     implementation 'com.google.mlkit:barcode-scanning:17.2.0'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.8.0"
 
 
     if (hermesEnabled.toBoolean()) {

@@ -3,6 +3,7 @@ package leyans.RidersHub.Service;
 
 import jakarta.transaction.Transactional;
 import leyans.RidersHub.DTO.Request.RiderDTO.RiderDTO;
+import leyans.RidersHub.DTO.Response.RiderResponseDTO;
 import leyans.RidersHub.Repository.RiderTypeRepository;
 import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.RiderType;
@@ -50,7 +51,7 @@ public class    RiderService {
 
 
 
-    public Rider registerRider(String username, String password, String riderType) {
+    public String registerRider(String username, String password, String riderType) {
         Rider existingRider = riderRepository.findByUsername(username);
         if (existingRider != null) {
             throw new RuntimeException("Username already exists");
@@ -67,8 +68,18 @@ public class    RiderService {
         newRider.setEnabled(true);
         newRider.setRiderType(riderTypeName);
 
-        return riderRepository.save(newRider);
+        riderRepository.save(newRider);
+        return username; // Return only username, not the full entity
     }
+
+    public RiderResponseDTO getRiderDetailsByUsername(String username) {
+        Rider rider = riderRepository.findByUsername(username);
+        if (rider == null) {
+            throw new IllegalArgumentException("Rider not found: " + username);
+        }
+        return new RiderResponseDTO(rider);
+    }
+
 
 
 

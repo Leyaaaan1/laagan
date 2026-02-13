@@ -276,11 +276,9 @@ const RideStep4 = (props) => {
                       distance: state.distanceState || distance,
                       username,
                       startedBy: currentUsername,
-                      // Pass processed coordinate objects - same as what RouteMapView receives
                       startingPoint: mapCoords.startingPoint,
                       endingPoint: mapCoords.endingPoint,
                       stopPoints: mapCoords.stopPoints,
-                      // Also include name strings for display
                       startingPointName: mapCoords.startingPoint?.name || getLocationDisplayName(startingPoint),
                       endingPointName: mapCoords.endingPoint?.name || getLocationDisplayName(endingPoint),
                       participants: participants || [],
