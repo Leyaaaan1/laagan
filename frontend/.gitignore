@@ -1,0 +1,41 @@
+# dependencies
+node_modules/
+
+# environment variables
+.env
+.env.local
+.env.development
+.env.production
+
+# logs
+logs
+*.log
+
+
+# build output
+build/
+dist/
+
+# cache
+.cache/
+.expo/
+.expo-shared/
+
+# React Native / Android
+android/build/
+android/app/build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Metro bundler
+.metro-cache/
+
+# temporary files
+*.tmp
+*.temp
