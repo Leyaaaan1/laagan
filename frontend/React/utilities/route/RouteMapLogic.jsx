@@ -22,6 +22,20 @@ export const useRouteMapLogic = (generatedRidesId, token) => {
     requestLocationPermission();
   }, [generatedRidesId, token]);
 
+  const updateUserLocationOnMap = (webViewRef, location) => {
+    if (!webViewRef.current || !location) return;
+
+    // Also keep a window-level copy so orientMapToPoint can use it
+    const script = `
+        window.userCurrentLocation = ${JSON.stringify(location)};
+        if (typeof window.updateUserLocation === 'function') {
+            window.updateUserLocation(${JSON.stringify(location)});
+        }
+        true;
+    `;
+    webViewRef.current.injectJavaScript(script);
+  };
+
   const requestLocationPermission = async () => {
     try {
       if (Platform.OS === 'android') {
@@ -192,5 +206,6 @@ export const useRouteMapLogic = (generatedRidesId, token) => {
     handleWebViewLoad,
     handleWebViewMessage,
     handleWebViewError,
+    updateUserLocationOnMap,
   };
 };

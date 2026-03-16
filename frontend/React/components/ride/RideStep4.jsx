@@ -13,8 +13,8 @@ import { fetchRideMapImage, getRideDetails, getLocationImage } from '../../servi
 import ParticipantListModal from './modal/ParticipantListModal';
 import useJoinRide from './util/RideHandler';
 import { startService } from '../../services/startService';
-import RouteMapView from '../../utilities/route/RouteMapView';
-import { processRideCoordinates } from '../../utilities/route/CoordinateUtils';
+import RouteMapView from '../../utilities/route/view/RouteMapView';
+import { processRideCoordinates } from '../../utilities/CoordinateUtils';
 import cards from '../../styles/base/cards';
 import buttons from '../../styles/base/buttons';
 import header from '../../styles/base/header';
@@ -27,7 +27,6 @@ const RideStep4 = (props) => {
   const navigation = useNavigation();
   const routeParams = props.route?.params || {};
 
-  // ✅ Destructure FIRST — hasFetchedRef depends on these values
   const {
     generatedRidesId,
     rideName,

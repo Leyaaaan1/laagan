@@ -4,7 +4,7 @@ import { View, StyleSheet, Dimensions, Text, ActivityIndicator } from 'react-nat
 import PagerView from 'react-native-pager-view';
 import StartedRide from '../pages/StartedRide';
 import RideStep4 from '../components/ride/RideStep4';
-import {processRideCoordinates} from '../utilities/route/CoordinateUtils';
+import {processRideCoordinates} from '../utilities/CoordinateUtils';
 import {getRideDetails} from '../services/rideService';
 
 const { width } = Dimensions.get('window');

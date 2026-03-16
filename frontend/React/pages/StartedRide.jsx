@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {View, Text, StatusBar, Animated, TouchableOpacity, ScrollView} from 'react-native';
-import RouteMapView from '../utilities/route/RouteMapView';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import {processRideCoordinates} from '../utilities/route/CoordinateUtils';
+import {processRideCoordinates} from '../utilities/CoordinateUtils';
 import startedRide from '../styles/screens/startedRide';
 import rideRoutes from '../styles/screens/rideRoutes';
 import modal from '../styles/components/modal';
 import feedback from '../styles/base/feedback';
+import RouteMapView from '../utilities/route/view/RouteMapView';
 
 const StartedRide = ({ route, navigation }) => {
   const { activeRide, token } = route.params || {};
@@ -72,9 +72,7 @@ const StartedRide = ({ route, navigation }) => {
           >
             <View style={startedRide.routeInfoHeaderContent}>
               <FontAwesome name="map-marker" size={18} color="#fff" style={{ marginRight: 8 }} />
-              <Text style={startedRide.routeInfoTitle}>
-                Route Information
-              </Text>
+
             </View>
             <FontAwesome
               name={showRouteInfo ? 'chevron-up' : 'chevron-down'}
@@ -86,9 +84,9 @@ const StartedRide = ({ route, navigation }) => {
           {/* Collapsible Content with Fixed Height and Scrolling */}
           {showRouteInfo && (
             <ScrollView
-              style={startedRide.routeInfoScrollContainer}
+              style={startedRide.routeScrollContainer}
               showsVerticalScrollIndicator={true}
-              contentContainerStyle={startedRide.routeInfoScrollContent}
+              contentContainerStyle={startedRide.routeScrollContainer}
             >
               {/* Starting Point */}
               <View style={startedRide.routePointContainer}>
