@@ -174,7 +174,6 @@ const buttons = StyleSheet.create({
 
   // ── Text styles for buttons ──────────────────
   textPrimary: {
-    color: colors.white,
     fontSize: fontSize.lg,
     fontWeight: fontWeight.semi,
   },
