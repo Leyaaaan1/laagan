@@ -110,29 +110,29 @@ const RideStep2 = ({
 
       {/* ── Floating navbar ── */}
       <View style={[rideCreation.floatingNav, {
-        backgroundColor: 'transparent',
+        backgroundColor: 'rgba(255,255,255,0.95)',
         top: 16,
       }]}>
-          <TouchableOpacity style={buttons.back} onPress={prevStep} activeOpacity={0.8}>
-            <FontAwesome name="arrow-left" size={14} color="#8c2323" style={{ marginRight: 6 }} />
-            <Text style={[buttons.textDark, { fontSize: 14 }]}>Back</Text>
-          </TouchableOpacity>
+        <TouchableOpacity style={buttons.back} onPress={prevStep} activeOpacity={0.8}>
+          <FontAwesome name="arrow-left" size={14} color="#8c2323" style={{ marginRight: 6 }} />
+          <Text style={[buttons.textDark, { fontSize: 14 }]}>Back</Text>
+        </TouchableOpacity>
 
-          <Text style={[text.label, { color: '#1a1a1a' }]}>SET LOCATION</Text>
+        <Text style={[text.label, { color: '#1a1a1a' }]}>SET LOCATION</Text>
 
-          <TouchableOpacity
-            style={[buttons.row, { paddingVertical: 8, paddingHorizontal: 12 }]}
-            onPress={nextStep}
-            activeOpacity={0.8}
-          >
-            <Text style={buttons.textSm}>Next</Text>
-            <FontAwesome name="arrow-right" size={14} color="#fff" style={{ marginLeft: 6 }} />
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={[buttons.row, { paddingVertical: 8, paddingHorizontal: 12 }]}
+          onPress={nextStep}
+          activeOpacity={0.8}
+        >
+          <Text style={buttons.textSm}>Next</Text>
+          <FontAwesome name="arrow-right" size={14} color="#fff" style={{ marginLeft: 6 }} />
+        </TouchableOpacity>
       </View>
 
       {/* ── Search card ── */}
       <View style={rideCreation.searchContainer}>
-        <View style={[ isSearchFocused && inputs.searchRowFocused]}>
+        <View style={[inputs.searchRow, isSearchFocused && inputs.searchRowFocused]}>
           <FontAwesome name="search" size={16} color="#5f6368" style={{ marginRight: 12 }} />
           <TextInput
             style={inputs.location}

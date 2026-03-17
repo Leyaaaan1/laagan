@@ -17,6 +17,9 @@ const RouteMapView = ({
                         ...restProps
                       }) => {
   const webViewRef = useRef(null);
+  // Track whether the WebView has finished its initial load so we can
+  // re-inject whenever coords props arrive later (e.g. after API fetch).
+  const webViewReadyRef = useRef(false);
 
   const {
     isLoading,
@@ -30,6 +33,21 @@ const RouteMapView = ({
     updateUserLocationOnMap,
   } = useRouteMapLogic(generatedRidesId, token);
 
+  // Re-inject whenever routeData OR the coordinate props change —
+  // this is the key fix: RideStep4 initially passes null coords while
+  // it waits for the API; once they arrive this effect fires again.
+  useEffect(() => {
+    if (!webViewReadyRef.current || !routeData) return;
+    handleWebViewLoad(
+      webViewRef,
+      routeData,
+      startingPoint,
+      endingPoint,
+      stopPoints,
+      userLocation
+    );
+  }, [routeData, startingPoint, endingPoint, stopPoints]);
+
   useEffect(() => {
     if (userLocation && webViewRef.current) {
       updateUserLocationOnMap(webViewRef, userLocation);
@@ -37,6 +55,7 @@ const RouteMapView = ({
   }, [userLocation]);
 
   const onWebViewLoad = () => {
+    webViewReadyRef.current = true;
     setTimeout(() => {
       handleWebViewLoad(
         webViewRef,

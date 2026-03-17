@@ -144,19 +144,37 @@ const RideStep3 = ({
   const handleSelectLocationAndUpdateMap = async (item) => {
     const lat = parseFloat(item.lat);
     const lon = parseFloat(item.lng);
-    let resolvedName = null;
-    try { resolvedName = await handleLocationSelect(item); } catch (e) {}
-    if (!resolvedName) {resolvedName = item.display_name.split(',')[0];}
-    if (mapMode === 'starting') {setStartingPoint(resolvedName);}
-    else if (mapMode === 'ending') {setEndingPoint(resolvedName);}
+
+    // handleLocationSelect in the parent now returns the display_name directly
+    // (no reverse geocode on search-result selection), so we trust that value.
+    // Fallback to the first segment of display_name if the parent returns nothing.
+    let resolvedName = item.display_name
+      ? item.display_name.split(',')[0].trim()
+      : `${lat}, ${lon}`;
+
+    try {
+      const parentName = await handleLocationSelect(item);
+      if (parentName) { resolvedName = parentName; }
+    } catch (e) {
+      console.warn('handleLocationSelect error:', e);
+    }
+
+    // Parent already calls setStartingPoint / setEndingPoint via handleLocationSelect,
+    // but we mirror it here so the local UI reflects the change immediately.
+    if (mapMode === 'starting') { setStartingPoint(resolvedName); }
+    else if (mapMode === 'ending') { setEndingPoint(resolvedName); }
+
     setLocalQuery(resolvedName);
+
     if (webViewRef.current) {
       webViewRef.current.injectJavaScript(`
         if(window.centerMap&&window.updateMarker){window.centerMap(${lat},${lon},15);window.updateMarker(${lat},${lon});}true;
       `);
     }
-    if (endingLatitude && endingLongitude && startingLatitude && startingLongitude)
-      {setTimeout(() => drawRoadRoute(), 500);}
+
+    if (endingLatitude && endingLongitude && startingLatitude && startingLongitude) {
+      setTimeout(() => drawRoadRoute(), 500);
+    }
   };
 
   const onWebViewMessage = (event) => {
@@ -166,7 +184,7 @@ const RideStep3 = ({
         case 'mapReady':
           setMapDarkMode(data.isDarkTheme);
           if (startingLatitude && startingLongitude && endingLatitude && endingLongitude)
-            {setTimeout(() => drawRoadRoute(), 1000);}
+          {setTimeout(() => drawRoadRoute(), 1000);}
           break;
         case 'mapError':
           console.error('Map error:', data.error); break;
@@ -300,28 +318,28 @@ const RideStep3 = ({
       </View>
 
       {/* ── Show/Hide toggle ── */}
-        <TouchableOpacity
-          style={{
-            position: 'absolute',
-            top: 90,
-            right: 12,
-            zIndex: 30,
-            backgroundColor: 'transparent',
-            borderRadius: 16,
-            paddingVertical: 6,
-            paddingHorizontal: 12,
-            flexDirection: 'row',
-            alignItems: 'center',
-            shadowColor: '#000',
-            shadowOpacity: 0.1,
-            shadowRadius: 6,
-            elevation: 4,
-          }}
-          onPress={() => setShowDetails(prev => !prev)}
-        >
-          <FontAwesome name={showDetails ? 'eye-slash' : 'eye'} size={14} color="#5f6368" style={{ marginRight: 6 }} />
-          <Text style={{ color: '#5f6368', fontSize: 12 }}>{showDetails ? 'Hide' : 'Show'} Details</Text>
-        </TouchableOpacity>
+      <TouchableOpacity
+        style={{
+          position: 'absolute',
+          top: 90,
+          right: 12,
+          zIndex: 30,
+          backgroundColor: 'transparent',
+          borderRadius: 16,
+          paddingVertical: 6,
+          paddingHorizontal: 12,
+          flexDirection: 'row',
+          alignItems: 'center',
+          shadowColor: '#000',
+          shadowOpacity: 0.1,
+          shadowRadius: 6,
+          elevation: 4,
+        }}
+        onPress={() => setShowDetails(prev => !prev)}
+      >
+        <FontAwesome name={showDetails ? 'eye-slash' : 'eye'} size={14} color="#5f6368" style={{ marginRight: 6 }} />
+        <Text style={{ color: '#5f6368', fontSize: 12 }}>{showDetails ? 'Hide' : 'Show'} Details</Text>
+      </TouchableOpacity>
 
       {/* ── Route details panel ── */}
       {showDetails && (

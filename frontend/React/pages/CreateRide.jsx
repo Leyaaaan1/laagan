@@ -16,6 +16,7 @@ import RideStep4 from '../components/ride/RideStep4';
 const CreateRide = ({ route, navigation }) => {
   const { token, username } = route.params;
   const webViewRef = useRef(null);
+  const pendingRideIdRef = useRef(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -44,7 +45,6 @@ const CreateRide = ({ route, navigation }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
 
-
   const [generatedRidesId, setGeneratedRidesId] = useState(null);
   const [rideNameImage, setRideNameImage] = useState([]);
 
@@ -60,12 +60,12 @@ const CreateRide = ({ route, navigation }) => {
   // Stop Points State
   const [stopPoints, setStopPoints] = useState([]);
 
-
   useEffect(() => {
-    if (currentStep === 2) {setMapMode('location');}
-    else if (currentStep === 3) {setMapMode('starting');}
+    if (currentStep === 2) { setMapMode('location'); }
+    else if (currentStep === 3) { setMapMode('starting'); }
   }, [currentStep]);
 
+  // ─── Map tap / drag handler (needs reverse geocode — no name available) ───
   const handleMessage = (event) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
@@ -77,29 +77,21 @@ const CreateRide = ({ route, navigation }) => {
         if (mapMode === 'location') {
           setLatitude(lat.toString());
           setLongitude(lng.toString());
-          // Reverse geocode to get location name
+          // Tap on map → no display_name → reverse geocode is correct here
           reverseGeocodeLandmark(token, lat, lng)
-            .then(name => {
-              if (name) {setLocationName(name);}
-            })
+            .then(name => { if (name) { setLocationName(name); } })
             .catch(err => console.log('Error reverse geocoding:', err));
         } else if (mapMode === 'starting') {
           setStartingLatitude(lat.toString());
           setStartingLongitude(lng.toString());
-          // Reverse geocode to get starting point name
-          reverseGeocodeLandmark(token, lat, lng)
-            .then(name => {
-              if (name) {setStartingPoint(name);}
-            })
+          reverseGeocode(token, lat, lng)
+            .then(name => { if (name) { setStartingPoint(name); } })
             .catch(err => console.log('Error reverse geocoding:', err));
         } else if (mapMode === 'ending') {
           setEndingLatitude(lat.toString());
           setEndingLongitude(lng.toString());
-          // Reverse geocode to get ending point name
-          reverseGeocodeLandmark(token, lat, lng)
-            .then(name => {
-              if (name) {setEndingPoint(name);}
-            })
+          reverseGeocode(token, lat, lng)
+            .then(name => { if (name) { setEndingPoint(name); } })
             .catch(err => console.log('Error reverse geocoding:', err));
         }
       }
@@ -132,34 +124,27 @@ const CreateRide = ({ route, navigation }) => {
     return () => clearTimeout(delayedSearch);
   }, [searchQuery, locationSelected, mapMode, token]);
 
+  // ─── Search result selection (display_name already available — NO reverse geocode) ───
   const handleLocationSelect = async (location) => {
     console.log('Location selected:', location);
     const lat = parseFloat(location.lat);
     const lon = parseFloat(location.lng);
     setLocationSelected(true);
 
-    // Resolve name depending on mode: landmark for 'location', generic reverse for start/end/stop
-    let resolvedName = null;
-    try {
-      if (mapMode === 'location') {
-        const { reverseGeocodeLandmark } = await import('../services/rideService');
-        resolvedName = await reverseGeocodeLandmark(token, lat, lon);
-      } else {
-        resolvedName = await reverseGeocode(token, lat, lon);
-      }
-    } catch (err) {
-      console.warn('Reverse geocode failed:', err);
-    }
-
-    const fallbackName = location.display_name ? location.display_name.split(',')[0] : `${lat}, ${lon}`;
-    const selectedName = resolvedName || fallbackName;
+    // Use the display_name from the search result directly.
+    // The first segment (before the first comma) is the landmark / barangay name.
+    // We do NOT call reverseGeocode here — that re-encodes coords back to a
+    // string and can return raw "lat, lon" text when the backend has no match.
+    const selectedName = location.display_name
+      ? location.display_name.split(',')[0].trim()
+      : `${lat}, ${lon}`;
 
     if (mapMode === 'location') {
       setLatitude(lat.toString());
       setLongitude(lon.toString());
       setLocationName(selectedName);
 
-      // Fetch location images
+      // Fetch location images using the clean name
       try {
         const images = await getLocationImage(selectedName, token);
         setRideNameImage(images);
@@ -171,6 +156,7 @@ const CreateRide = ({ route, navigation }) => {
       setStartingLatitude(lat.toString());
       setStartingLongitude(lon.toString());
       setStartingPoint(selectedName);
+      // Automatically move to ending mode after start is picked
       setMapMode('ending');
     } else if (mapMode === 'ending') {
       setEndingLatitude(lat.toString());
@@ -187,6 +173,7 @@ const CreateRide = ({ route, navigation }) => {
       longitudeDelta: 0.01,
     });
 
+    // Return the name so RideStep3's handleSelectLocationAndUpdateMap can use it
     return selectedName;
   };
 
@@ -213,7 +200,6 @@ const CreateRide = ({ route, navigation }) => {
     }));
 
     try {
-
       if (!token) {
         throw new Error('No authentication token available. Please log in again.');
       }
@@ -236,23 +222,19 @@ const CreateRide = ({ route, navigation }) => {
         stopPoints: stopPointsPayload,
       };
 
-      // Make the API call to create the ride
       console.log('Making createRide API call...');
       const result = await createRide(rideData, token);
       console.log('CreateRide API response:', result);
 
-      // Handle different possible response formats
       let generatedId = null;
 
       if (result && typeof result === 'object') {
-        // Check different possible property names
         generatedId = result.generatedRidesId ||
           result.ridesId ||
           result.rideId ||
           result.id ||
           result.generatedId;
       } else if (typeof result === 'string') {
-        // Sometimes the ID might be returned as a string
         generatedId = result;
       }
 
@@ -261,16 +243,8 @@ const CreateRide = ({ route, navigation }) => {
       if (generatedId) {
         setGeneratedRidesId(generatedId);
         console.log('Navigating to RideStep4 with ID:', generatedId);
-
-        // Navigate to step 4 or the next screen
         setCurrentStep(4);
-
-        // Alternative: Direct navigation if you prefer
-        // navigation.navigate('RideStep4', {
-        //     generatedRidesId: generatedId,
-        //     rideName, locationName, riderType, date, startingPoint, endingPoint,
-        //     participants, description, token, username
-        // });
+        pendingRideIdRef.current = generatedId;
       } else {
         console.error('No valid ride ID found in response:', result);
         setError('Ride was created but no ID was returned. Response: ' + JSON.stringify(result));
@@ -305,10 +279,8 @@ const CreateRide = ({ route, navigation }) => {
     }
   };
 
-  const nextStep = () => { if (currentStep < 4) {setCurrentStep(currentStep + 1);} };
-  const prevStep = () => { if (currentStep > 1) {setCurrentStep(currentStep - 1);} };
-
-
+  const nextStep = () => { if (currentStep < 4) { setCurrentStep(currentStep + 1); } };
+  const prevStep = () => { if (currentStep > 1) { setCurrentStep(currentStep - 1); } };
 
   return (
     <View style={{ flex: 1 }}>
@@ -375,9 +347,9 @@ const CreateRide = ({ route, navigation }) => {
           token={token}
         />
       )}
-      {currentStep === 4 && generatedRidesId && (
+      {currentStep === 4 && (generatedRidesId || pendingRideIdRef.current) && (
         <RideStep4
-          generatedRidesId={generatedRidesId}
+          generatedRidesId={generatedRidesId || pendingRideIdRef.current}
           rideName={rideName}
           locationName={locationName}
           riderType={riderType}
@@ -390,6 +362,10 @@ const CreateRide = ({ route, navigation }) => {
           username={username}
           stopPoints={stopPoints}
           currentUsername={username}
+          startLat={parseFloat(startingLatitude) || 0}
+          startLng={parseFloat(startingLongitude) || 0}
+          endLat={parseFloat(endingLatitude) || 0}
+          endLng={parseFloat(endingLongitude) || 0}
         />
       )}
     </View>

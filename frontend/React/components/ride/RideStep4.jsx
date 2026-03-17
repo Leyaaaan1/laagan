@@ -25,7 +25,11 @@ import mapStyles from '../../styles/components/mapStyles';
 
 const RideStep4 = (props) => {
   const navigation = useNavigation();
+  // Support both direct props (from CreateRide step render) and
+  // navigation route params (when navigated to as a screen).
+  // Direct props always win over route params.
   const routeParams = props.route?.params || {};
+  const merged = { ...routeParams, ...props };
 
   const {
     generatedRidesId,
@@ -45,7 +49,7 @@ const RideStep4 = (props) => {
     active: isRideStarted = true,
     rideDetailsWithCoords: passedRideDetails = null,
     skipCoordsFetch = false,
-  } = routeParams;
+  } = merged;
 
   // ✅ Now safe — variables are defined above
   const hasFetchedRef = useRef(skipCoordsFetch && !!passedRideDetails);
@@ -108,7 +112,24 @@ const RideStep4 = (props) => {
     }
   };
 
-  const mapCoords = processRideCoordinates(state.rideDetailsWithCoords);
+  // Build coords for the map. Use rideDetailsWithCoords once loaded,
+  // but fall back to the raw props passed in so markers show immediately
+  // rather than waiting for the getRideDetails API call to complete.
+  const rawFallbackCoords = {
+    startingPoint: startingPoint
+      ? (typeof startingPoint === 'string'
+        ? { name: startingPoint, lat: parseFloat(merged.startLat) || 0, lng: parseFloat(merged.startLng) || 0 }
+        : startingPoint)
+      : null,
+    endingPoint: endingPoint
+      ? (typeof endingPoint === 'string'
+        ? { name: endingPoint, lat: parseFloat(merged.endLat) || 0, lng: parseFloat(merged.endLng) || 0 }
+        : endingPoint)
+      : null,
+    stopPoints: Array.isArray(stopPoints) ? stopPoints : [],
+  };
+
+  const mapCoords = processRideCoordinates(state.rideDetailsWithCoords) || rawFallbackCoords;
 
   const handleSwipeToMap = () => {
     const rideDetails = state.rideDetailsWithCoords;
