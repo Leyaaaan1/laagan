@@ -8,18 +8,77 @@ import getMapHTML from '../../utilities/mapHTML';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { reverseGeocodeLandmark } from '../../services/rideService';
 import { createRouteData, getRoutePreview } from '../../services/RouteService';
+
 import buttons from '../../styles/base/buttons';
 import layout from '../../styles/base/layout';
 import rideCreation from '../../styles/screens/rideCreation';
 import feedback from '../../styles/base/feedback';
 import inputs from '../../styles/base/inputs';
 import badges from '../../styles/base/badges';
+import {
+  buildCenterMapScript,
+  buildDrawRouteScript,
+  buildSearchHandlers,
+} from './utilities/RideStepUtils';
 
 const DEFAULT_LAT = 12.8797;
 const DEFAULT_LNG = 121.7740;
 
 const MODE_LABELS = { starting: 'Set Start', ending: 'Set Destination', stop: 'Add Stops' };
 const MODE_COLORS = { starting: '#22c55e', ending: '#8c2323', stop: '#f59e0b' };
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+/** Start / End location card used inside the details panel. */
+const RouteEndpointCard = ({ label, dotColor, point, isActive, onChangePress }) => (
+  <View style={[rideCreation.floatingCard, rideCreation.halfWidthCard]}>
+    <View style={rideCreation.cardHeader}>
+      <View style={[badges.dot, { backgroundColor: dotColor, marginRight: 6 }]} />
+      <Text style={rideCreation.cardTitle}>{label}</Text>
+      <TouchableOpacity
+        style={[rideCreation.cardChangeButton, { marginLeft: 'auto' }]}
+        onPress={onChangePress}
+      >
+        <Text style={[rideCreation.cardChangeButtonText, isActive && { color: dotColor, fontWeight: '700' }]}>
+          {isActive ? '● Active' : 'Change'}
+        </Text>
+      </TouchableOpacity>
+    </View>
+    <Text style={rideCreation.cardLocationText} numberOfLines={2}>
+      {point || 'Not set'}
+    </Text>
+  </View>
+);
+
+/** Row of stop-point chips in the details panel. */
+const StopPointsList = ({ stopPoints, onRemove }) => {
+  if (!stopPoints.length) { return null; }
+  return (
+    <View style={[rideCreation.floatingCard, rideCreation.fullWidthCard, { marginTop: 6 }]}>
+      <View style={[rideCreation.cardHeader, { marginBottom: 6 }]}>
+        <Text style={rideCreation.cardTitle}>Stop Points</Text>
+        <View style={rideCreation.stopCounter}>
+          <Text style={rideCreation.stopCounterText}>{stopPoints.length}</Text>
+        </View>
+      </View>
+      <ScrollView style={rideCreation.stopScrollView} showsVerticalScrollIndicator={false}>
+        {stopPoints.map((stop, index) => (
+          <View key={index} style={rideCreation.stopItem}>
+            <View style={rideCreation.stopNumber}>
+              <Text style={rideCreation.stopNumberText}>{index + 1}</Text>
+            </View>
+            <Text style={rideCreation.stopName} numberOfLines={1}>{stop.name}</Text>
+            <TouchableOpacity style={{ marginLeft: 8, padding: 6 }} onPress={() => onRemove(index)}>
+              <FontAwesome name="times" size={12} color="#bbb" />
+            </TouchableOpacity>
+          </View>
+        ))}
+      </ScrollView>
+    </View>
+  );
+};
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 const RideStep3 = ({
                      mapMode, setMapMode, isSearching, searchResults,
@@ -30,34 +89,26 @@ const RideStep3 = ({
                      handleCreateRide, handleSearchInputChange, searchQuery,
                      stopPoints, setStopPoints, token,
                    }) => {
-  const [currentStop, setCurrentStop]               = useState(null);
-  const [isAddingStop, setIsAddingStop]             = useState(false);
-  const [addingStopLoading, setAddingStopLoading]   = useState(false);
-  const [showDetails, setShowDetails]               = useState(true);
-  const [isSearchFocused, setIsSearchFocused]       = useState(false);
-  const [mapDarkMode, setMapDarkMode]               = useState(false);
-  const [routeLoading, setRouteLoading]             = useState(false);
+  const [currentStop,       setCurrentStop]       = useState(null);
+  const [isAddingStop,      setIsAddingStop]       = useState(false);
+  const [addingStopLoading, setAddingStopLoading]  = useState(false);
+  const [showDetails,       setShowDetails]        = useState(true);
+  const [isSearchFocused,   setIsSearchFocused]    = useState(false);
+  const [routeLoading,      setRouteLoading]       = useState(false);
 
-  // ── Local search buffer (same debounce pattern as Step 2) ────────────────
+  // ── Local search buffer with shared debounce helper ───────────────────────
   const [localQuery, setLocalQuery] = useState(searchQuery || '');
   const debounceRef = useRef(null);
 
-  const handleLocalChange = (value) => {
-    setLocalQuery(value);
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => handleSearchInputChange(value), 400);
-  };
+  const { handleLocalChange, handleClearSearch } = buildSearchHandlers({
+    debounceRef,
+    setLocalQuery,
+    handleSearchInputChange,
+  });
 
-  const handleClearSearch = () => {
-    setLocalQuery('');
-    clearTimeout(debounceRef.current);
-    handleSearchInputChange('');
-  };
-
-  useEffect(() => { if (!searchQuery) {setLocalQuery('');} }, [searchQuery]);
+  useEffect(() => { if (!searchQuery) { setLocalQuery(''); } }, [searchQuery]);
 
   // ── Freeze initial map HTML ───────────────────────────────────────────────
-  // Built once from the first valid coords so the WebView never remounts.
   const mapHtml = useMemo(() => {
     const initLat = parseFloat(startingLatitude) || DEFAULT_LAT;
     const initLng = parseFloat(startingLongitude) || DEFAULT_LNG;
@@ -66,33 +117,21 @@ const RideStep3 = ({
 
   // ── Route drawing ─────────────────────────────────────────────────────────
   const drawRoadRoute = async () => {
-    if (!startingLatitude || !startingLongitude || !endingLatitude || !endingLongitude) {return;}
+    if (!startingLatitude || !startingLongitude || !endingLatitude || !endingLongitude) { return; }
     setRouteLoading(true);
     try {
-      const routeData = createRouteData(
-        startingLatitude, startingLongitude,
-        endingLatitude, endingLongitude,
-        stopPoints,
-      );
+      const routeData   = createRouteData(startingLatitude, startingLongitude, endingLatitude, endingLongitude, stopPoints);
       const routeGeoJSON = await getRoutePreview(token, routeData);
-      if (!routeGeoJSON?.features?.length) {return;}
-      if (webViewRef.current) {
-        webViewRef.current.injectJavaScript(`
-          (function(){
-            try {
-              const g = ${JSON.stringify(routeGeoJSON)};
-              if (window.clearRoute) window.clearRoute();
-              if (window.drawGeoJsonRoute) window.drawGeoJsonRoute(g, {color:'#1e40af',weight:4,opacity:0.8});
-              if (window.addRouteMarkers) window.addRouteMarkers(
-                [${startingLatitude},${startingLongitude}],
-                [${endingLatitude},${endingLongitude}],
-                ${JSON.stringify(stopPoints.map(s => [s.lat, s.lng]))}
-              );
-              if (window.fitGeoJsonRouteToMap) window.fitGeoJsonRouteToMap(g);
-            } catch(e){ console.error(e); }
-          })(); true;
-        `);
-      }
+      if (!routeGeoJSON?.features?.length) { return; }
+
+      webViewRef.current?.injectJavaScript(
+        buildDrawRouteScript({
+          routeGeoJSON,
+          startLat: startingLatitude, startLng: startingLongitude,
+          endLat:   endingLatitude,   endLng:   endingLongitude,
+          stopPoints,
+        }),
+      );
     } catch (e) {
       console.error('Route draw error:', e);
     } finally {
@@ -101,11 +140,12 @@ const RideStep3 = ({
   };
 
   useEffect(() => {
-    if (startingLatitude && startingLongitude && endingLatitude && endingLongitude
-      && mapMode !== 'starting' && mapMode !== 'ending') {
-      const t = setTimeout(() => drawRoadRoute(), 1000);
-      return () => clearTimeout(t);
-    }
+    const bothEndpointsSet = startingLatitude && startingLongitude && endingLatitude && endingLongitude;
+    const notPickingEndpoint = mapMode !== 'starting' && mapMode !== 'ending';
+    if (!bothEndpointsSet || !notPickingEndpoint) { return; }
+
+    const timer = setTimeout(() => drawRoadRoute(), 1000);
+    return () => clearTimeout(timer);
   }, [startingLatitude, startingLongitude, endingLatitude, endingLongitude, stopPoints, mapMode]);
 
   // ── Stop point handlers ───────────────────────────────────────────────────
@@ -113,17 +153,17 @@ const RideStep3 = ({
 
   const handleStopMapMessage = async (event) => {
     const data = JSON.parse(event.nativeEvent.data);
-    if (data.type === 'mapClick') {
-      setCurrentStop({ lat: data.lat, lng: data.lng, name: 'Fetching…' });
-      setAddingStopLoading(true);
-      const name = await reverseGeocodeLandmark(token, data.lat, data.lng);
-      setCurrentStop({ lat: data.lat, lng: data.lng, name: name || `${data.lat.toFixed(4)}, ${data.lng.toFixed(4)}` });
-      setAddingStopLoading(false);
-    }
+    if (data.type !== 'mapClick') { return; }
+
+    setCurrentStop({ lat: data.lat, lng: data.lng, name: 'Fetching…' });
+    setAddingStopLoading(true);
+    const name = await reverseGeocodeLandmark(token, data.lat, data.lng);
+    setCurrentStop({ lat: data.lat, lng: data.lng, name: name || `${data.lat.toFixed(4)}, ${data.lng.toFixed(4)}` });
+    setAddingStopLoading(false);
   };
 
   const confirmStopPoint = () => {
-    if (!currentStop) {return;}
+    if (!currentStop) { return; }
     setStopPoints(prev => [...prev, { lat: currentStop.lat, lng: currentStop.lng, name: currentStop.name }]);
     setIsAddingStop(false);
     setCurrentStop(null);
@@ -137,20 +177,15 @@ const RideStep3 = ({
   };
 
   const finalizePointSelection = () => {
-    if (mapMode === 'starting' && startingPoint) {setMapMode('ending');}
-    else if (mapMode === 'ending' && endingPoint) { setMapMode('stop'); setTimeout(() => drawRoadRoute(), 300); }
+    if (mapMode === 'starting' && startingPoint)  { setMapMode('ending'); }
+    if (mapMode === 'ending'   && endingPoint)    { setMapMode('stop'); setTimeout(() => drawRoadRoute(), 300); }
   };
 
+  // ── Location selection + map update ──────────────────────────────────────
   const handleSelectLocationAndUpdateMap = async (item) => {
     const lat = parseFloat(item.lat);
     const lon = parseFloat(item.lng);
-
-    // handleLocationSelect in the parent now returns the display_name directly
-    // (no reverse geocode on search-result selection), so we trust that value.
-    // Fallback to the first segment of display_name if the parent returns nothing.
-    let resolvedName = item.display_name
-      ? item.display_name.split(',')[0].trim()
-      : `${lat}, ${lon}`;
+    let resolvedName = item.display_name ? item.display_name.split(',')[0].trim() : `${lat}, ${lon}`;
 
     try {
       const parentName = await handleLocationSelect(item);
@@ -159,53 +194,45 @@ const RideStep3 = ({
       console.warn('handleLocationSelect error:', e);
     }
 
-    // Parent already calls setStartingPoint / setEndingPoint via handleLocationSelect,
-    // but we mirror it here so the local UI reflects the change immediately.
     if (mapMode === 'starting') { setStartingPoint(resolvedName); }
-    else if (mapMode === 'ending') { setEndingPoint(resolvedName); }
-
+    if (mapMode === 'ending')   { setEndingPoint(resolvedName); }
     setLocalQuery(resolvedName);
 
-    if (webViewRef.current) {
-      webViewRef.current.injectJavaScript(`
-        if(window.centerMap&&window.updateMarker){window.centerMap(${lat},${lon},15);window.updateMarker(${lat},${lon});}true;
-      `);
-    }
+    webViewRef.current?.injectJavaScript(buildCenterMapScript(lat, lon));
 
     if (endingLatitude && endingLongitude && startingLatitude && startingLongitude) {
       setTimeout(() => drawRoadRoute(), 500);
     }
   };
 
+  // ── WebView message router ────────────────────────────────────────────────
   const onWebViewMessage = (event) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
       switch (data.type) {
         case 'mapReady':
-          setMapDarkMode(data.isDarkTheme);
-          if (startingLatitude && startingLongitude && endingLatitude && endingLongitude)
-          {setTimeout(() => drawRoadRoute(), 1000);}
+          if (startingLatitude && startingLongitude && endingLatitude && endingLongitude) {
+            setTimeout(() => drawRoadRoute(), 1000);
+          }
           break;
         case 'mapError':
-          console.error('Map error:', data.error); break;
+          console.error('Map error:', data.error);
+          break;
         default:
-          if (mapMode === 'stop' && isAddingStop) {handleStopMapMessage(event);}
-          else {handleMessage(event);}
-          if (data.isDarkTheme !== undefined) {setMapDarkMode(data.isDarkTheme);}
+          if (mapMode === 'stop' && isAddingStop) { handleStopMapMessage(event); }
+          else                                    { handleMessage(event); }
       }
     } catch (e) { console.error(e); }
   };
 
-  const getPlaceholderText = () =>
-    ({ starting: 'Search starting point', ending: 'Search destination', stop: 'Search stop point' }[mapMode] || 'Search location');
-
+  const searchPlaceholder = { starting: 'Search starting point', ending: 'Search destination', stop: 'Search stop point' }[mapMode] || 'Search location';
   const canCreate = !!startingPoint && !!endingPoint && !loading;
 
   return (
     <View style={[layout.screen, { backgroundColor: 'transparent' }]}>
       <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
-      {/* ── Full-screen map — rendered ONCE, never remounted ── */}
+      {/* ── Full-screen map — rendered once, never remounted ── */}
       <View style={rideCreation.mapFill}>
         <WebView
           ref={webViewRef}
@@ -220,10 +247,7 @@ const RideStep3 = ({
       </View>
 
       {/* ── Floating navbar ── */}
-      <View style={[rideCreation.floatingNav, {
-        backgroundColor: 'transparent',
-        top: 16,
-      }]}>
+      <View style={[rideCreation.floatingNav, { backgroundColor: 'transparent', top: 16 }]}>
         <TouchableOpacity style={buttons.back} onPress={prevStep} activeOpacity={0.8}>
           <FontAwesome name="arrow-left" size={14} color="#8c2323" style={{ marginRight: 6 }} />
           <Text style={[buttons.textDark, { fontSize: 14 }]}>Back</Text>
@@ -256,9 +280,9 @@ const RideStep3 = ({
           <FontAwesome name="search" size={16} color="#5f6368" style={{ marginRight: 12 }} />
           <TextInput
             style={inputs.location}
-            value={localQuery}               // local buffer — no re-render on each keystroke
-            onChangeText={handleLocalChange} // debounced 400 ms
-            placeholder={getPlaceholderText()}
+            value={localQuery}
+            onChangeText={handleLocalChange}
+            placeholder={searchPlaceholder}
             placeholderTextColor="#9aa0a6"
             returnKeyType="search"
             onFocus={() => setIsSearchFocused(true)}
@@ -320,20 +344,11 @@ const RideStep3 = ({
       {/* ── Show/Hide toggle ── */}
       <TouchableOpacity
         style={{
-          position: 'absolute',
-          top: 90,
-          right: 12,
-          zIndex: 30,
-          backgroundColor: 'transparent',
-          borderRadius: 16,
-          paddingVertical: 6,
-          paddingHorizontal: 12,
-          flexDirection: 'row',
-          alignItems: 'center',
-          shadowColor: '#000',
-          shadowOpacity: 0.1,
-          shadowRadius: 6,
-          elevation: 4,
+          position: 'absolute', top: 90, right: 12, zIndex: 30,
+          backgroundColor: 'transparent', borderRadius: 16,
+          paddingVertical: 6, paddingHorizontal: 12,
+          flexDirection: 'row', alignItems: 'center',
+          shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 6, elevation: 4,
         }}
         onPress={() => setShowDetails(prev => !prev)}
       >
@@ -343,73 +358,25 @@ const RideStep3 = ({
 
       {/* ── Route details panel ── */}
       {showDetails && (
-        <View style={{ position: 'absolute', top: 'auto', bottom: 110, left: 12, right: 12, zIndex: 40 }}>
+        <View style={{ position: 'absolute', bottom: 110, left: 12, right: 12, zIndex: 40 }}>
           <View style={{ backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 20, padding: 12 }}>
-            {/* Start / End row */}
             <View style={rideCreation.topRowContainer}>
-              <View style={[rideCreation.floatingCard, rideCreation.halfWidthCard]}>
-                <View style={rideCreation.cardHeader}>
-                  <View style={[badges.dot, { backgroundColor: '#22c55e', marginRight: 6 }]} />
-                  <Text style={rideCreation.cardTitle}>Start</Text>
-                  <TouchableOpacity
-                    style={[rideCreation.cardChangeButton, { marginLeft: 'auto' }]}
-                    onPress={() => setMapMode('starting')}
-                  >
-                    <Text style={[rideCreation.cardChangeButtonText,
-                      mapMode === 'starting' && { color: '#22c55e', fontWeight: '700' }]}>
-                      {mapMode === 'starting' ? '● Active' : 'Change'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-                <Text style={rideCreation.cardLocationText} numberOfLines={2}>
-                  {startingPoint || 'Not set'}
-                </Text>
-              </View>
-
-              <View style={[rideCreation.floatingCard, rideCreation.halfWidthCard]}>
-                <View style={rideCreation.cardHeader}>
-                  <View style={[badges.dot, { backgroundColor: '#8c2323', marginRight: 6 }]} />
-                  <Text style={rideCreation.cardTitle}>End</Text>
-                  <TouchableOpacity
-                    style={[rideCreation.cardChangeButton, { marginLeft: 'auto' }]}
-                    onPress={() => setMapMode('ending')}
-                  >
-                    <Text style={[rideCreation.cardChangeButtonText,
-                      mapMode === 'ending' && { color: '#8c2323', fontWeight: '700' }]}>
-                      {mapMode === 'ending' ? '● Active' : 'Change'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-                <Text style={rideCreation.cardLocationText} numberOfLines={2}>
-                  {endingPoint || 'Not set'}
-                </Text>
-              </View>
+              <RouteEndpointCard
+                label="Start"
+                dotColor="#22c55e"
+                point={startingPoint}
+                isActive={mapMode === 'starting'}
+                onChangePress={() => setMapMode('starting')}
+              />
+              <RouteEndpointCard
+                label="End"
+                dotColor="#8c2323"
+                point={endingPoint}
+                isActive={mapMode === 'ending'}
+                onChangePress={() => setMapMode('ending')}
+              />
             </View>
-
-            {/* Stop points */}
-            {stopPoints.length > 0 && (
-              <View style={[rideCreation.floatingCard, rideCreation.fullWidthCard, { marginTop: 6 }]}>
-                <View style={[rideCreation.cardHeader, { marginBottom: 6 }]}>
-                  <Text style={rideCreation.cardTitle}>Stop Points</Text>
-                  <View style={rideCreation.stopCounter}>
-                    <Text style={rideCreation.stopCounterText}>{stopPoints.length}</Text>
-                  </View>
-                </View>
-                <ScrollView style={rideCreation.stopScrollView} showsVerticalScrollIndicator={false}>
-                  {stopPoints.map((stop, index) => (
-                    <View key={index} style={rideCreation.stopItem}>
-                      <View style={rideCreation.stopNumber}>
-                        <Text style={rideCreation.stopNumberText}>{index + 1}</Text>
-                      </View>
-                      <Text style={rideCreation.stopName} numberOfLines={1}>{stop.name}</Text>
-                      <TouchableOpacity style={{ marginLeft: 8, padding: 6 }} onPress={() => removeStopPoint(index)}>
-                        <FontAwesome name="times" size={12} color="#bbb" />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </ScrollView>
-              </View>
-            )}
+            <StopPointsList stopPoints={stopPoints} onRemove={removeStopPoint} />
           </View>
         </View>
       )}
@@ -439,8 +406,7 @@ const RideStep3 = ({
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
-                style={[buttons.success, { flex: 1, flexDirection: 'row', gap: 8 },
-                  (addingStopLoading || !currentStop) && buttons.disabled]}
+                style={[buttons.success, { flex: 1, flexDirection: 'row', gap: 8 }, (addingStopLoading || !currentStop) && buttons.disabled]}
                 onPress={confirmStopPoint}
                 disabled={addingStopLoading || !currentStop}
                 activeOpacity={0.85}
@@ -469,7 +435,6 @@ const RideStep3 = ({
         )}
       </View>
 
-      {/* ── Instruction pill while placing a stop ── */}
       {/* ── Instruction pill while placing a stop ── */}
       {mapMode === 'stop' && isAddingStop && (
         <View style={{ position: 'absolute', bottom: 100, left: 12, right: 12, zIndex: 45, backgroundColor: 'rgba(0,0,0,0.72)', borderRadius: 20, paddingVertical: 10, paddingHorizontal: 12 }}>

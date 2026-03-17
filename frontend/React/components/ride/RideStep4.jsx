@@ -1,17 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StatusBar,
-  Alert,
+  View, Text, TouchableOpacity, ScrollView, StatusBar, Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { fetchRideMapImage, getRideDetails, getLocationImage } from '../../services/rideService';
 import ParticipantListModal from './modal/ParticipantListModal';
-import useJoinRide from './util/RideHandler';
 import { startService } from '../../services/startService';
 import RouteMapView from '../../utilities/route/view/RouteMapView';
 import { processRideCoordinates } from '../../utilities/CoordinateUtils';
@@ -19,102 +13,111 @@ import cards from '../../styles/base/cards';
 import buttons from '../../styles/base/buttons';
 import header from '../../styles/base/header';
 import badges from '../../styles/base/badges';
-import layout from '../../styles/base/layout';
 import rideStep4Styles from '../../styles/screens/rideStep4';
 import mapStyles from '../../styles/components/mapStyles';
+import {
+  formatDate,
+  getLocationDisplayName,
+  getRideTypeIcon,
+} from './utilities/RideStepUtils';
+import useJoinRide from './utilities/RideHandler';
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+/** Header right-slot: Join button for non-owners, Start button for the creator. */
+const RideActionButton = ({ isOwner, onJoin, onStart }) =>
+  isOwner ? (
+    <TouchableOpacity style={rideStep4Styles.startButton} onPress={onStart}>
+      <FontAwesome name="play" size={16} color="#fff" />
+    </TouchableOpacity>
+  ) : (
+    <TouchableOpacity style={rideStep4Styles.joinButton} onPress={onJoin}>
+      <FontAwesome name="plus" size={14} color="#fff" style={{ marginRight: 6 }} />
+      <Text style={rideStep4Styles.joinButtonText}>Join</Text>
+    </TouchableOpacity>
+  );
+
+/** Hero card showing ride name, date, organiser, type and description. */
+const RideHeroCard = ({ rideName, date, username, riderType, distance, description, startingPoint, endingPoint, rideDetailsWithCoords }) => (
+  <View style={cards.hero}>
+    <View style={cards.heroHeader}>
+      <View style={{ flex: 1 }}>
+        <Text style={cards.heroTitle}>{rideName}</Text>
+        <Text style={cards.infoValue} numberOfLines={2}>{formatDate(date)}</Text>
+        <View style={cards.heroMeta}>
+          <FontAwesome name="user-circle" size={14} color="#8c2323" />
+          <Text style={cards.heroMetaText}>{String(username || '').toUpperCase()}</Text>
+        </View>
+      </View>
+      <View style={badges.rideType}>
+        <FontAwesome name={getRideTypeIcon(riderType)} size={20} color="#fff" />
+        <Text style={cards.infoValue}>{distance} km</Text>
+      </View>
+    </View>
+
+    {description && (
+      <View style={cards.description}>
+        <Text style={[mapStyles.routePointLabel, { marginLeft: 8 }]}>Description</Text>
+        <Text style={cards.descriptionText}>{description}</Text>
+      </View>
+    )}
+
+    {/* From / To */}
+    <View style={{ flexDirection: 'column', width: '100%', alignItems: 'flex-start' }}>
+      <View style={[cards.info, { width: '100%', marginBottom: 8 }]}>
+        <Text style={[mapStyles.routePointLabel, { marginLeft: 8, marginBottom: 6 }]}>From</Text>
+        <Text style={mapStyles.routePointText}>
+          {getLocationDisplayName(rideDetailsWithCoords?.startingPointName)}
+        </Text>
+      </View>
+      <View style={[cards.info, { width: '100%' }]}>
+        <Text style={[mapStyles.routePointLabel, { marginLeft: 8, marginBottom: 6 }]}>To</Text>
+        <Text style={mapStyles.routePointText}>
+          {getLocationDisplayName(rideDetailsWithCoords?.endingPointName)}
+        </Text>
+      </View>
+    </View>
+  </View>
+);
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 const RideStep4 = (props) => {
   const navigation = useNavigation();
-  // Support both direct props (from CreateRide step render) and
-  // navigation route params (when navigated to as a screen).
-  // Direct props always win over route params.
+
+  // Supports both direct props (from CreateRide) and navigation route params
   const routeParams = props.route?.params || {};
   const merged = { ...routeParams, ...props };
 
   const {
-    generatedRidesId,
-    rideName,
-    locationName,
-    riderType,
-    date,
-    startingPoint,
-    endingPoint,
-    participants,
-    description,
-    token,
-    distance,
-    username,
-    stopPoints,
-    currentUsername,
+    generatedRidesId, rideName, locationName, riderType, date,
+    startingPoint, endingPoint, participants, description,
+    token, distance, username, stopPoints, currentUsername,
     active: isRideStarted = true,
     rideDetailsWithCoords: passedRideDetails = null,
     skipCoordsFetch = false,
   } = merged;
 
-  // ✅ Now safe — variables are defined above
   const hasFetchedRef = useRef(skipCoordsFetch && !!passedRideDetails);
+  const { joinRide }  = useJoinRide();
 
   const [state, setState] = useState({
-    mapImage: null,
-    startMapImage: passedRideDetails?.magImageStartingLocation || null,
-    endMapImage: passedRideDetails?.magImageEndingLocation || null,
-    rideNameImage: null,
-    imageLoading: false,
+    mapImage:             null,
+    startMapImage:        passedRideDetails?.magImageStartingLocation || null,
+    endMapImage:          passedRideDetails?.magImageEndingLocation   || null,
+    rideNameImage:        null,
+    imageLoading:         false,
     rideNameImageLoading: false,
-    rideNameImageError: null,
-    distanceState: passedRideDetails?.distance ?? distance ?? '--',
+    rideNameImageError:   null,
+    distanceState:        passedRideDetails?.distance ?? distance ?? '--',
     showParticipantsModal: false,
     rideDetailsWithCoords: passedRideDetails || null,
   });
 
-  const { joinRide } = useJoinRide();
+  // Convenience updater — merge a partial state object
+  const patchState = (patch) => setState(prev => ({ ...prev, ...patch }));
 
-  const formatDate = (dateValue) => {
-    if (!dateValue) { return 'Not specified'; }
-    const d = dateValue instanceof Date ? dateValue : new Date(dateValue);
-    if (isNaN(d.getTime())) { return dateValue.toString(); }
-    const options = { month: 'long', day: '2-digit', year: 'numeric' };
-    const datePart = d.toLocaleDateString('en-US', options);
-    let hours = d.getHours();
-    const minutes = d.getMinutes().toString().padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12 || 12;
-    return `${datePart} ${hours}:${minutes}${ampm}`;
-  };
-
-  const getLocationDisplayName = (location) => {
-    if (typeof location === 'string') { return location; }
-    if (location && typeof location === 'object') {
-      return location.name || location.address || 'Location';
-    }
-    return 'Not specified';
-  };
-
-  const handleBack = () => navigation.goBack();
-
-  const handleJoinRide = () => {
-    if (!generatedRidesId || !token) {
-      Alert.alert('Error', 'Missing ride information. Please try again.');
-      return;
-    }
-    joinRide(generatedRidesId, token, () => {
-      console.log('Successfully requested to join ride');
-    });
-  };
-
-  const getRideTypeIcon = (type) => {
-    switch (type) {
-      case 'car':         return 'car';
-      case 'motor':       return 'motorcycle';
-      case 'bike':        return 'bicycle';
-      case 'cafe Racers': return 'rocket';
-      default:            return 'circle';
-    }
-  };
-
-  // Build coords for the map. Use rideDetailsWithCoords once loaded,
-  // but fall back to the raw props passed in so markers show immediately
-  // rather than waiting for the getRideDetails API call to complete.
+  // ── Build map coords (immediate fallback while API loads) ─────────────────
   const rawFallbackCoords = {
     startingPoint: startingPoint
       ? (typeof startingPoint === 'string'
@@ -128,27 +131,29 @@ const RideStep4 = (props) => {
       : null,
     stopPoints: Array.isArray(stopPoints) ? stopPoints : [],
   };
-
   const mapCoords = processRideCoordinates(state.rideDetailsWithCoords) || rawFallbackCoords;
+
+  // ── Action handlers ───────────────────────────────────────────────────────
+  const handleJoinRide = () => {
+    if (!generatedRidesId || !token) {
+      Alert.alert('Error', 'Missing ride information. Please try again.');
+      return;
+    }
+    joinRide(generatedRidesId, token, () => console.log('Successfully requested to join ride'));
+  };
 
   const handleSwipeToMap = () => {
     const rideDetails = state.rideDetailsWithCoords;
     navigation.navigate('StartedRide', {
       activeRide: {
-        generatedRidesId,
-        id: generatedRidesId,
-        rideName,
-        locationName,
-        riderType,
-        date,
-        description,
+        generatedRidesId, id: generatedRidesId, rideName, locationName,
+        riderType, date, description,
         distance: state.distanceState || distance,
-        username,
-        startedBy: currentUsername,
+        username, startedBy: currentUsername,
         startingPoint: rideDetails?.startingPoint || startingPoint,
-        endingPoint: rideDetails?.endingPoint || endingPoint,
-        stopPoints: rideDetails?.stopPoints || stopPoints || [],
-        participants: participants || [],
+        endingPoint:   rideDetails?.endingPoint   || endingPoint,
+        stopPoints:    rideDetails?.stopPoints    || stopPoints || [],
+        participants:  participants || [],
         isActive: true,
       },
       token,
@@ -157,145 +162,92 @@ const RideStep4 = (props) => {
     });
   };
 
-  // Location image fetch
+  const handleStartRide = async () => {
+    try {
+      await startService.startRide(generatedRidesId, token);
+      navigation.navigate('StartedRide', {
+        activeRide: {
+          generatedRidesId, id: generatedRidesId, rideName, locationName,
+          riderType, date, description,
+          distance: state.distanceState || distance,
+          username, startedBy: currentUsername,
+          startingPoint: mapCoords.startingPoint,
+          endingPoint:   mapCoords.endingPoint,
+          stopPoints:    mapCoords.stopPoints,
+          startingPointName: mapCoords.startingPoint?.name || getLocationDisplayName(startingPoint),
+          endingPointName:   mapCoords.endingPoint?.name   || getLocationDisplayName(endingPoint),
+          participants:  participants || [],
+          mapImage:      state.mapImage        || null,
+          startMapImage: state.startMapImage   || null,
+          endMapImage:   state.endMapImage     || null,
+          rideNameImage: state.rideNameImage   || [],
+          imageLoading:  state.imageLoading    || false,
+        },
+        token,
+        username: currentUsername,
+      });
+    } catch (error) {
+      Alert.alert('Error', error.message || 'Failed to start the ride.');
+    }
+  };
+
+  // ── Data fetching ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!locationName || !token) { return; }
-    const loadLocationImage = async () => {
-      try {
-        setState(prev => ({ ...prev, rideNameImageLoading: true, rideNameImageError: null }));
-        const imageDataList = await getLocationImage(locationName, token);
-        setState(prev => ({
-          ...prev,
-          rideNameImage: Array.isArray(imageDataList) ? imageDataList : [],
-        }));
-      } catch (error) {
-        setState(prev => ({
-          ...prev,
-          rideNameImageError: error.message || 'Failed to load location images',
-        }));
-      } finally {
-        setState(prev => ({ ...prev, rideNameImageLoading: false }));
-      }
-    };
-    loadLocationImage();
+    patchState({ rideNameImageLoading: true, rideNameImageError: null });
+    getLocationImage(locationName, token)
+      .then(imgs => patchState({ rideNameImage: Array.isArray(imgs) ? imgs : [] }))
+      .catch(err  => patchState({ rideNameImageError: err.message || 'Failed to load location images' }))
+      .finally(() => patchState({ rideNameImageLoading: false }));
   }, [locationName, token]);
 
-  // Map thumbnail fetch
   useEffect(() => {
     if (!generatedRidesId) { return; }
-    const getMapImage = async () => {
-      try {
-        setState(prev => ({ ...prev, imageLoading: true }));
-        const imageUrl = await fetchRideMapImage(generatedRidesId, token);
-        setState(prev => ({ ...prev, mapImage: imageUrl }));
-      } catch (error) {
-        console.error('Error fetching map image:', error?.response?.status || error.message);
-      } finally {
-        setState(prev => ({ ...prev, imageLoading: false }));
-      }
-    };
-    getMapImage();
+    patchState({ imageLoading: true });
+    fetchRideMapImage(generatedRidesId, token)
+      .then(url  => patchState({ mapImage: url }))
+      .catch(err => console.error('Map image fetch error:', err?.response?.status || err.message))
+      .finally(() => patchState({ imageLoading: false }));
   }, [generatedRidesId, token]);
 
-  // Ride details fetch — skipped if pre-fetched
   useEffect(() => {
-    if (!generatedRidesId || !token) { return; }
-    if (hasFetchedRef.current) { return; }
-
-    setState(prev => ({ ...prev, imageLoading: true }));
-
+    if (!generatedRidesId || !token || hasFetchedRef.current) { return; }
+    patchState({ imageLoading: true });
     getRideDetails(generatedRidesId, token)
-      .then(rideDetails => {
-        setState(prev => ({
-          ...prev,
-          startMapImage: rideDetails.magImageStartingLocation || prev.startMapImage,
-          endMapImage: rideDetails.magImageEndingLocation || prev.endMapImage,
-          distanceState: rideDetails.distance ?? 'N/A',
-          isRideActive: rideDetails.isActive === true || rideDetails.status === 'active',
-          rideDetailsWithCoords: rideDetails,
-        }));
-      })
-      .catch(error => {
-        console.error('Error fetching ride details:', error?.response?.status || error.message);
-      })
-      .finally(() => {
-        setState(prev => ({ ...prev, imageLoading: false }));
-      });
+      .then(details => patchState({
+        startMapImage:         details.magImageStartingLocation || state.startMapImage,
+        endMapImage:           details.magImageEndingLocation   || state.endMapImage,
+        distanceState:         details.distance                 || state.distanceState,
+        rideDetailsWithCoords: details,
+      }))
+      .catch(err => console.warn('Ride details fetch error:', err.message))
+      .finally(() => patchState({ imageLoading: false }));
   }, [generatedRidesId, token]);
 
   return (
     <View style={rideStep4Styles.container}>
       <StatusBar backgroundColor="#000" barStyle="light-content" translucent={false} />
 
-      {/* Header */}
+      {/* ── Header ── */}
       <View style={header.bar}>
-        <TouchableOpacity style={header.backButton} onPress={handleBack}>
+        <TouchableOpacity style={header.backButton} onPress={() => navigation.goBack()}>
           <FontAwesome name="arrow-left" size={18} color="#fff" />
         </TouchableOpacity>
-        {/* ✅ center slot — not headers.bar */}
         <View style={header.center}>
-          <Text style={header.title} numberOfLines={1}>
-            {locationName}
-          </Text>
-          <Text style={header.subtitle}>
-            ID: {generatedRidesId}
-          </Text>
+          <Text style={header.title} numberOfLines={1}>{locationName}</Text>
+          <Text style={header.subtitle}>ID: {generatedRidesId}</Text>
         </View>
-
         <View style={header.right}>
-          {username !== currentUsername ? (
-            <TouchableOpacity style={rideStep4Styles.joinButton} onPress={handleJoinRide}>
-              <FontAwesome name="plus" size={14} color="#fff" style={{ marginRight: 6 }} />
-              <Text style={rideStep4Styles.joinButtonText}>Join</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={rideStep4Styles.startButton}
-              onPress={async () => {
-                try {
-                  await startService.startRide(generatedRidesId, token);
-                  navigation.navigate('StartedRide', {
-                    activeRide: {
-                      generatedRidesId,
-                      id: generatedRidesId,
-                      rideName,
-                      locationName,
-                      riderType,
-                      date,
-                      description,
-                      distance: state.distanceState || distance,
-                      username,
-                      startedBy: currentUsername,
-                      startingPoint: mapCoords.startingPoint,
-                      endingPoint: mapCoords.endingPoint,
-                      stopPoints: mapCoords.stopPoints,
-                      startingPointName: mapCoords.startingPoint?.name || getLocationDisplayName(startingPoint),
-                      endingPointName: mapCoords.endingPoint?.name || getLocationDisplayName(endingPoint),
-                      participants: participants || [],
-                      mapImage: state.mapImage || null,
-                      startMapImage: state.startMapImage || null,
-                      endMapImage: state.endMapImage || null,
-                      rideNameImage: state.rideNameImage || [],
-                      imageLoading: state.imageLoading || false,
-                    },
-                    token,
-                    username: currentUsername,
-                  });
-                } catch (error) {
-                  Alert.alert('Error', error.message || 'Failed to start the ride.');
-                }
-              }}
-            >
-              <FontAwesome name="play" size={16} color="#fff" />
-            </TouchableOpacity>
-          )}
+          <RideActionButton
+            isOwner={username === currentUsername}
+            onJoin={handleJoinRide}
+            onStart={handleStartRide}
+          />
         </View>
       </View>
 
-      {/* ✅ fadeContainer holds map + scroll — no triple-nested cards */}
       <View style={rideStep4Styles.fadeContainer}>
-
-        {/* Map */}
+        {/* ── Map ── */}
         <View style={mapStyles.wrapper}>
           <RouteMapView
             generatedRidesId={generatedRidesId}
@@ -309,63 +261,21 @@ const RideStep4 = (props) => {
         </View>
 
         <ScrollView style={rideStep4Styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <RideHeroCard
+            rideName={rideName}
+            date={date}
+            username={username}
+            riderType={riderType}
+            distance={distance}
+            description={description}
+            rideDetailsWithCoords={state.rideDetailsWithCoords}
+          />
 
-          {/* Hero card */}
-          <View style={cards.hero}>
-            <View style={cards.heroHeader}>
-              <View style={{ flex: 1 }}>
-                <Text style={cards.heroTitle}>{rideName}</Text>
-                <Text style={cards.infoValue} numberOfLines={2}>
-                  {formatDate(date)}
-                </Text>
-                <View style={cards.heroMeta}>
-                  <FontAwesome name="user-circle" size={14} color="#8c2323" />
-                  <Text style={cards.heroMetaText}>
-                    {String(username || '').toUpperCase()}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={badges.rideType}>
-                <FontAwesome name={getRideTypeIcon(riderType)} size={20} color="#fff" />
-                <Text style={cards.infoValue}>{distance} km</Text>
-              </View>
-            </View>
-
-            {description && (
-              <View style={cards.description}>
-                <Text style={[mapStyles.routePointLabel, { marginLeft: 8 }]}>Description</Text>
-                <Text style={cards.descriptionText}>{description}</Text>
-              </View>
-            )}
-
-            {/* From / To */}
-            <View style={{ flexDirection: 'column', width: '100%', alignItems: 'flex-start' }}>
-              <View style={[cards.info, { width: '100%', marginBottom: 8 }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                  <Text style={[mapStyles.routePointLabel, { marginLeft: 8 }]}>From</Text>
-                </View>
-                <Text style={mapStyles.routePointText}>
-                  {getLocationDisplayName(state.rideDetailsWithCoords?.startingPointName)}
-                </Text>
-              </View>
-
-              <View style={[cards.info, { width: '100%' }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                  <Text style={[mapStyles.routePointLabel, { marginLeft: 8 }]}>To</Text>
-                </View>
-                <Text style={mapStyles.routePointText}>
-                  {getLocationDisplayName(state.rideDetailsWithCoords?.endingPointName)}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Bottom Nav */}
+          {/* ── Bottom nav ── */}
           <View style={header.bottomNav}>
             <TouchableOpacity
               style={buttons.bottomNav}
-              onPress={() => setState(prev => ({ ...prev, showParticipantsModal: true }))}
+              onPress={() => patchState({ showParticipantsModal: true })}
             >
               <FontAwesome name="users" size={18} color="#fff" />
               <Text style={buttons.textNav}>Riders</Text>
@@ -390,40 +300,29 @@ const RideStep4 = (props) => {
               style={buttons.bottomNav}
               onPress={() => navigation.navigate('RideRoutesPage', {
                 startMapImage: state.startMapImage,
-                endMapImage: state.endMapImage,
-                mapImage: state.mapImage,
+                endMapImage:   state.endMapImage,
+                mapImage:      state.mapImage,
                 rideNameImage: state.rideNameImage,
-                startingPoint,
-                endingPoint,
-                rideName,
-                locationName,
-                riderType,
-                date,
-                participants,
-                description,
-                token,
-                distance,
-                username,
-                currentUsername,
-                generatedRidesId,
+                startingPoint, endingPoint, rideName, locationName,
+                riderType, date, participants, description,
+                token, distance, username, currentUsername, generatedRidesId,
               })}
             >
               <FontAwesome name="map-marker" size={18} color="#fff" />
               <Text style={buttons.textNav}>Stop Point</Text>
             </TouchableOpacity>
           </View>
-
         </ScrollView>
       </View>
 
-      {/* Modals */}
+      {/* ── Modals ── */}
       <ParticipantListModal
         visible={state.showParticipantsModal}
-        onClose={() => setState(prev => ({ ...prev, showParticipantsModal: false }))}
+        onClose={() => patchState({ showParticipantsModal: false })}
         participants={participants}
         generatedRidesId={generatedRidesId}
         token={token}
-        onRideSelect={() => setState(prev => ({ ...prev, showParticipantsModal: false }))}
+        onRideSelect={() => patchState({ showParticipantsModal: false })}
         username={username}
         currentUsername={currentUsername}
       />
