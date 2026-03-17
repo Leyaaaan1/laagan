@@ -22,6 +22,20 @@ export const useRouteMapLogic = (generatedRidesId, token) => {
     requestLocationPermission();
   }, [generatedRidesId, token]);
 
+  const updateUserLocationOnMap = (webViewRef, location) => {
+    if (!webViewRef.current || !location) return;
+
+    // Also keep a window-level copy so orientMapToPoint can use it
+    const script = `
+        window.userCurrentLocation = ${JSON.stringify(location)};
+        if (typeof window.updateUserLocation === 'function') {
+            window.updateUserLocation(${JSON.stringify(location)});
+        }
+        true;
+    `;
+    webViewRef.current.injectJavaScript(script);
+  };
+
   const requestLocationPermission = async () => {
     try {
       if (Platform.OS === 'android') {
@@ -57,13 +71,13 @@ export const useRouteMapLogic = (generatedRidesId, token) => {
     const quickOptions = {
       enableHighAccuracy: false,  // Use network/WiFi for speed
       timeout: 5000,
-      maximumAge: 60000  // Accept cached location up to 1 minute old
+      maximumAge: 60000, // Accept cached location up to 1 minute old
     };
 
     const accurateOptions = {
       enableHighAccuracy: true,
       timeout: 10000,
-      maximumAge: 30000
+      maximumAge: 30000,
     };
 
     // First attempt: Quick location (network-based)
@@ -71,22 +85,14 @@ export const useRouteMapLogic = (generatedRidesId, token) => {
       (position) => {
         const { latitude, longitude } = position.coords;
         setUserLocation({ lat: latitude, lng: longitude });
-        console.log('Quick location acquired:', latitude, longitude);
       },
       (error) => {
-        console.log('Quick location failed, trying high accuracy...', error.message);
-
         // Second attempt: High accuracy GPS
         Geolocation.getCurrentPosition(
           (position) => {
             const { latitude, longitude } = position.coords;
             setUserLocation({ lat: latitude, lng: longitude });
             console.log('High accuracy location acquired:', latitude, longitude);
-          },
-          (error) => {
-            console.warn('Location acquisition failed:', error.message);
-            // Don't show alert - just log the error
-            // The map will work without user location marker
           },
           accurateOptions
         );
@@ -107,10 +113,7 @@ export const useRouteMapLogic = (generatedRidesId, token) => {
       }
 
       setRouteData(data);
-      console.log('Route data loaded successfully:', data);
-
     } catch (error) {
-      const errorMessage = error.message || 'Failed to load route data';
       setError(errorMessage);
       Alert.alert(
         'Route Loading Error',
@@ -126,17 +129,10 @@ export const useRouteMapLogic = (generatedRidesId, token) => {
   };
 
   const handleWebViewLoad = (webViewRef, routeData, startingPoint, endingPoint, stopPoints, userLocation) => {
-    console.log('WebView loaded');
-    console.log('Injecting points:', { startingPoint, endingPoint, stopPoints });
 
     if (webViewRef.current && routeData) {
-      console.log('Injecting route data into WebView');
 
       const script = `
-                console.log('=== INJECTION START ===');
-                console.log('Received startingPoint:', ${JSON.stringify(startingPoint)});
-                console.log('Received endingPoint:', ${JSON.stringify(endingPoint)});
-                console.log('Received stopPoints:', ${JSON.stringify(stopPoints)});
                 
                 if (typeof window.loadRouteData === 'function') {
                     window.loadRouteData(
@@ -157,24 +153,18 @@ export const useRouteMapLogic = (generatedRidesId, token) => {
     }
   };
 
-  const handleWebViewMessage = (event, setError, handleWebViewLoad) => {
+  const handleWebViewMessage = (event, setError, onWebViewLoad) => {
     try {
       const message = JSON.parse(event.nativeEvent.data);
-      console.log('WebView message:', message);
-
       if (message.type === 'error') {
-        console.error('Map error:', message.message);
-        setError(message.message);
       } else if (message.type === 'mapReady') {
-        console.log('Map is ready');
+        // Call the full onWebViewLoad callback (which has all coords in closure)
         if (routeData) {
-          handleWebViewLoad();
+          onWebViewLoad();
         }
       } else if (message.type === 'routeLoaded') {
-        console.log('Route loaded successfully:', message);
       }
     } catch (error) {
-      console.log('Non-JSON WebView message:', event.nativeEvent.data);
     }
   };
 
@@ -192,5 +182,6 @@ export const useRouteMapLogic = (generatedRidesId, token) => {
     handleWebViewLoad,
     handleWebViewMessage,
     handleWebViewError,
+    updateUserLocationOnMap,
   };
 };

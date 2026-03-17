@@ -42,24 +42,22 @@ const RiderPage = ({ route, navigation }) => {
   const [activeRideLoading, setActiveRideLoading] = useState(false);
 
   useEffect(() => {
-    fetchActiveRide();
+    let cancelled = false;
+    const run = async () => {
+      try {
+        setActiveRideLoading(true);
+        const result = await getActiveRide(token);
+        if (!cancelled) setActiveRide(result);
+      } catch (error) {
+        if (!cancelled) setActiveRide(null);
+      } finally {
+        if (!cancelled) setActiveRideLoading(false);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
   }, [token]);
 
-
-  const fetchActiveRide = async () => {
-    try {
-      setActiveRideLoading(true);
-      const result = await getActiveRide(token);
-      setActiveRide(result);
-    } catch (error) {
-      console.error('Error fetching active ride:', error);
-      setActiveRide(null);
-    } finally {
-      setActiveRideLoading(false);
-    }
-  };
-
-  // Navigate immediately with list data — RideStep4 fetches full details itself
   const handleRideSelect = (ride) => {
     navigation.navigate('RideStep4', {
       generatedRidesId: ride.generatedRidesId,
@@ -74,6 +72,10 @@ const RiderPage = ({ route, navigation }) => {
       username: ride.username,
       currentUsername: username,
     });
+  };
+
+  const handleCreateRide = () => {
+    navigation.navigate('CreateRide', { token, username });
   };
 
   return (
@@ -148,6 +150,29 @@ const RiderPage = ({ route, navigation }) => {
         ) : (
           <Text style={{ color: '#666', fontSize: 14 }}>No active ride</Text>
         )}
+      </TouchableOpacity>
+
+      {/* Create Ride Button */}
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={handleCreateRide}
+        style={{
+          marginHorizontal: 16,
+          marginBottom: 10,
+          backgroundColor: '#8c2323',
+          borderRadius: 8,
+          paddingVertical: 12,
+          paddingHorizontal: 16,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+        }}
+      >
+        <FontAwesome name="plus" size={14} color="#fff" />
+        <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>
+          Create Ride
+        </Text>
       </TouchableOpacity>
 
       {/* Rides List */}

@@ -29,6 +29,8 @@ public class LocationController {
         List<Map<String, Object>> results = nominatimService.searchLocation(query);
         return ResponseEntity.ok(results);
     }
+
+    //this is for landmark location
     @GetMapping("/search-landmark")
     public ResponseEntity<List<Map<String, Object>>> searchCityOrLandmark(@RequestParam("query") String query) {
         List<Map<String, Object>> results = nominatimService.searchCityOrLandmark(query);
@@ -37,6 +39,7 @@ public class LocationController {
 
 
 
+    //this is for barangay location
     @GetMapping("/reverse")
     public ResponseEntity<String> reverseGeocode(
             @RequestParam("lat") double lat,
