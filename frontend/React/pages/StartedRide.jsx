@@ -4,7 +4,6 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import {processRideCoordinates} from '../utilities/CoordinateUtils';
 import startedRide from '../styles/screens/startedRide';
 import rideRoutes from '../styles/screens/rideRoutes';
-import modal from '../styles/components/modal';
 import feedback from '../styles/base/feedback';
 import RouteMapView from '../utilities/route/view/RouteMapView';
 

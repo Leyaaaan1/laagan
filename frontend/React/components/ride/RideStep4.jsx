@@ -5,7 +5,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { fetchRideMapImage, getRideDetails, getLocationImage } from '../../services/rideService';
-import ParticipantListModal from './modal/ParticipantListModal';
+import ParticipantList from './modal/ParticipantList';
 import { startService } from '../../services/startService';
 import RouteMapView from '../../utilities/route/view/RouteMapView';
 import { processRideCoordinates } from '../../utilities/CoordinateUtils';
@@ -15,12 +15,8 @@ import header from '../../styles/base/header';
 import badges from '../../styles/base/badges';
 import rideStep4Styles from '../../styles/screens/rideStep4';
 import mapStyles from '../../styles/components/mapStyles';
-import {
-  formatDate,
-  getLocationDisplayName,
-  getRideTypeIcon,
-} from './utilities/RideStepUtils';
-import useJoinRide from './utilities/RideHandler';
+import {formatDate, getLocationDisplayName, getRideTypeIcon,} from './utilities/RideStepUtils';
+import useJoinRide from './modal/RideHandler';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -316,7 +312,7 @@ const RideStep4 = (props) => {
       </View>
 
       {/* ── Modals ── */}
-      <ParticipantListModal
+      <ParticipantList
         visible={state.showParticipantsModal}
         onClose={() => patchState({ showParticipantsModal: false })}
         participants={participants}

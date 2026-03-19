@@ -195,28 +195,6 @@ export const createRide = async (rideData, token) => {
 };// Alternative version using axios (if you're using axios instead of fetch)
 
 
-export const getCurrentRiderType = async (token) => {
-    try {
-        const response = await fetch(`${API_BASE_URL}/riders/current-rider-type`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            return { success: true, data };
-        } else {
-            const errorData = await response.json();
-            return { success: false, message: errorData.message };
-        }
-    } catch (error) {
-        console.error('API error:', error);
-        return { success: false, message: 'Network error occurred' };
-    }
-};
 
 
 

@@ -4,12 +4,12 @@ import RideStep1 from '../components/ride/RideStep1';
 import RideStep2 from '../components/ride/RideStep2';
 import RideStep3 from '../components/ride/RideStep3';
 import RideStep4 from '../components/ride/RideStep4';
-import useCreateRide from '../components/ride/utilities/UseCreateRide';
+import createRideUtils from '../components/ride/utilities/CreateRideUtils';
 
 const CreateRide = ({ route, navigation }) => {
   const { token, username } = route.params;
 
-  const ride = useCreateRide({ token, username });
+  const ride = createRideUtils({ token, username });
 
   return (
     <View style={{ flex: 1 }}>
