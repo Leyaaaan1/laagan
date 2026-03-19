@@ -10,9 +10,9 @@ import {
 
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
-import SearchHeader from '../components/ride/util/SearchHeader';
+import SearchHeader from '../components/ride/utilities/SearchHeader';
 import { getActiveRide } from '../services/startService';
-import ScannerHeader from '../components/ride/util/SqannerHeader';
+import ScannerHeader from '../components/ride/utilities/ScannerHeader';
 import UnifiedRidesModal from '../components/ride/modal/UnifiedRidesModal';
 import InlineRidesList from '../components/ride/modal/InlineRidesList';
 import layout from '../styles/base/layout';
@@ -101,8 +101,8 @@ const RiderPage = ({ route, navigation }) => {
               minimumFontScale={0.6}
             >
               {username?.toUpperCase()}
-            </Text>
-            {loading ? (
+                          </Text>
+                          {loading ? (
               <ActivityIndicator color="#fff" size="small" style={{ marginTop: 4 }} />
             ) : (
               <View style={badges.riderTypeBadge}>

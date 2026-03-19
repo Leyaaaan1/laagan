@@ -21,6 +21,7 @@ const modal = StyleSheet.create({
 
   // ── Container ────────────────────────────────
   container: {
+    flex: 1,
     backgroundColor: colors.surfaceDark,
     borderRadius: 24,
     width: '90%',

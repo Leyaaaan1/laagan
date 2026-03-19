@@ -32,15 +32,13 @@ public class StartedUtil {
 
     private final StartedRideRepository startedRideRepository;
 
-    private final RidesService ridesService;
     private final RidesUtil ridesUtil;
 
-    public StartedUtil(RiderUtil riderUtil, ParticipantLocationRepository participantLocationRepository, LocationService locationService, StartedRideRepository startedRideRepository, RidesService ridesService, RidesUtil ridesUtil) {
+    public StartedUtil(RiderUtil riderUtil, ParticipantLocationRepository participantLocationRepository, LocationService locationService, StartedRideRepository startedRideRepository, RidesUtil ridesUtil) {
         this.riderUtil = riderUtil;
         this.participantLocationRepository = participantLocationRepository;
         this.locationService = locationService;
         this.startedRideRepository = startedRideRepository;
-        this.ridesService = ridesService;
         this.ridesUtil = ridesUtil;
     }
 
@@ -105,31 +103,7 @@ public class StartedUtil {
     }
 
     public RideResponseDTO mapToRideResponseDTO(Rides ride) {
-        return new RideResponseDTO(
-                ride.getGeneratedRidesId(),
-                ride.getLocationName(),
-                ride.getRidesName(),
-                ride.getRiderType(),
-                ride.getDistance(),
-                ride.getDate(),
-                ride.getLocation().getY(),
-                ride.getLocation().getX(),
-                ride.getParticipants().stream().map(Rider::getUsername).toList(),
-                ride.getDescription(),
-                ride.getStartingPointName(),
-                ride.getStartingLocation().getY(),
-                ride.getStartingLocation().getX(),
-                ride.getEndingPointName(),
-                ride.getEndingLocation().getY(),
-                ride.getEndingLocation().getX(),
-                ride.getMapImageUrl(),
-                ride.getMagImageStartingLocation(),
-                ride.getMagImageEndingLocation(),
-                ride.getUsername().getUsername(),
-                ride.getRouteCoordinates(),
-                ridesUtil.mapStopPointsToDTOs(ride.getStopPoints()),
-                ride.getActive()
-        );
+        return ridesUtil.mapToResponseDTO(ride);
     }
 
     public StartRideResponseDTO buildStartRideResponse(

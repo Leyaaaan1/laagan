@@ -27,10 +27,11 @@ public class LocationService {
 
     }
 
-    public Point createPoint(double longitude, double latitude) {
-        GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
+    private static final GeometryFactory GEOMETRY_FACTORY =
+            new GeometryFactory(new PrecisionModel(), 4326);
 
-        Point point = geometryFactory.createPoint(new Coordinate(longitude, latitude));
+    public Point createPoint(double longitude, double latitude) {
+        Point point = GEOMETRY_FACTORY.createPoint(new Coordinate(longitude, latitude));
         point.setSRID(4326);
         return point;
     }

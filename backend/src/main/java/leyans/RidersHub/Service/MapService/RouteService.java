@@ -32,10 +32,12 @@ public class RouteService {
 
     private final RidesRepository ridesRepository;
 
-    public RouteService(RidesRepository ridesRepository) {
+    public RouteService(RidesRepository ridesRepository,
+                        RestTemplate restTemplate,
+                        ObjectMapper objectMapper) {
         this.ridesRepository = ridesRepository;
-        this.restTemplate = new RestTemplate();
-        this.objectMapper = new ObjectMapper();
+        this.restTemplate = restTemplate;
+        this.objectMapper = objectMapper;
     }
 
     /**

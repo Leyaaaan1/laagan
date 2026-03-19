@@ -1,6 +1,11 @@
 package leyans.RidersHub.Utility;
 
 
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 import jakarta.persistence.EntityNotFoundException;
 import leyans.RidersHub.DTO.Request.JoinDTO.JoinerDto;
 import leyans.RidersHub.Repository.Auth.InviteRequestRepository;
@@ -12,9 +17,14 @@ import leyans.RidersHub.model.Rides;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
+
 
 @Service
 public class ParticipantUtil {
@@ -31,6 +41,16 @@ public class ParticipantUtil {
         this.joinRequestRepository = joinRequestRepository;
         this.riderUtil = riderUtil;
     }
+
+
+
+    @Transactional(readOnly = true)
+    public String getQrCodeUrlByRideId(Integer generatedRidesId) {
+        InviteRequest invite = findInviteByRideId(generatedRidesId);
+//        validateInviteNotExpired(invite);
+        return invite.getQr();
+    }
+
 
 
     public InviteRequest findInviteByToken(String inviteToken) {
@@ -105,29 +125,21 @@ public class ParticipantUtil {
                 .collect(Collectors.toList());
     }
 
-
     @Transactional(readOnly = true)
     public String getInviteUrlByRideId(Integer generatedRidesId) {
         InviteRequest invite = findInviteByRideId(generatedRidesId);
-        validateInviteNotExpired(invite);
+//        validateInviteNotExpired(invite);
         return invite.getInviteLink();
-    }
-
-
-    @Transactional(readOnly = true)
-    public String getQrCodeUrlByRideId(Integer generatedRidesId) {
-        InviteRequest invite = findInviteByRideId(generatedRidesId);
-        validateInviteNotExpired(invite);
-        return invite.getQr();
     }
 
 
     @Transactional(readOnly = true)
     public String getQrCodeBase64ByRideId(Integer rideId) {
         InviteRequest invite = findInviteByRideId(rideId);
-        validateInviteNotExpired(invite);
+//        validateInviteNotExpired(invite);
         return invite.getQrCodeBase64();
     }
+
 
 
 

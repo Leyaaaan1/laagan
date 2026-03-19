@@ -52,6 +52,7 @@ public class RidesUtil {
                     LocalDateTime.now().plusMonths(1)
             );
 
+
             return saved;
         } catch (Exception ex) {
             throw new RuntimeException("Failed to save ride: " + ex.getMessage(), ex);
@@ -174,17 +175,18 @@ public class RidesUtil {
     }
 
     public int generateUniqueRideId() {
-        int randomFourDigitNumber;
-        boolean idExists;
-
-        do {
-            randomFourDigitNumber = 1000 + (int)(Math.random() * 9000);
-            idExists = ridesRepository.findByGeneratedRidesId(randomFourDigitNumber).isPresent();
-        } while (idExists);
-
-        return randomFourDigitNumber;
+        int maxAttempts = 20;
+        for (int i = 0; i < maxAttempts; i++) {
+            int candidate = 1000 + (int)(Math.random() * 9000);
+            if (!ridesRepository.findByGeneratedRidesId(candidate).isPresent()) {
+                return candidate;
+            }
+        }
+        throw new IllegalStateException(
+                "Could not generate a unique ride ID after " + maxAttempts +
+                        " attempts. Consider switching to a database sequence."
+        );
     }
-
 
 
 }

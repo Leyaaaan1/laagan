@@ -48,12 +48,7 @@ public class DirectionsService {
 
         String url = ORS_BASE_URL + "/v2/directions/" + profile + "/geojson";
 
-        System.out.println("=== ORS API REQUEST DEBUG ===");
-        System.out.println("URL: " + url);
-        System.out.println("API Key configured: " + (apiKey != null && !apiKey.isEmpty()));
-        System.out.println("Start coordinates: [" + startLng + ", " + startLat + "]");
-        System.out.println("End coordinates: [" + endLng + ", " + endLat + "]");
-        System.out.println("Stop points count: " + (stopPoints != null ? stopPoints.size() : 0));
+
 
         if (!isValidCoordinate(startLng, startLat) || !isValidCoordinate(endLng, endLat)) {
             throw new IllegalArgumentException("Invalid start or end coordinates: start=[" + startLng + "," + startLat + "], end=[" + endLng + "," + endLat + "]");
@@ -278,19 +273,6 @@ public class DirectionsService {
         return requestBody;
     }
 
-    private Map<String, Object> createProfileParams() {
-        Map<String, Object> profileParams = new HashMap<>();
-
-        // Only use supported parameters for ORS API v2
-        // Removed unsupported parameters like maximum_speed
-
-        // Basic weightings that are commonly supported
-        Map<String, Object> weightings = new HashMap<>();
-        // Use only well-supported weighting parameters
-        profileParams.put("weightings", weightings);
-
-        return profileParams;
-    }
 
     private void handleHttpClientError(HttpClientErrorException e) {
         int statusCode = e.getStatusCode().value();

@@ -5,7 +5,7 @@ import RiderPage from '../pages/RiderPage';
 import CreateRide from '../pages/CreateRide';
 import RideStep4 from '../components/ride/RideStep4';
 import StartedRide from '../pages/StartedRide';
-import RideRoutesPage from '../components/ride/util/RideRoutesPage';
+import RideRoutesPage from '../components/ride/utilities/RideRoutesPage';
 import RideSwipeContainer from './RideSwipeContainer';
 const Stack = createNativeStackNavigator();
 
