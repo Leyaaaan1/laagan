@@ -15,7 +15,7 @@ const rideCard = StyleSheet.create({
   container: {
     backgroundColor: colors.surface,
     padding: 15,
-    borderRadius: 12,
+    borderRadius: 15,
     marginBottom: 15,
   },
 

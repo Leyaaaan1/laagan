@@ -15,18 +15,9 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import rideCard from '../../../styles/components/rideCard';
 import badges from '../../../styles/base/badges';
 import colors from '../../../styles/tokens/colors';
+import { getRideTypeIcon } from '../../../utilities/rideTypes';
 
-const getRideTypeIcon = (riderType) => {
-  switch (riderType) {
-    case 'car':         return 'car';
-    case 'motor':
-    case 'Motorcycle':  return 'motorcycle';
-    case 'bike':
-    case 'Bicycle':     return 'bicycle';
-    case 'cafe Racers': return 'rocket';
-    default:            return 'user';
-  }
-};
+
 
 const formatDate = (date) => {
   if (!date) return null;
@@ -47,10 +38,7 @@ const RideCard = ({ item, onPress, variant = 'full', showCreator = true }) => {
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={() => onPress(item)}
-      style={[
-        rideCard.container,
-        isCompact && { marginBottom: 10 },
-      ]}
+      style={rideCard.container}
     >
       {/* Location */}
       <Text style={rideCard.locationName} numberOfLines={1}>

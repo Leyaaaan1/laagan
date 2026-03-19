@@ -14,25 +14,14 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import SearchHeader from './utilities/SearchHeader';
 import { getActiveRide } from '../services/startService';
 import ScannerHeader from './utilities/ScannerHeader';
-import UnifiedRides from '../components/ride/modal/UnifiedRides';
 import RidesList from '../components/ride/modal/RidesList';
 import layout from '../styles/base/layout';
 import header from '../styles/base/header';
 import badges from '../styles/base/badges';
-import buttons from '../styles/base/buttons';
 import { getMyProfile } from '../services/profileService';
+import colors from '../styles/tokens/colors';
+import { getRideTypeIcon } from '../utilities/rideTypes';
 
-const getRideTypeIcon = (type) => {
-  switch (type) {
-    case 'car':         return 'car';
-    case 'motor':
-    case 'Motorcycle':  return 'motorcycle';
-    case 'bike':
-    case 'Bicycle':     return 'bicycle';
-    case 'cafe Racers': return 'rocket';
-    default:            return 'user';
-  }
-};
 
 const ProfileAvatar = ({ profile, avatarStyle }) => {
   if (profile?.profilePictureUrl) {
@@ -62,7 +51,6 @@ const RiderPage = ({ route, navigation }) => {
 
   const [loading, setLoading]               = useState(true);
   const [profile, setProfile]               = useState(null);
-  const [myRidesModalVisible, setMyRidesModalVisible] = useState(false);
   const [activeRide, setActiveRide]         = useState(null);
   const [activeRideLoading, setActiveRideLoading]     = useState(false);
 
@@ -94,7 +82,6 @@ const RiderPage = ({ route, navigation }) => {
           setProfile(result.data);                  // ← read from result.data
         }
       } catch {
-        // non-critical — avatar falls back gracefully
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -176,15 +163,15 @@ const RiderPage = ({ route, navigation }) => {
           </View>
         </View>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
           <SearchHeader  token={token} username={username} navigation={navigation} />
           <ScannerHeader token={token} username={username} navigation={navigation} />
 
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleCreateRide}
-            style={buttons.primary}
-          >
+          <TouchableOpacity activeOpacity={0.8} onPress={handleCreateRide}  style={{
+            backgroundColor: colors.primary,
+            padding: 8,
+            borderRadius: 5,
+          }}>
             <FontAwesome name="plus" size={16} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -226,25 +213,7 @@ const RiderPage = ({ route, navigation }) => {
         />
       </View>
 
-      {/* My Rides Button */}
-      <View style={layout.bottomContainer}>
-        <TouchableOpacity
-          style={buttons.pill}
-          onPress={() => setMyRidesModalVisible(true)}
-        >
-          <Text style={buttons.textPrimary}>My Rides</Text>
-        </TouchableOpacity>
-      </View>
 
-      {/* My Rides Modal */}
-      <UnifiedRides
-        visible={myRidesModalVisible}
-        onClose={() => setMyRidesModalVisible(false)}
-        token={token}
-        onRideSelect={handleRideSelect}
-        mode="my"
-        pageSize={10}
-      />
     </View>
   );
 };

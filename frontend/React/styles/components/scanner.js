@@ -10,10 +10,9 @@ import { fontSize, fontWeight } from '../tokens/typography';
 
 const scanner = StyleSheet.create({
   scanButton: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 20,
+    backgroundColor: colors.primary,
+    padding: 8,
+    borderRadius: 5,
     alignItems: 'center',
     justifyContent: 'center',
   },

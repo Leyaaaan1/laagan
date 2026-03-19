@@ -15,8 +15,8 @@ import header from '../../styles/base/header';
 import badges from '../../styles/base/badges';
 import rideStep4Styles from '../../styles/screens/rideStep4';
 import mapStyles from '../../styles/components/mapStyles';
-import {formatDate, getLocationDisplayName, getRideTypeIcon,} from './utilities/RideStepUtils';
-import useJoinRide from './modal/RideHandler';
+import {formatDate, getLocationDisplayName, getRideTypeIcon} from './utilities/RideStepUtils';
+import useJoinRide from './utilities/RideHandler';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 

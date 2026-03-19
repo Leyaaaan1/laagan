@@ -43,37 +43,44 @@ const SearchHeader = ({ token, username, navigation }) => {
   return (
     <View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-        <TextInput
-          style={{
-            width: 100,
-            borderWidth: 1,
-            borderColor: colors.primary,
-            borderRadius: 5,
-            padding: 8,
-            color: '#fff',
-            fontSize: 14,
-          }}
-          placeholder="Ride ID"
-          placeholderTextColor="#ccc"
-          value={searchId}
-          onChangeText={setSearchId}
-          keyboardType="numeric"
-        />
-        <TouchableOpacity
-          onPress={handleSearch}
-          disabled={loading}
-          style={{
-            backgroundColor: colors.primary,
-            padding: 8,
-            borderRadius: 5,
-          }}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <FontAwesome name="search" size={16} color="#fff" />
-          )}
-        </TouchableOpacity>
+        <View style={{ position: 'relative' }}>
+          <TextInput
+            style={{
+              width: 100,
+              borderWidth: 1,
+              borderColor: colors.primary,
+              borderRadius: 5,
+              padding: 8,
+              paddingRight: 36,
+              color: '#fff',
+              fontSize: 14,
+            }}
+            placeholder="Ride ID"
+            placeholderTextColor="#ccc"
+            value={searchId}
+            onChangeText={setSearchId}
+            keyboardType="numeric"
+          />
+          <TouchableOpacity
+            onPress={handleSearch}
+            disabled={loading}
+            style={{
+              position: 'absolute',
+              right: 6,
+              top: 0,
+              bottom: 0,
+              justifyContent: 'center',
+              alignItems: 'center',
+              paddingHorizontal: 8,
+            }}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <FontAwesome name="search" size={16} color="#fff" />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
       {error ? (
         <Text style={{ color: colors.primary, marginTop: 4, fontSize: 12 }}>{error}</Text>

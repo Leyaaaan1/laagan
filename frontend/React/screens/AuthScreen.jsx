@@ -1,98 +1,120 @@
-import React, {useEffect, useState} from 'react';
-import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  Alert,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  KeyboardAvoidingView,
+  Platform,
+  StatusBar,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { loginUser, registerUser } from '../services/authService';
-import { BASE_URL  } from '@env';
+import { BASE_URL } from '@env';
 import inputs from '../styles/base/inputs';
+import buttons from '../styles/base/buttons';
+import text from '../styles/base/text';
+import layout from '../styles/base/layout';
+import colors from '../styles/tokens/colors';
+import spacing from '../styles/tokens/spacing';
 
 const AuthForm = ({
-                      isLogin,
-                      username,
-                      password,
-                      riderType,
-                      setUsername,
-                      setPassword,
-                      setRiderType,
-                      handleAuth,
-/*
-                      handleFacebookLogin,
-*/
-                      toggleMode,
-                      navigation,
+                    isLogin,
+                    username,
+                    password,
+                    riderType,
+                    setUsername,
+                    setPassword,
+                    setRiderType,
+                    handleAuth,
+                    toggleMode,
                   }) => (
+  <KeyboardAvoidingView
+    style={layout.center}
+    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+  >
+    {/* Title */}
+    <Text style={[text.titleCenter, { marginBottom: spacing.lg, letterSpacing: 1 }]}>
+      {isLogin ? 'WELCOME BACK' : 'CREATE ACCOUNT'}
+    </Text>
 
+    <Text style={[text.bodyMuted, { textAlign: 'center', marginBottom: spacing.lg }]}>
+      {isLogin
+        ? 'Sign in to continue laags'
+        : 'Join the community and start riding'}
+    </Text>
 
-    <View style={inputs.authContainer}>
-        <Text style={inputs.authTitle}>{isLogin ? 'Login' : 'Register'}</Text>
+    {/* Inputs */}
+    <TextInput
+      placeholder="Username"
+      placeholderTextColor="#64748b"
+      value={username}
+      onChangeText={setUsername}
+      style={inputs.auth}
+      autoCapitalize="none"
+    />
 
-        <TextInput
-            placeholder="Username"
-            placeholderTextColor="#64748b"
-            value={username}
-            onChangeText={setUsername}
-            style={inputs.authInput}
-            autoCapitalize="none"
-        />
+    <TextInput
+      placeholder="Password"
+      placeholderTextColor="#64748b"
+      value={password}
+      onChangeText={setPassword}
+      style={inputs.auth}
+      secureTextEntry
+    />
 
-        <TextInput
-            placeholder="Password"
-            placeholderTextColor="#64748b"
-            value={password}
-            onChangeText={setPassword}
-            style={inputs.authInput}
-            secureTextEntry
-        />
+    {!isLogin && (
+      <TextInput
+        placeholder="Rider Type"
+        placeholderTextColor="#64748b"
+        value={riderType}
+        onChangeText={setRiderType}
+        style={inputs.auth}
+      />
+    )}
 
-        {!isLogin && (
-            <TextInput
-                placeholder="Rider Type"
-                placeholderTextColor="#64748b"
-                value={riderType}
-                onChangeText={setRiderType}
-                style={inputs.authInput}
-            />
-        )}
+    {/* Primary action */}
+    <TouchableOpacity
+      style={[buttons.pill, { width: 280, marginBottom: spacing.sm }]}
+      onPress={handleAuth}
+    >
+      <Text style={[text.white, { fontSize: 16 }]}>
+        {isLogin ? 'Login' : 'Register'}
+      </Text>
+    </TouchableOpacity>
 
-        <View style={inputs.authButtonsContainer}>
-            <TouchableOpacity
-                style={inputs.authButton}
-                onPress={handleAuth}
-            >
-                <Text style={inputs.buttonText}>
-                    {isLogin ? 'Login' : 'Register'}
-                </Text>
-            </TouchableOpacity>
+    {/* Facebook — login only */}
+    {isLogin && (
+      <TouchableOpacity
+        style={[
+          buttons.pill,
+          { width: 280, marginBottom: spacing.sm, backgroundColor: '#1877F2' },
+        ]}
+      >
+        <Text style={[text.white, { fontSize: 16 }]}>Continue with Facebook</Text>
+      </TouchableOpacity>
+    )}
 
-            {/* Facebook Login Button - Only show on login */}
-            {isLogin && (
-                <TouchableOpacity
-                    style={[inputs.authButton, { backgroundColor: '#1877F2' }]}
-/*
-                    onPress={handleFacebookLogin}
-*/
-                >
-                    <Text style={inputs.buttonText}>
-                        Continue with Facebook
-                    </Text>
-                </TouchableOpacity>
-            )}
-
-            <TouchableOpacity
-                style={inputs.authToggleButton}
-                onPress={toggleMode}
-            >
-                <Text style={inputs.authToggleText}>
-                    {isLogin ? "Don't have an account? Register" : 'Already have an account? Login'}
-                </Text>
-            </TouchableOpacity>
-        </View>
-    </View>
+    {/* Toggle login / register */}
+    <TouchableOpacity
+      style={[buttons.ghost, { marginTop: spacing.xs }]}
+      onPress={toggleMode}
+    >
+      <Text style={text.muted}>
+        {isLogin
+          ? "Don't have an account? Register"
+          : 'Already have an account? Login'}
+      </Text>
+    </TouchableOpacity>
+  </KeyboardAvoidingView>
 );
+
 const AuthScreen = ({ navigation }) => {
-    const [isLogin, setIsLogin] = useState(true);
-    const [username, setUsername] = useState('lean');
-    const [password, setPassword] = useState('Lean');
-    const [riderType, setRiderType] = useState('');
+  const [isLogin, setIsLogin]     = useState(true);
+  const [username, setUsername]   = useState('lean');
+  const [password, setPassword]   = useState('Lean');
+  const [riderType, setRiderType] = useState('');
 
 
   useEffect(() => {
@@ -104,60 +126,56 @@ const AuthScreen = ({ navigation }) => {
     autoLogin();
   }, []);
 
-    const API_BASE_URL = BASE_URL;
-    console.log(API_BASE_URL);
-    // Regular username/password auth
-    const handleAuth = async () => {
-        try {
-            const result = isLogin
-                ? await loginUser(username, password)
-                : await registerUser(username, password, riderType);
+  const handleAuth = async () => {
+    try {
+      const result = isLogin
+        ? await loginUser(username, password)
+        : await registerUser(username, password, riderType);
 
-            if (result.success) {
-                if (result.data.token) {
-                    await AsyncStorage.setItem('userToken', result.data.token);
-                    await AsyncStorage.setItem('username', username);
-                }
-
-                Alert.alert(isLogin ? 'Login Successful' : 'Registration Successful');
-
-                if (isLogin && username) {
-                    navigation.navigate('RiderPage', {
-                        username: username,
-                        token: result.data.token,
-                    });
-                }
-                return true;
-            } else {
-                Alert.alert('Error', result.message || 'Operation failed');
-                return false;
-            }
-        } catch (error) {
-            console.error(error);
-            Alert.alert('Error', 'Please try again later.');
-            return false;
+      if (result.success) {
+        if (result.data.token) {
+          await AsyncStorage.setItem('userToken', result.data.token);
+          await AsyncStorage.setItem('username', username);
         }
-    };
 
-    const toggleMode = () => setIsLogin((prev) => !prev);
+        Alert.alert(isLogin ? 'Login Successful' : 'Registration Successful');
 
-    return (
-        <AuthForm
-            isLogin={isLogin}
-            username={username}
-            password={password}
-            riderType={riderType}
-            setUsername={setUsername}
-            setPassword={setPassword}
-            setRiderType={setRiderType}
-            handleAuth={handleAuth}
-/*
-            handleFacebookLogin={handleFacebookLogin}
-*/
-            toggleMode={toggleMode}
-            navigation={navigation}
-        />
-    );
+        if (isLogin && username) {
+          navigation.navigate('RiderPage', {
+            username: username,
+            token: result.data.token,
+          });
+        }
+        return true;
+      } else {
+        Alert.alert('Error', result.message || 'Operation failed');
+        return false;
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', 'Please try again later.');
+      return false;
+    }
+  };
+
+  const toggleMode = () => setIsLogin((prev) => !prev);
+
+  return (
+    <View style={[layout.screen, { alignItems: 'center', justifyContent: 'center' }]}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.black} />
+      <AuthForm
+        isLogin={isLogin}
+        username={username}
+        password={password}
+        riderType={riderType}
+        setUsername={setUsername}
+        setPassword={setPassword}
+        setRiderType={setRiderType}
+        handleAuth={handleAuth}
+        toggleMode={toggleMode}
+      />
+    </View>
+  );
 };
 
 export default AuthScreen;

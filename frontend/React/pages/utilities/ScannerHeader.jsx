@@ -129,7 +129,7 @@ const ScannerHeader = ({ token, username }) => {
         onPress={openScanner}
         activeOpacity={0.7}
       >
-        <FontAwesome name="qrcode" size={20} color="#fff" />
+        <FontAwesome name="qrcode" size={16} color="#fff" />
       </TouchableOpacity>
 
       <Modal

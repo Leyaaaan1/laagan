@@ -1,10 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// components/ride/modal/RidesList.jsx
-//
-// Used by RiderPage — FlatList with pull-to-refresh and infinite scroll.
-// mode="all"  → fetchRides   (GET /rides)
-// mode="my"   → fetchMyRides (GET /my-rides)
-// ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {

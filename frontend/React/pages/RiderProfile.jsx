@@ -168,22 +168,7 @@ export default function RiderProfile({ route, navigation }) {
           <Text style={profileStyles.timestamp}>Member since {formattedDate}</Text>
         )}
 
-        {/* Edit button */}
-        <TouchableOpacity
-          style={{
-            marginHorizontal: 16,
-            marginTop: 20,
-            backgroundColor: '#cc0000',
-            borderRadius: 12,
-            paddingVertical: 14,
-            alignItems: 'center',
-          }}
-          onPress={() => navigation?.navigate('RiderProfileEdit', { profile, token })}
-        >
-          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>
-            Edit Profile
-          </Text>
-        </TouchableOpacity>
+
 
         {/* My Rides */}
         <SectionCard

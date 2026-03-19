@@ -4,7 +4,7 @@ import RideStep1 from '../components/ride/RideStep1';
 import RideStep2 from '../components/ride/RideStep2';
 import RideStep3 from '../components/ride/RideStep3';
 import RideStep4 from '../components/ride/RideStep4';
-import createRideUtils from '../components/ride/utilities/CreateRideUtils';
+import createRideUtils from './utilities/CreateRideUtils';
 
 const CreateRide = ({ route, navigation }) => {
   const { token, username } = route.params;
