@@ -1,7 +1,7 @@
 package leyans.RidersHub.Service.InteractionRequest;
 
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import leyans.RidersHub.Repository.RidesRepository;
 import leyans.RidersHub.Utility.RiderUtil;
 import leyans.RidersHub.model.Rider;

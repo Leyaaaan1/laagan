@@ -22,7 +22,7 @@ public class Rider {
     @Column(name = "enabled", nullable = false)
     private Boolean enabled;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rider_type", referencedColumnName = "rider_type")
     private RiderType riderType;
 

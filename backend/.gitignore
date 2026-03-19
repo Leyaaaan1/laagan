@@ -71,7 +71,7 @@ local.properties
 *.keystore
 !debug.keystore
 .kotlin/
-.env
+src/main/resources/.env
 .env.react
 # node.js
 #

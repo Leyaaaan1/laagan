@@ -47,11 +47,7 @@ const ScannerHeader = ({ token, username }) => {
         return;
       }
 
-      const result = await joinService.joinRideByToken(
-        inviteToken,
-        username,
-        token,
-      );
+      const result = await joinService.joinRideByToken(inviteToken, token);
       console.log('Join ride result:', result);
 
       setScannerVisible(false);

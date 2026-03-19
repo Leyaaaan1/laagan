@@ -16,20 +16,18 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
-public class    RiderService {
+public class RiderService {
 
-    @Autowired
     private final RiderRepository riderRepository;
-    @Autowired
     private final RiderTypeRepository riderTypeRepository;
-
-    @Autowired
     private final PasswordEncoder passwordEncoder;
 
 
 
 
-    public RiderService(RiderRepository riderRepository, RiderTypeRepository riderTypeRepository, PasswordEncoder passwordEncoder) {
+    public RiderService(RiderRepository riderRepository,
+                        RiderTypeRepository riderTypeRepository,
+                        PasswordEncoder passwordEncoder) {
         this.riderRepository = riderRepository;
         this.riderTypeRepository = riderTypeRepository;
         this.passwordEncoder = passwordEncoder;

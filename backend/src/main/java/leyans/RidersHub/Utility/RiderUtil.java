@@ -60,11 +60,5 @@ public class RiderUtil {
     }
 
 
-    public List<StartedRide> findStartedRidesByRider(Rider rider) {
-        return startedRideRepository.findAll().stream()
-                .filter(sr -> sr.getUsername().equals(rider) ||
-                        sr.getRide().getParticipants().contains(rider))
-                .toList();
-    }
 
 }

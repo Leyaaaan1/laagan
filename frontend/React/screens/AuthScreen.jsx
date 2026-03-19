@@ -88,7 +88,6 @@ const AuthForm = ({
         </View>
     </View>
 );
-
 const AuthScreen = ({ navigation }) => {
     const [isLogin, setIsLogin] = useState(true);
     const [username, setUsername] = useState('lean');
@@ -105,7 +104,7 @@ const AuthScreen = ({ navigation }) => {
     autoLogin();
   }, []);
 
-    const API_BASE_URL = BASE_URL  || 'http://localhost:8080';
+    const API_BASE_URL = BASE_URL;
     console.log(API_BASE_URL);
     // Regular username/password auth
     const handleAuth = async () => {

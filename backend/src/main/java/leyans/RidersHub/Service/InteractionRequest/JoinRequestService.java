@@ -71,7 +71,7 @@ public class JoinRequestService {
 
         // map all join requests to DTOs
         return participantUtil.listJoinRequestsByRideId(generatedRidesId).stream()
-                .map(j -> new JoinerDto(j.getRequester().getUsername(), j.getJoinStatus(), j.getRequestedAt()))
+                .map(JoinerDto::new)  // ← use the full constructor that sets joinId
                 .collect(Collectors.toList());
     }
 
@@ -80,9 +80,9 @@ public class JoinRequestService {
         JoinRequest joinRequest = joinRequestRepository.findById(joinId)
                 .orElseThrow(() -> new EntityNotFoundException("Join request not found with ID: " + joinId));
 
-        // Validate only ride creator can approve
         String currentUsername = riderUtil.getCurrentUsername();
-        participantUtil.validateRideCreator(joinRequest.getGeneratedRidesId().getGeneratedRidesId(), currentUsername);
+        participantUtil.validateRideCreator(
+                joinRequest.getGeneratedRidesId().getGeneratedRidesId(), currentUsername);
 
         if (joinRequest.getJoinStatus() != JoinRequest.JoinStatus.PENDING) {
             throw new IllegalStateException("Can only approve PENDING requests");
@@ -91,9 +91,12 @@ public class JoinRequestService {
         joinRequest.setJoinStatus(JoinRequest.JoinStatus.APPROVED);
         JoinRequest savedRequest = joinRequestRepository.save(joinRequest);
 
+        savedRequest.getRequester().getUsername();
+        savedRequest.getGeneratedRidesId().getGeneratedRidesId();
+
         rideParticipantService.addParticipantToRide(
-                joinRequest.getGeneratedRidesId().getGeneratedRidesId(),
-                joinRequest.getRequester().getUsername()
+                savedRequest.getGeneratedRidesId().getGeneratedRidesId(),
+                savedRequest.getRequester().getUsername()
         );
 
         return savedRequest;
@@ -104,23 +107,21 @@ public class JoinRequestService {
         JoinRequest joinRequest = joinRequestRepository.findById(joinId)
                 .orElseThrow(() -> new EntityNotFoundException("Join request not found with ID: " + joinId));
 
-        // Validate only ride creator can reject
         String currentUsername = riderUtil.getCurrentUsername();
-        participantUtil.validateRideCreator(joinRequest.getGeneratedRidesId().getGeneratedRidesId(), currentUsername);
+        participantUtil.validateRideCreator(
+                joinRequest.getGeneratedRidesId().getGeneratedRidesId(), currentUsername);
 
         if (joinRequest.getJoinStatus() != JoinRequest.JoinStatus.PENDING) {
             throw new IllegalStateException("Can only reject PENDING requests");
         }
 
         joinRequest.setJoinStatus(JoinRequest.JoinStatus.REJECTED);
-        return joinRequestRepository.save(joinRequest);
+        JoinRequest savedRequest = joinRequestRepository.save(joinRequest);
+
+        savedRequest.getRequester().getUsername();
+        savedRequest.getGeneratedRidesId().getGeneratedRidesId();
+
+        return savedRequest;
     }
-
-
-
-
-
-
-
 
 }

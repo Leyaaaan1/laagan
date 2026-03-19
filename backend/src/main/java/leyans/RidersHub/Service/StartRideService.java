@@ -70,9 +70,8 @@ public class StartRideService {
 
         startedRide = startedRideRepository.save(startedRide);
 
-        Rides updateStatus = new Rides();
-        updateStatus.setActive(true);
-        ridesRepository.save(updateStatus);
+        ride.setActive(true);
+        ridesRepository.save(ride);
 
         // Initialize locations for ALL participants with the SAME starting point
         List<ParticipantLocation> participantLocations = startedUtil.initializeParticipantLocations(
@@ -90,11 +89,12 @@ public class StartRideService {
     public void deactivateRide(Integer generatedRidesId) {
         try {
             ridesRepository.deactivateRide(generatedRidesId);
-            startedRideRepository.deleteAll();
+            startedRideRepository
+                    .findByRideGeneratedRidesId(generatedRidesId)
+                    .ifPresent(startedRideRepository::delete);
         } catch (Exception e) {
             throw new RuntimeException("Failed to deactivate ride: " + e.getMessage());
         }
     }
-
 
 }

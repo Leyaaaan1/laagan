@@ -219,6 +219,8 @@ public class RidesService {
 
         Rides savedRide = ridesUtil.saveRideWithTransaction(newRide, creator);
 
+        System.out.println("Ride created with ID: " + savedRide.getGeneratedRidesId());
+
         return ridesUtil.mapToResponseDTO(savedRide);
     }
 

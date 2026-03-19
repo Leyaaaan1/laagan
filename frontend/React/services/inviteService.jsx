@@ -11,7 +11,7 @@ export const inviteService = {
 
     getQrCodeUrl: async (generatedRidesId, token) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/invite/${generatedRidesId}/qr-url`, {
+            const response = await fetch(`${API_BASE_URL}/invite-request/${generatedRidesId}/qr-url`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -34,7 +34,7 @@ export const inviteService = {
 
     getQrCodeBase64: async (generatedRidesId, token) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/invite/${generatedRidesId}/qr-base64`, {
+            const response = await fetch(`${API_BASE_URL}/invite-request/${generatedRidesId}/qr-base64`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -57,7 +57,7 @@ export const inviteService = {
 
     getInviteDetails: async (generatedRidesId, token) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/invite/${generatedRidesId}/invites`, {
+            const response = await fetch(`${API_BASE_URL}/invite-request/${generatedRidesId}/invites`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

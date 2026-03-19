@@ -37,6 +37,7 @@ const ParticipantListModal = ({
     qrCodeBase64: '',
     inviteLink: '',
     loadingQr: false,
+
   });
 
   const isOwner = username === currentUsername;
@@ -380,7 +381,7 @@ const ParticipantListModal = ({
 
             {/* Requests Tab */}
             {state.activeTab === 'requests' && isOwner && (
-              <>
+              <View style={{ flex: 1 }}>
                 {pendingCount > 0 && (
                   <TouchableOpacity
                     style={[modal.qrActionButton, { marginBottom: 16 }]}
@@ -408,6 +409,7 @@ const ParticipantListModal = ({
                     data={state.joinRequests}
                     renderItem={renderRequestItem}
                     keyExtractor={(item, index) => `request-${item.joinId || index}`}
+                    contentContainerStyle={{ paddingBottom: 8 }}
                     ListEmptyComponent={
                       <View style={feedback.emptyContainer}>
                         <FontAwesome name="inbox" size={48} color="#333" />
@@ -420,7 +422,7 @@ const ParticipantListModal = ({
                     showsVerticalScrollIndicator={false}
                   />
                 )}
-              </>
+              </View>
             )}
           </View>
 

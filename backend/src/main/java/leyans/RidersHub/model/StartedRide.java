@@ -16,11 +16,11 @@ public class StartedRide {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "initiator_username", referencedColumnName = "username", nullable = false)
     private Rider username;
 
-    @OneToOne(fetch = FetchType.EAGER)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rides_id", referencedColumnName = "generatedRidesId", nullable = false)
     private Rides ride;
 
