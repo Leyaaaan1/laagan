@@ -207,15 +207,18 @@ const RideStep4 = (props) => {
   }, [generatedRidesId, token]);
 
   useEffect(() => {
-    if (!generatedRidesId || !token || hasFetchedRef.current) { return; }
+    if (!generatedRidesId || !token || hasFetchedRef.current) return;
     patchState({ imageLoading: true });
     getRideDetails(generatedRidesId, token)
-      .then(details => patchState({
-        startMapImage:         details.magImageStartingLocation || state.startMapImage,
-        endMapImage:           details.magImageEndingLocation   || state.endMapImage,
-        distanceState:         details.distance                 || state.distanceState,
-        rideDetailsWithCoords: details,
-      }))
+      .then(details => {
+        setState(prev => ({
+          ...prev,
+          startMapImage:         details.magImageStartingLocation || prev.startMapImage,
+          endMapImage:           details.magImageEndingLocation   || prev.endMapImage,
+          distanceState:         details.distance                 || prev.distanceState,
+          rideDetailsWithCoords: details,
+        }));
+      })
       .catch(err => console.warn('Ride details fetch error:', err.message))
       .finally(() => patchState({ imageLoading: false }));
   }, [generatedRidesId, token]);

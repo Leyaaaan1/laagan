@@ -1,166 +1,181 @@
-# Real-Time Ride Sharing System
+# RidersHub — Real-Time Ride Sharing System
 
-## Current Progress
-- Create and display rides
-- Interactive **homepage** and **map interface**
-- **Add locations** via **Nominatim API**
-- **Rate limiting** with **Bucket4j** (1 request/sec, Redis-backed)
-- **Mapbox integration**: capture and view map snapshots
-- **Cloudinary integration**: upload and store map images
-- **JWT-based authentication**: secure API access with token-based login
-- **PSGC mapping**: match coordinates to barangays using PSA official codes
-- **Redis cache**: stores API responses and manages rate limits for Nominatim, Mapbox, and Wikimedia APIs
-- **Wikimedia API**: fetches location images and info, with Redis caching and rate limiting
-- (Soon) **Redis**: for storing and managing real-time user locations
-- (Soon) **WebSocket**: for live ride and location updates
+A mobile ride creation and discovery app built for Mindanao riders. Create rides, set routes with stops, invite others, track participants in real time, and explore locations with map snapshots and photos.
 
-## Features
-- **React Native**: Mobile application interface
-- **Spring Boot**: Backend REST API
-- **PostgreSQL and PostGIS**: Database with spatial support
-- **Spring Security and JWT**: Token-based authentication and role access control
-- **Spring Hibernate & Hibernate Spatial**: ORM with spatial queries
-- **Mapbox**: Interactive maps & snapshot functionality
-- **Cloudinary**: Upload and manage map screenshots
-- **Nominatim API**: Location search and reverse geocoding
-- **Wikimedia API**: Location images and info, with Redis caching and rate limiting
-- **Bucket4j**: Redis-backed rate limiter for API usage compliance (Nominatim, Mapbox, Wikimedia)
-- **PSGC Data Integration**: Convert coordinates into barangay names and codes
-- **Redis Cache**: Caches geocoding, map, and Wikimedia results for performance and API quota management
+---
 
-## Overview
-This project focuses on building a real-time ride creation and discovery system. It integrates **Mapbox** for interactive maps, **Cloudinary** for storing map snapshots, and uses **Nominatim API** for geolocation. A **Bucket4j** rate limiter ensures compliance with Nominatim's usage policy (1 request per second). **JWT-based authentication** secures API access. It also uses official **PSGC data** from the [Philippine Statistics Authority](https://psa.gov.ph/classification/psgc) to convert coordinates into barangay-level locations. **Redis** integration for managing live user locations is planned.
+## Project Structure
 
-## Project Setup Guide
+```
+RidersHub/
+├── backend/    # Spring Boot REST API
+└── frontend/   # React Native mobile app
+```
 
-### 1. Create a .env File
-Create a .env file in the project root directory and add the following environment variables:
+---
+
+## What's Working
+
+**Ride Management**
+- Create rides with starting point, ending point, and stop points
+- Route generation via **GraphHopper API** (replaces ORS), returned as GeoJSON
+- Parallel API calls using `CompletableFuture` for faster ride creation
+- View ride details, participants, and route on an interactive map
+- Ride distance calculated using **PostGIS** spatial queries
+
+**Map & Location**
+- **Mapbox** static map snapshots captured on ride creation for start, end, and main location
+- **Cloudinary** stores all map images
+- **Nominatim API** for location search and reverse geocoding (barangay-level)
+- **PSGC data** from the Philippine Statistics Authority converts coordinates into barangay, city, province, and region
+- WebView-based interactive route map rendered in the mobile app
+- Real-time participant location tracking — stores and retrieves latest location per rider
+
+**Location Images**
+- **Wikimedia Commons API** fetches location photos based on ride destination
+- Results are cached in **Redis** to avoid redundant API calls
+- Rate-limited with **Bucket4j** (1 req/sec, Redis-backed) for Nominatim, Mapbox, and Wikimedia
+
+**Join & Invite System**
+- QR code generation per ride using **ZXing**, uploaded to Cloudinary
+- Invite link flow: generate → share → join request → approve/reject
+- Direct join requests without invite link also supported
+- Ride owner approves or rejects join requests
+- Participants stored and managed per ride
+
+**Authentication**
+- **JWT-based** stateless authentication
+- Login returns a token; all protected endpoints require `Authorization: Bearer <token>`
+- Role-based access via **Spring Security**
+
+**Rider Profiles**
+- Profile creation on first access (auto-seeded from registration rider type)
+- Update display name, bio, profile picture, and rider types
+- Add or remove multiple rider types per profile
+
+---
+
+## Planned / In Progress
+
+- **WebSocket** — live ride updates and real-time location broadcasting
+- **Redis** — real-time user location pub/sub and caching layer expansion
+- Unit and integration tests for core service layer
+- Improved mobile UX for ride discovery and navigation
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Mobile frontend | React Native |
+| Backend | Spring Boot (Java) |
+| Database | PostgreSQL + PostGIS |
+| ORM | Spring Data JPA + Hibernate Spatial |
+| Authentication | Spring Security + JWT |
+| Maps | Mapbox (snapshots), WebView (interactive) |
+| Routing | GraphHopper API |
+| Image hosting | Cloudinary |
+| Location search | Nominatim API |
+| Location photos | Wikimedia Commons API |
+| Geocoding data | PSGC (Philippine Statistics Authority) |
+| Rate limiting | Bucket4j (Redis-backed) |
+| Caching | Redis |
+| QR codes | ZXing |
+
+---
+
+## Setup Guide
+
+### Prerequisites
+- Java 17+
+- Node.js + React Native CLI
+- PostgreSQL with PostGIS extension
+- Redis
+- Android emulator or physical device
+
+### 1. Clone and navigate
+
+```bash
+git clone <your-repo-url>
+cd RidersHub
+```
+
+### 2. Configure environment variables
+
+Create a `.env` file in the project root:
 
 ```env
-# ==============================================
-# DATABASE CONFIGURATION
-# ==============================================
+# Database
 POSTGRES_DB_URL=your_database_host
 POSTGRES_DB_USERNAME=your_database_user
 POSTGRES_DB_PASSWORD=your_database_password
 
-# ==============================================
-# JWT AUTHENTICATION
-# ==============================================
+# JWT
 JWT_SECRET=your_jwt_secret_key
-JWT_EXPIRATION=your_jwt_expiration_time
+JWT_EXPIRATION=86400000
 
-# ==============================================
-# CLOUDINARY API CONFIGURATION
-# ==============================================
 CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
 
-REACT_APP_MAPBOX_TOKEN="your token"
+REACT_APP_MAPBOX_TOKENyour_mapbox_api_key
+REACT_APP_API_BASE_URL=your_mapbox_token
 
-# ==============================================
-# wikipedia API CONFIGURATION
-# ==============================================
-WIKIMEDIA_API_BASE = "your token"
+GRASS_HOPPER_KEY=your_graphhopper_api_key
 
-# ==============================================
-# NOMINATIM API CONFIGURATION
-# ==============================================
-NOMINATIM_API_KEY=your_nominatim_api_key
-NOMINATIM_USERAGENT=your_email_address
+NOMINATIM_API_BASE=https://nominatim.openstreetmap.org
+AGENT=${}
 
-# ==============================================
-# Agent for your api 
-# Sample = WIKIMEDIA_API_USERAGENT=RidersHub/1.0 (add your email here)
-# ==============================================
+WIKIMEDIA_API_USERAGENT=RidersHub/1.0 (your@email.com)
 wikimedia.api.useragent=${WIKIMEDIA_API_USERAGENT}
-USER_AGENT=${NOMINATIM_API_USERAGENT}
-
-# ==============================================
-# MAPBOX API CONFIGURATION
-# ==============================================
-MAPBOX_API_KEY=your_mapbox_api_key
+WIKIMEDIA_API_BASE
+baseUrl=https://riders
 ```
 
-> **Important:** Make sure your .env file is **not committed** to version control.
+> **Do not commit your `.env` file.**
 
-### 2. Import PSGC Data
+### 3. Enable PostGIS
 
+In your PostgreSQL client or pgAdmin:
 
-### 5. Install Frontend Dependencies
-Open a new terminal, navigate to the React Native folder, and run:
+```sql
+CREATE EXTENSION IF NOT EXISTS postgis;
+```
+
+### 4. Import PSGC Data
+
+Download the official PSGC dataset from [psa.gov.ph/classification/psgc](https://psa.gov.ph/classification/psgc) and import it into your database or use the current data in the backend
+```backend\psgc_data.csv'```
+### 5. Start the backend
+
 ```bash
+cd backend
+./mvnw spring-boot:run
+```
+
+### 6. Install frontend dependencies
+
+```bash
+cd frontend
 npm install
 ```
 
-### 6. Start Metro Bundler
-Still in the frontend folder, start the Metro bundler:
+### 7. Start Metro
+
 ```bash
 npx react-native start
 ```
 
-### 7. Launch Android App
-In a separate terminal, run the app on your Android emulator or physical device:
+### 8. Run on Android
+
 ```bash
 npx react-native run-android
 ```
-> **Note:** Make sure your Android environment is properly set up and an emulator is running or a device is connected.
 
-### 8. Import PostGIS Extension
-Make sure your database has the PostGIS extension enabled. Run the following SQL inside your PostgreSQL client:
-```sql
-CREATE EXTENSION IF NOT EXISTS postgis;
-```
-If you're using pgAdmin, go to the database, open the Query Tool, and paste the command above.
-
-## Authentication
-The backend uses **JWT (JSON Web Token)** for secure, stateless user authentication.
-- Login returns a JWT token
-- Protected endpoints require the token in the Authorization header (as Bearer <token>)
-- Role-based access control is enforced using Spring Security filters
-
-## PSGC Location Mapping
-- Imported **PSGC (Philippine Standard Geographic Code)** data from [psa.gov.ph/classification/psgc](https://psa.gov.ph/classification/psgc)
-- Enables conversion of latitude/longitude into:
-  - Barangay
-  - Municipality/City
-  - Province
-  - Region
-- Coordinates are matched against the official administrative boundaries using **PostGIS spatial queries**
-- Ensures local ride data is aligned with real-world barangay boundaries for accurate reporting and search
-
-## Location Processing & Optimization
-- **GeometryFactory & Hibernate Spatial** – Create and handle spatial objects
-- **PostGIS with Haversine Formula** – Fast distance calculations
-- **Barangay-level reverse geocoding** using PSGC
-- **Threshold-based location updates** – Avoids unnecessary data processing
-- **Map Snapshot Capture** – Capture using **Mapbox**, store via **Cloudinary**
-
-## Future Enhancements
-- Integrate **Redis** for real-time user location caching
-- Add **WebSocket** support for live ride updates and messaging
-- Improve mobile UX for ride discovery and navigation
-- Write unit and integration tests for key modules
-
-## Technologies Used
-| Tech Stack      | Description                                         |
-|-----------------|-----------------------------------------------------|
-| React Native    | Cross-platform mobile frontend                     |
-| Spring Boot     | Java backend framework                              |
-| PostgreSQL      | Relational database                                 |
-| PostGIS         | Spatial extension for PostgreSQL                    |
-| Mapbox          | Interactive maps and snapshot tool                  |
-| Cloudinary      | Cloud-based image hosting                           |
-| Nominatim API   | Open-source geolocation service                     |
-| PSGC            | Barangay and LGU-level mapping via official dataset |
-| Bucket4j        | Java rate limiter library                           |
-| JWT             | Secure token-based authentication                   |
-| Redis (Planned) | In-memory data store for live data                  |
-
-## Contributions
-This is a personal learning project. Contributions are welcome as suggestions or feature ideas.
+---
 
 ## Contact
-Feel free to reach out if you're a fellow enthusiast or developer from Davao City!  
-Or if you need help to set up, just email me: paninsorolean@gmail.com
+
+Personal learning project — built by a developer from Davao City.  
+Suggestions and ideas welcome. Email: paninsorolean@gmail.com

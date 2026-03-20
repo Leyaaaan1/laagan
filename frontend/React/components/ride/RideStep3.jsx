@@ -151,13 +151,15 @@ const RideStep3 = ({
   };
 
   useEffect(() => {
+
     const bothEndpointsSet = startingLatitude && startingLongitude && endingLatitude && endingLongitude;
     const notPickingEndpoint = mapMode !== 'starting' && mapMode !== 'ending';
     if (!bothEndpointsSet || !notPickingEndpoint) { return; }
 
     const timer = setTimeout(() => drawRoadRoute(), 1000);
+
     return () => clearTimeout(timer);
-  }, [startingLatitude, startingLongitude, endingLatitude, endingLongitude, stopPoints, mapMode]);
+  }, [startingLatitude, startingLongitude, endingLatitude, endingLongitude, stopPoints, mapMode, drawRoadRoute]);
 
   // ── Stop point handlers ───────────────────────────────────────────────────
   const startAddStopPoint = () => { setMapMode('stop'); setIsAddingStop(true); setCurrentStop(null); };

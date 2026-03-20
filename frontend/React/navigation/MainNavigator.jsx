@@ -6,7 +6,6 @@ import CreateRide from '../pages/CreateRide';
 import RideStep4 from '../components/ride/RideStep4';
 import StartedRide from '../pages/StartedRide';
 import RideRoutesPage from '../components/ride/utilities/RideRoutesPage';
-import RideSwipeContainer from './RideSwipeContainer';
 import RiderProfile from '../pages/RiderProfile';
 import ProfileEdit from '../pages/ProfileEdit';
 
@@ -22,7 +21,6 @@ const MainNavigator = () => {
       <Stack.Screen name="RideStep4" component={RideStep4} />
       <Stack.Screen name="StartedRide" component={StartedRide} />
       <Stack.Screen name="RideRoutesPage" component={RideRoutesPage} />
-      <Stack.Screen name="RideSwipeContainer" component={RideSwipeContainer} />
       <Stack.Screen name="RiderProfile" component={RiderProfile} />
       <Stack.Screen name="RiderProfileEdit" component={ProfileEdit} />
 

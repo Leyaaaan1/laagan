@@ -46,13 +46,13 @@ const RouteMapView = ({
       stopPoints,
       userLocation
     );
-  }, [routeData, startingPoint, endingPoint, stopPoints]);
+  }, [routeData, startingPoint, endingPoint, stopPoints, handleWebViewLoad, userLocation]);
 
   useEffect(() => {
     if (userLocation && webViewRef.current) {
       updateUserLocationOnMap(webViewRef, userLocation);
     }
-  }, [userLocation]);
+  }, [userLocation, updateUserLocationOnMap]);
 
   const onWebViewLoad = () => {
     webViewReadyRef.current = true;
