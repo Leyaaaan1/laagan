@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────
 // components/rideCard.js
 // Styles specific to the ride list item card.
-// Used in InlineRidesList and UnifiedRidesModal.
+// Used in RidesList and UnifiedRides.
 // ─────────────────────────────────────────────
 
 import { StyleSheet } from 'react-native';
@@ -15,7 +15,7 @@ const rideCard = StyleSheet.create({
   container: {
     backgroundColor: colors.surface,
     padding: 15,
-    borderRadius: 12,
+    borderRadius: 15,
     marginBottom: 15,
   },
 

@@ -1,3 +1,4 @@
+export { getRideTypeIcon, RIDE_TYPE_OPTIONS } from '../../../utilities/rideTypes';
 
 export const formatDate = (dateValue) => {
   if (!dateValue) { return 'Not specified'; }
@@ -40,25 +41,7 @@ export const shortLocationName = (displayName, lat, lng) => {
 };
 
 
-export const getRideTypeIcon = (type) => {
-  const icons = {
-    car:          'car',
-    motor:        'motorcycle',
-    bike:         'bicycle',
-    run:          'shoe-prints',
-    'cafe Racers':'rocket',
-  };
-  return icons[type] || 'circle';
-};
 
-
-export const RIDE_TYPE_OPTIONS = [
-  { type: 'car',         icon: 'car',        label: 'Car'         },
-  { type: 'motor',       icon: 'motorcycle', label: 'Motorcycle'  },
-  { type: 'run',         icon: 'user',       label: 'Run'         },
-  { type: 'bike',        icon: 'bicycle',    label: 'Bike'        },
-  { type: 'cafe Racers', icon: 'rocket',     label: 'Cafe Racers' },
-];
 
 
 export const buildSearchHandlers = ({

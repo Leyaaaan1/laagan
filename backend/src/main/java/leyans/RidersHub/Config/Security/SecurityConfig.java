@@ -57,7 +57,8 @@ public class SecurityConfig {
                                 "/invite/**",
                                 "/join/**",
                                 "/join-request/**",
-                                "/invite-request/**"
+                                "/invite-request/**",
+                                "/profiles/**"
                         )
                         .authenticated()
                         .anyRequest().authenticated())

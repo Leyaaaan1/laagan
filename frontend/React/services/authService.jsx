@@ -45,27 +45,3 @@ export const registerUser = async (username, password, riderType) => {
     }
 };
 
-/*
-export const loginWithFacebook = async (facebookAccessToken) => {
-    try {
-        const response = await axios.post(`${API_BASE_URL}/facebook/login`, {
-            accessToken: facebookAccessToken
-        });
-
-        // Response contains YOUR JWT token (not Facebook's token)
-        return {
-            success: true,
-            data: {
-                token: response.data.token,           // Your JWT token
-                username: response.data.username,
-                profilePictureUrl: response.data.profilePictureUrl
-            }
-        };
-    } catch (error) {
-        return {
-            success: false,
-            message: error.response?.data || 'Facebook login failed'
-        };
-    }
-};
-*/

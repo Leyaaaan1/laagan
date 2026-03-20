@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────
 // components/modal.js
 // Modal overlays, containers, tabs, participant cards.
-// Used in ParticipantListModal, UnifiedRidesModal.
+// Used in ParticipantList, UnifiedRides.
 // ─────────────────────────────────────────────
 
 import { StyleSheet } from 'react-native';

@@ -117,10 +117,21 @@ const RideStep3 = ({
 
   // ── Route drawing ─────────────────────────────────────────────────────────
   const drawRoadRoute = async () => {
-    if (!startingLatitude || !startingLongitude || !endingLatitude || !endingLongitude) { return; }
+    const sLat = parseFloat(startingLatitude);
+    const sLng = parseFloat(startingLongitude);
+    const eLat = parseFloat(endingLatitude);
+    const eLng = parseFloat(endingLongitude);
+
+    // Don't call the API if any coordinate is missing/zero
+    if (!sLat || !sLng || !eLat || !eLng) { return; }
+
+    // Don't call if start and end are the same point
+    const isSame = Math.abs(sLat - eLat) < 0.0001 && Math.abs(sLng - eLng) < 0.0001;
+    if (isSame) { return; }
+
     setRouteLoading(true);
     try {
-      const routeData   = createRouteData(startingLatitude, startingLongitude, endingLatitude, endingLongitude, stopPoints);
+      const routeData   = createRouteData(sLat, sLng, eLat, eLng, stopPoints);
       const routeGeoJSON = await getRoutePreview(token, routeData);
       if (!routeGeoJSON?.features?.length) { return; }
 

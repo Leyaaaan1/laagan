@@ -150,7 +150,7 @@ public class RidesService {
                     CompletableFuture.allOf(f.stopPointFutures.toArray(new CompletableFuture[0]))
             );
 
-            allApiCalls.get(30, TimeUnit.SECONDS);
+            allApiCalls.get(60, TimeUnit.SECONDS);
         } catch (TimeoutException e) {
             throw new RuntimeException("API calls timed out after 30 seconds", e);
         } catch (Exception e) {
