@@ -15,7 +15,7 @@ import {
 const DEFAULT_LAT = '7.0731';
 const DEFAULT_LNG = '125.6128';
 
-const createRideUtils = ({ token, username }) => {
+const useCreateRide = ({ token, username }) => {
   const webViewRef       = useRef(null);
   const pendingRideIdRef = useRef(null);
 
@@ -287,8 +287,8 @@ const createRideUtils = ({ token, username }) => {
     handleCreateRide,
   };
 };
+export default useCreateRide;
 
-// ─── Helper: extract a human-readable error message ──────────────────────────
 const resolveErrorMessage = (err) => {
   if (err.response?.data) {
     if (typeof err.response.data === 'string')   { return err.response.data; }
@@ -302,4 +302,3 @@ const resolveErrorMessage = (err) => {
   return err.message || 'An error occurred while creating the ride.';
 };
 
-export default createRideUtils;

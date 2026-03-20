@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Alert, Platform, PermissionsAndroid } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import { getRouteCoordinates } from '../../services/RouteService';
@@ -9,34 +9,37 @@ export const useRouteMapLogic = (generatedRidesId, token) => {
   const [error, setError] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
 
-  useEffect(() => {
-    if (generatedRidesId) {
-      fetchRouteData();
-    } else {
-      console.warn('No generatedRidesId provided');
-      setIsLoading(false);
-      setError('No route ID provided');
-    }
+  const tokenRef = useRef(token);
+  useEffect(() => { tokenRef.current = token; }, [token]);
 
-    // Get user location once
-    requestLocationPermission();
-  }, [generatedRidesId, token]);
+  // ── getUserLocationOnce ───────────────────────────────────────────────────
+  const getUserLocationOnce = useCallback(() => {
+    const quickOptions   = { enableHighAccuracy: false, timeout: 5000,  maximumAge: 60000 };
+    const accurateOptions = { enableHighAccuracy: true,  timeout: 10000, maximumAge: 30000 };
 
-  const updateUserLocationOnMap = (webViewRef, location) => {
-    if (!webViewRef.current || !location) return;
+    Geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation({ lat: latitude, lng: longitude });
+      },
+      () => {
+        // Quick location failed — retry with GPS
+        Geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            setUserLocation({ lat: latitude, lng: longitude });
+            console.log('High accuracy location acquired:', latitude, longitude);
+          },
+          (err) => console.warn('High accuracy location also failed:', err.message),
+          accurateOptions,
+        );
+      },
+      quickOptions,
+    );
+  }, []); // setUserLocation is stable — no extra deps needed
 
-    // Also keep a window-level copy so orientMapToPoint can use it
-    const script = `
-        window.userCurrentLocation = ${JSON.stringify(location)};
-        if (typeof window.updateUserLocation === 'function') {
-            window.updateUserLocation(${JSON.stringify(location)});
-        }
-        true;
-    `;
-    webViewRef.current.injectJavaScript(script);
-  };
-
-  const requestLocationPermission = async () => {
+  // ── requestLocationPermission ─────────────────────────────────────────────
+  const requestLocationPermission = useCallback(async () => {
     try {
       if (Platform.OS === 'android') {
         const granted = await PermissionsAndroid.request(
@@ -47,131 +50,134 @@ export const useRouteMapLogic = (generatedRidesId, token) => {
             buttonNeutral: 'Ask Me Later',
             buttonNegative: 'Cancel',
             buttonPositive: 'OK',
-          }
+          },
         );
-
         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
           getUserLocationOnce();
         } else {
           console.log('Location permission denied');
         }
       } else {
-        // iOS - permissions handled via Info.plist
+        // iOS — permissions handled via Info.plist
         getUserLocationOnce();
       }
     } catch (err) {
       console.warn('Error requesting location permission:', err);
     }
-  };
+  }, [getUserLocationOnce]);
 
-  const getUserLocationOnce = () => {
-    console.log('Attempting to get user location...');
-
-    // Strategy: Try quick location first, fallback to high accuracy if needed
-    const quickOptions = {
-      enableHighAccuracy: false,  // Use network/WiFi for speed
-      timeout: 5000,
-      maximumAge: 60000, // Accept cached location up to 1 minute old
-    };
-
-    const accurateOptions = {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 30000,
-    };
-
-    // First attempt: Quick location (network-based)
-    Geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        setUserLocation({ lat: latitude, lng: longitude });
-      },
-      (error) => {
-        // Second attempt: High accuracy GPS
-        Geolocation.getCurrentPosition(
-          (position) => {
-            const { latitude, longitude } = position.coords;
-            setUserLocation({ lat: latitude, lng: longitude });
-            console.log('High accuracy location acquired:', latitude, longitude);
-          },
-          accurateOptions
-        );
-      },
-      quickOptions
-    );
-  };
-
-  const fetchRouteData = async () => {
+  // ── fetchRouteData ────────────────────────────────────────────────────────
+  // Previously had two bugs:
+  //   1. `errorMessage` was used in the catch block but was never declared —
+  //      the caught value is `error` (the parameter), not `errorMessage`.
+  //   2. The function was a plain `const` inside the hook body, so ESLint
+  //      (correctly) complained it was missing from the useEffect dep array.
+  //      Wrapping in useCallback gives it a stable identity.
+  const fetchRouteData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const data = await getRouteCoordinates(token, generatedRidesId);
+      const data = await getRouteCoordinates(tokenRef.current, generatedRidesId);
 
       if (!data) {
         throw new Error('No route data received from server');
       }
 
       setRouteData(data);
-    } catch (error) {
-      setError(errorMessage);
+    } catch (err) {
+      // `err.message` is the actual error string — `errorMessage` did not exist
+      const message = err?.message || 'Failed to load route data';
+      setError(message);
       Alert.alert(
         'Route Loading Error',
-        errorMessage,
+        message,
         [
-          { text: 'Retry', onPress: () => fetchRouteData() },
-          { text: 'Cancel', style: 'cancel' }
-        ]
+          { text: 'Retry',  onPress: () => fetchRouteData() },
+          { text: 'Cancel', style: 'cancel' },
+        ],
       );
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [generatedRidesId]); // tokenRef is a ref — stable, does not need to be listed
 
-  const handleWebViewLoad = (webViewRef, routeData, startingPoint, endingPoint, stopPoints, userLocation) => {
-
-    if (webViewRef.current && routeData) {
-
-      const script = `
-                
-                if (typeof window.loadRouteData === 'function') {
-                    window.loadRouteData(
-                        ${JSON.stringify(routeData)},
-                        ${JSON.stringify(startingPoint)},
-                        ${JSON.stringify(endingPoint)},
-                        ${JSON.stringify(stopPoints)},
-                        ${JSON.stringify(userLocation)}
-                    );
-                    console.log('loadRouteData called');
-                } else {
-                    console.error('loadRouteData function not available');
-                }
-                true;
-            `;
-
-      webViewRef.current.injectJavaScript(script);
+  // ── Main effect: fetch route + request location on mount / id change ──────
+  useEffect(() => {
+    if (generatedRidesId) {
+      fetchRouteData();
+    } else {
+      console.warn('No generatedRidesId provided');
+      setIsLoading(false);
+      setError('No route ID provided');
     }
-  };
 
-  const handleWebViewMessage = (event, setError, onWebViewLoad) => {
+    requestLocationPermission();
+  }, [generatedRidesId, fetchRouteData, requestLocationPermission]);
+  // token is intentionally omitted — tokenRef.current gives fetchRouteData
+  // the latest token without causing the effect to re-run on every token change.
+
+  // ── updateUserLocationOnMap ───────────────────────────────────────────────
+  const updateUserLocationOnMap = useCallback((webViewRef, location) => {
+    if (!webViewRef.current || !location) return;
+
+    const script = `
+      window.userCurrentLocation = ${JSON.stringify(location)};
+      if (typeof window.updateUserLocation === 'function') {
+        window.updateUserLocation(${JSON.stringify(location)});
+      }
+      true;
+    `;
+    webViewRef.current.injectJavaScript(script);
+  }, []);
+
+  // ── handleWebViewLoad ─────────────────────────────────────────────────────
+  const handleWebViewLoad = useCallback((webViewRef, routeData, startingPoint, endingPoint, stopPoints, userLocation) => {
+    if (!webViewRef.current || !routeData) return;
+
+    const script = `
+      if (typeof window.loadRouteData === 'function') {
+        window.loadRouteData(
+          ${JSON.stringify(routeData)},
+          ${JSON.stringify(startingPoint)},
+          ${JSON.stringify(endingPoint)},
+          ${JSON.stringify(stopPoints)},
+          ${JSON.stringify(userLocation)}
+        );
+        console.log('loadRouteData called');
+      } else {
+        console.error('loadRouteData function not available');
+      }
+      true;
+    `;
+    webViewRef.current.injectJavaScript(script);
+  }, []);
+
+  // ── handleWebViewMessage ──────────────────────────────────────────────────
+  // routeData is read from state inside here — we use a ref so the callback
+  // stays stable without needing routeData in its deps (which would make
+  // RouteMapView re-register the onMessage handler on every fetch).
+  const routeDataRef = useRef(routeData);
+  useEffect(() => { routeDataRef.current = routeData; }, [routeData]);
+
+  const handleWebViewMessage = useCallback((event, _setError, onWebViewLoad) => {
     try {
       const message = JSON.parse(event.nativeEvent.data);
-      if (message.type === 'error') {
-      } else if (message.type === 'mapReady') {
-        // Call the full onWebViewLoad callback (which has all coords in closure)
-        if (routeData) {
+      if (message.type === 'mapReady') {
+        if (routeDataRef.current) {
           onWebViewLoad();
         }
-      } else if (message.type === 'routeLoaded') {
       }
-    } catch (error) {
+      // 'error' and 'routeLoaded' types handled silently for now
+    } catch (err) {
+      console.warn('WebView message parse error:', err);
     }
-  };
+  }, []); // stable — reads routeData via ref
 
-  const handleWebViewError = (syntheticEvent) => {
-    const { nativeEvent } = syntheticEvent;
-    console.error('WebView error:', nativeEvent);
-  };
+  // ── handleWebViewError ────────────────────────────────────────────────────
+  const handleWebViewError = useCallback((syntheticEvent) => {
+    console.error('WebView error:', syntheticEvent.nativeEvent);
+  }, []);
 
   return {
     isLoading,

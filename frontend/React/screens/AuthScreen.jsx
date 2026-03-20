@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Text,
@@ -34,7 +34,6 @@ const AuthForm = ({
     style={layout.center}
     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
   >
-    {/* Title */}
     <Text style={[text.titleCenter, { marginBottom: spacing.lg, letterSpacing: 1 }]}>
       {isLogin ? 'WELCOME BACK' : 'CREATE ACCOUNT'}
     </Text>
@@ -45,7 +44,6 @@ const AuthForm = ({
         : 'Join the community and start riding'}
     </Text>
 
-    {/* Inputs */}
     <TextInput
       placeholder="Username"
       placeholderTextColor="#64748b"
@@ -74,7 +72,6 @@ const AuthForm = ({
       />
     )}
 
-    {/* Primary action */}
     <TouchableOpacity
       style={[buttons.pill, { width: 280, marginBottom: spacing.sm }]}
       onPress={handleAuth}
@@ -84,7 +81,6 @@ const AuthForm = ({
       </Text>
     </TouchableOpacity>
 
-    {/* Facebook — login only */}
     {isLogin && (
       <TouchableOpacity
         style={[
@@ -96,7 +92,6 @@ const AuthForm = ({
       </TouchableOpacity>
     )}
 
-    {/* Toggle login / register */}
     <TouchableOpacity
       style={[buttons.ghost, { marginTop: spacing.xs }]}
       onPress={toggleMode}
@@ -116,16 +111,10 @@ const AuthScreen = ({ navigation }) => {
   const [password, setPassword]   = useState('Yuta');
   const [riderType, setRiderType] = useState('');
 
-
-  useEffect(() => {
-    const autoLogin = async () => {
-      if (isLogin && username && password) {
-        await handleAuth();
-      }
-    };
-    autoLogin();
-  }, []);
-
+  // ── Define handleAuth BEFORE the useEffect that calls it ──────────────────
+  // `const` is NOT hoisted like `function` declarations. If handleAuth is
+  // declared below the useEffect, the closure captures `undefined` and you get
+  // "handleAuth is not a function" at runtime.
   const handleAuth = async () => {
     try {
       const result = isLogin
@@ -157,6 +146,21 @@ const AuthScreen = ({ navigation }) => {
       return false;
     }
   };
+
+  // ── One-time auto-login on mount ───────────────────────────────────────────
+  // The ref prevents a double-fire in React 18 StrictMode (dev builds mount
+  // every component twice to surface side-effect bugs).
+  const hasAutoLoginRun = useRef(false);
+  useEffect(() => {
+    if (hasAutoLoginRun.current) return;
+    hasAutoLoginRun.current = true;
+
+    if (isLogin && username && password) {
+      handleAuth();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Intentional: runs once on mount with the hardcoded initial credentials.
+  }, []);
 
   const toggleMode = () => setIsLogin((prev) => !prev);
 
