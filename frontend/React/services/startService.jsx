@@ -46,6 +46,40 @@ export const startService = {
         }
     },
 
+    deactivateRide: async (generatedRidesId, token) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/start/update/${generatedRidesId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                const status = response.status;
+                let errorMessage = '';
+
+                switch (status) {
+                    case 404:
+                        errorMessage = 'Ride not found.';
+                        break;
+                    case 409:
+                        errorMessage = 'Ride is in a conflicting state.';
+                        break;
+                    default:
+                        errorMessage = 'An error occurred while stopping the ride.';
+                }
+
+                throw new Error(errorMessage);
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Error deactivating ride:', error);
+            throw error;
+        }
+    },
 };
 export async function getActiveRide(token) {
     try {

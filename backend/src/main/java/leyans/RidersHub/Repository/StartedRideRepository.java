@@ -26,7 +26,16 @@ public interface StartedRideRepository extends JpaRepository<StartedRide, Intege
     @Query("SELECT sr FROM StartedRide sr JOIN FETCH sr.ride WHERE sr.username = :username")
     Optional<StartedRide> findByUsernameWithRide(@Param("username") Rider username);
 
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM participant_location WHERE started_ride_id = :startedRideId", nativeQuery = true)
+    void deleteParticipantLocationsByStartedRideId(@Param("startedRideId") Integer startedRideId);
 
+    // 2. Delete started_ride_participants join table rows (FK: started_ride_participants -> started_rides)
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM started_ride_participants WHERE started_ride_id = :startedRideId", nativeQuery = true)
+    void deleteParticipantsByStartedRideId(@Param("startedRideId") Integer startedRideId);
 
 
 }
