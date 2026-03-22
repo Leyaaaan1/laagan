@@ -87,14 +87,21 @@ public class StartRideService {
 
     @Transactional
     public void deactivateRide(Integer generatedRidesId) {
-        try {
-            ridesRepository.deactivateRide(generatedRidesId);
-            startedRideRepository
-                    .findByRideGeneratedRidesId(generatedRidesId)
-                    .ifPresent(startedRideRepository::delete);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to deactivate ride: " + e.getMessage());
-        }
-    }
+        // 1. Find the ride — generatedRidesId is NOT the PK, so use findByGeneratedRidesId
+        Rides ride = ridesRepository.findByGeneratedRidesId(generatedRidesId)
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found: " + generatedRidesId));
 
+        // 2. Find the StartedRide and delete it first (breaks the FK constraint before touching Rides)
+        startedRideRepository.findByRideGeneratedRidesId(generatedRidesId).ifPresent(startedRide -> {
+            // Step 1: Delete participant_location rows (FK references started_rides.id)
+            startedRideRepository.deleteParticipantLocationsByStartedRideId(startedRide.getId());
+            // Step 2: Delete started_ride_participants join table
+            startedRideRepository.deleteParticipantsByStartedRideId(startedRide.getId());
+            startedRideRepository.delete(startedRide);
+            startedRideRepository.flush();
+        });
+
+        ride.setActive(false);
+        ridesRepository.save(ride);
+    }
 }

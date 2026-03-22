@@ -18,9 +18,7 @@ import mapStyles from '../../styles/components/mapStyles';
 import {formatDate, getLocationDisplayName, getRideTypeIcon} from './utilities/RideStepUtils';
 import useJoinRide from './utilities/RideHandler';
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
 
-/** Header right-slot: Join button for non-owners, Start button for the creator. */
 const RideActionButton = ({ isOwner, onJoin, onStart }) =>
   isOwner ? (
     <TouchableOpacity style={rideStep4Styles.startButton} onPress={onStart}>
@@ -33,7 +31,6 @@ const RideActionButton = ({ isOwner, onJoin, onStart }) =>
     </TouchableOpacity>
   );
 
-/** Hero card showing ride name, date, organiser, type and description. */
 const RideHeroCard = ({ rideName, date, username, riderType, distance, description, startingPoint, endingPoint, rideDetailsWithCoords }) => (
   <View style={cards.hero}>
     <View style={cards.heroHeader}>
@@ -76,7 +73,6 @@ const RideHeroCard = ({ rideName, date, username, riderType, distance, descripti
   </View>
 );
 
-// ─── Main component ───────────────────────────────────────────────────────────
 
 const RideStep4 = (props) => {
   const navigation = useNavigation();

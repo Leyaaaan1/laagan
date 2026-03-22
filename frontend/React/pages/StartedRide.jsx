@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import {View, Text, StatusBar, Animated, TouchableOpacity, ScrollView} from 'react-native';
+import {View, Text, StatusBar, Animated, TouchableOpacity, ScrollView, Alert, ActivityIndicator} from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import {processRideCoordinates} from '../utilities/CoordinateUtils';
 import startedRide from '../styles/screens/startedRide';
 import rideRoutes from '../styles/screens/rideRoutes';
 import feedback from '../styles/base/feedback';
 import RouteMapView from '../utilities/route/view/RouteMapView';
+import { startService } from '../services/startService';
 
 const StartedRide = ({ route, navigation }) => {
-  const { activeRide, token } = route.params || {};
+  const { activeRide, token, username } = route.params || {};
   const [showRouteInfo, setShowRouteInfo] = useState(false);
-
+  const [isStopping, setIsStopping] = useState(false);
 
   if (!activeRide) {
     return (
@@ -40,6 +41,49 @@ const StartedRide = ({ route, navigation }) => {
       currentUsername: activeRide.username,
       rideDetailsWithCoords: null,
     });
+  };
+
+  const handleStopRide = () => {
+    Alert.alert(
+      'Stop Ride',
+      'Are you sure you want to stop this ride? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Stop Ride',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsStopping(true);
+              const rideId = activeRide.generatedRidesId || activeRide.id;
+              await startService.deactivateRide(rideId, token);
+              navigation.reset({
+                index: 1,
+                routes: [
+                  { name: 'RiderPage', params: { username: username, token: token } },
+                  {
+                    name: 'RideStep4',
+                    params: {
+                      generatedRidesId: activeRide.generatedRidesId || activeRide.id,
+                      token: token,
+                      currentUsername: activeRide.username,
+                    }
+                  }
+                ],
+              });
+            } catch (error) {
+              Alert.alert('Error', error.message || 'Failed to stop the ride. Please try again.');
+            } finally {
+              setIsStopping(false);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   return (
@@ -191,13 +235,30 @@ const StartedRide = ({ route, navigation }) => {
         </View>
 
         {/* Action Buttons at Bottom */}
-        <TouchableOpacity
-          style={[startedRide.actionButton, { backgroundColor: 'rgba(140, 35, 35, 0.9)' }]}
-          onPress={handleSwipeToDetails}
-        >
-          <FontAwesome name="info-circle" size={23} color="#fff" />
-          <Text style={startedRide.actionButtonText}>Details</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <TouchableOpacity
+            style={[startedRide.actionButton, { flex: 1, backgroundColor: 'rgba(140, 35, 35, 0.9)' }]}
+            onPress={handleSwipeToDetails}
+          >
+            <FontAwesome name="info-circle" size={23} color="#fff" />
+            <Text style={startedRide.actionButtonText}>Details</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[startedRide.actionButton, { flex: 1, backgroundColor: 'rgba(30, 30, 30, 0.95)' }]}
+            onPress={handleStopRide}
+            disabled={isStopping}
+          >
+            {isStopping ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <FontAwesome name="stop-circle" size={23} color="#ff4444" />
+            )}
+            <Text style={[startedRide.actionButtonText, { color: '#ff4444' }]}>
+              {isStopping ? 'Stopping...' : 'Stop Ride'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </Animated.View>
     </View>
   );
