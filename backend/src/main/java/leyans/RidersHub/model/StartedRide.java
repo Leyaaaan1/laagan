@@ -28,12 +28,8 @@ public class StartedRide {
     private LocalDateTime startTime;
 
 
-
-
     @Column(name = "location", columnDefinition = "geometry(Point,4326)")
     private Point location;
-
-
 
 
 

@@ -67,6 +67,70 @@ const routeMapStyles = `
                 background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             }
             
+              .rider-marker {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    animation: pulse 2s infinite;
+  }
+
+  .rider-marker:hover {
+    transform: scale(1.15);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
+  }
+
+  .rider-marker-self {
+    animation: pulse-self 1.5s infinite;
+  }
+
+  .rider-marker-other {
+    animation: pulse-other 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(33, 150, 243, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(33, 150, 243, 0);
+    }
+  }
+
+  @keyframes pulse-self {
+    0% {
+      box-shadow: 0 0 0 0 rgba(255, 87, 34, 0.8);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(255, 87, 34, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(255, 87, 34, 0);
+    }
+  }
+
+  @keyframes pulse-other {
+    0% {
+      box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.6);
+    }
+    70% {
+      box-shadow: 0 0 0 8px rgba(33, 150, 243, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(33, 150, 243, 0);
+    }
+  }
+
+  .rider-name-label {
+    background: none !important;
+    border: none !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+
+  .leaflet-tooltip-top::before {
+    border-top-color: transparent;
+  }
+            
             /* Compass orientation button */
               #compass-container {
                   position: absolute;

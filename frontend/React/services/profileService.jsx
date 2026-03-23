@@ -13,19 +13,19 @@ export const getMyProfile = async (token) => {
       },
     });
 
-    const result = await response.json();
-
-    if (response.ok) {
-      return { success: true, data: result };
-    } else {
-      return { success: false, message: result.message || 'Failed to fetch profile' };
+    // ✅ CHECK status FIRST before parsing
+    if (!response.ok) {
+      return { success: false, message: `HTTP ${response.status}` };
     }
+
+    // ✅ NOW parse JSON
+    const result = await response.json();
+    return { success: true, data: result };
   } catch (error) {
     console.error('getMyProfile error:', error);
     return { success: false, message: 'Network error occurred' };
   }
 };
-
 // ── GET /profiles/{username} ──────────────────────────────────────────────────
 export const getProfileByUsername = async (token, username) => {
   try {

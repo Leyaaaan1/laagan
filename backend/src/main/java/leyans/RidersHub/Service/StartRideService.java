@@ -93,15 +93,23 @@ public class StartRideService {
 
         // 2. Find the StartedRide and delete it first (breaks the FK constraint before touching Rides)
         startedRideRepository.findByRideGeneratedRidesId(generatedRidesId).ifPresent(startedRide -> {
-            // Step 1: Delete participant_location rows (FK references started_rides.id)
-            startedRideRepository.deleteParticipantLocationsByStartedRideId(startedRide.getId());
-            // Step 2: Delete started_ride_participants join table
-            startedRideRepository.deleteParticipantsByStartedRideId(startedRide.getId());
+            Integer startedRideId = startedRide.getId();
+
+            // CRITICAL: Delete in correct FK order
+            // Step 1: Delete rider_locations rows (NEW - for location sharing feature)
+            startedRideRepository.deleteRiderLocationsByStartedRideId(startedRideId);
+
+            // Step 2: Delete participant_location rows (FK references started_rides.id)
+            startedRideRepository.deleteParticipantLocationsByStartedRideId(startedRideId);
+
+            // Step 3: Delete started_ride_participants join table
+            startedRideRepository.deleteParticipantsByStartedRideId(startedRideId);
+
+            // Step 4: Delete the started_ride itself
             startedRideRepository.delete(startedRide);
             startedRideRepository.flush();
         });
 
         ride.setActive(false);
         ridesRepository.save(ride);
-    }
-}
+    }}

@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// components/ride/modal/ProfileRidesList.jsx
+// pages/utilities/ProfileList.jsx
 //
 // Horizontal swipeable carousel of the user's rides.
 // Uses FlatList horizontal — safe inside a vertical ScrollView because
@@ -16,15 +16,13 @@ import {
   Dimensions,
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import { fetchMyRides } from '../../services/rideService';
 import colors from '../../styles/tokens/colors';
 import spacing from '../../styles/tokens/spacing';
+import { fetchMyRides } from '../../services/rideService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH  = SCREEN_WIDTH * 0.72;
 const CARD_GAP    = 12;
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const getRideTypeIcon = (riderType) => {
   switch (riderType) {
@@ -48,6 +46,9 @@ const formatDate = (date) => {
 };
 
 // ── Single swipe card ─────────────────────────────────────────────────────────
+// NOTE: onPress receives the raw ride item — the parent (RiderProfile)
+// calls buildRideStep4Params with the correct currentUsername so isOwner
+// is computed accurately. Do NOT build params here.
 const RideSwipeCard = ({ item, onPress }) => (
   <TouchableOpacity
     activeOpacity={0.85}
@@ -95,7 +96,7 @@ const RideSwipeCard = ({ item, onPress }) => (
       }}
       numberOfLines={2}
     >
-      {item.ridesName}
+      {item.ridesName ?? '—'}
     </Text>
 
     {/* Location */}
@@ -108,18 +109,18 @@ const RideSwipeCard = ({ item, onPress }) => (
       }}
       numberOfLines={1}
     >
-      {item.locationName}
+      {item.locationName ?? '—'}
     </Text>
 
     {/* Route: start → end */}
     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 6 }}>
       <FontAwesome name="map-marker" size={11} color={colors.primary} />
-      <Text style={{ color: colors.textSecondary,  flex: 1 }} numberOfLines={1}>
-        {item.startingPointName}
+      <Text style={{ color: colors.textSecondary, flex: 1 }} numberOfLines={1}>
+        {item.startingPointName ?? '—'}
       </Text>
       <FontAwesome name="long-arrow-right" size={10} color={colors.textMuted} />
-      <Text style={{ color: colors.textSecondary,  flex: 1 }} numberOfLines={1}>
-        {item.endingPointName}
+      <Text style={{ color: colors.textSecondary, flex: 1 }} numberOfLines={1}>
+        {item.endingPointName ?? '—'}
       </Text>
     </View>
 
@@ -127,8 +128,8 @@ const RideSwipeCard = ({ item, onPress }) => (
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
         <FontAwesome name="road" size={10} color={colors.textMuted} />
-        <Text style={{ color: colors.textMuted,  }}>
-          {item.distance} km
+        <Text style={{ color: colors.textMuted }}>
+          {item.distance != null ? `${item.distance} km` : '— km'}
         </Text>
       </View>
       {item.date && (
@@ -196,8 +197,7 @@ const DotIndicator = ({ total, active }) => {
   );
 };
 
-// ── Main component ────────────────────────────────────────────────────────────
-const ProfileRidesList = ({ token, onRideSelect, pageSize = 6 }) => {
+const ProfileList = ({ token, onRideSelect, currentUsername, pageSize = 6 }) => {
   const [rides, setRides]             = useState([]);
   const [loading, setLoading]         = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -253,7 +253,7 @@ const ProfileRidesList = ({ token, onRideSelect, pageSize = 6 }) => {
           onPress={() => loadRides(0, true)}
           style={{ backgroundColor: colors.primary, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 }}
         >
-          <Text style={{ color: colors.white, fontWeight: fontWeight.semi }}>Retry</Text>
+          <Text style={{ color: colors.white, fontWeight: 'bold' }}>Retry</Text>
         </TouchableOpacity>
       </View>
     );
@@ -310,4 +310,4 @@ const ProfileRidesList = ({ token, onRideSelect, pageSize = 6 }) => {
   );
 };
 
-export default ProfileRidesList;
+export default ProfileList;

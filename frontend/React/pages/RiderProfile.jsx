@@ -1,3 +1,12 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// pages/RiderProfile.jsx  (rewritten — crash-proof)
+//
+// Rules applied everywhere:
+//   • NO bare nullable inside <Text> — always String(x) or fallback
+//   • NO {value} someText patterns — use template literals via String()
+//   • NO optional chaining that returns undefined into JSX text nodes
+// ─────────────────────────────────────────────────────────────────────────────
+
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
@@ -8,84 +17,86 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { getMyProfile } from '../services/profileService';
-import profileStyles from '../styles/screens/Profilestyles';
-import ProfileRidesList from './utilities/ProfileList';
-import SearchHeader from './utilities/SearchHeader';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
+import { getMyProfile }         from '../../React/services/profileService';
+import { buildRideStep4Params } from '../utilities/NavigationParamsBuilder';
+import profileStyles            from '../styles/screens/Profilestyles';
+import ProfileList    from './utilities/ProfileList';
+import SearchHeader        from '../pages/utilities/SearchHeader';
 
+// ─── Safe string helper ───────────────────────────────────────────────────────
+// Converts any value to a renderable string — never lets undefined/null leak.
+const s = (val, fallback = '') =>
+  val !== null && val !== undefined ? String(val) : fallback;
+
+// ─── Avatar ───────────────────────────────────────────────────────────────────
 function Avatar({ profilePictureUrl, displayName }) {
-  const initial = displayName ? displayName[0].toUpperCase() : '?';
+  const initial = displayName ? String(displayName)[0].toUpperCase() : '?';
+  if (profilePictureUrl) {
+    return (
+      <Image
+        source={{ uri: String(profilePictureUrl) }}
+        style={profileStyles.avatarImage}
+      />
+    );
+  }
   return (
-    <View style={profileStyles.avatarCircle}>
-      {profilePictureUrl ? (
-        <Image source={{ uri: profilePictureUrl }} style={profileStyles.avatarImage} />
-      ) : (
-        <Text style={profileStyles.avatarInitial}>{initial}</Text>
-      )}
-    </View>
+    <Text style={profileStyles.avatarInitial}>{initial}</Text>
   );
 }
 
-function RiderTypeBadges({ riderTypes = [] }) {
-  if (!riderTypes.length) return null;
+// ─── Rider type badges ────────────────────────────────────────────────────────
+function RiderTypeBadges({ riderTypes }) {
+  if (!Array.isArray(riderTypes) || riderTypes.length === 0) return null;
   return (
     <View style={profileStyles.badgeRow}>
-      {riderTypes.map((type) => (
-        <View key={type} style={profileStyles.badge}>
-          <Text style={profileStyles.badgeText}>{type}</Text>
+      {riderTypes.map((type, idx) => (
+        <View key={String(type) + idx} style={profileStyles.badge}>
+          <Text style={profileStyles.badgeText}>{s(type, 'Unknown')}</Text>
         </View>
       ))}
     </View>
   );
 }
 
+// ─── Section card ─────────────────────────────────────────────────────────────
 function SectionCard({ title, children, right }) {
   return (
     <View style={profileStyles.sectionCard}>
       <View style={[profileStyles.sectionHeader, { justifyContent: 'space-between' }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <View style={profileStyles.sectionIndicator} />
-          <Text style={profileStyles.sectionTitle}>{title}</Text>
+          <View style={[profileStyles.sectionIndicator, { backgroundColor: '#cc0000' }]} />
+          <Text style={profileStyles.sectionTitle}>{s(title)}</Text>
         </View>
-        {right && <View>{right}</View>}
+        {right || null}
       </View>
       {children}
     </View>
   );
 }
 
-function InfoRow({ label, value, isLast }) {
-  return (
-    <View style={[profileStyles.infoRow, isLast && profileStyles.infoRowLast]}>
-      <Text style={profileStyles.infoLabel}>{label}</Text>
-      <Text style={value ? profileStyles.infoValue : profileStyles.infoValueMuted}>
-        {value || '—'}
-      </Text>
-    </View>
-  );
-}
-
-
+// ─── Main component ───────────────────────────────────────────────────────────
 export default function RiderProfile({ route, navigation }) {
-  const { token } = route.params;   // ← token passed from RiderPage
+  const token    = route?.params?.token    ?? null;
+  const username = route?.params?.username ?? null;
 
-  const [profile, setProfile]     = useState(null);
-  const [loading, setLoading]     = useState(true);
+  const [profile,    setProfile]    = useState(null);
+  const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError]         = useState(null);
+  const [error,      setError]      = useState(null);
 
   const loadProfile = useCallback(async () => {
     try {
       setError(null);
-      const result = await getMyProfile(token);   // ← pass token
-      if (result.success) {
-        setProfile(result.data);                  // ← read from result.data
+      const result = await getMyProfile(token);
+      if (result && result.success) {
+        setProfile(result.data ?? null);
       } else {
-        setError(result.message || 'Failed to load profile.');
+        setError(s(result?.message, 'Failed to load profile.'));
       }
     } catch (err) {
-      setError(err.message || 'Failed to load profile.');
+      setError(s(err?.message, 'Failed to load profile.'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -99,6 +110,16 @@ export default function RiderProfile({ route, navigation }) {
     loadProfile();
   };
 
+  const handleRideSelect = (ride) => {
+    if (!ride) return;
+    // usernameStr is the logged-in user — compared against ride.username
+    // inside buildRideStep4Params to correctly set isOwner + role
+    const loggedInUsername = s(profile?.username, s(username));
+    const params = buildRideStep4Params(ride, token, loggedInUsername);
+    navigation.navigate('RideStep4', params);
+  };
+
+  // ── Loading state ─────────────────────────────────────────────────────
   if (loading) {
     return (
       <View style={profileStyles.loadingContainer}>
@@ -107,93 +128,108 @@ export default function RiderProfile({ route, navigation }) {
     );
   }
 
+  // ── Error state ───────────────────────────────────────────────────────
   if (error) {
     return (
       <View style={profileStyles.errorContainer}>
-        <Text style={profileStyles.errorText}>{error}</Text>
-        <TouchableOpacity onPress={loadProfile}>
-          <Text style={{ color: '#cc0000', fontWeight: '600' }}>Retry</Text>
+        <FontAwesome name="exclamation-circle" size={40} color="#cc0000" style={{ marginBottom: 12 }} />
+        <Text style={profileStyles.errorText}>{s(error, 'Something went wrong.')}</Text>
+        <TouchableOpacity
+          onPress={loadProfile}
+          style={{
+            marginTop: 12,
+            backgroundColor: '#cc0000',
+            paddingHorizontal: 24,
+            paddingVertical: 10,
+            borderRadius: 8,
+          }}
+        >
+          <Text style={{ color: '#fff', fontWeight: '600' }}>{'Retry'}</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  const formattedDate = profile?.createdAt
+  // ── Safe profile values — extracted BEFORE render, never nullable ──────
+  const displayName = s(profile?.displayName || profile?.username, 'Rider');
+  const usernameStr = s(profile?.username, '');
+  const bioStr      = s(profile?.bio, '');
+  const memberSince = profile?.createdAt
     ? new Date(profile.createdAt).toLocaleDateString('en-US', {
       year: 'numeric', month: 'long', day: 'numeric',
     })
     : null;
 
+  // ── Render ────────────────────────────────────────────────────────────
   return (
     <View style={profileStyles.screen}>
       <ScrollView
         contentContainerStyle={profileStyles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#cc0000" />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#cc0000"
+          />
         }
       >
-        {/* Red hero banner */}
+        {/* ── Red hero banner ── */}
         <View style={profileStyles.heroBanner} />
 
-        {/* Avatar */}
+        {/* ── Avatar (overlaps banner) ── */}
         <View style={profileStyles.avatarWrapper}>
-          <Avatar
-            profilePictureUrl={profile?.profilePictureUrl}
-            displayName={profile?.displayName || profile?.username}
-          />
+          <View style={profileStyles.avatarCircle}>
+            <Avatar
+              profilePictureUrl={profile?.profilePictureUrl ?? null}
+              displayName={displayName}
+            />
+          </View>
         </View>
 
-        {/* Name + username + badges */}
+        {/* ── Name / username / badges ── */}
         <View style={profileStyles.profileHeaderCard}>
-          <Text style={profileStyles.displayName}>
-            {profile?.displayName || profile?.username}
+          <Text style={profileStyles.displayName} numberOfLines={1}>
+            {displayName}
           </Text>
 
-          <Text style={profileStyles.username}>@{profile?.username}</Text>
-          <RiderTypeBadges riderTypes={profile?.riderTypes} />
+          {usernameStr.length > 0 && (
+            <Text style={profileStyles.username}>
+              {'@' + usernameStr}
+            </Text>
+          )}
 
+          <RiderTypeBadges riderTypes={profile?.riderTypes} />
         </View>
 
-        {/* Bio */}
+        {/* ── Bio ── */}
         <SectionCard title="About">
-          <Text style={profile?.bio ? profileStyles.bioText : profileStyles.bioEmpty}>
-            {profile?.bio || 'No bio yet.'}
+          <Text style={bioStr ? profileStyles.bioText : profileStyles.bioEmpty}>
+            {bioStr || 'No bio yet.'}
           </Text>
         </SectionCard>
 
-        {/* Contact */}
-
-
-        {formattedDate && (
-          <Text style={profileStyles.timestamp}>Member since {formattedDate}</Text>
+        {/* ── Member since ── */}
+        {memberSince !== null && (
+          <Text style={profileStyles.timestamp}>
+            {'Member since ' + memberSince}
+          </Text>
         )}
 
-
-
-        {/* My Rides */}
+        {/* ── My Rides ── */}
         <SectionCard
           title="My Rides"
           right={
             <SearchHeader
               token={token}
-              username={profile?.username}
+              username={usernameStr}
               navigation={navigation}
             />
           }
         >
-          <ProfileRidesList
+          <ProfileList
             token={token}
-            onRideSelect={(ride) =>
-              navigation?.navigate('RideStep4', {
-                generatedRidesId: ride.generatedRidesId,
-                rideName:         ride.ridesName,
-                locationName:     ride.locationName,
-                riderType:        ride.riderType,
-                distance:         ride.distance,
-                date:             ride.date,
-                token,
-              })
-            }
+            currentUsername={usernameStr}
+            onRideSelect={handleRideSelect}
             pageSize={5}
           />
         </SectionCard>

@@ -21,6 +21,7 @@ import badges from '../styles/base/badges';
 import { getMyProfile } from '../services/profileService';
 import colors from '../styles/tokens/colors';
 import { getRideTypeIcon } from '../utilities/rideTypes';
+import { buildRideStep4Params } from '../utilities/NavigationParamsBuilder';
 
 
 const ProfileAvatar = ({ profile, avatarStyle }) => {
@@ -47,7 +48,7 @@ const ProfileAvatar = ({ profile, avatarStyle }) => {
 };
 
 const RiderPage = ({ route, navigation }) => {
-  const { username, token } = route.params;
+  const { username, token } = route?.params || {};
 
   const [loading, setLoading]               = useState(true);
   const [profile, setProfile]               = useState(null);
@@ -91,21 +92,9 @@ const RiderPage = ({ route, navigation }) => {
   }, [token]);
 
   const handleRideSelect = (ride) => {
-    navigation.navigate('RideStep4', {
-      generatedRidesId: ride.generatedRidesId,
-      rideName:         ride.ridesName,
-      locationName:     ride.locationName,
-      riderType:        ride.riderType,
-      distance:         ride.distance,
-      date:             ride.date,
-      participants:     ride.participants,
-      description:      ride.description,
-      token,
-      username:         ride.username,
-      currentUsername:  username,
-    });
+    const params = buildRideStep4Params(ride, token, username);
+    navigation.navigate('RideStep4', params);
   };
-
   const handleCreateRide = () => {
     navigation.navigate('CreateRide', { token, username });
   };
@@ -129,7 +118,7 @@ const RiderPage = ({ route, navigation }) => {
           {/* Avatar — tap to open profile */}
           <TouchableOpacity
             activeOpacity={0.8}
-            onPress={() => navigation.navigate('RiderProfile', { token })}
+            onPress={() => navigation.navigate('RiderProfile', { token , username})}
             style={header.avatar}
           >
             <ProfileAvatar profile={profile} avatarStyle={header.avatar} />
@@ -142,7 +131,7 @@ const RiderPage = ({ route, navigation }) => {
               adjustsFontSizeToFit
               minimumFontScale={0.6}
             >
-              {username?.toUpperCase()}
+              {username ? username.toUpperCase() : ''}
             </Text>
 
             {loading ? (
@@ -191,11 +180,13 @@ const RiderPage = ({ route, navigation }) => {
           <ActivityIndicator color="#fff" size="small" />
         ) : activeRide ? (
           <View>
-            <Text style={{ color: '#fff', fontSize: 14 }}>{activeRide.ridesName}</Text>
+            <Text style={{ color: '#fff', fontSize: 14 }}>{activeRide.ridesName ?? '—'}</Text>
             <View style={{ flexDirection: 'row', marginTop: 4, justifyContent: 'space-between' }}>
-              <Text style={{ color: '#888', fontSize: 12 }}>{activeRide.locationName}</Text>
-              <Text style={{ color: '#888', fontSize: 12 }}>{activeRide.riderType}</Text>
-              <Text style={{ color: '#888', fontSize: 12 }}>{activeRide.distance} km</Text>
+              <Text style={{ color: '#888', fontSize: 12 }}>{activeRide.locationName ?? '—'}</Text>
+              <Text style={{ color: '#888', fontSize: 12 }}>{activeRide.riderType ?? '—'}</Text>
+              <Text style={{ color: '#888', fontSize: 12 }}>
+                {activeRide.distance != null ? `${activeRide.distance} km` : '— km'}
+              </Text>
             </View>
           </View>
         ) : (

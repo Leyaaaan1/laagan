@@ -129,13 +129,21 @@ const AuthScreen = ({ navigation }) => {
 
         Alert.alert(isLogin ? 'Login Successful' : 'Registration Successful');
 
-        if (isLogin && username) {
-          navigation.navigate('RiderPage', {
-            username: username,
-            token: result.data.token,
-          });
-        }
-        return true;
+        if (result.success) {
+          if (result.data.token) {
+            await AsyncStorage.setItem('userToken', result.data.token);
+            await AsyncStorage.setItem('username', username);
+          }
+
+
+          if (isLogin && username && navigation) {
+            navigation.navigate('RiderPage', {
+              username: username,
+              token: result.data.token,
+            });
+          }
+          return true;
+        }        return true;
       } else {
         Alert.alert('Error', result.message || 'Operation failed');
         return false;
