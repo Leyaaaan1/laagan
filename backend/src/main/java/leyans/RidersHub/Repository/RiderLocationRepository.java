@@ -16,10 +16,36 @@ public interface RiderLocationRepository extends JpaRepository<RiderLocation, In
 
     @Query("SELECT rl FROM RiderLocation rl " +
             "WHERE rl.startedRide.id = :rideId " +
+            "AND rl.id IN (" +
+            "   SELECT MAX(r.id) FROM RiderLocation r " +
+            "   WHERE r.startedRide.id = :rideId " +
+            "   GROUP BY r.username " +
+            ") " +
+            "ORDER BY rl.timestamp DESC")
+    List<RiderLocation> findLatestLocationPerParticipant(@Param("rideId") Integer rideId);
+    /**
+     * Alternative: If using JPQL, this works across databases (but slower without index)
+     */
+    @Query("SELECT rl FROM RiderLocation rl " +
+            "WHERE rl.startedRide.id = :rideId " +
             "AND rl.timestamp = (" +
             "   SELECT MAX(r.timestamp) FROM RiderLocation r " +
             "   WHERE r.startedRide.id = :rideId AND r.username = rl.username" +
-            ")")
-    List<RiderLocation> findLatestLocationPerParticipant(@Param("rideId") Integer rideId);
+            ") " +
+            "ORDER BY rl.timestamp DESC")
+    List<RiderLocation> findLatestLocationPerParticipantJPQL(@Param("rideId") Integer rideId);
+
+    @Query("SELECT rl FROM RiderLocation rl WHERE rl.startedRide.id = :rideId ORDER BY rl.timestamp DESC")
+    List<RiderLocation> findAllLocationsByRide(@Param("rideId") Integer rideId);
+
+
+    @Query("SELECT rl FROM RiderLocation rl " +
+            "WHERE rl.id IN (" +
+            "   SELECT MAX(r.id) FROM RiderLocation r " +
+            "   GROUP BY r.username " +
+            ") " +
+            "ORDER BY rl.timestamp DESC")
+    List<RiderLocation> findLatestLocationPerAllRiders();
+
 
 }

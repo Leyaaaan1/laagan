@@ -39,7 +39,7 @@ const RideHeroCard = ({ rideName, date, username, riderType, distance, descripti
         <Text style={cards.infoValue} numberOfLines={2}>{formatDate(date)}</Text>
         <View style={cards.heroMeta}>
           <FontAwesome name="user-circle" size={14} color="#8c2323" />
-          <Text style={cards.heroMetaText}>{String(username || '').toUpperCase()}</Text>
+          <Text style={cards.heroMetaText}>{(username || '').toUpperCase()}</Text>
         </View>
       </View>
       <View style={badges.rideType}>

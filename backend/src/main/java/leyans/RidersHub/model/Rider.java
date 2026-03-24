@@ -23,7 +23,7 @@ public class Rider {
     private Boolean enabled;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "rider_type", referencedColumnName = "rider_type")
+    @JoinColumn(name = "rider_type", referencedColumnName = "rider_type_id")
     private RiderType riderType;
 
     public Rider(Integer id, String username, String password, Boolean enabled, RiderType riderType) {
@@ -34,10 +34,9 @@ public class Rider {
         this.riderType = riderType;
     }
 
-
     public Rider() {
-
     }
+
     public interface RiderUsernameProjection {
         String getUsername();
     }

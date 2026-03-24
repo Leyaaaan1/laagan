@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="R13">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/frontend/node_modules/react-native-vector-icons/android/build/intermediates/compile_r_class_jar/debug/generateDebugRFile/R.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

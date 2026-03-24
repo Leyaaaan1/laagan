@@ -1,6 +1,5 @@
 package leyans.RidersHub.model.Interaction;
 
-
 import jakarta.persistence.*;
 import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.Rides;
@@ -11,8 +10,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "invite_requests",
         indexes = {
-                @Index(name = "idx_invite_token", columnList = "inviteToken"),
-                @Index(name = "idx_ride_id", columnList = "generatedRidesId"),
+                @Index(name = "idx_invite_token", columnList = "invite_token"),
+                @Index(name = "idx_ride_id", columnList = "generated_rides_id"),
         })
 public class InviteRequest {
 
@@ -21,11 +20,11 @@ public class InviteRequest {
     @Column(name = "invite_id")
     private Integer inviteId;
 
-    @Column(name = "inviteToken",  unique = true)
+    @Column(name = "invite_token", unique = true)
     private String inviteToken;
 
     @ManyToOne
-    @JoinColumn(name = "generatedRidesId", referencedColumnName = "generatedRidesId")
+    @JoinColumn(name = "generated_rides_id", referencedColumnName = "generated_rides_id")
     private Rides rides;
 
     @ManyToOne
@@ -33,21 +32,19 @@ public class InviteRequest {
     private Rider username;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "inviteStatus")
+    @Column(name = "invite_status")
     private InviteStatus inviteStatus;
 
     @Column(name = "qr")
     private String qr;
 
-    @Column(name = "invite_link" )
+    @Column(name = "invite_link")
     private String inviteLink;
 
-
-
-    @Column(name = "createdAt")
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "expiresAt")
+    @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 
     @Column(name = "qr_code_base64", columnDefinition = "TEXT")
@@ -62,16 +59,12 @@ public class InviteRequest {
         this.expiresAt = expiresAt;
     }
 
-
-
     public enum InviteStatus {
         PENDING,
         ACCEPTED,
         DECLINED,
-
         EXPIRED
     }
-
 
     public InviteRequest() {
         this.inviteToken = UUID.randomUUID().toString();
@@ -97,14 +90,6 @@ public class InviteRequest {
 
     public void setQr(String qr) {
         this.qr = qr;
-    }
-
-    public String getInviteLink() {
-        return inviteLink;
-    }
-
-    public void setInviteLink(String inviteLink) {
-        this.inviteLink = inviteLink;
     }
 
     public Integer getInviteId() {
@@ -147,7 +132,13 @@ public class InviteRequest {
         this.inviteStatus = inviteStatus;
     }
 
+    public String getInviteLink() {
+        return inviteLink;
+    }
 
+    public void setInviteLink(String inviteLink) {
+        this.inviteLink = inviteLink;
+    }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;

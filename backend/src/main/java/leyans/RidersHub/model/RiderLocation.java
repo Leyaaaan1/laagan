@@ -4,9 +4,6 @@ import jakarta.persistence.*;
 import org.locationtech.jts.geom.Point;
 import java.time.LocalDateTime;
 
-import java.awt.*;
-import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "rider_locations")
 public class RiderLocation {
@@ -18,12 +15,12 @@ public class RiderLocation {
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "rider_username", referencedColumnName = "username", nullable = false)
     private Rider username;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "started_ride_id", referencedColumnName = "id", nullable = false)
     private StartedRide startedRide;
 
-
-    @Column(name = "locationName", nullable = false)
+    @Column(name = "location_name", nullable = false)
     private String locationName;
 
     @Column(name = "location", columnDefinition = "geometry(Point,4326)", nullable = false)
@@ -31,7 +28,6 @@ public class RiderLocation {
 
     @Column(name = "distance_meters")
     private double distanceMeters;
-
 
     @Column(name = "timestamp", nullable = false)
     private LocalDateTime timestamp;
@@ -47,7 +43,6 @@ public class RiderLocation {
     }
 
     public RiderLocation() {
-
     }
 
     public String getLocationName() {

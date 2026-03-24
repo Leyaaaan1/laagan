@@ -14,6 +14,8 @@ const RouteMapView = ({
                         stopPoints = [],
                         style,
                         isDark = false,
+                        riderMarkers = {},        // ← NEW: Live rider locations
+                        currentUsername = '',      // ← NEW: Current logged-in user
                         ...restProps
                       }) => {
   const webViewRef = useRef(null);
@@ -33,26 +35,50 @@ const RouteMapView = ({
     updateUserLocationOnMap,
   } = useRouteMapLogic(generatedRidesId, token);
 
+  // ─────────────────────────────────────────────────────────────────
+  // NEW: Inject rider markers whenever they update
+  // ─────────────────────────────────────────────────────────────────
+  const updateRiderMarkersOnMap = useRef(null);
+
+  updateRiderMarkersOnMap.current = (webViewRef, markers, currentUser) => {
+    if (!webViewRef.current || !markers || Object.keys(markers).length === 0) return;
+
+    const script = `
+      if (typeof window.updateRiderMarkers === 'function') {
+        window.updateRiderMarkers(${JSON.stringify(markers)}, ${JSON.stringify(currentUser)});
+      }
+      true;
+    `;
+    webViewRef.current.injectJavaScript(script);
+  };
+
   // Re-inject whenever routeData OR the coordinate props change —
   // this is the key fix: RideStep4 initially passes null coords while
   // it waits for the API; once they arrive this effect fires again.
   useEffect(() => {
-    if (!webViewReadyRef.current || !routeData) return;
-    handleWebViewLoad(
-      webViewRef,
-      routeData,
-      startingPoint,
-      endingPoint,
-      stopPoints,
-      userLocation
-    );
-  }, [routeData, startingPoint, endingPoint, stopPoints, handleWebViewLoad, userLocation]);
+    if (webViewReadyRef.current) {
+      console.log('🗺️ Injecting rider markers:', Object.keys(riderMarkers || {}).length, 'riders');
+      updateRiderMarkersOnMap.current(webViewRef, riderMarkers || {}, currentUsername);
+    }
+    }, [routeData, startingPoint, endingPoint, stopPoints, handleWebViewLoad, userLocation]);
 
   useEffect(() => {
     if (userLocation && webViewRef.current) {
       updateUserLocationOnMap(webViewRef, userLocation);
     }
   }, [userLocation, updateUserLocationOnMap]);
+
+  // ─────────────────────────────────────────────────────────────────
+  // NEW: Update rider markers whenever they change
+  // ─────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (webViewReadyRef.current && riderMarkers && Object.keys(riderMarkers).length > 0) {
+      console.log('🗺️  Rider markers updated, injecting to WebView:', Object.keys(riderMarkers));
+      updateRiderMarkersOnMap.current(webViewRef, riderMarkers, currentUsername);
+    } else if (webViewReadyRef.current && (!riderMarkers || Object.keys(riderMarkers).length === 0)) {
+      console.log('🗺️  No rider markers yet');
+    }
+  }, [riderMarkers, currentUsername]);
 
   const onWebViewLoad = () => {
     webViewReadyRef.current = true;

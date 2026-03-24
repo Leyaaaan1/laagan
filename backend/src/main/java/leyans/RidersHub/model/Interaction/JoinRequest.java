@@ -1,6 +1,5 @@
 package leyans.RidersHub.model.Interaction;
 
-
 import jakarta.persistence.*;
 import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.Rides;
@@ -10,8 +9,8 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "join_requests",
         indexes = {
-                @Index(name = "idx_join_ride_requester", columnList = "generatedRidesId, username"),
-                @Index(name = "idx_join_status", columnList = "joinStatus")
+                @Index(name = "idx_join_ride_requester", columnList = "generated_rides_id, username"),
+                @Index(name = "idx_join_status", columnList = "join_status")
         })
 public class JoinRequest {
 
@@ -20,9 +19,8 @@ public class JoinRequest {
     @Column(name = "join_id")
     private Integer joinId;
 
-
     @ManyToOne
-    @JoinColumn(name = "generatedRidesId", referencedColumnName = "generatedRidesId", nullable = false)
+    @JoinColumn(name = "generated_rides_id", referencedColumnName = "generated_rides_id", nullable = false)
     private Rides generatedRidesId;
 
     @ManyToOne
@@ -33,19 +31,16 @@ public class JoinRequest {
     private String inviteToken;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "joinStatus", nullable = false)
+    @Column(name = "join_status", nullable = false)
     private JoinStatus joinStatus = JoinStatus.PENDING;
 
-    @Column(name = "requestedAt", nullable = false)
+    @Column(name = "requested_at", nullable = false)
     private LocalDateTime requestedAt;
-
-
 
     public JoinRequest() {
         this.requestedAt = LocalDateTime.now();
         this.joinStatus = JoinStatus.PENDING;
     }
-
 
     public JoinRequest(Rides generatedRidesId, Rider requester, String inviteToken) {
         this();
@@ -53,6 +48,7 @@ public class JoinRequest {
         this.requester = requester;
         this.inviteToken = inviteToken;
     }
+
     public enum JoinStatus {
         PENDING,
         APPROVED,

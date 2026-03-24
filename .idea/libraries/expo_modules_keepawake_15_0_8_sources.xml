@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="expo.modules.keepawake-15.0.8-sources">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/frontend/node_modules/expo/node_modules/expo-keep-awake/local-maven-repo/host/exp/exponent/expo.modules.keepawake/15.0.8/expo.modules.keepawake-15.0.8-sources.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

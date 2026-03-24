@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="R9">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/frontend/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/generateDebugRFile/R.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

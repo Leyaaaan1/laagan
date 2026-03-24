@@ -21,31 +21,24 @@ public class StartedRide {
     private Rider username;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "rides_id", referencedColumnName = "generatedRidesId", nullable = false)
+    @JoinColumn(name = "rides_id", referencedColumnName = "generated_rides_id", nullable = false)
     private Rides ride;
 
     @Column(name = "start_time", nullable = false)
     private LocalDateTime startTime;
 
-
-
-
     @Column(name = "location", columnDefinition = "geometry(Point,4326)")
     private Point location;
-
-
-
-
 
     @ManyToMany
     @JoinTable(
             name = "started_ride_participants",
-            joinColumns = @JoinColumn(name = "started_ride_id"),
-            inverseJoinColumns = @JoinColumn(name = "rider_username")
+            joinColumns = @JoinColumn(name = "started_ride_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "rider_username", referencedColumnName = "username")
     )
     @JsonIgnore
     private List<Rider> participants = new ArrayList<>();
-    // Constructors
+
     public StartedRide() {}
 
     public StartedRide(Rides ride, LocalDateTime startTime, Point location, List<Rider> participants, Rider username) {
@@ -55,9 +48,6 @@ public class StartedRide {
         this.participants = participants != null ? new ArrayList<>(participants) : new ArrayList<>();
         this.username = username;
     }
-
-
-
 
     public Rider getUsername() {
         return username;
@@ -83,7 +73,6 @@ public class StartedRide {
         this.participants = participants;
     }
 
-    // Getters and Setters
     public Integer getId() {
         return id;
     }

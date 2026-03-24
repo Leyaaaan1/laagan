@@ -1,13 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// components/ride/RideCard.jsx
-//
-// Single shared card for both RidesList (RiderPage) and ProfileRidesList.
-//
-// variant="full"    — full card with map image, description, creator row
-//                     used in RiderPage and UnifiedRides modal
-// variant="compact" — stripped card without image/description
-//                     used in ProfileRidesList (inside ScrollView)
-// ─────────────────────────────────────────────────────────────────────────────
+
 
 import React from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';

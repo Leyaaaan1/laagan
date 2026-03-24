@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="react-native-gradle-plugin">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/frontend/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build/libs/react-native-gradle-plugin.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

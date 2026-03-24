@@ -37,5 +37,12 @@ public interface StartedRideRepository extends JpaRepository<StartedRide, Intege
     @Query(value = "DELETE FROM started_ride_participants WHERE started_ride_id = :startedRideId", nativeQuery = true)
     void deleteParticipantsByStartedRideId(@Param("startedRideId") Integer startedRideId);
 
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM rider_locations WHERE started_ride_id = :startedRideId", nativeQuery = true)
+    void deleteRiderLocationsByStartedRideId(@Param("startedRideId") Integer startedRideId);
+
+
+
 
 }

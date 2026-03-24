@@ -5,6 +5,11 @@ export const createMapScript = () => `
     let markersGroup;
     let userLocationMarker;
     let userLocationAccuracyCircle;
+    
+    // ─────────────────────────────────────────────────────────────────
+    // NEW: Rider Location Markers (Live Location Sharing)
+    // ─────────────────────────────────────────────────────────────────
+    let riderMarkersGroup;
 
     function initMap() {
         try {
@@ -22,6 +27,11 @@ export const createMapScript = () => `
             }).addTo(map);
 
             markersGroup = L.layerGroup().addTo(map);
+            
+            // ─────────────────────────────────────────────────────────
+            // NEW: Initialize rider markers group
+            // ─────────────────────────────────────────────────────────
+            riderMarkersGroup = L.layerGroup().addTo(map);
 
             window.ReactNativeWebView?.postMessage(JSON.stringify({
                 type: 'mapReady',
@@ -34,6 +44,8 @@ export const createMapScript = () => `
             return false;
         }
     }
+    
+    
 
     function updateUserLocation(location) {
         try {
@@ -432,6 +444,110 @@ export const createMapScript = () => `
     };
 
     window.updateUserLocation = updateUserLocation;
+
+    // ─────────────────────────────────────────────────────────────────
+    // NEW: UPDATE RIDER MARKERS FUNCTION
+    // ─────────────────────────────────────────────────────────────────
+    function updateRiderMarkers(riderMarkers, currentUsername) {
+        try {
+            console.log('=== UPDATING RIDER MARKERS ===');
+            console.log('Riders to display:', Object.keys(riderMarkers));
+            
+            // Clear existing rider markers
+            riderMarkersGroup.clearLayers();
+            
+            if (!riderMarkers || Object.keys(riderMarkers).length === 0) {
+                console.log('No rider markers to display');
+                return;
+            }
+
+            Object.entries(riderMarkers).forEach(([riderId, location]) => {
+                try {
+                    const { latitude, longitude, locationName, distanceMeters } = location;
+                    
+                    if (!latitude || !longitude) {
+                        console.warn(\`Skipping rider \${riderId}: missing coordinates\`);
+                        return;
+                    }
+
+                    const latLng = [latitude, longitude];
+                    const isCurrentUser = riderId === currentUsername;
+                    
+                    // Different color for current user vs other riders
+                    const markerColor = isCurrentUser ? '#FF5722' : '#2196F3';
+                    const markerClass = isCurrentUser ? 'rider-marker-self' : 'rider-marker-other';
+                    const iconSymbol = isCurrentUser ? '🏍' : '🚲';
+
+                    const riderIcon = L.divIcon({
+                        className: 'custom-div-icon',
+                        html: \`
+                            <div class="rider-marker \${markerClass}" style="
+                                background-color: \${markerColor};
+                                width: 32px;
+                                height: 32px;
+                                border-radius: 50%;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                border: 3px solid white;
+                                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                                font-size: 18px;
+                            ">
+                                \${iconSymbol}
+                            </div>
+                        \`,
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 16],
+                        popupAnchor: [0, -20]
+                    });
+
+                    const popupText = \`
+                        <div class="route-popup" style="border-color: \${markerColor}; border-left: 4px solid \${markerColor};">
+                            <strong>\${isCurrentUser ? '🏍 You' : '🚲 ' + riderId}</strong><br>
+                            <b>Location:</b> \${locationName || 'Unknown'}<br>
+                            <b>Distance:</b> \${Math.round(distanceMeters || 0)}m away<br>
+                            <small style="color: #666; margin-top: 4px;">Live location</small>
+                        </div>
+                    \`;
+
+                    const marker = L.marker(latLng, { icon: riderIcon })
+                        .addTo(riderMarkersGroup)
+                        .bindPopup(popupText);
+
+                    // Add name label on top of marker
+                    const labelText = \`<span style="
+                        background-color: \${markerColor};
+                        color: white;
+                        padding: 2px 6px;
+                        border-radius: 12px;
+                        font-size: 11px;
+                        font-weight: bold;
+                        white-space: nowrap;
+                    ">\${riderId}\${isCurrentUser ? ' (You)' : ''}</span>\`;
+
+                    const nameLabel = L.tooltip({
+                        permanent: true,
+                        direction: 'top',
+                        offset: [0, -28],
+                        className: 'rider-name-label',
+                        opacity: 0.95
+                    });
+                    nameLabel.setContent(labelText);
+                    marker.bindTooltip(nameLabel);
+
+                    console.log(\`✓ Rider marker added: \${riderId} at [\${latitude}, \${longitude}]\`);
+                } catch (err) {
+                    console.error(\`Error adding rider marker for \${riderId}:\`, err);
+                }
+            });
+
+            console.log(\`=== RIDER MARKERS UPDATE COMPLETE ===\`);
+        } catch (error) {
+            console.error('Error updating rider markers:', error);
+        }
+    }
+
+    window.updateRiderMarkers = updateRiderMarkers;
 
     // ─── COMPASS / BEARING FEATURE ────────────────────────────────────
 

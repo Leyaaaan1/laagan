@@ -15,13 +15,17 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class RidersHubApplication {
 
 	public static void main(String[] args) {
-		Dotenv dotenv = Dotenv.configure().load();
-		dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
+		// Load .env file from classpath or working directory
+		Dotenv dotenv = Dotenv.configure()
+				.ignoreIfMissing()
+				.load();
+
+		// Apply dotenv variables to system properties
+		dotenv.entries().forEach(entry ->
+				System.setProperty(entry.getKey(), entry.getValue())
+		);
+
 		SpringApplication.run(RidersHubApplication.class, args);
-
 	}
-
-
-
 
 }

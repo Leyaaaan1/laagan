@@ -3,6 +3,9 @@ import { View, Text, TouchableOpacity, TextInput, ActivityIndicator } from 'reac
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { getRideDetails } from '../../services/rideService';
 import colors from '../../styles/tokens/colors';
+import { buildRideStep4Params } from '../../utilities/NavigationParamsBuilder';
+
+
 const SearchHeader = ({ token, username, navigation }) => {
   const [searchId, setSearchId] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,27 +22,14 @@ const SearchHeader = ({ token, username, navigation }) => {
 
     try {
       const ride = await getRideDetails(searchId.trim(), token);
-      navigation.navigate('RideStep4', {
-        generatedRidesId: ride.generatedRidesId,
-        rideName: ride.ridesName,
-        locationName: ride.locationName,
-        riderType: ride.riderType,
-        distance: ride.distance,
-        date: ride.date,
-        startingPoint: ride.startingPointName,
-        endingPoint: ride.endingPointName,
-        participants: ride.participants,
-        description: ride.description,
-        token: token,
-        username: username,
-      });
-    } catch (error) {
-      setError(error.message || 'Failed to find ride');
+      const params = buildRideStep4Params(ride, token, username);
+      navigation.navigate('RideStep4', params);
+    } catch (err) {
+      setError(err?.message || 'Failed to find ride');
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
@@ -82,9 +72,9 @@ const SearchHeader = ({ token, username, navigation }) => {
           </TouchableOpacity>
         </View>
       </View>
-      {error ? (
-        <Text style={{ color: colors.primary, marginTop: 4, fontSize: 12 }}>{error}</Text>
-      ) : null}
+      {!!error && (
+        <Text >{error}</Text>
+      )}
     </View>
   );
 };
