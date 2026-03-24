@@ -1,0 +1,19 @@
+<component name="libraryTable">
+  <library name="frenchrev">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/frenchrev/frenchrev_ca.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/frenchrev/frenchrev_fr.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/frenchrev/frenchrev_de.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/frenchrev/frenchrev.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/frenchrev/frenchrev_en.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/frenchrev/frenchrev_ja.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/frenchrev/frenchrev_it.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/frenchrev/frenchrev_pt.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/frenchrev/frenchrev_eu.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/frenchrev/frenchrev_es.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/frenchrev/frenchrev_ru.properties.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

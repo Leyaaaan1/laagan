@@ -1,0 +1,68 @@
+<component name="libraryTable">
+  <library name="roc">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_fa.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_mr.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_de.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_el.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_nl.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_nb.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_sr.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_bs.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_is.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_ko.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_es.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_ca.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_fil.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_ast.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_th.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_tr.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_pt_PT.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_lv.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_ru.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_cs.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_zh.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_zh_TW.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_id.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_hr.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_ta.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_gd.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_lo.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_sv.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_br.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_ur.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_lt.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_it.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_pl.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_hu.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_sl.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_ml.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_da.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_lb.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_ro.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_vi.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_gu.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_pt.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_fr.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_kn.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_mk.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_pa.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_fi.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_ug.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_ar.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_ja.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_sk.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_eu.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_en.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_bn.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_fy.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_te.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_he.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_ms.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/roc/roc_ee.properties.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

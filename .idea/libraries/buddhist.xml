@@ -1,0 +1,74 @@
+<component name="libraryTable">
+  <library name="buddhist">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_is.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_sk.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_ar.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_ca.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_fi.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_ug.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_ko.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_fil.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_fa.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_th.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_ja.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_mr.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_gu.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_cs.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_zh.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_el.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_nl.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_de.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_lb.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_pa.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_am.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_et.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_vi.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_ast.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_bs.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_nb.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_lv.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_es.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_lt.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_tr.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_it.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_ta.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_ru.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_br.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_id.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_hr.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_eu.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_hu.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_zh_TW.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_pl.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_ml.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_ur.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_sv.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_gd.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_fr.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_uk.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_pt_PT.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_lo.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_gsw.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_bn.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_km.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_ro.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_ga.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_ms.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_da.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_sr.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_sl.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_pt.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_kn.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_te.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_he.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_be.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_mk.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_fy.properties.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/calendar/names/buddhist/buddhist_en.properties.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

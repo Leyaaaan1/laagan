@@ -8,7 +8,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
+import jakarta.transaction.Transactional;
 @Service
 public class UserDetailsManager implements org.springframework.security.core.userdetails.UserDetailsService {
 
@@ -20,6 +20,7 @@ public class UserDetailsManager implements org.springframework.security.core.use
     }
 
     @Override
+    @Transactional
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Rider rider = riderRepository.findByUsername(username);
 

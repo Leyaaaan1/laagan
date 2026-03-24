@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="week.data">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/net/time4j/i18n/data/week.data.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

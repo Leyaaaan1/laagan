@@ -1,0 +1,27 @@
+<component name="libraryTable">
+  <library name="fonts">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/fonts/AntDesign.ttf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/fonts/MaterialCommunityIcons.ttf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/fonts/EvilIcons.ttf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/fonts/FontAwesome.ttf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/fonts/FontAwesome5_Solid.ttf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/fonts/Zocial.ttf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/fonts/Fontisto.ttf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/fonts/FontAwesome5_Brands.ttf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/fonts/FontAwesome5_Regular.ttf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/fonts/Entypo.ttf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/fonts/FontAwesome6_Regular.ttf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/fonts/Foundation.ttf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/fonts/Octicons.ttf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/fonts/Ionicons.ttf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/fonts/FontAwesome6_Solid.ttf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/fonts/SimpleLineIcons.ttf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/fonts/Feather.ttf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/fonts/FontAwesome6_Brands.ttf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/fonts/MaterialIcons.ttf.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

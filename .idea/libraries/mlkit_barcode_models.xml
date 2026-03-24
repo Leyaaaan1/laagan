@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="mlkit_barcode_models">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/mlkit_barcode_models/oned_feature_extractor_mobile.tflite.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/mlkit_barcode_models/oned_auto_regressor_mobile.tflite.jar!/" />
+      <root url="jar://$PROJECT_DIR$/frontend/android/app/build/intermediates/compressed_assets/debug/compressDebugAssets/out/assets/mlkit_barcode_models/barcode_ssd_mobilenet_v1_dmp25_quant.tflite.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

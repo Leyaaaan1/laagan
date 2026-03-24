@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="classes32">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/frontend/node_modules/react-native-date-picker/android/build/intermediates/runtime_library_classes_jar/debug/bundleLibRuntimeToJarDebug/classes.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

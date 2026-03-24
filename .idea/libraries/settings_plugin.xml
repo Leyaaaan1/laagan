@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="settings-plugin">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/frontend/node_modules/@react-native/gradle-plugin/settings-plugin/build/libs/settings-plugin.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

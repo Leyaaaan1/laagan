@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="R16">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/frontend/node_modules/react-native-date-picker/android/build/intermediates/compile_r_class_jar/debug/R.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

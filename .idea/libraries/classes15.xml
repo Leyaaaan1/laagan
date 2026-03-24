@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="classes15">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/frontend/node_modules/react-native-gesture-handler/android/build/intermediates/compile_library_classes_jar/debug/bundleLibCompileToJarDebug/classes.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
