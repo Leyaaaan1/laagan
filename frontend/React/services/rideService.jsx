@@ -1,4 +1,5 @@
 import {BASE_URL} from '@env';
+import {routeCache} from './cache/routeCache';
 
 // Use API_BASE_URL instead of hardcoded value
 const API_BASE_URL = BASE_URL  || 'http://localhost:8080';
@@ -199,53 +200,69 @@ export const createRide = async (rideData, token) => {
 
 
 export const fetchRideMapImage = async (generatedRidesId, token) => {
-    try {
-        const response = await fetch(`${API_BASE_URL}/riders/${generatedRidesId}/map-image`, {
-            headers: token ? {
-                'Authorization': `Bearer ${token}`,
-            } : {},
-        });
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/riders/${generatedRidesId}/map-image`,
+      {
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+            }
+          : {},
+      },
+    );
 
-        if (!response.ok) {
-            throw new Error('Failed to fetch map image');
-        }
-
-        const imageUrl = await response.text();
-        console.log('Map image URL fetched from backend:', imageUrl);
-        return imageUrl;
-    } catch (error) {
-        console.error('Error fetching ride map image:', error);
-        throw error;
+    if (!response.ok) {
+      throw new Error('Failed to fetch map image');
     }
-};
 
+    const imageUrl = await response.text();
+    console.log('Map image URL fetched from backend:', imageUrl);
+    return imageUrl;
+  } catch (error) {
+    console.error('Error fetching ride map image:', error);
+    throw error;
+  }
+};
 
 export const getRideDetails = async (generatedRidesId, token) => {
-    try {
-        const response = await fetch(`${API_BASE_URL}/riders/${generatedRidesId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-        });
+  try {
+    const response = await fetch(`${API_BASE_URL}/riders/${generatedRidesId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-        if (!response.ok) {
-            if (response.status === 404) {
-                throw new Error('No ride found');
-            }
-            const errorText = await response.text();
-            console.log(`Error fetching ride details: ${response.status} ${errorText}`);
-            throw new Error(`Failed to fetch ride details: ${errorText}`);
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.log('Failed to get ride details:', error);
-        throw error;
+    if (!response.ok) {
+      if (response.status === 404) throw new Error('No ride found');
+      const errorText = await response.text();
+      throw new Error(`Failed to fetch ride details: ${errorText}`);
     }
-};
 
+    const details = await response.json();
+
+    // Check local cache first
+    const cached = await routeCache.get(generatedRidesId);
+
+    if (cached) {
+      // Cache hit — use local coordinates, ignore what the server sent
+      console.log(`[routeCache] HIT for ride ${generatedRidesId}`);
+      return {...details, routeCoordinates: cached};
+    } else {
+      // Cache miss — save what the server returned for next time
+      console.log(
+        `[routeCache] MISS for ride ${generatedRidesId}, caching now`,
+      );
+      await routeCache.save(generatedRidesId, details.routeCoordinates);
+      return details;
+    }
+  } catch (error) {
+    console.warn('getRideDetails failed:', error);
+    throw error;
+  }
+};
 export const fetchRides = async (token, page = 0, size = 10) => {
     try {
         const response = await fetch(`${API_BASE_URL}/riders/rides?page=${page}&size=${size}`, {

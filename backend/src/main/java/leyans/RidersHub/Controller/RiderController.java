@@ -1,12 +1,13 @@
 package leyans.RidersHub.Controller;
+
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import leyans.RidersHub.Config.Security.SecurityUtils;
 import leyans.RidersHub.DTO.Request.RiderDTO.RiderTypeRequest;
 import leyans.RidersHub.DTO.Request.RidesDTO.RideRequestDTO;
 import leyans.RidersHub.DTO.Request.RidesDTO.StopPointDTO;
-import leyans.RidersHub.DTO.Response.RideResponseDTO;
-import leyans.RidersHub.Service.LocationService;
+import leyans.RidersHub.DTO.Response.RideDetailDTO;    // ← new
+import leyans.RidersHub.DTO.Response.RideSummaryDTO;  // ← new
 import leyans.RidersHub.Service.RiderService;
 import leyans.RidersHub.Service.RidesService;
 import leyans.RidersHub.Utility.RidesUtil;
@@ -29,7 +30,6 @@ public class RiderController {
     private final RidesService ridesService;
     private final RidesUtil ridesUtil;
 
-
     @Autowired
     public RiderController(RiderService riderService, RidesService ridesService, RidesUtil ridesUtil) {
         this.riderService = riderService;
@@ -50,14 +50,13 @@ public class RiderController {
         return ResponseEntity.ok(riderType);
     }
 
-
     @PostMapping("/create")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> createRide(@Valid @RequestBody RideRequestDTO rideRequest) {
         try {
             String username = SecurityUtils.getCurrentUsername();
 
-            RideResponseDTO response = ridesService.createRide(
+            RideDetailDTO response = ridesService.createRide(  // ← RideDetailDTO
                     rideRequest.getGeneratedRidesId(),
                     username,
                     rideRequest.getRidesName(),
@@ -78,7 +77,7 @@ public class RiderController {
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("Related entity not found: " + e.getMessage());
-        }  catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Invalid request: " + e.getMessage());
         } catch (Exception e) {
@@ -88,13 +87,10 @@ public class RiderController {
         }
     }
 
-
     @GetMapping("/{generatedRidesId}/stop-points")
-    public List<StopPointDTO> getStopPointsByRideId(@PathVariable Integer generatedRidesId)   {
+    public List<StopPointDTO> getStopPointsByRideId(@PathVariable Integer generatedRidesId) {
         return ridesUtil.getStopPointsDTOByGeneratedRideId(generatedRidesId);
     }
-
-
 
     @GetMapping("/{generatedRidesId}/map-image")
     public ResponseEntity<String> getRideMapImage(@PathVariable Integer generatedRidesId) {
@@ -113,7 +109,7 @@ public class RiderController {
     @GetMapping("/{generatedRidesId}")
     public ResponseEntity<?> getRideDetailsByGeneratedId(@PathVariable Integer generatedRidesId) {
         try {
-            RideResponseDTO ride = ridesUtil.findRideByGeneratedId(generatedRidesId);
+            RideDetailDTO ride = ridesUtil.findRideByGeneratedId(generatedRidesId);  // ← RideDetailDTO
             return ResponseEntity.ok(ride);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -125,42 +121,6 @@ public class RiderController {
         }
     }
 
-//    @GetMapping("/my-rides")
-//    @PreAuthorize("isAuthenticated()")
-//    public ResponseEntity<?> getMyRides() {
-//        try {
-//            String username = SecurityContextHolder.getContext().getAuthentication().getName();
-//            List<RideResponseDTO> rides = ridesUtil.findRidesByUsername(username);
-//            return ResponseEntity.ok(rides);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                    .body("Error retrieving rides: " + e.getMessage());
-//        }
-//    }
-//
-//
-//
-//
-//    @GetMapping("/rides")
-//    public ResponseEntity<?> getPaginatedRides(
-//            @RequestParam(defaultValue = "0") int page,
-//            @RequestParam(defaultValue = "5") int size) {
-//        try {
-//                ResponseEntity<?> authResponse = SecurityUtils.validateAuthentication();
-//                if (authResponse != null) {
-//                    return authResponse;
-//                }
-//
-//                Page<RideResponseDTO> rides = ridesUtil.getPaginatedRides(page, size);
-//                return ResponseEntity.ok(rides);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                    .body("Error retrieving rides: " + e.getMessage());
-//        }
-//    }
-
     @GetMapping("/my-rides")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> getMyRides(
@@ -168,7 +128,7 @@ public class RiderController {
             @RequestParam(defaultValue = "10") int size) {
         try {
             String username = SecurityContextHolder.getContext().getAuthentication().getName();
-            Page<RideResponseDTO> rides = ridesUtil.findRidesByUsernamePaginated(username, page, size);
+            Page<RideSummaryDTO> rides = ridesUtil.findRidesByUsernamePaginated(username, page, size);  // ← RideSummaryDTO
             return ResponseEntity.ok(rides);
         } catch (Exception e) {
             e.printStackTrace();
@@ -187,7 +147,7 @@ public class RiderController {
                 return authResponse;
             }
 
-            Page<RideResponseDTO> rides = ridesUtil.getPaginatedRides(page, size);
+            Page<RideSummaryDTO> rides = ridesUtil.getPaginatedRides(page, size);  // ← RideSummaryDTO
             return ResponseEntity.ok(rides);
         } catch (Exception e) {
             e.printStackTrace();
@@ -195,6 +155,4 @@ public class RiderController {
                     .body("Error retrieving rides: " + e.getMessage());
         }
     }
-
-
 }

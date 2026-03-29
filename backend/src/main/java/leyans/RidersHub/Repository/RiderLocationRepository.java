@@ -63,17 +63,7 @@ public interface RiderLocationRepository extends JpaRepository<RiderLocation, In
             "ORDER BY rl.timestamp DESC")
     List<RiderLocation> findLatestLocationPerParticipant(@Param("rideId") Integer rideId);
 
-    // -------------------------------------------------------------------------
-    // Alternative JPQL version (works without PostGIS, slightly slower)
-    // -------------------------------------------------------------------------
-    @Query("SELECT rl FROM RiderLocation rl " +
-            "WHERE rl.startedRide.id = :rideId " +
-            "AND rl.timestamp = (" +
-            "   SELECT MAX(r.timestamp) FROM RiderLocation r " +
-            "   WHERE r.startedRide.id = :rideId AND r.username = rl.username" +
-            ") " +
-            "ORDER BY rl.timestamp DESC")
-    List<RiderLocation> findLatestLocationPerParticipantJPQL(@Param("rideId") Integer rideId);
+
 
     // -------------------------------------------------------------------------
     // All rows for a ride, newest first — useful for history / debug

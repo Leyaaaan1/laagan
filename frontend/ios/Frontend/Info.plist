@@ -25,6 +25,10 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
+	  <key>NSLocationWhenInUseUsageDescription</key>
+      <string>This app needs your location to share with ride participants</string>
+      <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+      <string>This app needs your location to share with ride participants</string>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>

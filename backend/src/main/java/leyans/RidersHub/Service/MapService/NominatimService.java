@@ -204,23 +204,16 @@ public class NominatimService {
      */
     @RateLimiter(name = "nominatim", fallbackMethod = "searchCityOrLandmarkFallback")
     public List<Map<String, Object>> searchCityOrLandmark(String query, int limit) {
-        // Request double the limit so we have enough after filtering
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(nominatimApiBase + "/search")
+        String url = UriComponentsBuilder.fromHttpUrl(nominatimApiBase + "/search")
+                .queryParam("q", query)
                 .queryParam("format", "jsonv2")
                 .queryParam("addressdetails", 1)
                 .queryParam("limit", limit * 2)
                 .queryParam("countrycodes", "ph")
                 .queryParam("bounded", 1)
-                .queryParam("viewbox", MINDANAO_VIEWBOX);
-
-        // Structured parameters reduce server-side parsing time
-        builder.queryParam("city", query)
-                .queryParam("county", query);
-
-        // Also include q= for landmark matching — Nominatim merges both
-        builder.queryParam("q", query);
-
-        String url = builder.build(false).toUriString();
+                .queryParam("viewbox", MINDANAO_VIEWBOX)
+                .build(false)
+                .toUriString();
 
         try {
             ResponseEntity<String> response = restTemplate.exchange(
@@ -262,7 +255,6 @@ public class NominatimService {
                 if (filtered.size() >= limit) break;
             }
 
-            // Safety fallback — if strict filtering removed everything, return raw top-N
             if (filtered.isEmpty()) {
                 results.subList(0, Math.min(limit, results.size()))
                         .forEach(r -> r.putIfAbsent("place_type", "landmark"));

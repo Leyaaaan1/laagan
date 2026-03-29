@@ -5,7 +5,6 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   StatusBar,
 } from 'react-native';
 

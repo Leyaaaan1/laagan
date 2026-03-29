@@ -40,7 +40,7 @@ public class RouteService {
     private String grassApiKey;
 
     @Value("${USER_AGENT}")
-    private String userAgent;
+    private static String userAgent;
 
     private final ApiHelper apiHelper;
 
@@ -85,10 +85,8 @@ public class RouteService {
                     .queryParam("key",             grassApiKey);
 
             String url = builder.build(false).toUriString();
-
             HttpHeaders headers = new HttpHeaders();
             headers.set("User-Agent", userAgent);
-            headers.set("Accept-Encoding", "gzip, deflate"); // ← request compressed response
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
             ResponseEntity<String> response = restTemplate.exchange(
@@ -129,7 +127,7 @@ public class RouteService {
      *   for subsequent calls to the same host.
      */
 
-    private static RestTemplate buildPooledRestTemplate() {
+    private RestTemplate buildPooledRestTemplate() {
         HttpClientConnectionManager connectionManager =
                 PoolingHttpClientConnectionManagerBuilder.create()
                         .setMaxConnTotal(20)
@@ -144,12 +142,11 @@ public class RouteService {
         HttpClient httpClient = HttpClients.custom()
                 .setConnectionManager(connectionManager)
                 .setDefaultRequestConfig(requestConfig)
-                // Transparent gzip decompression — pairs with Accept-Encoding header
-                .disableContentCompression() // we handle decompression via Spring
                 .build();
 
         return new RestTemplate(new HttpComponentsClientHttpRequestFactory(httpClient));
     }
+
 
     public String routeFallback(double startLng, double startLat,
                                 double endLng,   double endLat,

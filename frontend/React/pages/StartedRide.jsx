@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import {
   View,
   Text,
@@ -10,26 +10,21 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import { processRideCoordinates } from '../utilities/CoordinateUtils';
+import {processRideCoordinates} from '../utilities/CoordinateUtils';
 import startedRide from '../styles/screens/startedRide';
 import rideRoutes from '../styles/screens/rideRoutes';
 import feedback from '../styles/base/feedback';
 import RouteMapView from '../utilities/route/view/RouteMapView';
-import { startService } from '../services/startService';
-import { useRideLocationPolling } from '../hooks/useRideLocationPolling';
-import { buildRideStep4Params } from '../utilities/NavigationParamsBuilder';
+import {startService} from '../services/startService';
+import {useRideLocationPolling} from '../hooks/useRideLocationPolling';
+import {buildRideStep4Params} from '../utilities/NavigationParamsBuilder';
 
-const StartedRide = ({ route, navigation }) => {
-  const { activeRide, token, username } = route.params || {};
+const StartedRide = ({route, navigation}) => {
+  const {activeRide, token, username} = route.params || {};
   const [showRouteInfo, setShowRouteInfo] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
-
-  // ─────────────────────────────────────────────────────────────────
-  // NEW: Location Sharing State
-  // ─────────────────────────────────────────────────────────────────
   const [riderMarkers, setRiderMarkers] = useState({});
   const [pollingError, setPollingError] = useState(null);
-  const mapViewRef = useRef(null);
 
   if (!activeRide) {
     return (
@@ -40,24 +35,32 @@ const StartedRide = ({ route, navigation }) => {
   }
 
   const mapData = processRideCoordinates(activeRide);
+  const rideId = activeRide.generatedRidesId || activeRide.id;
 
   // ─────────────────────────────────────────────────────────────────
-  // NEW: Location Polling Hook
+  // LOCATION POLLING
+  //
+  // FIX: The original code used  enabled: activeRide.status === 'ACTIVE'
+  // but the activeRide object usually has no `status` field, so `enabled`
+  // was always false and polling never started.
+  //
+  // We now let the hook default to enabled=true.  The hook itself already
+  // guards against missing rideId or token.
   // ─────────────────────────────────────────────────────────────────
-  const { isPolling, error: pollingHookError, retryCount } = useRideLocationPolling({
-    rideId: activeRide.generatedRidesId || activeRide.id,
+  const {
+    isPolling,
+    error: pollingHookError,
+    retryCount,
+  } = useRideLocationPolling({
+    rideId,
     token,
-    enabled: activeRide && activeRide.status === 'ACTIVE',
-    onLocationsUpdate: (locations) => {
-      console.log('🎯 onLocationsUpdate called with:', locations);
+    // enabled defaults to true — no status check needed
+    onLocationsUpdate: locations => {
+      console.log('🎯 onLocationsUpdate:', locations.length, 'riders');
 
       const markers = {};
-      locations.forEach((loc) => {
-        console.log('Processing location:', loc);
-        console.log('initiator:', loc.initiator);
-        console.log('latitude:', loc.latitude);
-        console.log('longitude:', loc.longitude);
-
+      locations.forEach(loc => {
+        // `initiator` is the username field returned by LocationUpdateRequestDTO
         markers[loc.initiator] = {
           latitude: loc.latitude,
           longitude: loc.longitude,
@@ -67,15 +70,16 @@ const StartedRide = ({ route, navigation }) => {
         };
       });
 
-      console.log('🎨 Final markers object:', JSON.stringify(markers, null, 2));
+      console.log('🎨 Markers:', Object.keys(markers));
       setRiderMarkers(markers);
       setPollingError(null);
     },
-    onError: (err) => {
+    onError: err => {
       setPollingError(err.message);
-      console.error('Location polling error:', err);
+      console.error('Location polling failed:', err);
     },
   });
+
   const handleSwipeToDetails = () => {
     const params = buildRideStep4Params(activeRide, token, username);
     navigation.navigate('RideStep4', params);
@@ -86,50 +90,51 @@ const StartedRide = ({ route, navigation }) => {
       'Stop Ride',
       'Are you sure you want to stop this ride? This action cannot be undone.',
       [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
+        {text: 'Cancel', style: 'cancel'},
         {
           text: 'Stop Ride',
           style: 'destructive',
           onPress: async () => {
             try {
               setIsStopping(true);
-              const rideId = activeRide.generatedRidesId || activeRide.id;
               await startService.deactivateRide(rideId, token);
 
               const params = buildRideStep4Params(activeRide, token, username);
-
               navigation.reset({
                 index: 1,
                 routes: [
-                  { name: 'RiderPage', params: { username: username, token: token } },
-                  { name: 'RideStep4', params: params },
+                  {name: 'RiderPage', params: {username, token}},
+                  {name: 'RideStep4', params},
                 ],
               });
             } catch (error) {
-              Alert.alert('Error', error.message || 'Failed to stop the ride. Please try again.');
+              Alert.alert(
+                'Error',
+                error.message || 'Failed to stop the ride. Please try again.',
+              );
             } finally {
               setIsStopping(false);
             }
           },
         },
       ],
-      { cancelable: true }
+      {cancelable: true},
     );
   };
 
   return (
     <View style={startedRide.container}>
-      <StatusBar translucent barStyle="light-content" backgroundColor="transparent" />
+      <StatusBar
+        translucent
+        barStyle="light-content"
+        backgroundColor="transparent"
+      />
 
       <Animated.View
         style={[
           rideRoutes.mapSection,
-          { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-        ]}
-      >
+          {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0},
+        ]}>
         <View
           style={{
             paddingVertical: 10,
@@ -139,21 +144,20 @@ const StartedRide = ({ route, navigation }) => {
           }}
         />
 
-        {/* Map with Rider Location Markers */}
+        {/* Map — riderMarkers is updated by the polling hook every 5 s */}
         <RouteMapView
-          ref={mapViewRef}
-          generatedRidesId={activeRide.generatedRidesId || activeRide.id}
+          generatedRidesId={rideId}
           startingPoint={mapData.startingPoint}
           endingPoint={mapData.endingPoint}
           stopPoints={mapData.stopPoints}
           token={token}
-          style={{ flex: 1 }}
+          style={{flex: 1}}
           isDark={true}
           riderMarkers={riderMarkers}
           currentUsername={username}
         />
 
-        {/* Polling Status Indicator - Top Right */}
+        {/* Polling status pill — top right */}
         <View
           style={{
             position: 'absolute',
@@ -167,9 +171,10 @@ const StartedRide = ({ route, navigation }) => {
             alignItems: 'center',
             gap: 6,
             borderWidth: 1,
-            borderColor: isPolling ? 'rgba(76, 175, 80, 0.5)' : 'rgba(244, 67, 54, 0.5)',
-          }}
-        >
+            borderColor: isPolling
+              ? 'rgba(76, 175, 80, 0.5)'
+              : 'rgba(244, 67, 54, 0.5)',
+          }}>
           <View
             style={{
               width: 8,
@@ -178,29 +183,29 @@ const StartedRide = ({ route, navigation }) => {
               backgroundColor: isPolling ? '#4CAF50' : '#f44336',
             }}
           />
-          <Text style={{ color: '#fff', fontSize: 11, fontWeight: '500' }}>
+          <Text style={{color: '#fff', fontSize: 11, fontWeight: '500'}}>
             {isPolling
-              ? `${Object.keys(riderMarkers).length} riders`
+              ? `${Object.keys(riderMarkers).length} rider${
+                  Object.keys(riderMarkers).length !== 1 ? 's' : ''
+                } live`
               : `Retry: ${retryCount}`}
           </Text>
         </View>
 
-        {/* Route Info Overlay - Fixed Size with ScrollView */}
+        {/* Route info overlay */}
         <View style={startedRide.routeInfoOverlay}>
-          {/* Header - Always Visible */}
           <TouchableOpacity
             onPress={() => setShowRouteInfo(!showRouteInfo)}
             style={[
               startedRide.routeInfoHeader,
               showRouteInfo && startedRide.routeInfoHeaderExpanded,
-            ]}
-          >
+            ]}>
             <View style={startedRide.routeInfoHeaderContent}>
               <FontAwesome
                 name="map-marker"
                 size={18}
                 color="#fff"
-                style={{ marginRight: 8 }}
+                style={{marginRight: 8}}
               />
             </View>
             <FontAwesome
@@ -210,17 +215,16 @@ const StartedRide = ({ route, navigation }) => {
             />
           </TouchableOpacity>
 
-          {/* Collapsible Content with Fixed Height and Scrolling */}
           {showRouteInfo && (
             <ScrollView
               style={startedRide.routeScrollContainer}
               showsVerticalScrollIndicator={true}
-              contentContainerStyle={startedRide.routeScrollContainer}
-            >
+              contentContainerStyle={startedRide.routeScrollContainer}>
               {/* Starting Point */}
               <View style={startedRide.routePointContainer}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={[startedRide.routeMarker, startedRide.startMarker]}>
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                  <View
+                    style={[startedRide.routeMarker, startedRide.startMarker]}>
                     <Text style={startedRide.routeMarkerEmoji}>🚀</Text>
                   </View>
                   <Text style={startedRide.routeLabel}>STARTING POINT</Text>
@@ -239,8 +243,10 @@ const StartedRide = ({ route, navigation }) => {
                     <View key={index} style={startedRide.stopPointWrapper}>
                       <View style={startedRide.routeRow}>
                         <View
-                          style={[startedRide.routeMarker, startedRide.stopMarker]}
-                        >
+                          style={[
+                            startedRide.routeMarker,
+                            startedRide.stopMarker,
+                          ]}>
                           <Text style={startedRide.routeMarkerNumber}>
                             {index + 1}
                           </Text>
@@ -260,7 +266,8 @@ const StartedRide = ({ route, navigation }) => {
               {/* Ending Point */}
               <View style={startedRide.routePointContainer}>
                 <View style={startedRide.routeRow}>
-                  <View style={[startedRide.routeMarker, startedRide.endMarker]}>
+                  <View
+                    style={[startedRide.routeMarker, startedRide.endMarker]}>
                     <Text style={startedRide.routeMarkerEmoji}>🏁</Text>
                   </View>
                   <Text style={startedRide.routeLabel}>ENDING POINT</Text>
@@ -272,14 +279,14 @@ const StartedRide = ({ route, navigation }) => {
                 </Text>
               </View>
 
-              {/* Participants Section - ENHANCED WITH LIVE LOCATIONS */}
+              {/* Participants — show live location from riderMarkers */}
               <View style={startedRide.participantsContainer}>
                 <View style={startedRide.participantsHeader}>
                   <FontAwesome
                     name="users"
                     size={16}
                     color="#fff"
-                    style={{ marginRight: 8 }}
+                    style={{marginRight: 8}}
                   />
                   <Text style={startedRide.participantsTitle}>
                     PARTICIPANTS ({activeRide.participants.length})
@@ -289,21 +296,20 @@ const StartedRide = ({ route, navigation }) => {
                 {activeRide.participants.length > 0 ? (
                   activeRide.participants.map((participant, index) => {
                     const liveLocation = riderMarkers[participant.username];
-
                     return (
                       <View key={index} style={startedRide.participantItem}>
                         <View style={startedRide.participantAvatar}>
                           <Text style={startedRide.participantInitial}>
-                            {(
-                              participant.username ||
+                            {(participant.username ||
                               participant.name ||
-                              'U'
-                            )[0].toUpperCase()}
+                              'U')[0].toUpperCase()}
                           </Text>
                         </View>
                         <View style={startedRide.participantInfo}>
                           <Text style={startedRide.participantName}>
-                            {participant.username || participant.name || 'Unknown User'}
+                            {participant.username ||
+                              participant.name ||
+                              'Unknown User'}
                           </Text>
                           {liveLocation ? (
                             <Text
@@ -311,24 +317,28 @@ const StartedRide = ({ route, navigation }) => {
                                 color: '#4CAF50',
                                 fontSize: 11,
                                 marginTop: 2,
-                              }}
-                            >
+                              }}>
                               📍 {liveLocation.locationName} •{' '}
                               {Math.round(liveLocation.distanceMeters)}m away
                             </Text>
-                          ) : participant.status ? (
-                            <Text style={startedRide.participantStatus}>
-                              {participant.status}
+                          ) : (
+                            <Text
+                              style={{
+                                color: '#888',
+                                fontSize: 11,
+                                marginTop: 2,
+                              }}>
+                              ⏳ Waiting for location…
                             </Text>
-                          ) : null}
+                          )}
                         </View>
                         <View
                           style={[
                             startedRide.participantStatusDot,
                             liveLocation
-                              ? { backgroundColor: '#4CAF50' }
+                              ? {backgroundColor: '#4CAF50'}
                               : participant.isActive &&
-                              startedRide.participantStatusActive,
+                                startedRide.participantStatusActive,
                           ]}
                         />
                       </View>
@@ -343,7 +353,6 @@ const StartedRide = ({ route, navigation }) => {
                   </View>
                 )}
 
-                {/* Polling Error Message */}
                 {pollingError && (
                   <View
                     style={{
@@ -353,9 +362,8 @@ const StartedRide = ({ route, navigation }) => {
                       marginTop: 8,
                       borderLeftWidth: 3,
                       borderLeftColor: '#f44336',
-                    }}
-                  >
-                    <Text style={{ color: '#f44336', fontSize: 11 }}>
+                    }}>
+                    <Text style={{color: '#f44336', fontSize: 11}}>
                       ⚠️ {pollingError}
                     </Text>
                   </View>
@@ -365,15 +373,14 @@ const StartedRide = ({ route, navigation }) => {
           )}
         </View>
 
-        {/* Action Buttons at Bottom */}
-        <View style={{ flexDirection: 'row', gap: 10 }}>
+        {/* Action Buttons */}
+        <View style={{flexDirection: 'row', gap: 10}}>
           <TouchableOpacity
             style={[
               startedRide.actionButton,
-              { flex: 1, backgroundColor: 'rgba(140, 35, 35, 0.9)' },
+              {flex: 1, backgroundColor: 'rgba(140, 35, 35, 0.9)'},
             ]}
-            onPress={handleSwipeToDetails}
-          >
+            onPress={handleSwipeToDetails}>
             <FontAwesome name="info-circle" size={23} color="#fff" />
             <Text style={startedRide.actionButtonText}>Details</Text>
           </TouchableOpacity>
@@ -381,20 +388,17 @@ const StartedRide = ({ route, navigation }) => {
           <TouchableOpacity
             style={[
               startedRide.actionButton,
-              { flex: 1, backgroundColor: 'rgba(30, 30, 30, 0.95)' },
+              {flex: 1, backgroundColor: 'rgba(30, 30, 30, 0.95)'},
             ]}
             onPress={handleStopRide}
-            disabled={isStopping}
-          >
+            disabled={isStopping}>
             {isStopping ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <FontAwesome name="stop-circle" size={23} color="#ff4444" />
             )}
-            <Text
-              style={[startedRide.actionButtonText, { color: '#ff4444' }]}
-            >
-              {isStopping ? 'Stopping...' : 'Stop Ride'}
+            <Text style={[startedRide.actionButtonText, {color: '#ff4444'}]}>
+              {isStopping ? 'Stopping…' : 'Stop Ride'}
             </Text>
           </TouchableOpacity>
         </View>

@@ -194,29 +194,43 @@ const RideStep4 = (props) => {
   }, [locationName, token]);
 
   useEffect(() => {
-    if (!generatedRidesId) { return; }
-    patchState({ imageLoading: true });
+    if (!generatedRidesId) {
+      return;
+    }
+    patchState({imageLoading: true});
     fetchRideMapImage(generatedRidesId, token)
-      .then(url  => patchState({ mapImage: url }))
-      .catch(err => console.error('Map image fetch error:', err?.response?.status || err.message))
-      .finally(() => patchState({ imageLoading: false }));
+      .then(url => patchState({mapImage: url}))
+      .catch(err =>
+        console.error(
+          'Map image fetch error:',
+          err?.response?.status || err.message,
+        ),
+      )
+      .finally(() => patchState({imageLoading: false}));
   }, [generatedRidesId, token]);
 
   useEffect(() => {
     if (!generatedRidesId || !token || hasFetchedRef.current) return;
-    patchState({ imageLoading: true });
+    hasFetchedRef.current = true;
+
+    patchState({imageLoading: true});
+
     getRideDetails(generatedRidesId, token)
       .then(details => {
         setState(prev => ({
           ...prev,
-          startMapImage:         details.magImageStartingLocation || prev.startMapImage,
-          endMapImage:           details.magImageEndingLocation   || prev.endMapImage,
-          distanceState:         details.distance                 || prev.distanceState,
+          mapImage: details.mapImageUrl || prev.mapImage,
+          startMapImage: details.magImageStartingLocation || prev.startMapImage,
+          endMapImage: details.magImageEndingLocation || prev.endMapImage,
+          distanceState: details.distance || prev.distanceState,
           rideDetailsWithCoords: details,
+          imageLoading: false,
         }));
       })
-      .catch(err => console.warn('Ride details fetch error:', err.message))
-      .finally(() => patchState({ imageLoading: false }));
+      .catch(err => {
+        console.warn('Ride details fetch error:', err.message);
+        patchState({imageLoading: false});
+      });
   }, [generatedRidesId, token]);
 
   return (
