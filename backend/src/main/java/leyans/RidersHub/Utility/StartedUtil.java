@@ -1,6 +1,7 @@
 package leyans.RidersHub.Utility;
 
 import leyans.RidersHub.DTO.Request.ParticipantLocationDTO;
+import leyans.RidersHub.DTO.Response.RideDetailDTO;
 import leyans.RidersHub.DTO.Response.RideResponseDTO;
 import leyans.RidersHub.DTO.Response.StartRideResponseDTO;
 import leyans.RidersHub.Repository.ParticipantLocationRepository;
@@ -87,24 +88,30 @@ public class StartedUtil {
 
     @PreAuthorize("isAuthenticated()")
     @Transactional(readOnly = true)
-    public RideResponseDTO getStartedRideDetails() throws AccessDeniedException {
-        // Get the authenticated user
+    public RideDetailDTO getStartedRideDetails() throws AccessDeniedException {
         Rider requester = authenticateAndGetInitiator();
+        String username = requester.getUsername();
 
-        // Find the started ride by the initiator (username field in StartedRide)
-        Optional<StartedRide> startedRide = startedRideRepository.findByUsernameWithRide(requester);
-
+        Optional<StartedRide> startedRide = startedRideRepository.findByUsername(requester);
         if (startedRide.isEmpty()) {
-            throw new IllegalArgumentException("No active ride found for user");
+            startedRide = startedRideRepository.findByParticipantUsername(username);
         }
 
-        // Return the ride details from the started ride
-        return mapToRideResponseDTO(startedRide.get().getRide());
+        StartedRide active = startedRide
+                .orElseThrow(() -> new IllegalArgumentException("No active ride found for user"));
+
+        Rides ride = active.getRide();
+        if (ride == null) {
+            throw new IllegalStateException("Started ride has no associated ride");
+        }
+
+        return mapToRideDetailDTO(ride);        // ← renamed call
     }
 
-    public RideResponseDTO mapToRideResponseDTO(Rides ride) {
-        return ridesUtil.mapToResponseDTO(ride);
+    public RideDetailDTO mapToRideDetailDTO(Rides ride) {
+        return ridesUtil.mapToDetailDTO(ride);
     }
+
 
     public StartRideResponseDTO buildStartRideResponse(
             StartedRide startedRide,

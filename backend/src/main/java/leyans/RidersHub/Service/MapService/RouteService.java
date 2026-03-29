@@ -2,164 +2,163 @@ package leyans.RidersHub.Service.MapService;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import leyans.RidersHub.DTO.Request.RidesDTO.StopPointDTO;
 import leyans.RidersHub.Repository.RidesRepository;
+import leyans.RidersHub.Service.MapService.utilities.ApiHelper;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.io.HttpClientConnectionManager;
+import org.apache.hc.core5.util.Timeout;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 
 @Service
 public class RouteService {
 
+    private static final String GH_BASE_URL = "https://graphhopper.com/api/1/route";
+
+    // Mindanao bounding box used for future geo-validation if needed
+    private static final double MIN_LAT = 5.4,  MAX_LAT = 10.5;
+    private static final double MIN_LON = 119.0, MAX_LON = 127.0;
+
     @Value("${GRASS_HOPPER}")
     private String grassApiKey;
 
-    private static final String GH_BASE_URL = "https://graphhopper.com/api/1/route";
+    @Value("${USER_AGENT}")
+    private static String userAgent;
+
+    private final ApiHelper apiHelper;
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final RidesRepository ridesRepository;
 
-    public RouteService(RidesRepository ridesRepository,
-                        RestTemplate restTemplate,
+    /**
+     * Pool settings tuned for a single-node ride-sharing backend:
+     *   maxTotal=20   — no more than 20 concurrent GraphHopper connections
+     *   defaultMaxPerRoute=10 — up to 10 to the same host (graphhopper.com)
+     *   connectTimeout=3s, responseTimeout=10s
+     */
+    public RouteService(ApiHelper apiHelper, RidesRepository ridesRepository,
                         ObjectMapper objectMapper) {
+        this.apiHelper = apiHelper;
         this.ridesRepository = ridesRepository;
-        this.restTemplate    = restTemplate;
         this.objectMapper    = objectMapper;
+        this.restTemplate    = buildPooledRestTemplate();
     }
 
-    /**
-     * Get route directions from GraphHopper and return as GeoJSON
-     * so the rest of your app (RouteController, frontend) stays unchanged.
-     */
+
+    @RateLimiter(name = "graphhopper", fallbackMethod = "routeFallback")
     public String getRouteDirections(double startLng, double startLat,
                                      double endLng,   double endLat,
                                      List<StopPointDTO> stopPoints,
                                      String profile) {
         try {
-            // ── Build point list: start → stops → end ─────────────────────
-            List<String> points = new ArrayList<>();
-            points.add(startLat + "," + startLng);
+            List<String> points = apiHelper.buildPointList(startLat, startLng, stopPoints, endLat, endLng);
 
-            if (stopPoints != null) {
-                for (StopPointDTO stop : stopPoints) {
-                    if (stop.getStopLatitude() != 0.0 && stop.getStopLongitude() != 0.0) {
-                        points.add(stop.getStopLatitude() + "," + stop.getStopLongitude());
-                    }
-                }
-            }
+            // UriComponentsBuilder doesn't support repeated same-key params natively,
+            // so we append them manually then hand off to the builder for encoding.
+            UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(GH_BASE_URL);
+            points.forEach(p -> builder.queryParam("point", p));
 
-            points.add(endLat + "," + endLng);
+            builder.queryParam("vehicle",        apiHelper.mapProfile(profile))
+                    .queryParam("type",            "json")
+                    .queryParam("points_encoded",  "false")
+                    .queryParam("simplify",        "true")   // ← reduce coordinate count
+                    .queryParam("instructions",    "true")
+                    .queryParam("locale",          "en")
+                    .queryParam("key",             grassApiKey);
 
-            // ── Build query string ─────────────────────────────────────────
-            // GraphHopper uses repeated "point=" params, one per waypoint
-            StringBuilder url = new StringBuilder(GH_BASE_URL + "?");
-            for (String point : points) {
-                url.append("point=").append(point).append("&");
-            }
-            url.append("vehicle=").append(mapProfile(profile));
-            url.append("&type=json");           // response format
-            url.append("&points_encoded=false"); // return readable lat/lng arrays
-            url.append("&key=").append(grassApiKey);
-
-            // ── Call GraphHopper ───────────────────────────────────────────
+            String url = builder.build(false).toUriString();
             HttpHeaders headers = new HttpHeaders();
-            headers.set("User-Agent", "RidersHub/1.0 (paninsorolean@gmail.com)");
+            headers.set("User-Agent", userAgent);
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
             ResponseEntity<String> response = restTemplate.exchange(
-                    url.toString(), HttpMethod.GET, entity, String.class
-            );
+                    url, HttpMethod.GET, entity, String.class);
 
-            // ── Convert GraphHopper JSON → GeoJSON so frontend unchanged ──
-            return convertToGeoJson(response.getBody());
+            return apiHelper.convertToGeoJson(response.getBody());
 
         } catch (HttpClientErrorException e) {
-            throw new RuntimeException("GraphHopper API Error: " + e.getResponseBodyAsString(), e);
+            throw new RuntimeException("GraphHopper API error: " + e.getResponseBodyAsString(), e);
         } catch (Exception e) {
             throw new RuntimeException("Failed to get route directions: " + e.getMessage(), e);
         }
     }
 
-    /**
-     * Map ORS profile names to GraphHopper vehicle types.
-     * Add more mappings here if you add more ride types.
-     */
-    private String mapProfile(String orsProfile) {
-        if (orsProfile == null) return "car";
-        return switch (orsProfile) {
-            case "driving-car"        -> "car";
-            case "driving-hgv"        -> "car";
-            case "cycling-regular"    -> "bike";
-            case "cycling-mountain"   -> "mtb";
-            case "foot-walking"       -> "foot";
-            case "driving-motorcycle" -> "motorcycle";
-            default                   -> "car";
-        };
-    }
-
-    /**
-     * Convert GraphHopper JSON response to GeoJSON FeatureCollection.
-     * Your RouteController and frontend already expect GeoJSON — this
-     * keeps them completely unchanged.
-     *
-     * GraphHopper shape points are [lng, lat] arrays when points_encoded=false.
-     */
-    private String convertToGeoJson(String graphHopperJson) throws Exception {
-        JsonNode root = objectMapper.readTree(graphHopperJson);
-        JsonNode path = root.path("paths").get(0);
-
-        if (path == null || path.isMissingNode()) {
-            throw new RuntimeException("No route path returned from GraphHopper");
-        }
-
-        // Extract coordinate array from points.coordinates
-        JsonNode coords = path.path("points").path("coordinates");
-
-        // Build GeoJSON FeatureCollection matching what ORS returned
-        String geoJson = """
-                {
-                  "type": "FeatureCollection",
-                  "features": [{
-                    "type": "Feature",
-                    "geometry": {
-                      "type": "LineString",
-                      "coordinates": %s
-                    },
-                    "properties": {
-                      "distance": %s,
-                      "duration": %s
-                    }
-                  }]
-                }
-                """.formatted(
-                objectMapper.writeValueAsString(coords),
-                path.path("distance").asText("0"),
-                path.path("time").asText("0")
-        );
-
-        return geoJson;
-    }
-
-    // ── Saved route (unchanged) ───────────────────────────────────────────────
-
     @Transactional(readOnly = true)
     public JsonNode getSavedRouteGeoJson(Integer generatedRidesId) {
         try {
-            String routeGeoJson = ridesRepository.findRouteCoordinatesByGeneratedRidesId(generatedRidesId);
-            if (routeGeoJson == null || routeGeoJson.trim().isEmpty()) {
+            String routeGeoJson =
+                    ridesRepository.findRouteCoordinatesByGeneratedRidesId(generatedRidesId);
+            if (routeGeoJson == null || routeGeoJson.isBlank()) {
                 return objectMapper.createObjectNode();
             }
             return objectMapper.readTree(routeGeoJson);
         } catch (Exception e) {
-            System.out.println("Error getting saved route GeoJSON: " + e.getMessage());
+            System.err.println("Error reading saved route GeoJSON: " + e.getMessage());
             return objectMapper.createObjectNode();
         }
     }
+
+
+    /**
+     * Builds a RestTemplate backed by a pooled Apache HttpClient 5.
+     *
+     * Why this matters:
+     *   Default SimpleClientHttpRequestFactory creates a new TCP connection
+     *   (+ TLS handshake ~150-200 ms) for every request to graphhopper.com.
+     *   A pooled manager reuses existing connections — latency drops to ~20 ms
+     *   for subsequent calls to the same host.
+     */
+
+    private RestTemplate buildPooledRestTemplate() {
+        HttpClientConnectionManager connectionManager =
+                PoolingHttpClientConnectionManagerBuilder.create()
+                        .setMaxConnTotal(20)
+                        .setMaxConnPerRoute(10)
+                        .build();
+
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectTimeout(Timeout.ofSeconds(3))
+                .setResponseTimeout(Timeout.ofSeconds(10))
+                .build();
+
+        HttpClient httpClient = HttpClients.custom()
+                .setConnectionManager(connectionManager)
+                .setDefaultRequestConfig(requestConfig)
+                .build();
+
+        return new RestTemplate(new HttpComponentsClientHttpRequestFactory(httpClient));
+    }
+
+
+    public String routeFallback(double startLng, double startLat,
+                                double endLng,   double endLat,
+                                List<StopPointDTO> stopPoints,
+                                String profile, Exception ex) {
+        System.err.println("GraphHopper rate limit exceeded: " + ex.getMessage());
+        return """
+               {"type":"FeatureCollection","features":[],
+                "error":"Rate limit exceeded. Please try again shortly."}
+               """;
+    }
+
+
+
 }

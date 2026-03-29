@@ -107,8 +107,8 @@ const AuthForm = ({
 
 const AuthScreen = ({ navigation }) => {
   const [isLogin, setIsLogin]     = useState(true);
-  const [username, setUsername]   = useState('lean');
-  const [password, setPassword]   = useState('Lean');
+  const [username, setUsername]   = useState('yan');
+  const [password, setPassword]   = useState('Yan');
   const [riderType, setRiderType] = useState('');
 
   // ── Define handleAuth BEFORE the useEffect that calls it ──────────────────

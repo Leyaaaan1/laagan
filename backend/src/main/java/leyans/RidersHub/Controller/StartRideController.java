@@ -1,5 +1,6 @@
 package leyans.RidersHub.Controller;
 
+import leyans.RidersHub.DTO.Response.RideDetailDTO;
 import leyans.RidersHub.DTO.Response.RideResponseDTO;
 import leyans.RidersHub.DTO.Response.StartRideResponseDTO;
 import leyans.RidersHub.Service.StartRideService;
@@ -43,23 +44,20 @@ public class StartRideController {
     }
 
     @GetMapping("/active")
-    public ResponseEntity<RideResponseDTO> getActiveRide() {
+    public ResponseEntity<RideDetailDTO> getActiveRide() {
         try {
-            RideResponseDTO rideDetails = startedUtil.getStartedRideDetails();
+            RideDetailDTO rideDetails = startedUtil.getStartedRideDetails();
             return ResponseEntity.ok(rideDetails);
+        } catch (AccessDeniedException ex) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (IllegalArgumentException ex) {
-            // No active ride found for user
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         } catch (IllegalStateException ex) {
-            // Ride is in conflicting state
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         } catch (Exception ex) {
-            // Internal server error
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
-
     @PostMapping("/update/{generatedRidesId}")
     public ResponseEntity<Void> updateRide(@PathVariable Integer generatedRidesId) {
         try {

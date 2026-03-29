@@ -1,6 +1,7 @@
 package leyans.RidersHub.Service;
 
 
+import leyans.RidersHub.DTO.Response.RideDetailDTO;
 import leyans.RidersHub.DTO.Response.RideResponseDTO;
 import leyans.RidersHub.DTO.Request.RidesDTO.StopPointDTO;
 import leyans.RidersHub.Service.InteractionRequest.RideParticipantService;
@@ -63,7 +64,7 @@ public class RidesService {
         List<CompletableFuture<RidesUtil.GeocodeResult>> stopPointFutures;
     }
 
-    public RideResponseDTO createRide(
+    public RideDetailDTO createRide(
             Integer generatedRidesId, String creatorUsername, String ridesName,
             String locationName, String riderType, LocalDateTime date,
             List<String> participantUsernames, String description,
@@ -159,7 +160,7 @@ public class RidesService {
     }
 
     // 3) Build Rides object from futures results and save
-    private RideResponseDTO buildAndSaveRide(
+    private RideDetailDTO buildAndSaveRide(
             Integer generatedRidesId, String creatorUsername, String ridesName,
             String riderType, LocalDateTime date, List<String> participantUsernames, String description,
             double latitude, double longitude,
@@ -221,7 +222,8 @@ public class RidesService {
 
         System.out.println("Ride created with ID: " + savedRide.getGeneratedRidesId());
 
-        return ridesUtil.mapToResponseDTO(savedRide);
+        return ridesUtil.mapToDetailDTO(savedRide);
+
     }
 
 

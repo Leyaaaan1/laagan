@@ -61,23 +61,23 @@ public class StartRideService {
         startedRide.setStartTime(LocalDateTime.now());
         startedRide.setLocation(startingPoint);
 
-        // Include both participants and creator
         List<Rider> allParticipants = new ArrayList<>(ride.getParticipants());
-        if (!allParticipants.contains(ride.getUsername())) {
+        boolean creatorAlreadyIncluded = allParticipants.stream()
+                .anyMatch(p -> p.getUsername().equals(ride.getUsername().getUsername()));
+        if (!creatorAlreadyIncluded) {
             allParticipants.add(ride.getUsername());
         }
-        startedRide.setParticipants(allParticipants);
 
+        startedRide.setParticipants(allParticipants);
         startedRide = startedRideRepository.save(startedRide);
 
         ride.setActive(true);
         ridesRepository.save(ride);
 
-        // Initialize locations for ALL participants with the SAME starting point
         List<ParticipantLocation> participantLocations = startedUtil.initializeParticipantLocations(
                 startedRide,
                 allParticipants,
-                startingPoint  // All participants start at the same point
+                startingPoint
         );
 
         return startedUtil.buildStartRideResponse(startedRide, ride, participantLocations);

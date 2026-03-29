@@ -24,6 +24,7 @@
     "react": "19.0.0",
     "react-native": "0.79.2",
     "react-native-date-picker": "^5.0.12",
+    "react-native-geolocation-service": "^5.3.1",
     "react-native-gesture-handler": "^2.25.0",
     "react-native-linear-gradient": "^2.8.3",
     "react-native-maps": "^1.26.20",

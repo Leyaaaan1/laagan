@@ -43,6 +43,15 @@ public interface StartedRideRepository extends JpaRepository<StartedRide, Intege
     void deleteRiderLocationsByStartedRideId(@Param("startedRideId") Integer startedRideId);
 
 
+    // Find started ride where user is initiator
+    Optional<StartedRide> findByUsername(Rider rider);
 
+    // Find started ride where user is a participant
+    @Query("""
+    SELECT s FROM StartedRide s
+    JOIN s.participants p
+    WHERE p.username = :username
+""")
+    Optional<StartedRide> findByParticipantUsername(@Param("username") String username);
 
 }
