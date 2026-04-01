@@ -5,21 +5,26 @@ export const createMapScript = () => `
     let markersGroup;
     let userLocationMarker;
     let userLocationAccuracyCircle;
-    
-    // ─────────────────────────────────────────────────────────────────
-    // NEW: Rider Location Markers (Live Location Sharing)
-    // ─────────────────────────────────────────────────────────────────
     let riderMarkersGroup;
 
-    function initMap() {
+    // ✅ NEW: Accept optional startPoint parameter
+    function initMap(startPoint) {
         try {
-            const defaultCenter = [8.2280, 125.5428];
+            // ✅ NEW: Use startPoint if available and valid, otherwise fall back to hardcoded
+            let mapCenter = [8.2280, 125.5428]; // Fallback Mindanao location
+            let mapZoom = 15;
+            
+            if (startPoint && startPoint.lat && startPoint.lng) {
+                mapCenter = [startPoint.lat, startPoint.lng];
+                mapZoom = 16; // Slightly more zoomed in for user's start point
+            }
+            
             map = L.map('map', {
                 zoomControl: true,
                 scrollWheelZoom: true,
                 doubleClickZoom: true,
                 touchZoom: true
-            }).setView(defaultCenter, 15);
+            }).setView(mapCenter, mapZoom);
 
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                 maxZoom: 19,
@@ -27,10 +32,6 @@ export const createMapScript = () => `
             }).addTo(map);
 
             markersGroup = L.layerGroup().addTo(map);
-            
-            // ─────────────────────────────────────────────────────────
-            // NEW: Initialize rider markers group
-            // ─────────────────────────────────────────────────────────
             riderMarkersGroup = L.layerGroup().addTo(map);
 
             window.ReactNativeWebView?.postMessage(JSON.stringify({
@@ -44,7 +45,6 @@ export const createMapScript = () => `
             return false;
         }
     }
-    
     
 
     function updateUserLocation(location) {
@@ -426,6 +426,8 @@ export const createMapScript = () => `
 
         if (!map) {
             console.error('❌ Map not ready!');
+            // ✅ NEW: Pass startPoint when initializing map if not already done
+            initMap(startPoint);
             showError('Map not ready for route data');
             return;
         }
@@ -646,6 +648,8 @@ export const createMapScript = () => `
 
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM Content Loaded - Initializing map...');
+        // ✅ CHANGE: Call initMap without parameters (will use fallback)
+        // The startPoint will be passed when loadRouteData is called
         initMap();
     });
 `;

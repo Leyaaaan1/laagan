@@ -112,18 +112,41 @@ const RideStep4 = (props) => {
   // ── Build map coords (immediate fallback while API loads) ─────────────────
   const rawFallbackCoords = {
     startingPoint: startingPoint
-      ? (typeof startingPoint === 'string'
-        ? { name: startingPoint, lat: parseFloat(merged.startLat) || 0, lng: parseFloat(merged.startLng) || 0 }
-        : startingPoint)
+      ? typeof startingPoint === 'string'
+        ? isValidCoordinate(merged.startLat, merged.startLng)
+          ? {
+              name: startingPoint,
+              lat: parseFloat(merged.startLat),
+              lng: parseFloat(merged.startLng),
+            }
+          : null // ✅ NEW: Return null instead of {lat: 0, lng: 0}
+        : startingPoint
       : null,
     endingPoint: endingPoint
-      ? (typeof endingPoint === 'string'
-        ? { name: endingPoint, lat: parseFloat(merged.endLat) || 0, lng: parseFloat(merged.endLng) || 0 }
-        : endingPoint)
+      ? typeof endingPoint === 'string'
+        ? isValidCoordinate(merged.endLat, merged.endLng)
+          ? {
+              name: endingPoint,
+              lat: parseFloat(merged.endLat),
+              lng: parseFloat(merged.endLng),
+            }
+          : null // ✅ NEW: Return null instead of {lat: 0, lng: 0}
+        : endingPoint
       : null,
     stopPoints: Array.isArray(stopPoints) ? stopPoints : [],
   };
-  const mapCoords = processRideCoordinates(state.rideDetailsWithCoords) || rawFallbackCoords;
+  const mapCoords =
+    processRideCoordinates(state.rideDetailsWithCoords) || rawFallbackCoords;
+
+  // ✅ NEW: Check if route data is unavailable
+  const hasValidRouteData =
+    (mapCoords.startingPoint &&
+      mapCoords.startingPoint.lat &&
+      mapCoords.startingPoint.lng) ||
+    (mapCoords.endingPoint &&
+      mapCoords.endingPoint.lat &&
+      mapCoords.endingPoint.lng) ||
+    state.rideDetailsWithCoords;
 
   // ── Action handlers ───────────────────────────────────────────────────────
   const handleJoinRide = () => {
@@ -152,6 +175,12 @@ const RideStep4 = (props) => {
       username: currentUsername,
       fromRideStep4: true,
     });
+  };
+
+  const isValidCoordinate = (lat, lng) => {
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
+    return !isNaN(latNum) && !isNaN(lngNum) && latNum !== 0 && lngNum !== 0;
   };
 
   const handleStartRide = async () => {
@@ -235,15 +264,23 @@ const RideStep4 = (props) => {
 
   return (
     <View style={rideStep4Styles.container}>
-      <StatusBar backgroundColor="#000" barStyle="light-content" translucent={false} />
+      <StatusBar
+        backgroundColor="#000"
+        barStyle="light-content"
+        translucent={false}
+      />
 
       {/* ── Header ── */}
       <View style={header.bar}>
-        <TouchableOpacity style={header.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={header.backButton}
+          onPress={() => navigation.goBack()}>
           <FontAwesome name="arrow-left" size={18} color="#fff" />
         </TouchableOpacity>
         <View style={header.center}>
-          <Text style={header.title} numberOfLines={1}>{locationName}</Text>
+          <Text style={header.title} numberOfLines={1}>
+            {locationName}
+          </Text>
           <Text style={header.subtitle}>ID: {generatedRidesId}</Text>
         </View>
         <View style={header.right}>
@@ -258,18 +295,43 @@ const RideStep4 = (props) => {
       <View style={rideStep4Styles.fadeContainer}>
         {/* ── Map ── */}
         <View style={mapStyles.wrapper}>
-          <RouteMapView
-            generatedRidesId={generatedRidesId}
-            token={token}
-            startingPoint={mapCoords.startingPoint}
-            endingPoint={mapCoords.endingPoint}
-            stopPoints={mapCoords.stopPoints}
-            style={{ flex: 1 }}
-            isDark={true}
-          />
+          {/* ✅ NEW: Show error message if coordinates are unavailable */}
+          {!hasValidRouteData && (
+            <View
+              style={{
+                flex: 1,
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: '#f5f5f5',
+              }}>
+              <Text
+                style={{
+                  color: '#666',
+                  fontSize: 14,
+                  textAlign: 'center',
+                  paddingHorizontal: 20,
+                }}>
+                Route coordinates unavailable
+              </Text>
+            </View>
+          )}
+
+          {hasValidRouteData && (
+            <RouteMapView
+              generatedRidesId={generatedRidesId}
+              token={token}
+              startingPoint={mapCoords.startingPoint}
+              endingPoint={mapCoords.endingPoint}
+              stopPoints={mapCoords.stopPoints}
+              style={{flex: 1}}
+              isDark={true}
+            />
+          )}
         </View>
 
-        <ScrollView style={rideStep4Styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={rideStep4Styles.scrollContent}
+          showsVerticalScrollIndicator={false}>
           <RideHeroCard
             rideName={rideName}
             date={date}
@@ -284,8 +346,7 @@ const RideStep4 = (props) => {
           <View style={header.bottomNav}>
             <TouchableOpacity
               style={buttons.bottomNav}
-              onPress={() => patchState({ showParticipantsModal: true })}
-            >
+              onPress={() => patchState({showParticipantsModal: true})}>
               <FontAwesome name="users" size={18} color="#fff" />
               <Text style={buttons.textNav}>Riders</Text>
             </TouchableOpacity>
@@ -296,27 +357,42 @@ const RideStep4 = (props) => {
               <>
                 <View style={header.bottomNavDivider} />
                 <TouchableOpacity
-                  style={[buttons.bottomNav, { backgroundColor: 'rgba(140, 35, 35, 0.15)' }]}
-                  onPress={handleSwipeToMap}
-                >
+                  style={[
+                    buttons.bottomNav,
+                    {backgroundColor: 'rgba(140, 35, 35, 0.15)'},
+                  ]}
+                  onPress={handleSwipeToMap}>
                   <FontAwesome name="map" size={18} color="#8c2323" />
-                  <Text style={[buttons.textNav, { color: '#8c2323' }]}>Map View</Text>
+                  <Text style={[buttons.textNav, {color: '#8c2323'}]}>
+                    Map View
+                  </Text>
                 </TouchableOpacity>
               </>
             )}
 
             <TouchableOpacity
               style={buttons.bottomNav}
-              onPress={() => navigation.navigate('RideRoutesPage', {
-                startMapImage: state.startMapImage,
-                endMapImage:   state.endMapImage,
-                mapImage:      state.mapImage,
-                rideNameImage: state.rideNameImage,
-                startingPoint, endingPoint, rideName, locationName,
-                riderType, date, participants, description,
-                token, distance, username, currentUsername, generatedRidesId,
-              })}
-            >
+              onPress={() =>
+                navigation.navigate('RideRoutesPage', {
+                  startMapImage: state.startMapImage,
+                  endMapImage: state.endMapImage,
+                  mapImage: state.mapImage,
+                  rideNameImage: state.rideNameImage,
+                  startingPoint,
+                  endingPoint,
+                  rideName,
+                  locationName,
+                  riderType,
+                  date,
+                  participants,
+                  description,
+                  token,
+                  distance,
+                  username,
+                  currentUsername,
+                  generatedRidesId,
+                })
+              }>
               <FontAwesome name="map-marker" size={18} color="#fff" />
               <Text style={buttons.textNav}>Stop Point</Text>
             </TouchableOpacity>
@@ -327,11 +403,11 @@ const RideStep4 = (props) => {
       {/* ── Modals ── */}
       <ParticipantList
         visible={state.showParticipantsModal}
-        onClose={() => patchState({ showParticipantsModal: false })}
+        onClose={() => patchState({showParticipantsModal: false})}
         participants={participants}
         generatedRidesId={generatedRidesId}
         token={token}
-        onRideSelect={() => patchState({ showParticipantsModal: false })}
+        onRideSelect={() => patchState({showParticipantsModal: false})}
         username={username}
         currentUsername={currentUsername}
       />

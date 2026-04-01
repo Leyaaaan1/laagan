@@ -5,10 +5,6 @@ import Geolocation from '@react-native-community/geolocation';
 import {Platform, PermissionsAndroid} from 'react-native';
 
 const API_BASE_URL = BASE_URL || 'http://localhost:8080';
-
-// ─────────────────────────────────────────────────────────────────
-// LOCATION PERMISSION HOOK
-// ─────────────────────────────────────────────────────────────────
 export const useLocationPermission = () => {
   const [granted, setGranted] = useState(false);
   const [checked, setChecked] = useState(false);
@@ -51,12 +47,12 @@ export const useLocationPermission = () => {
 // RIDE LOCATION POLLING HOOK
 // ─────────────────────────────────────────────────────────────────
 export const useRideLocationPolling = ({
-  rideId,
-  token,
-  enabled = true,
-  onLocationsUpdate,
-  onError,
-}) => {
+                                         rideId,
+                                         token,
+                                         enabled = true,
+                                         onLocationsUpdate,
+                                         onError,
+                                       }) => {
   const [isPolling, setIsPolling] = useState(false);
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -68,6 +64,8 @@ export const useRideLocationPolling = ({
   const appStateRef = useRef(AppState.currentState);
   const enabledRef = useRef(enabled);
   const isPollingRef = useRef(false);
+  // Guard: prevents a slow GPS fetch from queuing up a second concurrent poll
+  const isPollInFlightRef = useRef(false);
 
   useEffect(() => {
     enabledRef.current = enabled;
@@ -89,6 +87,10 @@ export const useRideLocationPolling = ({
         }
       }
 
+      // Stage 1: try high-accuracy GPS with a generous timeout.
+      // maximumAge: 10000 allows a cached fix up to 10 s old — avoids
+      // forcing a brand-new satellite fix on every 5-second poll cycle,
+      // which is the primary cause of the timeout loop.
       Geolocation.getCurrentPosition(
         position => {
           resolve({
@@ -96,15 +98,32 @@ export const useRideLocationPolling = ({
             longitude: position.coords.longitude,
           });
         },
-        err => {
-          reject(new Error(`GPS Error (${err.code}): ${err.message}`));
+        () => {
+          // Stage 2: GPS timed out — fall back to network/cell location.
+          // Lower accuracy is acceptable; it's better than failing the poll.
+          Geolocation.getCurrentPosition(
+            position => {
+              resolve({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+              });
+            },
+            err => {
+              reject(new Error(`GPS Error (${err.code}): ${err.message}`));
+            },
+            {
+              enableHighAccuracy: false, // network / cell tower location
+              timeout: 10000,
+              maximumAge: 30000,        // accept a fix up to 30 s old
+            },
+          );
         },
         {
           enableHighAccuracy: true,
-          timeout: 20000,
-          maximumAge: 0,
-          forceRequestLocation: true, // Android — forces a fresh fix
-          showLocationDialog: true, // Android — prompts user to enable GPS if off
+          timeout: 45000,   // cold GPS on Android can need 25–45 s
+          maximumAge: 10000, // reuse a fix that is less than 10 s old
+          forceRequestLocation: true,
+          showLocationDialog: true,
         },
       );
     });
@@ -145,6 +164,11 @@ export const useRideLocationPolling = ({
   const pollOnceRef = useRef(null);
 
   const pollLocationOnce = useCallback(async () => {
+    if (isPollInFlightRef.current) {
+      console.log('⏭️ Poll skipped — previous poll still in flight');
+      return;
+    }
+    isPollInFlightRef.current = true;
     try {
       const {latitude, longitude} = await getCurrentPosition();
       console.log('📍 Sharing location:', {latitude, longitude, rideId});
@@ -159,6 +183,20 @@ export const useRideLocationPolling = ({
           },
         },
       );
+
+      // ✅ NEW: Check for 401/403 BEFORE throwing a generic error
+      if (response.status === 401 || response.status === 403) {
+        console.error('⚠️ Token expired (HTTP', response.status + ')');
+        setIsPolling(false);
+        isPollingRef.current = false;
+        const sessionExpiredError = new Error(
+          'Session expired. Please log in again.',
+        );
+        setError(sessionExpiredError.message);
+        if (onError) onError(sessionExpiredError);
+        return; // Stop polling — do NOT retry
+      }
+
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -185,6 +223,8 @@ export const useRideLocationPolling = ({
     } catch (err) {
       console.error('❌ Poll error:', err.message);
       handlePollingError(err);
+    } finally {
+      isPollInFlightRef.current = false;
     }
   }, [
     rideId,
@@ -226,10 +266,11 @@ export const useRideLocationPolling = ({
     // Immediate first poll so the map isn't blank for 5 seconds
     pollOnceRef.current();
 
-    // Then repeat every 5 seconds
+    // Repeat every 8 seconds — gives GPS enough time to resolve before
+    // the next tick fires, preventing the timeout-retry spam loop.
     pollIntervalRef.current = setInterval(() => {
       pollOnceRef.current();
-    }, 5000);
+    }, 8000);
 
     console.log('🟢 Location polling started for ride', rideId);
   }, [rideId]);

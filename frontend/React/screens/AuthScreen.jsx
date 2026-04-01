@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { loginUser, registerUser } from '../services/authService';
-import { BASE_URL } from '@env';
 import inputs from '../styles/base/inputs';
 import buttons from '../styles/base/buttons';
 import text from '../styles/base/text';
@@ -107,8 +106,8 @@ const AuthForm = ({
 
 const AuthScreen = ({ navigation }) => {
   const [isLogin, setIsLogin]     = useState(true);
-  const [username, setUsername]   = useState('yan');
-  const [password, setPassword]   = useState('Yan');
+  const [username, setUsername]   = useState('lean');
+  const [password, setPassword]   = useState('Lean');
   const [riderType, setRiderType] = useState('');
 
   // ── Define handleAuth BEFORE the useEffect that calls it ──────────────────
