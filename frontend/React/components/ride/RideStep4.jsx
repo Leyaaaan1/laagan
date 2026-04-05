@@ -8,7 +8,10 @@ import { fetchRideMapImage, getRideDetails, getLocationImage } from '../../servi
 import ParticipantList from './modal/ParticipantList';
 import { startService } from '../../services/startService';
 import RouteMapView from '../../utilities/route/view/RouteMapView';
-import { processRideCoordinates } from '../../utilities/CoordinateUtils';
+import {
+  isValidCoordinate,
+  processRideCoordinates,
+} from '../../utilities/CoordinateUtils';
 import cards from '../../styles/base/cards';
 import buttons from '../../styles/base/buttons';
 import header from '../../styles/base/header';
@@ -177,11 +180,6 @@ const RideStep4 = (props) => {
     });
   };
 
-  const isValidCoordinate = (lat, lng) => {
-    const latNum = parseFloat(lat);
-    const lngNum = parseFloat(lng);
-    return !isNaN(latNum) && !isNaN(lngNum) && latNum !== 0 && lngNum !== 0;
-  };
 
   const handleStartRide = async () => {
     try {

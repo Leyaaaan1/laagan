@@ -25,6 +25,11 @@ const StartedRide = ({route, navigation}) => {
   const [isStopping, setIsStopping] = useState(false);
   const [riderMarkers, setRiderMarkers] = useState({});
   const [pollingError, setPollingError] = useState(null);
+  const prevMarkersRef = useRef({});
+  const [pillVisible, setPillVisible] = useState(true);
+  const pillTimerRef = useRef(null);
+  const mapData = processRideCoordinates(activeRide);
+  const rideId = activeRide.generatedRidesId || activeRide.id;
 
   if (!activeRide) {
     return (
@@ -34,46 +39,93 @@ const StartedRide = ({route, navigation}) => {
     );
   }
 
-  const mapData = processRideCoordinates(activeRide);
-  const rideId = activeRide.generatedRidesId || activeRide.id;
+  useEffect(() => {
+    if (isPolling && !pollingError) {
+      // Clear any existing timer
+      if (pillTimerRef.current) {
+        clearTimeout(pillTimerRef.current);
+      }
+
+      // Set new timer to hide the pill
+      pillTimerRef.current = setTimeout(() => {
+        setPillVisible(false);
+      }, 3000);
+
+      // Show the pill immediately when riderMarkers updates
+      setPillVisible(true);
+    } else if (pollingError || !isPolling) {
+      // Keep pill visible if there's an error or polling is down
+      setPillVisible(true);
+      if (pillTimerRef.current) {
+        clearTimeout(pillTimerRef.current);
+      }
+    }
+
+    return () => {
+      if (pillTimerRef.current) {
+        clearTimeout(pillTimerRef.current);
+      }
+    };
+  }, [riderMarkers, isPolling, pollingError]);
+
+
 
   // ─────────────────────────────────────────────────────────────────
   // LOCATION POLLING
-  //
-  // FIX: The original code used  enabled: activeRide.status === 'ACTIVE'
-  // but the activeRide object usually has no `status` field, so `enabled`
-  // was always false and polling never started.
-  //
-  // We now let the hook default to enabled=true.  The hook itself already
-  // guards against missing rideId or token.
   // ─────────────────────────────────────────────────────────────────
   const {
     isPolling,
     error: pollingHookError,
     retryCount,
+    isOffline,
   } = useRideLocationPolling({
     rideId,
     token,
-    // enabled defaults to true — no status check needed
-    onLocationsUpdate: locations => {
-      console.log('🎯 onLocationsUpdate:', locations.length, 'riders');
+      onLocationsUpdate: locations => {
+        console.log('🎯 onLocationsUpdate:', locations.length, 'riders');
 
-      const markers = {};
-      locations.forEach(loc => {
-        // `initiator` is the username field returned by LocationUpdateRequestDTO
-        markers[loc.initiator] = {
-          latitude: loc.latitude,
-          longitude: loc.longitude,
-          updatedAt: loc.timestamp,
-          locationName: loc.locationName,
-          distanceMeters: loc.distanceMeters,
-        };
-      });
+        const markers = {};
+        locations.forEach(loc => {
+          markers[loc.initiator] = {
+            latitude: loc.latitude,
+            longitude: loc.longitude,
+            updatedAt: loc.timestamp,
+            locationName: loc.locationName,
+            distanceMeters: loc.distanceMeters,
+          };
+        });
 
-      console.log('🎨 Markers:', Object.keys(markers));
-      setRiderMarkers(markers);
-      setPollingError(null);
-    },
+        // Shallow comparison: only update if positions changed
+        let hasChanged = false;
+
+        // Check if any new rider appeared or count changed
+        if (Object.keys(markers).length !== Object.keys(prevMarkersRef.current).length) {
+          hasChanged = true;
+        } else {
+          // Check if any position coordinates changed (within 0.00001 tolerance)
+          for (const username in markers) {
+            const prev = prevMarkersRef.current[username];
+            const curr = markers[username];
+
+            if (!prev ||
+              Math.abs(prev.latitude - curr.latitude) > 0.00001 ||
+              Math.abs(prev.longitude - curr.longitude) > 0.00001) {
+              hasChanged = true;
+              break;
+            }
+          }
+        }
+
+        console.log('🎨 Markers:', Object.keys(markers), 'Changed:', hasChanged);
+
+        if (hasChanged) {
+          setRiderMarkers(markers);
+          prevMarkersRef.current = markers;
+        }
+
+        setPollingError(null);
+      },
+
     onError: err => {
       setPollingError(err.message);
       console.error('Location polling failed:', err);
@@ -158,39 +210,70 @@ const StartedRide = ({route, navigation}) => {
         />
 
         {/* Polling status pill — top right */}
-        <View
-          style={{
-            position: 'absolute',
-            top: 60,
-            right: 16,
-            backgroundColor: 'rgba(20, 20, 20, 0.85)',
-            paddingVertical: 8,
-            paddingHorizontal: 12,
-            borderRadius: 6,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
-            borderWidth: 1,
-            borderColor: isPolling
-              ? 'rgba(76, 175, 80, 0.5)'
-              : 'rgba(244, 67, 54, 0.5)',
-          }}>
+        {pillVisible && (
           <View
             style={{
-              width: 8,
-              height: 8,
-              borderRadius: 4,
-              backgroundColor: isPolling ? '#4CAF50' : '#f44336',
-            }}
-          />
-          <Text style={{color: '#fff', fontSize: 11, fontWeight: '500'}}>
-            {isPolling
-              ? `${Object.keys(riderMarkers).length} rider${
-                  Object.keys(riderMarkers).length !== 1 ? 's' : ''
-                } live`
-              : `Retry: ${retryCount}`}
-          </Text>
-        </View>
+              position: 'absolute',
+              top: 60,
+              right: 16,
+              backgroundColor: 'rgba(20, 20, 20, 0.85)',
+              paddingVertical: 8,
+              paddingHorizontal: 12,
+              borderRadius: 6,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              borderWidth: 1,
+              borderColor: isPolling
+                ? 'rgba(76, 175, 80, 0.5)'
+                : 'rgba(244, 67, 54, 0.5)',
+            }}>
+            <View
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: isPolling ? '#4CAF50' : '#f44336',
+              }}
+            />
+            <Text style={{color: '#fff', fontSize: 11, fontWeight: '500'}}>
+              {isPolling
+                ? `${Object.keys(riderMarkers).length} rider${
+                    Object.keys(riderMarkers).length !== 1 ? 's' : ''
+                  } live`
+                : `Retry: ${retryCount}`}
+            </Text>
+          </View>
+        )}
+
+        {/* Offline banner — shows only when isOffline is true */}
+        {isOffline && (
+          <View
+            style={{
+              position: 'absolute',
+              top: 120,
+              right: 16,
+              backgroundColor: 'rgba(255, 152, 0, 0.9)',
+              paddingVertical: 10,
+              paddingHorizontal: 12,
+              borderRadius: 6,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              borderWidth: 1,
+              borderColor: 'rgba(255, 152, 0, 0.6)',
+            }}>
+            <FontAwesome
+              name="wifi"
+              size={14}
+              color="#fff"
+              style={{opacity: 0.6}}
+            />
+            <Text style={{color: '#fff', fontSize: 11, fontWeight: '500'}}>
+              No connection — location paused
+            </Text>
+          </View>
+        )}
 
         {/* Route info overlay */}
         <View style={startedRide.routeInfoOverlay}>

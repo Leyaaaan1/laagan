@@ -1,21 +1,24 @@
-import { BASE_URL } from '@env';
+import {BASE_URL} from '@env';
 
 const API_BASE_URL = BASE_URL || 'http://localhost:8080';
 
 export const locationSharingService = {
-
-
-  shareLocationAndGetParticipants: async (rideId, latitude, longitude, token) => {
+  shareLocationAndGetParticipants: async (
+    rideId,
+    latitude,
+    longitude,
+    token,
+  ) => {
     try {
       const response = await fetch(
         `${API_BASE_URL}/location/${rideId}/share?latitude=${latitude}&longitude=${longitude}`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -40,10 +43,10 @@ export const locationSharingService = {
         {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-        }
+        },
       );
 
       if (!response.ok) {

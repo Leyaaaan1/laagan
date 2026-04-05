@@ -3,6 +3,7 @@ import {AppState} from 'react-native';
 import {BASE_URL} from '@env';
 import Geolocation from '@react-native-community/geolocation';
 import {Platform, PermissionsAndroid} from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
 
 const API_BASE_URL = BASE_URL || 'http://localhost:8080';
 export const useLocationPermission = () => {
@@ -46,17 +47,19 @@ export const useLocationPermission = () => {
 // ─────────────────────────────────────────────────────────────────
 // RIDE LOCATION POLLING HOOK
 // ─────────────────────────────────────────────────────────────────
+
 export const useRideLocationPolling = ({
-                                         rideId,
-                                         token,
-                                         enabled = true,
-                                         onLocationsUpdate,
-                                         onError,
-                                       }) => {
+  rideId,
+  token,
+  enabled = true,
+  onLocationsUpdate,
+  onError,
+}) => {
   const [isPolling, setIsPolling] = useState(false);
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
   const [nextRetryDelay, setNextRetryDelay] = useState(1000);
+  const [isOffline, setIsOffline] = useState(false);
 
   const retryCountRef = useRef(0);
   const pollIntervalRef = useRef(null);
@@ -64,13 +67,11 @@ export const useRideLocationPolling = ({
   const appStateRef = useRef(AppState.currentState);
   const enabledRef = useRef(enabled);
   const isPollingRef = useRef(false);
-  // Guard: prevents a slow GPS fetch from queuing up a second concurrent poll
   const isPollInFlightRef = useRef(false);
 
   useEffect(() => {
     enabledRef.current = enabled;
   }, [enabled]);
-
   // ─────────────────────────────────────────────────────────────────
   // 1. GET CURRENT GPS POSITION
   // ─────────────────────────────────────────────────────────────────
@@ -114,13 +115,13 @@ export const useRideLocationPolling = ({
             {
               enableHighAccuracy: false, // network / cell tower location
               timeout: 10000,
-              maximumAge: 30000,        // accept a fix up to 30 s old
+              maximumAge: 30000, // accept a fix up to 30 s old
             },
           );
         },
         {
           enableHighAccuracy: true,
-          timeout: 45000,   // cold GPS on Android can need 25–45 s
+          timeout: 45000, // cold GPS on Android can need 25–45 s
           maximumAge: 10000, // reuse a fix that is less than 10 s old
           forceRequestLocation: true,
           showLocationDialog: true,
@@ -128,6 +129,37 @@ export const useRideLocationPolling = ({
       );
     });
   }, []);
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      console.log('📡 Network state changed:', {
+        isConnected: state.isConnected,
+        isInternetReachable: state.isInternetReachable,
+      });
+
+      if (!state.isConnected) {
+        // Network disconnected
+        console.log('❌ Network disconnected — pausing polling');
+        stopPolling();
+        setIsOffline(true);
+      } else if (state.isConnected && isOffline) {
+        // Network reconnected and was previously offline
+        console.log('✅ Network reconnected — resuming polling');
+        retryCountRef.current = 0; // Reset retry state
+        setRetryCount(0);
+        setError(null);
+        setIsOffline(false);
+        // Resume polling if enabled
+        if (enabledRef.current && rideId && token) {
+          startPolling();
+        }
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [isOffline, rideId, token]);
 
   // ─────────────────────────────────────────────────────────────────
   // 2. SINGLE POLL CYCLE — share own location, receive all locations
@@ -197,7 +229,6 @@ export const useRideLocationPolling = ({
         return; // Stop polling — do NOT retry
       }
 
-
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
@@ -266,8 +297,7 @@ export const useRideLocationPolling = ({
     // Immediate first poll so the map isn't blank for 5 seconds
     pollOnceRef.current();
 
-    // Repeat every 8 seconds — gives GPS enough time to resolve before
-    // the next tick fires, preventing the timeout-retry spam loop.
+    // Repeat every 8 seconds
     pollIntervalRef.current = setInterval(() => {
       pollOnceRef.current();
     }, 8000);
@@ -311,5 +341,5 @@ export const useRideLocationPolling = ({
     return () => subscription.remove();
   }, [startPolling, stopPolling]);
 
-  return {isPolling, error, retryCount, nextRetryDelay};
+  return {isPolling, error, retryCount, nextRetryDelay, isOffline};
 };
