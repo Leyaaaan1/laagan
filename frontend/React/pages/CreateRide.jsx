@@ -5,6 +5,7 @@ import RideStep2 from '../components/ride/RideStep2';
 import RideStep3 from '../components/ride/RideStep3';
 import RideStep4 from '../components/ride/RideStep4';
 import createRideUtils from './utilities/CreateRideUtils';
+import {parseCoordinateSafely} from '../utilities/validator/CoordinateValidator';
 
 const CreateRide = ({ route, navigation }) => {
   const { token, username } = route.params;
@@ -12,8 +13,7 @@ const CreateRide = ({ route, navigation }) => {
   const ride = createRideUtils({ token, username });
 
   return (
-    <View style={{ flex: 1 }}>
-
+    <View style={{flex: 1}}>
       {ride.currentStep === 1 && (
         <RideStep1
           error={ride.error}
@@ -80,28 +80,30 @@ const CreateRide = ({ route, navigation }) => {
         />
       )}
 
-      {ride.currentStep === 4 && (ride.generatedRidesId || ride.pendingRideIdRef.current) && (
-        <RideStep4
-          generatedRidesId={ride.generatedRidesId || ride.pendingRideIdRef.current}
-          rideName={ride.rideName}
-          locationName={ride.locationName}
-          riderType={ride.riderType}
-          date={ride.date}
-          startingPoint={ride.startingPoint}
-          endingPoint={ride.endingPoint}
-          participants={ride.participants}
-          description={ride.description}
-          token={token}
-          username={username}
-          stopPoints={ride.stopPoints}
-          currentUsername={username}
-          startLat={parseFloat(ride.startingLatitude) || 0}
-          startLng={parseFloat(ride.startingLongitude) || 0}
-          endLat={parseFloat(ride.endingLatitude) || 0}
-          endLng={parseFloat(ride.endingLongitude) || 0}
-        />
-      )}
-
+      {ride.currentStep === 4 &&
+        (ride.generatedRidesId || ride.pendingRideIdRef.current) && (
+          <RideStep4
+            generatedRidesId={
+              ride.generatedRidesId || ride.pendingRideIdRef.current
+            }
+            rideName={ride.rideName}
+            locationName={ride.locationName}
+            riderType={ride.riderType}
+            date={ride.date}
+            startingPoint={ride.startingPoint}
+            endingPoint={ride.endingPoint}
+            participants={ride.participants}
+            description={ride.description}
+            token={token}
+            username={username}
+            stopPoints={ride.stopPoints}
+            currentUsername={username}
+            startLat={parseCoordinateSafely(ride.startingLatitude)}
+            startLng={parseCoordinateSafely(ride.startingLongitude)}
+            endLat={parseCoordinateSafely(ride.endingLatitude)}
+            endLng={parseCoordinateSafely(ride.endingLongitude)}
+          />
+        )}
     </View>
   );
 };

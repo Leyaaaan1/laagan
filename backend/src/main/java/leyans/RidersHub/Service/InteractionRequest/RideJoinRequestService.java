@@ -22,15 +22,18 @@ public class RideJoinRequestService {
 
     private final RideJoinRequestRepository rideJoinRequestRepository;
     private final RidesRepository ridesRepository;
-
+    private final RideParticipantService rideParticipantService;  // ← ADD THIS
     private final RiderUtil riderUtil;
 
     @Autowired
     public RideJoinRequestService(
             RideJoinRequestRepository rideJoinRequestRepository,
-            RidesRepository ridesRepository, RiderUtil riderUtil) {
+            RidesRepository ridesRepository,
+            RideParticipantService rideParticipantService,  // ← ADD THIS
+            RiderUtil riderUtil) {
         this.rideJoinRequestRepository = rideJoinRequestRepository;
         this.ridesRepository = ridesRepository;
+        this.rideParticipantService = rideParticipantService;  // ← ADD THIS
         this.riderUtil = riderUtil;
     }
 
@@ -78,9 +81,8 @@ public class RideJoinRequestService {
             throw new RuntimeException("Only the ride owner can accept join requests");
         }
 
-        Rider rider = request.getRider();
-        ride.addParticipant(rider);
-        ridesRepository.save(ride);
+        // ✅ FIX: Use RideParticipantService to add participant
+        rideParticipantService.addParticipantToRide(generatedRidesId, username);
 
         JoinResponseCreateDto responseDTO = convertToDTO(request);
         rideJoinRequestRepository.delete(request);
@@ -117,6 +119,4 @@ public class RideJoinRequestService {
         responseDTO.setUsername(request.getRider().getUsername());
         return responseDTO;
     }
-
-
 }

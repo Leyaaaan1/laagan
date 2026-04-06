@@ -113,10 +113,16 @@ public class RideLocationService {
             }
 
             // 3. Authorisation — must be owner OR a participant
+            //    ✅ FIX: Also check the RIDES participants table (not yet moved to started_ride_participants)
             boolean isOwner       = started.getUsername().equals(rider);
-            boolean isParticipant = started.getParticipants().contains(rider);
+            boolean isParticipantInStarted = started.getParticipants().contains(rider);
 
-            if (!isOwner && !isParticipant) {
+            // NEW: Check if they're in the Rides table (approved but ride not started yet)
+            Rides ride = started.getRide();
+            boolean isParticipantInRides = ride.getParticipants().stream()
+                    .anyMatch(p -> p.getUsername().equals(rider.getUsername()));
+
+            if (!isOwner && !isParticipantInStarted && !isParticipantInRides) {
                 System.err.println("❌ User is not the owner or a participant in this ride");
                 throw new IllegalArgumentException("User is not authorised for this ride");
             }
@@ -147,11 +153,9 @@ public class RideLocationService {
             System.out.println("✓ Distance from start: " + distanceMeters + "m");
 
             // 7. ✅ UPSERT — reuse existing row if one already exists for this rider+ride.
-            //    findFirstBy...OrderByIdDesc picks the newest row and never crashes
-            //    even if old duplicate rows exist in the DB from before this fix.
             RiderLocation loc = locationRepo
                     .findFirstByStartedRideAndUsernameOrderByIdDesc(started, rider)
-                    .orElse(new RiderLocation());   // first time → new row
+                    .orElse(new RiderLocation());
 
             loc.setStartedRide(started);
             loc.setUsername(rider);
@@ -162,10 +166,9 @@ public class RideLocationService {
                 loc.setLocationName(locationName);
             }
 
-            loc = locationRepo.save(loc);   // INSERT on first call, UPDATE on every subsequent call
+            loc = locationRepo.save(loc);
 
-            // Self-heal: delete any old duplicate rows left over from before the upsert fix.
-            // Once the table is clean this becomes a no-op.
+            // Self-heal: delete any old duplicate rows
             locationRepo.deleteOldDuplicates(started, rider, loc.getId());
 
             System.out.println("✅ Location saved / updated with ID: " + loc.getId());
@@ -190,7 +193,6 @@ public class RideLocationService {
             throw new RuntimeException("Failed to save rider location: " + e.getMessage());
         }
     }
-
     // =========================================================================
     // GET LATEST PARTICIPANT LOCATIONS  (used by GET /{id}/locations)
     //
