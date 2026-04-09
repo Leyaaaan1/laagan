@@ -112,15 +112,42 @@ export async function getActiveRide(token) {
 }
 
 export async function getStopPointsByRideId(generatedRidesId, token) {
-    const response = await fetch(`${API_BASE_URL}/riders/${generatedRidesId}/stop-points`, {
+  try {
+
+    const response = await fetch(
+      `${API_BASE_URL}/riders/${generatedRidesId}/stop-points`,
+      {
         method: 'GET',
         headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-    });
+      },
+    );
     if (!response.ok) {
-        throw new Error('Failed to fetch stop points');
+      const status = response.status;
+      let errorMessage = '';
+
+      switch (status) {
+        case 404:
+          errorMessage = 'Ride not found.';
+          break;
+        case 401:
+          errorMessage = 'Unauthorized. Please log in again.';
+          break;
+        case 403:
+          errorMessage =
+            "You do not have permission to view this ride's stop points.";
+          break;
+        default:
+          errorMessage = 'Failed to fetch stop points. Please try again.';
+      }
+
+      throw new Error(errorMessage);
     }
     return await response.json();
+  } catch (error) {
+    console.error('Error fetching stop points:', error);
+    throw error;
+  }
 }

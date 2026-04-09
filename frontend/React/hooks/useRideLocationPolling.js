@@ -12,6 +12,7 @@ import {
   createTimeoutManager,
   createPollLock,
 } from '../services/locationPollingService';
+
 export const useLocationPermission = () => {
   const [granted, setGranted] = useState(false);
   const [checked, setChecked] = useState(false);
@@ -33,8 +34,8 @@ export const useLocationPermission = () => {
           setGranted(result === PermissionsAndroid.RESULTS.GRANTED);
         } else {
           // iOS
-          const auth = await Geolocation.requestAuthorization('whenInUse');
-          setGranted(auth === 'granted');
+          await Geolocation.requestAuthorization('whenInUse');
+          setGranted(true);
         }
       } catch (err) {
         console.warn('Location permission error:', err);
@@ -71,10 +72,17 @@ export const useRideLocationPolling = ({
   const appStateRef = useRef(AppState.currentState);
   const enabledRef = useRef(enabled);
   const isPollingRef = useRef(false);
+  // ✅ NEW: Track offline state in a ref so effect doesn't re-subscribe on state changes
+  const isOfflineRef = useRef(false);
 
   useEffect(() => {
     enabledRef.current = enabled;
   }, [enabled]);
+
+  // ✅ NEW: Keep isOfflineRef in sync with state
+  useEffect(() => {
+    isOfflineRef.current = isOffline;
+  }, [isOffline]);
 
   const handlePollingError = useCallback(
     err => {
@@ -86,7 +94,9 @@ export const useRideLocationPolling = ({
         setIsPolling(false);
         isPollingRef.current = false;
         setError(err.message);
-        if (onError) onError(err);
+        if (onError) {
+          onError(err);
+        }
         return;
       }
 
@@ -105,7 +115,9 @@ export const useRideLocationPolling = ({
         setError(`Failed after 3 retries: ${err.message}`);
         setIsPolling(false);
         isPollingRef.current = false;
-        if (onError) onError(err);
+        if (onError) {
+          onError(err);
+        }
       }
     },
     [onError],
@@ -170,8 +182,9 @@ export const useRideLocationPolling = ({
     intervalManager.current.start(() => {
       pollOnceRef.current();
     }, 8000);
-  }, [rideId]);
+  }, []);
 
+  // ✅ FIXED: NetInfo effect — only re-subscribes when rideId or token change, not isOffline
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       console.log('📡 Network state changed:', {
@@ -183,7 +196,8 @@ export const useRideLocationPolling = ({
         // Network disconnected
         stopPolling();
         setIsOffline(true);
-      } else if (state.isConnected && isOffline) {
+      } else if (state.isConnected && isOfflineRef.current) {
+        // ✅ FIXED: Read from ref instead of state, so we don't need isOffline in deps
         // Network reconnected
         retryCountRef.current = 0;
         setRetryCount(0);
@@ -199,7 +213,8 @@ export const useRideLocationPolling = ({
     return () => {
       unsubscribe();
     };
-  }, [isOffline, rideId, token, stopPolling, startPolling]);
+  }, [rideId, token, stopPolling, startPolling]);
+  // ✅ FIXED: Removed isOffline from deps — only re-subscribe when rideId or token change
 
   useEffect(() => {
     if (enabled && rideId && token) {
@@ -219,7 +234,9 @@ export const useRideLocationPolling = ({
 
       if (wasBackground && isNowActive) {
         console.log('📲 App foregrounded — resuming polling');
-        if (enabledRef.current && !isPollingRef.current) startPolling();
+        if (enabledRef.current && !isPollingRef.current) {
+          startPolling();
+        }
       } else if (isNowBackground) {
         console.log('📲 App backgrounded — pausing polling');
         stopPolling();

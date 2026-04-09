@@ -18,6 +18,7 @@ import {
   resolveErrorMessage,
 } from '../../utilities/validator/errorMessages';
 import {SUCCESS_MESSAGES} from '../../utilities/validator/successMessages';
+import {DEFAULT_COORDS} from '../../utilities/route/map/appDefaults';
 
 // ─── Default coordinates (Davao City) ────────────────────────────────────────
 const DEFAULT_LAT = '7.0731';
@@ -26,6 +27,8 @@ const DEFAULT_LNG = '125.6128';
 const useCreateRide = ({token, username}) => {
   const webViewRef = useRef(null);
   const pendingRideIdRef = useRef(null);
+
+  const {location} = useUserLocation();
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(false);
@@ -41,18 +44,27 @@ const useCreateRide = ({token, username}) => {
 
   // ── Destination / location (Step 2) ──────────────────────────────────────
   const [locationName, setLocationName] = useState('');
-  const [latitude, setLatitude] = useState(DEFAULT_LAT);
-  const [longitude, setLongitude] = useState(DEFAULT_LNG);
+  const [latitude, setLatitude] = useState(location.latitude);
+  const [longitude, setLongitude] = useState(location.longitude);
   const [locationSelected, setLocationSelected] = useState(false);
   const [rideNameImage, setRideNameImage] = useState([]);
 
+  useEffect(() => {
+    setLatitude(location.latitude);
+    setLongitude(location.longitude);
+  }, [location]);
+
   // ── Route points (Step 3) ─────────────────────────────────────────────────
   const [startingPoint, setStartingPoint] = useState('');
-  const [startingLatitude, setStartingLatitude] = useState(DEFAULT_LAT);
-  const [startingLongitude, setStartingLongitude] = useState(DEFAULT_LNG);
+  const [startingLatitude, setStartingLatitude] = useState(location.latitude);
+  const [startingLongitude, setStartingLongitude] = useState(
+    location.longitude,
+  );
   const [endingPoint, setEndingPoint] = useState('');
-  const [endingLatitude, setEndingLatitude] = useState(DEFAULT_LAT);
-  const [endingLongitude, setEndingLongitude] = useState(DEFAULT_LNG);
+  const [endingLatitude, setEndingLatitude] = useState(DEFAULT_COORDS.latitude);
+  const [endingLongitude, setEndingLongitude] = useState(
+    DEFAULT_COORDS.longitude,
+  );
   const [stopPoints, setStopPoints] = useState([]);
 
   // ── Search ────────────────────────────────────────────────────────────────

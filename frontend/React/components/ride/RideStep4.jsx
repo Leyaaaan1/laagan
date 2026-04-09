@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StatusBar, Alert,
 } from 'react-native';
@@ -109,6 +109,7 @@ const RideStep4 = (props) => {
     rideDetailsWithCoords: passedRideDetails || null,
   });
 
+
   // Convenience updater — merge a partial state object
   const patchState = (patch) => setState(prev => ({ ...prev, ...patch }));
 
@@ -138,8 +139,11 @@ const RideStep4 = (props) => {
       : null,
     stopPoints: Array.isArray(stopPoints) ? stopPoints : [],
   };
-  const mapCoords =
-    processRideCoordinates(state.rideDetailsWithCoords) || rawFallbackCoords;
+  const mapCoords = useMemo(
+    () =>
+      processRideCoordinates(state.rideDetailsWithCoords) || rawFallbackCoords,
+    [state.rideDetailsWithCoords, rawFallbackCoords],
+  );
 
   // ✅ NEW: Check if route data is unavailable
   const hasValidRouteData =
@@ -318,8 +322,8 @@ const RideStep4 = (props) => {
             <RouteMapView
               generatedRidesId={generatedRidesId}
               token={token}
-              startingPoint={mapCoords.startingPoint}
-              endingPoint={mapCoords.endingPoint}
+              startingPoint={getLocationDisplayName(startingPoint)}
+              endingPoint={getLocationDisplayName(endingPoint)}
               stopPoints={mapCoords.stopPoints}
               style={{flex: 1}}
               isDark={true}
@@ -376,8 +380,8 @@ const RideStep4 = (props) => {
                   endMapImage: state.endMapImage,
                   mapImage: state.mapImage,
                   rideNameImage: state.rideNameImage,
-                  startingPoint,
-                  endingPoint,
+                  startingPoint: getLocationDisplayName(startingPoint),  // ✅ FIXED
+                  endingPoint: getLocationDisplayName(endingPoint),      // ✅ FIXED
                   rideName,
                   locationName,
                   riderType,
@@ -390,7 +394,8 @@ const RideStep4 = (props) => {
                   currentUsername,
                   generatedRidesId,
                 })
-              }>
+              }
+            >
               <FontAwesome name="map-marker" size={18} color="#fff" />
               <Text style={buttons.textNav}>Stop Point</Text>
             </TouchableOpacity>

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StatusBar, ActivityIndicator,
@@ -116,7 +116,7 @@ const RideStep3 = ({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Route drawing ─────────────────────────────────────────────────────────
-  const drawRoadRoute = async () => {
+  const drawRoadRoute = useCallback(async () => {
     const sLat = parseFloat(startingLatitude);
     const sLng = parseFloat(startingLongitude);
     const eLat = parseFloat(endingLatitude);
@@ -148,7 +148,7 @@ const RideStep3 = ({
     } finally {
       setRouteLoading(false);
     }
-  };
+  });
 
   useEffect(() => {
 

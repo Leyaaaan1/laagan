@@ -1,0 +1,38 @@
+version: '3.8'
+
+  #Guide to run the Redis container:
+  ## # From project root directory
+  #docker-compose up -d
+  #
+  ## Verify it's running
+  #docker-compose ps
+  ## Should show: riders-redis-dev  redis:7-alpine  Up (healthy)
+  #
+  ## Test connection
+  #docker exec riders-redis-dev redis-cli ping
+  ## Should return: PONG
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: riders-redis-dev
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - riders-network
+
+volumes:
+  redis_data:
+
+networks:
+  riders-network:
+    driver: bridge
+

@@ -1,6 +1,8 @@
 package leyans.RidersHub.Controller;
 
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import leyans.RidersHub.DTO.Request.LocationDTO.LocationUpdateRequestDTO;
 import leyans.RidersHub.Service.RideLocationService;
 import org.springframework.http.HttpStatus;
@@ -50,10 +52,16 @@ public class LocationUpdateController {
     //      idea what went wrong.  Now returns the error message in the body.
     // -------------------------------------------------------------------------
     @PostMapping("/{generatedRidesId}/share")
-    public ResponseEntity<List<LocationUpdateRequestDTO>> shareLocationAndGetParticipants(
+    public ResponseEntity<?> shareLocationAndGetParticipants(
             @PathVariable Integer generatedRidesId,
-            @RequestParam double latitude,
-            @RequestParam double longitude) {
+            @RequestParam
+            @DecimalMin(value = "-90.0", message = "Latitude must be between -90 and 90")
+            @DecimalMax(value = "90.0", message = "Latitude must be between -90 and 90")
+            double latitude,
+            @RequestParam
+            @DecimalMin(value = "-180.0", message = "Longitude must be between -180 and 180")
+            @DecimalMax(value = "180.0", message = "Longitude must be between -180 and 180")
+            double longitude) {
 
         try {
             rideLocationService.updateLocation(generatedRidesId, latitude, longitude);
@@ -64,14 +72,17 @@ public class LocationUpdateController {
             return ResponseEntity.ok(allLocations);
 
         } catch (IllegalArgumentException e) {
-            // FIX: was .badRequest().build() — client got a blank 400 with no message
-            return ResponseEntity.badRequest().build();
+            Map<String, Object> error = new HashMap<>();
+            error.put("status", HttpStatus.BAD_REQUEST.value());
+            error.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            Map<String, Object> error = new HashMap<>();
+            error.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+            error.put("message", "Failed to update location");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
-
     // -------------------------------------------------------------------------
     // GET /location/{generatedRidesId}/locations
     // No changes needed — already calls the correct service method.

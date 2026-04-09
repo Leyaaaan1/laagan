@@ -1,18 +1,35 @@
-import { BASE_URL  } from '@env';
+// RouteService.jsx - Updated with proper error handling
+
+import {BASE_URL} from '@env';
 
 // Use API_BASE_URL instead of hardcoded value
-const API_BASE_URL = BASE_URL  || 'http://localhost:8080';
+const API_BASE_URL = BASE_URL || 'http://localhost:8080';
+
+/**
+ * Custom error class for route operations
+ * Extends Error to include HTTP status code and metadata
+ */
+class RouteError extends Error {
+  constructor(message, status = null, details = null) {
+    super(message);
+    this.name = 'RouteError';
+    this.status = status;
+    this.details = details;
+  }
+}
 
 export async function getRoutePreview(token, routeData) {
   try {
     const startLat = parseFloat(routeData.startLat);
     const startLng = parseFloat(routeData.startLng);
-    const endLat   = parseFloat(routeData.endLat);
-    const endLng   = parseFloat(routeData.endLng);
+    const endLat = parseFloat(routeData.endLat);
+    const endLng = parseFloat(routeData.endLng);
 
     // Guard: reject if any coordinate is missing or zero
     if (!startLat || !startLng || !endLat || !endLng) {
-      throw new Error('Invalid coordinates: one or more values are 0 or missing');
+      throw new RouteError(
+        'Invalid coordinates: one or more values are 0 or missing',
+      );
     }
 
     // Guard: reject if start and end are identical — ORS returns 400
@@ -20,13 +37,16 @@ export async function getRoutePreview(token, routeData) {
       Math.abs(startLat - endLat) < 0.0001 &&
       Math.abs(startLng - endLng) < 0.0001;
     if (isSamePoint) {
-      throw new Error('Start and end points are the same — set a different destination');
+      throw new RouteError(
+        'Start and end points are the same — set a different destination',
+      );
     }
 
-    const stopPoints = routeData.stopPoints?.map(stop => ({
-      stopLatitude: parseFloat(stop.lat),
-      stopLongitude: parseFloat(stop.lng)
-    })) || [];
+    const stopPoints =
+      routeData.stopPoints?.map(stop => ({
+        stopLatitude: parseFloat(stop.lat),
+        stopLongitude: parseFloat(stop.lng),
+      })) || [];
 
     const requestBody = {
       startLat,
@@ -40,14 +60,33 @@ export async function getRoutePreview(token, routeData) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Route request failed: ${response.status} - ${errorText}`);
+
+      let errorMessage = '';
+      switch (response.status) {
+        case 401:
+          errorMessage = 'Session expired. Please log in again.';
+          break;
+        case 403:
+          errorMessage = 'You are not authorized to access this route.';
+          break;
+        case 404:
+          errorMessage = 'Route not found.';
+          break;
+        case 400:
+          errorMessage = 'Invalid route coordinates.';
+          break;
+        default:
+          errorMessage = `Route request failed: ${errorText}`;
+      }
+
+      throw new RouteError(errorMessage, response.status, errorText);
     }
 
     return await response.json();
@@ -57,7 +96,13 @@ export async function getRoutePreview(token, routeData) {
   }
 }
 
-export function createRouteData(startingLatitude, startingLongitude, endingLatitude, endingLongitude, stopPoints = []) {
+export function createRouteData(
+  startingLatitude,
+  startingLongitude,
+  endingLatitude,
+  endingLongitude,
+  stopPoints = [],
+) {
   return {
     startLat: startingLatitude,
     startLng: startingLongitude,
@@ -65,28 +110,47 @@ export function createRouteData(startingLatitude, startingLongitude, endingLatit
     endLng: endingLongitude,
     stopPoints: stopPoints.map(stop => ({
       lat: stop.lat,
-      lng: stop.lng
-    }))
+      lng: stop.lng,
+    })),
   };
 }
 
 export async function getRouteCoordinates(token, generatedRidesId) {
   try {
     if (!generatedRidesId) {
-      throw new Error('Generated rides ID is required');
+      throw new RouteError('Generated rides ID is required');
     }
 
-    const response = await fetch(`${API_BASE_URL}/routes/coordinate/${generatedRidesId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+    const response = await fetch(
+      `${API_BASE_URL}/routes/coordinate/${generatedRidesId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
       },
-    });
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Failed to fetch route coordinates: ${response.status} - ${errorText}`);
+
+      let errorMessage = '';
+      switch (response.status) {
+        case 401:
+          errorMessage = 'Session expired. Please log in again.';
+          break;
+        case 403:
+          errorMessage = 'You are not authorized to access this route.';
+          break;
+        case 404:
+          errorMessage = 'Route not found.';
+          break;
+        default:
+          errorMessage = `Failed to fetch route coordinates: ${errorText}`;
+      }
+
+      throw new RouteError(errorMessage, response.status, errorText);
     }
 
     return await response.json();

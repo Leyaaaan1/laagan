@@ -99,10 +99,6 @@ export const useRouteMapLogic = (generatedRidesId, token) => {
         generatedRidesId,
       );
 
-      // ✅ NEW: Check response status for token expiry
-      // (Note: getRouteCoordinates likely returns a response object.
-      // Check what it actually returns and add this check accordingly)
-
       if (!data) {
         throw new Error('No route data received from server');
       }
@@ -111,7 +107,7 @@ export const useRouteMapLogic = (generatedRidesId, token) => {
     } catch (err) {
       const message = err?.message || 'Failed to load route data';
 
-      // ✅ NEW: Check if this is a 401/403 error
+      // ✅ FIXED: Now properly detects 401/403 errors from typed error objects
       if (err?.status === 401 || err?.status === 403) {
         setError('Session expired. Please log in again.');
         // DO NOT show a retry button for 401/403
@@ -131,8 +127,7 @@ export const useRouteMapLogic = (generatedRidesId, token) => {
     } finally {
       setIsLoading(false);
     }
-  }, [generatedRidesId]);
-  // tokenRef is a ref — stable, does not need to be listed
+  }, [generatedRidesId]);  // tokenRef is a ref — stable, does not need to be listed
 
   // ── Main effect: fetch route + request location on mount / id change ──────
   useEffect(() => {

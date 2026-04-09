@@ -1,4 +1,4 @@
-import React, {useState, useRef, useEffect} from 'react';
+import React, {useState, useRef, useEffect, useMemo} from 'react';
 import {
   View,
   Text,
@@ -28,9 +28,11 @@ const StartedRide = ({route, navigation}) => {
   const prevMarkersRef = useRef({});
   const [pillVisible, setPillVisible] = useState(true);
   const pillTimerRef = useRef(null);
-  const mapData = processRideCoordinates(activeRide);
   const rideId = activeRide.generatedRidesId || activeRide.id;
-
+  const mapData = useMemo(
+    () => processRideCoordinates(activeRide),
+    [activeRide],
+  );
   if (!activeRide) {
     return (
       <View style={feedback.emptyContainer}>

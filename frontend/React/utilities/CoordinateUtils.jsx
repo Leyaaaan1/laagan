@@ -1,8 +1,7 @@
-
-export const processRideCoordinates = (rideData) => {
+export const processRideCoordinates = rideData => {
   if (!rideData) {
     console.warn('No ride data provided to processRideCoordinates');
-    return { startingPoint: null, endingPoint: null, stopPoints: [] };
+    return {startingPoint: null, endingPoint: null, stopPoints: []};
   }
 
   // Process Starting Point
@@ -11,9 +10,15 @@ export const processRideCoordinates = (rideData) => {
     startingPoint = {
       lat: rideData.startingPoint.lat || rideData.startingPoint.latitude,
       lng: rideData.startingPoint.lng || rideData.startingPoint.longitude,
-      name: rideData.startingPoint.name || rideData.startingPoint.address || 'Starting Point',
+      name:
+        rideData.startingPoint.name ||
+        rideData.startingPoint.address ||
+        'Starting Point',
     };
-  } else if (rideData.startLat !== undefined && rideData.startLng !== undefined) {
+  } else if (
+    rideData.startLat !== undefined &&
+    rideData.startLng !== undefined
+  ) {
     startingPoint = {
       lat: rideData.startLat,
       lng: rideData.startLng,
@@ -27,7 +32,11 @@ export const processRideCoordinates = (rideData) => {
     endingPoint = {
       lat: rideData.endingPoint.lat || rideData.endingPoint.latitude,
       lng: rideData.endingPoint.lng || rideData.endingPoint.longitude,
-      name: rideData.endingPoint.name || rideData.endingPoint.address || rideData.endingPointName || 'Ending Point',
+      name:
+        rideData.endingPoint.name ||
+        rideData.endingPoint.address ||
+        rideData.endingPointName ||
+        'Ending Point',
     };
   } else if (rideData.endLat !== undefined && rideData.endLng !== undefined) {
     endingPoint = {
@@ -53,10 +62,11 @@ export const processRideCoordinates = (rideData) => {
       // Try alternative property names
       const lat = stop.lat || stop.latitude || stop.stopLatitude;
       const lng = stop.lng || stop.longitude || stop.stopLongitude;
-      const name = stop.name || stop.address || stop.stopName || `Stop ${index + 1}`;
+      const name =
+        stop.name || stop.address || stop.stopName || `Stop ${index + 1}`;
 
       if (lat !== undefined && lng !== undefined) {
-        return { lat, lng, name };
+        return {lat, lng, name};
       }
 
       console.warn(`Stop point ${index + 1} missing coordinates:`, stop);
@@ -64,17 +74,12 @@ export const processRideCoordinates = (rideData) => {
     })
     .filter(Boolean); // Remove null values
 
-  console.log('Processed coordinates:', {
-    startingPoint,
-    endingPoint,
-    stopPointsCount: stopPoints.length,
-  });
+  // ✅ REMOVED: console.log('Processed coordinates:', ...) — was called on every render
 
-  return { startingPoint, endingPoint, stopPoints };
+  return {startingPoint, endingPoint, stopPoints};
 };
 
-
-export const isValidCoordinate = (coord) => {
+export const isValidCoordinate = coord => {
   return (
     coord &&
     typeof coord === 'object' &&
@@ -84,4 +89,3 @@ export const isValidCoordinate = (coord) => {
     !isNaN(coord.lng)
   );
 };
-
