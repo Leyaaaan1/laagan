@@ -1,7 +1,7 @@
 import {useEffect, useRef, useState} from 'react';
 import {Platform, PermissionsAndroid} from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
-import {DEFAULT_COORDS} from '../utilities/route/map/appDefaults';
+import {DEFAULT_COORDS, GEOLOCATION_OPTIONS} from '../utilities/route/map/appDefaults';
 
 /**
  * Hook to fetch user's current location

@@ -5,7 +5,7 @@ import java.util.List;
 
 public class RideRequestDTO {
 
-    private Integer generatedRidesId;
+    private String generatedRidesId;
     private String username;
     private String ridesName;
     private String locationName;
@@ -31,7 +31,7 @@ public class RideRequestDTO {
 
 
 
-    public RideRequestDTO(Integer generatedRidesId, String username, List<String> participants, String description,
+    public RideRequestDTO(String generatedRidesId, String username, List<String> participants, String description,
                           String ridesName, String locationName,
                           String riderType, Integer distance,
                           LocalDateTime date, double latitude, double longitude,
@@ -99,11 +99,11 @@ public class RideRequestDTO {
         this.magImageEndingLocation = magImageEndingLocation;
     }
 
-    public Integer getGeneratedRidesId() {
+    public String getGeneratedRidesId() {
         return generatedRidesId;
     }
 
-    public void setGeneratedRidesId(Integer generatedRidesId) {
+    public void setGeneratedRidesId(String generatedRidesId) {
         this.generatedRidesId = generatedRidesId;
     }
 

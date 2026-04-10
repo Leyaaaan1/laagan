@@ -2,197 +2,276 @@ import {BASE_URL} from '@env';
 import {routeCache} from './cache/routeCache';
 
 // Use API_BASE_URL instead of hardcoded value
-const API_BASE_URL = BASE_URL  || 'http://localhost:8080';
+const API_BASE_URL = BASE_URL || 'http://localhost:8080';
+
+const cleanAndValidateToken = token => {
+  if (!token) {
+    throw new Error('No authentication token provided. Please log in again.');
+  }
+
+  if (typeof token !== 'string') {
+    throw new Error('Invalid token type. Please log in again.');
+  }
+
+  // Remove Bearer prefix if it exists
+  let cleanToken = token.trim();
+  if (cleanToken.startsWith('Bearer ')) {
+    cleanToken = cleanToken.substring(7).trim();
+  }
+
+  // Validate JWT format (3 parts separated by 2 periods)
+  const parts = cleanToken.split('.');
+  if (parts.length !== 3) {
+    console.error(
+      '❌ Invalid JWT format. Parts:',
+      parts.length,
+      'Token preview:',
+      cleanToken.substring(0, 50),
+    );
+    throw new Error('Invalid token format. Please log in again.');
+  }
+
+  console.log('✅ Token validated successfully');
+  return cleanToken;
+};
 
 export const searchLocation = async (token, query) => {
-    try {
-        const response = await fetch(`${API_BASE_URL}/location/search?query=${encodeURIComponent(query)}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-        });
+  try {
+    const cleanToken = cleanAndValidateToken(token);
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch location: ${response.status} ${errorText}`);
-        }
+    const response = await fetch(
+      `${API_BASE_URL}/location/search?query=${encodeURIComponent(query)}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${cleanToken}`,
+        },
+      },
+    );
 
-        return await response.json();
-    } catch (error) {
-        console.error('searchLocation error:', error);
-        throw error;
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Failed to fetch location: ${response.status} ${errorText}`,
+      );
     }
+
+    return await response.json();
+  } catch (error) {
+    console.error('searchLocation error:', error);
+    throw error;
+  }
 };
 
 export const searchCityOrLandmark = async (token, query) => {
-    try {
-        const response = await fetch(`${API_BASE_URL}/location/search-landmark?query=${encodeURIComponent(query)}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-        });
+  try {
+    const cleanToken = cleanAndValidateToken(token);
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch landmarks: ${response.status} ${errorText}`);
-        }
+    const response = await fetch(
+      `${API_BASE_URL}/location/search-landmark?query=${encodeURIComponent(
+        query,
+      )}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${cleanToken}`,
+        },
+      },
+    );
 
-        return await response.json();
-    } catch (error) {
-        console.error('searchCityOrLandmark error:', error);
-        throw error;
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Failed to fetch landmarks: ${response.status} ${errorText}`,
+      );
     }
+
+    return await response.json();
+  } catch (error) {
+    console.error('searchCityOrLandmark error:', error);
+    throw error;
+  }
 };
 
 export const reverseGeocode = async (token, lat, lon) => {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/location/reverse?lat=${lat}&lon=${lon}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+  try {
+    const cleanToken = cleanAndValidateToken(token);
+
+    const response = await fetch(
+      `${API_BASE_URL}/location/reverse?lat=${lat}&lon=${lon}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${cleanToken}`,
         },
+      },
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Failed to reverse geocode: ${response.status} ${errorText}`,
       );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Failed to reverse geocode: ${response.status} ${errorText}`,
-        );
-      }
-
-      // Since the backend returns a String for reverse geocoding
-
-      return await response.text();
-    } catch (err) {
-        console.error('Reverse geocode fetch failed:', err);
-        return null;
     }
+
+    return await response.text();
+  } catch (err) {
+    console.error('Reverse geocode fetch failed:', err);
+    return null;
+  }
 };
 
-
 export const reverseGeocodeLandmark = async (token, lat, lon) => {
-    try {
-        const response = await fetch(`${API_BASE_URL}/location/landmark?lat=${lat}&lon=${lon}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-        });
+  try {
+    const cleanToken = cleanAndValidateToken(token);
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to reverse geocode: ${response.status} ${errorText}`);
-        }
+    const response = await fetch(
+      `${API_BASE_URL}/location/landmark?lat=${lat}&lon=${lon}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${cleanToken}`,
+        },
+      },
+    );
 
-        // Since the backend returns a String for reverse geocodin
-        return await response.text();
-    } catch (err) {
-        console.error('Reverse geocode fetch failed:', err);
-        return null;
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Failed to reverse geocode: ${response.status} ${errorText}`,
+      );
     }
+
+    return await response.text();
+  } catch (err) {
+    console.error('Reverse geocode fetch failed:', err);
+    return null;
+  }
+};
+
+export const getLocationImage = async (rideName, token) => {
+  try {
+    const cleanToken = cleanAndValidateToken(token);
+
+    const response = await fetch(
+      `${API_BASE_URL}/wikimedia/location?locationName=${encodeURIComponent(
+        rideName,
+      )}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${cleanToken}`,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return []; // No images found
+      }
+      const errorText = await response.text();
+      throw new Error(
+        `Failed to fetch location images: ${response.status} ${errorText}`,
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching location images:', error);
+    throw error;
+  }
 };
 
 
 // Fixed createRide service function with proper error handling
 export const createRide = async (rideData, token) => {
-    try {
-        console.log('=== CREATE RIDE DEBUG ===');
-        console.log('API URL:', `${API_BASE_URL}/riders/create`);
-        console.log('Token (first 20 chars):', token ? token.substring(0, 20) + '...' : 'No token');
-        console.log('Request data:', JSON.stringify(rideData, null, 2));
+  try {
+    console.log('=== CREATE RIDE DEBUG ===');
+    console.log('API URL:', `${API_BASE_URL}/riders/create`);
 
-        // Check if token exists and is valid
-        if (!token) {
-            throw new Error('No authentication token provided. Please log in again.');
-        }
+    const cleanToken = cleanAndValidateToken(token);
+    console.log(
+      'Token (first 20 chars):',
+      cleanToken ? cleanToken.substring(0, 20) + '...' : 'No token',
+    );
+    console.log('Request data:', JSON.stringify(rideData, null, 2));
 
-        if (typeof token !== 'string') {
-            console.error('Invalid token type:', typeof token, token);
-            throw new Error('Invalid token format. Please log in again.');
-        }
+    const headers = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${cleanToken}`,
+    };
 
-        // Ensure token doesn't already have Bearer prefix
-        const cleanToken = token.startsWith('Bearer ') ? token.substring(7) : token;
-        console.log('Clean token (first 20 chars):', cleanToken ? cleanToken.substring(0, 20) + '...' : 'No clean token');
+    console.log('Request header:', headers);
 
-        const headers = {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${cleanToken}`,
-        };
+    const response = await fetch(`${API_BASE_URL}/riders/create`, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(rideData),
+    });
 
-        console.log('Request header:', headers);
+    console.log('Response status:', response.status);
+    console.log('Response statusText:', response.statusText);
 
-        const response = await fetch(`${API_BASE_URL}/riders/create`, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify(rideData),
-        });
+    const responseText = await response.text();
+    console.log('Raw response text:', responseText);
 
-        console.log('Response status:', response.status);
-        console.log('Response statusText:', response.statusText);
-        console.log('Response header:', Object.fromEntries(response.headers.entries()));
-
-        const responseText = await response.text();
-        console.log('Raw response text:', responseText);
-
-        if (!response.ok) {
-            console.error('HTTP Error:', response.status, responseText);
-            throw new Error(`HTTP ${response.status}: ${responseText || response.statusText}`);
-        }
-
-        if (!responseText || responseText.trim() === '') {
-            console.log('Empty response - assuming success');
-            return { success: true, message: 'Ride created successfully' };
-        }
-
-        let result;
-        try {
-            result = JSON.parse(responseText);
-            console.log('Parsed JSON result:', result);
-        } catch (parseError) {
-            console.error('JSON parse error:', parseError);
-            console.error('Response that failed to parse:', responseText);
-            // If response is successful but not JSON, return success
-            return { success: true, message: 'Ride created successfully', rawResponse: responseText };
-        }
-
-        return result;
-
-    } catch (error) {
-        console.error('=== CREATE RIDE ERROR ===');
-        console.error('Error type:', error.constructor.name);
-        console.error('Error message:', error.message);
-        console.error('Full error:', error);
-
-        // Handle specific error cases
-        if (error.message.includes('Failed to fetch')) {
-            throw new Error('Network connection failed. Please check your internet connection.');
-        }
-
-        if (error.message.includes('403')) {
-            throw new Error('Authentication failed. Please try logging in again.');
-        }
-
-        if (error.message.includes('401')) {
-            throw new Error('Access denied. Please log in again.');
-        }
-
-        if (error.message.includes('500')) {
-            throw new Error('Server error. Please try again later.');
-        }
-
-        // Re-throw original error if we can't handle it
-        throw error;
+    if (!response.ok) {
+      console.error('HTTP Error:', response.status, responseText);
+      throw new Error(
+        `HTTP ${response.status}: ${responseText || response.statusText}`,
+      );
     }
+
+    if (!responseText || responseText.trim() === '') {
+      console.log('Empty response - assuming success');
+      return {success: true, message: 'Ride created successfully'};
+    }
+
+    let result;
+    try {
+      result = JSON.parse(responseText);
+      console.log('Parsed JSON result:', result);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      return {
+        success: true,
+        message: 'Ride created successfully',
+        rawResponse: responseText,
+      };
+    }
+
+    return result;
+  } catch (error) {
+    console.error('=== CREATE RIDE ERROR ===');
+    console.error('Error type:', error.constructor.name);
+    console.error('Error message:', error.message);
+    console.error('Full error:', error);
+
+    if (error.message.includes('Failed to fetch')) {
+      throw new Error(
+        'Network connection failed. Please check your internet connection.',
+      );
+    }
+
+    if (error.message.includes('403')) {
+      throw new Error('Authentication failed. Please try logging in again.');
+    }
+
+    if (error.message.includes('401')) {
+      throw new Error('Access denied. Please log in again.');
+    }
+
+    if (error.message.includes('500')) {
+      throw new Error('Server error. Please try again later.');
+    }
+
+    throw error;
+  }
 };// Alternative version using axios (if you're using axios instead of fetch)
 
 
@@ -316,30 +395,6 @@ export const fetchMyRides = async (token, page = 0, size = 10) => {
 };
 
 
-export const getLocationImage = async (rideName, token) => {
-    try {
-        const response = await fetch(`${API_BASE_URL}/wikimedia/location?locationName=${encodeURIComponent(rideName)}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            if (response.status === 404) {
-                return []; // No images found
-            }
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch location images: ${response.status} ${errorText}`);
-        }
-
-        return await response.json(); // Returns an array of LocationImageDto objects
-    } catch (error) {
-        console.error('Error fetching location images:', error);
-        throw error;
-    }
-};
 
 
 

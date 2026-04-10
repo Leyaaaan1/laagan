@@ -39,7 +39,7 @@ public class RideJoinRequestService {
 
     @Transactional
     public JoinResponseCreateDto createJoinRequest(JoinRequestCreateDto createDto) {
-        Integer generatedRidesId = createDto.getGeneratedRidesId();
+        String generatedRidesId = createDto.getGeneratedRidesId();
         String username = createDto.getUsername();
 
         Optional<RideJoinRequest> existingRequest =
@@ -70,7 +70,7 @@ public class RideJoinRequestService {
     }
 
     @Transactional
-    public JoinResponseCreateDto acceptJoinRequest(Integer generatedRidesId, String username, String ridesOwner) {
+    public JoinResponseCreateDto acceptJoinRequest(String generatedRidesId, String username, String ridesOwner) {
         RideJoinRequest request = rideJoinRequestRepository
                 .findByGeneratedRidesId_GeneratedRidesIdAndRider_Username(generatedRidesId, username)
                 .orElseThrow(() -> new RuntimeException("Join request not found"));
@@ -90,7 +90,7 @@ public class RideJoinRequestService {
     }
 
     @Transactional(readOnly = true)
-    public List<JoinResponseDTO> getJoinRequestsByRideId(Integer generatedRidesId, String requestingUsername) {
+    public List<JoinResponseDTO> getJoinRequestsByRideId(String generatedRidesId, String requestingUsername) {
         try {
             Rides ride = riderUtil.findRideById(generatedRidesId);
 

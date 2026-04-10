@@ -11,11 +11,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
+
+    private static final Logger logger = LoggerFactory.getLogger(JwtFilter.class);
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -29,17 +33,43 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        if (path.equals("/riders/login") || path.equals("/riders/register") || path.startsWith("/facebook/login")) {
+        // ✅ Skip auth for login, register, refresh, and facebook endpoints
+        if (path.equals("/riders/login")
+                || path.equals("/riders/register")
+                || path.equals("/riders/refresh")
+                || path.startsWith("/facebook/login")) {
             filterChain.doFilter(request, response);
             return;
         }
 
         String header = request.getHeader("Authorization");
 
-        if (header != null && header.startsWith("Bearer ")) {
-            String token = header.substring(7);
+        // ✅ If no header or empty, proceed without auth
+        if (header == null || header.trim().isEmpty()) {
+            logger.debug("No Authorization header present");
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-            if (jwtUtil.isTokenValid(token)) {
+        // ✅ Check for Bearer prefix
+        if (!header.startsWith("Bearer ")) {
+            logger.warn("Authorization header missing Bearer prefix: {}", header.substring(0, Math.min(20, header.length())));
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String token = header.substring(7);
+
+        // ✅ Validate token format before parsing
+        if (!isValidTokenFormat(token)) {
+            logger.warn("Invalid token format — must be 3 JWT parts (header.payload.signature)");
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // ✅ Validate token signature and expiration
+        if (jwtUtil.isTokenValid(token)) {
+            try {
                 String username = jwtUtil.getUsernameFromToken(token);
                 UserDetails userDetails = userDetailsManager.loadUserByUsername(username);
 
@@ -47,9 +77,26 @@ public class JwtFilter extends OncePerRequestFilter {
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+                logger.debug("Token validated for user: {}", username);
+            } catch (Exception e) {
+                logger.error("Error processing valid token", e);
             }
+        } else {
+            logger.debug("Token validation failed — may be expired or invalid");
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * ✅ Validate that token has correct JWT format: header.payload.signature
+     */
+    private boolean isValidTokenFormat(String token) {
+        if (token == null || token.trim().isEmpty()) {
+            return false;
+        }
+        // JWT must have exactly 2 periods (3 parts)
+        int periodCount = (int) token.chars().filter(ch -> ch == '.').count();
+        return periodCount == 2;
     }
 }

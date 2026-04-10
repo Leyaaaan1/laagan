@@ -8,6 +8,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.PrecisionModel;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 /**
@@ -51,6 +52,7 @@ public class LocationService {
 
 
 
+    @Cacheable(value = "landmarks", key = "'barangay_' + #lat + '_' + #lon")
     public String resolveBarangayName(String fallback, double lat, double lon) {
         String nominatimBarangay = nominatimService.getBarangayNameFromCoordinates(lat, lon);
 
@@ -67,6 +69,7 @@ public class LocationService {
     }
 
 
+    @Cacheable(value = "landmarks", key = "'landmark_' + #lat + '_' + #lon")
     public String resolveLandMark(String fallback, double lat, double lon) {
         return nominatimService.getCityOrLandmarkFromCoordinates(lat, lon)
                 .map(addr -> {

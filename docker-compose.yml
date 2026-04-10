@@ -12,6 +12,7 @@ version: '3.8'
   #docker exec riders-redis-dev redis-cli ping
   ## Should return: PONG
 
+
 services:
   redis:
     image: redis:7-alpine
@@ -35,4 +36,3 @@ volumes:
 networks:
   riders-network:
     driver: bridge
-

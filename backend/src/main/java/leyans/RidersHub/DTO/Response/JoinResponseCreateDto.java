@@ -3,12 +3,12 @@ package leyans.RidersHub.DTO.Response;
 public class JoinResponseCreateDto {
 
     private Integer id;
-    private Integer generatedRidesId;
+    private String generatedRidesId;
     private String riderUsername;
 
     public JoinResponseCreateDto() {
     }
-    public JoinResponseCreateDto(Integer id, Integer generatedRidesId, String riderUsername) {
+    public JoinResponseCreateDto(Integer id, String generatedRidesId, String riderUsername) {
         this.id = id;
         this.generatedRidesId = generatedRidesId;
         this.riderUsername = riderUsername;
@@ -24,11 +24,11 @@ public class JoinResponseCreateDto {
         this.id = id;
     }
 
-    public Integer getGeneratedRidesId() {
+    public String getGeneratedRidesId() {
         return generatedRidesId;
     }
 
-    public void setGeneratedRidesId(Integer generatedRidesId) {
+    public void setGeneratedRidesId(String generatedRidesId) {
         this.generatedRidesId = generatedRidesId;
     }
 

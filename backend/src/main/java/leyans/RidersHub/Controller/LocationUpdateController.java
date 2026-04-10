@@ -4,6 +4,7 @@ package leyans.RidersHub.Controller;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import leyans.RidersHub.DTO.Request.LocationDTO.LocationUpdateRequestDTO;
+import leyans.RidersHub.ExceptionHandler.UnauthorizedAccessException;
 import leyans.RidersHub.Service.RideLocationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +33,7 @@ public class LocationUpdateController {
     // -------------------------------------------------------------------------
     @GetMapping("/{generatedRidesId}/all-riders")
     public ResponseEntity<List<LocationUpdateRequestDTO>> getAllRiderLocations(
-            @PathVariable Integer generatedRidesId) {
+            @PathVariable String generatedRidesId) {
 
         System.out.println("\n📍 [GET /{generatedRidesId}/all-riders] Fetching all rider locations for Ride: " + generatedRidesId);
         try {
@@ -53,7 +54,7 @@ public class LocationUpdateController {
     // -------------------------------------------------------------------------
     @PostMapping("/{generatedRidesId}/share")
     public ResponseEntity<?> shareLocationAndGetParticipants(
-            @PathVariable Integer generatedRidesId,
+            @PathVariable String generatedRidesId,
             @RequestParam
             @DecimalMin(value = "-90.0", message = "Latitude must be between -90 and 90")
             @DecimalMax(value = "90.0", message = "Latitude must be between -90 and 90")
@@ -71,25 +72,36 @@ public class LocationUpdateController {
 
             return ResponseEntity.ok(allLocations);
 
+        } catch (UnauthorizedAccessException.UnauthorizedException e) {
+            // ✅ FIXED: Return 403 for authorization failures
+            Map<String, Object> error = new HashMap<>();
+            error.put("status", HttpStatus.FORBIDDEN.value());
+            error.put("error", "Unauthorized");
+            error.put("message", "You are not authorized to update location for this ride");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+
         } catch (IllegalArgumentException e) {
             Map<String, Object> error = new HashMap<>();
             error.put("status", HttpStatus.BAD_REQUEST.value());
+            error.put("error", "Bad Request");
             error.put("message", e.getMessage());
             return ResponseEntity.badRequest().body(error);
+
         } catch (Exception e) {
+            // ✅ FIXED: Never expose internal error messages
             Map<String, Object> error = new HashMap<>();
             error.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+            error.put("error", "Internal Server Error");
             error.put("message", "Failed to update location");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
-    }
-    // -------------------------------------------------------------------------
+    }    // -------------------------------------------------------------------------
     // GET /location/{generatedRidesId}/locations
     // No changes needed — already calls the correct service method.
     // -------------------------------------------------------------------------
     @GetMapping("/{generatedRidesId}/locations")
     public ResponseEntity<List<LocationUpdateRequestDTO>> getParticipantsLocations(
-            @PathVariable Integer generatedRidesId) {
+            @PathVariable String generatedRidesId) {
 
         System.out.println("\n📍 [GET /locations] Called for Ride: " + generatedRidesId);
 
@@ -111,7 +123,7 @@ public class LocationUpdateController {
     // -------------------------------------------------------------------------
     @GetMapping("/{generatedRidesId}/test")
     public ResponseEntity<Map<String, Object>> testDatabaseState(
-            @PathVariable Integer generatedRidesId) {
+            @PathVariable String generatedRidesId) {
 
         System.out.println("\n🧪 [TEST] Database check for ride: " + generatedRidesId);
 

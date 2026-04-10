@@ -50,7 +50,7 @@ public class JoinRequestController {
 
     @GetMapping("/{generatedRidesId}")
     public ResponseEntity<List<JoinerDto>> listJoinRequestsByRide(
-            @PathVariable Integer generatedRidesId) {
+            @PathVariable String generatedRidesId) {
         List<JoinRequest> joinRequests = participantUtil.listJoinRequestsByRideId(generatedRidesId);
         List<JoinerDto> result = joinRequests.stream()
                 .map(JoinerDto::new) //
@@ -74,7 +74,7 @@ public class JoinRequestController {
 
     @GetMapping("/{generatedRidesId}/joiners")
     public ResponseEntity<List<JoinerDto>> listJoinersByRide(
-            @PathVariable Integer generatedRidesId,
+            @PathVariable String generatedRidesId,
             @RequestParam(required = false) JoinRequest.JoinStatus status) {
 
         List<JoinerDto> result = joinRequestService.listJoinersByRide(generatedRidesId, status);

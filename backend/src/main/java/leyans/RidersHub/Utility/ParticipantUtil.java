@@ -45,7 +45,7 @@ public class ParticipantUtil {
 
 
     @Transactional(readOnly = true)
-    public String getQrCodeUrlByRideId(Integer generatedRidesId) {
+    public String getQrCodeUrlByRideId(String generatedRidesId) {
         InviteRequest invite = findInviteByRideId(generatedRidesId);
 //        validateInviteNotExpired(invite);
         return invite.getQr();
@@ -58,7 +58,7 @@ public class ParticipantUtil {
                 .orElseThrow(() -> new EntityNotFoundException("Invite not found for token: " + inviteToken));
     }
 
-    public InviteRequest findInviteByRideId(Integer generatedRidesId) {
+    public InviteRequest findInviteByRideId(String generatedRidesId) {
         List<InviteRequest> invites = inviteRequestRepository.findByRides_GeneratedRidesId(generatedRidesId);
         if (invites == null || invites.isEmpty()) {
             throw new EntityNotFoundException("Invite not found for ride ID: " + generatedRidesId);
@@ -85,12 +85,12 @@ public class ParticipantUtil {
     }
 
     @Transactional(readOnly = true)
-    public List<JoinRequest> listJoinRequestsByRideId(Integer generatedRidesId) {
+    public List<JoinRequest> listJoinRequestsByRideId(String generatedRidesId) {
         riderUtil.findRideById(generatedRidesId); // validate existence
         return joinRequestRepository.findByRideId(generatedRidesId);
     }
 
-    public void validateRideCreator(Integer generatedRidesId, String currentUsername) {
+    public void validateRideCreator(String generatedRidesId, String currentUsername) {
         Rides ride = riderUtil.findRideById(generatedRidesId);
 
         if (!ride.getUsername().getUsername().equals(currentUsername)) {
@@ -109,24 +109,24 @@ public class ParticipantUtil {
 //    }
 
     @Transactional(readOnly = true)
-    public boolean hasJoinRequest(Integer rideId, String username) {
-        riderUtil.findRideById(rideId); // validate ride existence
-        return joinRequestRepository.findByRideId(rideId)
+    public boolean hasJoinRequest(String generatedRidesId, String username) {
+        riderUtil.findRideById(generatedRidesId); // validate ride existence
+        return joinRequestRepository.findByRideId(generatedRidesId)
                 .stream()
                 .anyMatch(joinRequest -> joinRequest.getRequester().getUsername().equals(username));
     }
 
 
     @Transactional(readOnly = true)
-    public List<JoinerDto> listJoinersByRideIdAndStatus(Integer rideId, JoinRequest.JoinStatus status) {
-        Rides ride = riderUtil.findRideById(rideId);
-        return joinRequestRepository.findByRideIdAndStatus(rideId, status).stream()
+    public List<JoinerDto> listJoinersByRideIdAndStatus(String generatedRidesId, JoinRequest.JoinStatus status) {
+        Rides ride = riderUtil.findRideById(generatedRidesId);
+        return joinRequestRepository.findByRideIdAndStatus(generatedRidesId, status).stream()
                 .map(j -> new JoinerDto(j.getRequester().getUsername(), j.getJoinStatus(), j.getRequestedAt()))
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public String getInviteUrlByRideId(Integer generatedRidesId) {
+    public String getInviteUrlByRideId(String generatedRidesId) {
         InviteRequest invite = findInviteByRideId(generatedRidesId);
 //        validateInviteNotExpired(invite);
         return invite.getInviteLink();
@@ -134,8 +134,8 @@ public class ParticipantUtil {
 
 
     @Transactional(readOnly = true)
-    public String getQrCodeBase64ByRideId(Integer rideId) {
-        InviteRequest invite = findInviteByRideId(rideId);
+    public String getQrCodeBase64ByRideId(String generatedRidesId) {
+        InviteRequest invite = findInviteByRideId(generatedRidesId);
 //        validateInviteNotExpired(invite);
         return invite.getQrCodeBase64();
     }

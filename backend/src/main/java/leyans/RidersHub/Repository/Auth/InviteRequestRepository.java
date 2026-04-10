@@ -20,7 +20,7 @@ public interface InviteRequestRepository extends JpaRepository <InviteRequest, I
 
 
     @Query("SELECT i FROM InviteRequest i WHERE i.rides.generatedRidesId = :generatedRidesId")
-    List<InviteRequest> findByRides_GeneratedRidesId(@Param("generatedRidesId") Integer generatedRidesId);
+    List<InviteRequest> findByRides_GeneratedRidesId(@Param("generatedRidesId") String generatedRidesId);
 
 
 

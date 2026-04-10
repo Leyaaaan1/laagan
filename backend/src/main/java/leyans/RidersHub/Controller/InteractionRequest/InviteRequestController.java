@@ -22,7 +22,7 @@ public class InviteRequestController {
     }
 
     @GetMapping("/{generatedRidesId}/qr-url")
-    public ResponseEntity<String> getQrCodeUrl(@PathVariable Integer generatedRidesId) {
+    public ResponseEntity<String> getQrCodeUrl(@PathVariable String generatedRidesId) {
         try {
             String qrUrl = participantUtil.getQrCodeUrlByRideId(generatedRidesId);
             return ResponseEntity.ok(qrUrl);
@@ -34,7 +34,7 @@ public class InviteRequestController {
     }
 
     @GetMapping("/{generatedRidesId}/qr-base64")
-    public ResponseEntity<String> getQrCodeBase64(@PathVariable Integer generatedRidesId) {
+    public ResponseEntity<String> getQrCodeBase64(@PathVariable String generatedRidesId) {
         try {
             String qrBase64 = participantUtil.getQrCodeBase64ByRideId(generatedRidesId);
             return ResponseEntity.ok(qrBase64);
@@ -46,7 +46,7 @@ public class InviteRequestController {
     }
 
     @GetMapping("/{generatedRidesId}/invites")
-    public ResponseEntity<String> getInviteUDetailsUrl(@PathVariable Integer generatedRidesId) {
+    public ResponseEntity<String> getInviteUDetailsUrl(@PathVariable String generatedRidesId) {
         String inviteDetails = participantUtil.getInviteUrlByRideId(generatedRidesId);
         return ResponseEntity.ok(inviteDetails);
     }

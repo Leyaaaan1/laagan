@@ -1,4 +1,4 @@
-package leyans.RidersHub.Controller.Location;
+package leyans.RidersHub.Controller;
 
 import leyans.RidersHub.DTO.Request.LocationDTO.LocationUpdateRequestDTO;
 import leyans.RidersHub.Service.RideLocationService;
@@ -25,7 +25,7 @@ public class RiderLocationController {
     // -------------------------------------------------------------------------
     @PostMapping("/{generatedRidesId}")
     public ResponseEntity<?> updateParticipantLocation(
-            @PathVariable Integer generatedRidesId,
+            @PathVariable String generatedRidesId,
             @RequestBody Map<String, Double> coordinates) {
 
         try {

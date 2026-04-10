@@ -23,8 +23,8 @@ public class Rides {
     @Column(name = "rides_id", nullable = false)
     private Integer ridesId;
 
-    @Column(name = "generated_rides_id", nullable = false, unique = true)
-    private Integer generatedRidesId;
+    @Column(name = "generated_rides_id", nullable = false, unique = true, length = 12)
+    private String generatedRidesId;
 
     @Column(name = "location_name", nullable = false)
     private String locationName;
@@ -100,7 +100,7 @@ public class Rides {
     public Rides() {
     }
 
-    public Rides(Integer generatedRidesId, String locationName, String startingPointName,
+    public Rides(String generatedRidesId, String locationName, String startingPointName,
                  String endingPointName, Point location, Point startingLocation,
                  Point endingLocation, String ridesName, String description,
                  Rider username, RiderType riderType, Integer distance, LocalDateTime date,
@@ -168,11 +168,11 @@ public class Rides {
         this.magImageEndingLocation = magImageEndingLocation;
     }
 
-    public Integer getGeneratedRidesId() {
+    public String getGeneratedRidesId() {
         return generatedRidesId;
     }
 
-    public void setGeneratedRidesId(Integer generatedRidesId) {
+    public void setGeneratedRidesId(String generatedRidesId) {
         this.generatedRidesId = generatedRidesId;
     }
 

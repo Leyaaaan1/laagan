@@ -16,7 +16,8 @@ import java.util.Optional;
 @Repository
 public interface RidesRepository extends JpaRepository<Rides, Integer> {
 
-    Optional<Rides> findByGeneratedRidesId(Integer generatedRidesId);
+    @Query("SELECT r FROM Rides r WHERE r.generatedRidesId = :generatedRidesId")
+    Optional<Rides> findByGeneratedRidesId(@Param("generatedRidesId") String generatedRidesId);
 
     @Query("SELECT r.routeCoordinates FROM Rides r WHERE r.generatedRidesId = :generatedRidesId")
     String findRouteCoordinatesByGeneratedRidesId(@Param("generatedRidesId") Integer generatedRidesId);
@@ -67,7 +68,7 @@ public interface RidesRepository extends JpaRepository<Rides, Integer> {
             "stopPoints"
     })
     @Query("SELECT r FROM Rides r WHERE r.generatedRidesId = :generatedRidesId")
-    Optional<Rides> findByGeneratedRidesIdWithDetails(@Param("generatedRidesId") Integer generatedRidesId);
+    Optional<Rides> findByGeneratedRidesIdWithDetails(@Param("generatedRidesId") String generatedRidesId);
 
     /**
      * Use for map display - only spatial data

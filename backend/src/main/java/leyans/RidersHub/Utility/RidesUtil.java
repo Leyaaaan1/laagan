@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -67,7 +68,7 @@ public class RidesUtil {
 
 
     @Transactional(readOnly = true)
-    public List<StopPointDTO> getStopPointsDTOByGeneratedRideId(Integer generatedRidesId) {
+    public List<StopPointDTO> getStopPointsDTOByGeneratedRideId(String generatedRidesId) {
         Rides ride = findRideEntityByGeneratedId(generatedRidesId);
         String currentUsername = riderUtil.getCurrentUsername();
         boolean isOwner = ride.getUsername().getUsername().equals(currentUsername);
@@ -81,13 +82,13 @@ public class RidesUtil {
 
 
     @Transactional
-    public String getRideMapImageUrlById(Integer generatedRidesId) {
+    public String getRideMapImageUrlById(String generatedRidesId) {
         Rides ride = findRideEntityByGeneratedId(generatedRidesId);
         return ride.getMapImageUrl();
     }
 
     @Transactional(readOnly = true)
-    public RideDetailDTO findRideByGeneratedId(Integer generatedRidesId) {
+    public RideDetailDTO findRideByGeneratedId(String generatedRidesId) {
         Rides ride = ridesRepository.findByGeneratedRidesIdWithDetails(generatedRidesId)
                 .orElseThrow(() -> new EntityNotFoundException("Ride not found with ID: " + generatedRidesId));
         return mapToDetailDTO(ride);                    // ← detail mapper
@@ -108,7 +109,7 @@ public class RidesUtil {
     }
 
     @Transactional
-    public Rides findRideEntityByGeneratedId(Integer generatedRidesId) {
+    public Rides findRideEntityByGeneratedId(String generatedRidesId) {
         return ridesRepository.findByGeneratedRidesId(generatedRidesId)
                 .orElseThrow(() -> new EntityNotFoundException("Ride not found with ID: " + generatedRidesId));
     }
@@ -193,7 +194,7 @@ public class RidesUtil {
                 .toList();
     }
 
-    public Rides validateAndGetRide(Integer generatedRidesId, Rider initiator) throws AccessDeniedException {
+    public Rides validateAndGetRide(String generatedRidesId, Rider initiator) throws AccessDeniedException {
         Rides ride = riderUtil.findRideById(generatedRidesId);
 
         if (ride == null) {
@@ -222,19 +223,13 @@ public class RidesUtil {
     }
 
 
-    public int generateUniqueRideId() {
-        int maxAttempts = 20;
-        for (int i = 0; i < maxAttempts; i++) {
-            int candidate = 1000 + (int)(Math.random() * 9000);
-            if (!ridesRepository.findByGeneratedRidesId(candidate).isPresent()) {
-                return candidate;
-            }
-        }
-        throw new IllegalStateException(
-                "Could not generate a unique ride ID after " + maxAttempts +
-                        " attempts. Consider switching to a database sequence."
-        );
+    public String generateUniqueRideId() {
+        return UUID.randomUUID().toString()
+                .replace("-", "")           // Remove hyphens
+                .substring(0, 12)           // Take first 12 characters (48 bits = ~281 trillion combinations)
+                .toUpperCase();             // Make human-readable
     }
+
 
 
 }

@@ -6,7 +6,7 @@
 CREATE TABLE public.invite_requests (
                                         invite_id SERIAL PRIMARY KEY,
                                         invite_token VARCHAR(36) NOT NULL UNIQUE,
-                                        generated_rides_id INTEGER NOT NULL REFERENCES public.event_rides(generated_rides_id) ON DELETE CASCADE,
+                                        generated_rides_id VARCHAR(12) NOT NULL REFERENCES public.event_rides(generated_rides_id) ON DELETE CASCADE,
                                         username VARCHAR(255) NOT NULL REFERENCES public.rider(username) ON DELETE CASCADE,
                                         invite_status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
                                         qr TEXT,
@@ -19,7 +19,7 @@ CREATE TABLE public.invite_requests (
 -- JOIN REQUESTS (Requests to join ride)
 CREATE TABLE public.join_requests (
                                       join_id SERIAL PRIMARY KEY,
-                                      generated_rides_id INTEGER NOT NULL REFERENCES public.event_rides(generated_rides_id) ON DELETE CASCADE,
+                                      generated_rides_id VARCHAR(12) NOT NULL REFERENCES public.event_rides(generated_rides_id) ON DELETE CASCADE,
                                       username VARCHAR(255) NOT NULL REFERENCES public.rider(username) ON DELETE CASCADE,
                                       invite_token VARCHAR(36) NOT NULL,
                                       join_status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
@@ -29,7 +29,7 @@ CREATE TABLE public.join_requests (
 -- RIDE JOIN REQUESTS (Alt join method)
 CREATE TABLE public.ride_join_requests (
                                            id SERIAL PRIMARY KEY,
-                                           generated_rides_id INTEGER NOT NULL REFERENCES public.event_rides(generated_rides_id) ON DELETE CASCADE,
+                                           generated_rides_id VARCHAR(12) NOT NULL REFERENCES public.event_rides(generated_rides_id) ON DELETE CASCADE,
                                            rider_id INTEGER NOT NULL REFERENCES public.rider(id) ON DELETE CASCADE
 );
 
