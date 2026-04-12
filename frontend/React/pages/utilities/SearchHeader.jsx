@@ -4,9 +4,11 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { getRideDetails } from '../../services/rideService';
 import colors from '../../styles/tokens/colors';
 import { buildRideStep4Params } from '../../utilities/NavigationParamsBuilder';
+import {useAuth} from '../../context/AuthContext';
 
 
-const SearchHeader = ({ token, username, navigation }) => {
+const SearchHeader = ({ navigation}) => {
+  const {token, username} = useAuth();
   const [searchId, setSearchId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -21,8 +23,8 @@ const SearchHeader = ({ token, username, navigation }) => {
     setError('');
 
     try {
-      const ride = await getRideDetails(searchId.trim(), token);
-      const params = buildRideStep4Params(ride, token, username);
+      const ride = await getRideDetails(searchId.trim());
+      const params = buildRideStep4Params(ride, username);
       navigation.navigate('RideStep4', params);
     } catch (err) {
       setError(err?.message || 'Failed to find ride');
@@ -32,8 +34,8 @@ const SearchHeader = ({ token, username, navigation }) => {
   };
   return (
     <View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-        <View style={{ position: 'relative' }}>
+      <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
+        <View style={{position: 'relative'}}>
           <TextInput
             style={{
               width: 100,
@@ -62,8 +64,7 @@ const SearchHeader = ({ token, username, navigation }) => {
               justifyContent: 'center',
               alignItems: 'center',
               paddingHorizontal: 8,
-            }}
-          >
+            }}>
             {loading ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
@@ -72,9 +73,7 @@ const SearchHeader = ({ token, username, navigation }) => {
           </TouchableOpacity>
         </View>
       </View>
-      {!!error && (
-        <Text >{error}</Text>
-      )}
+      {!!error && <Text>{error}</Text>}
     </View>
   );
 };

@@ -211,7 +211,7 @@ const ProfileList = ({ token, onRideSelect, currentUsername, pageSize = 6 }) => 
     try {
       replace ? setLoading(true) : setLoadingMore(true);
       setError('');
-      const result = await fetchMyRides(token, pageNum, pageSize);
+      const result = await fetchMyRides( pageNum, pageSize);
       if (result?.content) {
         setRides(prev => replace ? result.content : [...prev, ...result.content]);
         setHasMore(!result.last);
@@ -223,9 +223,9 @@ const ProfileList = ({ token, onRideSelect, currentUsername, pageSize = 6 }) => 
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [token, pageSize]);
+  }, [ pageSize]);
 
-  useEffect(() => { loadRides(0, true); }, [token]);
+  useEffect(() => { loadRides(0, true); }, []);
 
   const onViewableItemsChanged = useCallback(({ viewableItems }) => {
     if (viewableItems.length > 0) {

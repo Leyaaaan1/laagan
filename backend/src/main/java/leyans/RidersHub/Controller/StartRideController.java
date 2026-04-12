@@ -27,7 +27,7 @@ public class StartRideController {
     }
 
     @PostMapping("/{generatedRidesId}")
-    public ResponseEntity<StartRideResponseDTO> startRide(@PathVariable Integer generatedRidesId) {
+    public ResponseEntity<StartRideResponseDTO> startRide(@PathVariable String generatedRidesId) {
         try {
             StartRideResponseDTO response = startRideService.startRide(generatedRidesId);
 
@@ -59,7 +59,7 @@ public class StartRideController {
         }
     }
     @PostMapping("/update/{generatedRidesId}")
-    public ResponseEntity<Void> updateRide(@PathVariable Integer generatedRidesId) {
+    public ResponseEntity<Void> updateRide(@PathVariable String generatedRidesId) {
         try {
             startRideService.deactivateRide(generatedRidesId);
             return ResponseEntity.ok().build();

@@ -18,10 +18,10 @@ public interface JoinRequestRepository extends JpaRepository<JoinRequest, Intege
 
 
     @Query("SELECT j FROM JoinRequest j WHERE j.generatedRidesId.generatedRidesId = :generatedRidesId")
-    List<JoinRequest> findByRideId(@Param("generatedRidesId") Integer generatedRidesId);
+    List<JoinRequest> findByRideId(@Param("generatedRidesId") String generatedRidesId);
 
     @Query("SELECT j FROM JoinRequest j WHERE j.generatedRidesId.generatedRidesId = :generatedRidesId AND j.joinStatus = :status")
-    List<JoinRequest> findByRideIdAndStatus(@Param("generatedRidesId") Integer generatedRidesId, @Param("status") JoinRequest.JoinStatus status);
+    List<JoinRequest> findByRideIdAndStatus(@Param("generatedRidesId") String generatedRidesId, @Param("status") JoinRequest.JoinStatus status);
 
 
 }

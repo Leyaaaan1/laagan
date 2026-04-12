@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public class StartRideResponseDTO implements Serializable {
-    private Integer generatedRidesId;
+    private String generatedRidesId;
     private String ridesName;
     private String locationName;
 
@@ -32,7 +32,7 @@ public class StartRideResponseDTO implements Serializable {
     private String routeCoordinates;
     private Integer estimatedDistance;
 
-    public StartRideResponseDTO(Integer generatedRidesId, String initiator, String ridesName, String locationName, List<String> participantUsernames, double longitude, double latitude, LocalDateTime startTime) {
+    public StartRideResponseDTO(String generatedRidesId, String initiator, String ridesName, String locationName, List<String> participantUsernames, double longitude, double latitude, LocalDateTime startTime) {
         this.generatedRidesId = generatedRidesId;
         this.initiator = initiator;
         this.ridesName = ridesName;
@@ -44,7 +44,7 @@ public class StartRideResponseDTO implements Serializable {
 
     }
 
-    public StartRideResponseDTO(Integer generatedRidesId, String ridesName, String locationName, double latitude, double longitude, LocalDateTime startTime, String initiator, List<String> participantUsernames, double startLatitude, double startLongitude, String startPointName, List<ParticipantLocationDTO> participants, String routeCoordinates, Integer estimatedDistance) {
+    public StartRideResponseDTO(String generatedRidesId, String ridesName, String locationName, double latitude, double longitude, LocalDateTime startTime, String initiator, List<String> participantUsernames, double startLatitude, double startLongitude, String startPointName, List<ParticipantLocationDTO> participants, String routeCoordinates, Integer estimatedDistance) {
         this.generatedRidesId = generatedRidesId;
         this.ridesName = ridesName;
         this.locationName = locationName;
@@ -129,11 +129,11 @@ public class StartRideResponseDTO implements Serializable {
         this.participantUsernames = participantUsernames;
     }
 
-    public Integer getGeneratedRidesId() {
+    public String getGeneratedRidesId() {
         return generatedRidesId;
     }
 
-    public void setGeneratedRidesId(Integer generatedRidesId) {
+    public void setGeneratedRidesId(String generatedRidesId) {
         this.generatedRidesId = generatedRidesId;
     }
 

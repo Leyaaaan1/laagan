@@ -7,10 +7,11 @@ export const routeCache = {
   save: async (generatedRidesId, routeCoordinates) => {
     try {
       if (!routeCoordinates) return;
-      await AsyncStorage.setItem(
-        `${PREFIX}${generatedRidesId}`,
-        routeCoordinates,
-      );
+
+      // ✅ NEW: Stringify the object before storing
+      const serialized = JSON.stringify(routeCoordinates);
+
+      await AsyncStorage.setItem(`${PREFIX}${generatedRidesId}`, serialized);
     } catch (e) {
       console.warn('[routeCache] save failed:', e);
     }
@@ -19,7 +20,24 @@ export const routeCache = {
   // Call this before getRideDetails() — returns null if not cached
   get: async generatedRidesId => {
     try {
-      return await AsyncStorage.getItem(`${PREFIX}${generatedRidesId}`);
+      const cached = await AsyncStorage.getItem(`${PREFIX}${generatedRidesId}`);
+
+      if (cached === null) {
+        return null;
+      }
+
+      // ✅ NEW: Parse the JSON string back into an object
+      try {
+        return JSON.parse(cached);
+      } catch (parseErr) {
+        // ✅ NEW: If parsing fails, the cache is corrupted — clear it
+        console.warn(
+          '[routeCache] Corrupted data detected, clearing cache for',
+          generatedRidesId,
+        );
+        await routeCache.clear(generatedRidesId);
+        return null;
+      }
     } catch (e) {
       console.warn('[routeCache] get failed:', e);
       return null;

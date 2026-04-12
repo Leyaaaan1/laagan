@@ -38,16 +38,15 @@ public class StartRideService {
     }
 
     @Transactional
-    public StartRideResponseDTO startRide(Integer generatedRidesId) throws AccessDeniedException {
+    public StartRideResponseDTO startRide(String generatedRidesId) throws AccessDeniedException {
         Rider initiator = startedUtil.authenticateAndGetInitiator();
         Rides ride = ridesUtil.validateAndGetRide(generatedRidesId, initiator);
 
+        // ✅ FIXED: Only the ride creator (owner) can start the ride
         boolean isCreator = ride.getUsername().getUsername().equals(initiator.getUsername());
-        boolean isParticipant = ride.getParticipants().stream()
-                .anyMatch(p -> p.getUsername().equals(initiator.getUsername()));
 
-        if (!isCreator && !isParticipant) {
-            throw new AccessDeniedException("Only the ride creator or participants can start the ride");
+        if (!isCreator) {
+            throw new AccessDeniedException("Only the ride creator can start the ride");
         }
 
         Point startingPoint = ride.getStartingLocation();
@@ -86,7 +85,7 @@ public class StartRideService {
 
 
     @Transactional
-    public void deactivateRide(Integer generatedRidesId) {
+    public void deactivateRide(String generatedRidesId) {
         // 1. Find the ride — generatedRidesId is NOT the PK, so use findByGeneratedRidesId
         Rides ride = ridesRepository.findByGeneratedRidesId(generatedRidesId)
                 .orElseThrow(() -> new IllegalArgumentException("Ride not found: " + generatedRidesId));

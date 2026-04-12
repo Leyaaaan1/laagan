@@ -16,24 +16,14 @@ import java.util.Optional;
 @Repository
 public interface RidesRepository extends JpaRepository<Rides, Integer> {
 
-    Optional<Rides> findByGeneratedRidesId(Integer generatedRidesId);
+    @Query("SELECT r FROM Rides r WHERE r.generatedRidesId = :generatedRidesId")
+    Optional<Rides> findByGeneratedRidesId(@Param("generatedRidesId") String generatedRidesId);
 
     @Query("SELECT r.routeCoordinates FROM Rides r WHERE r.generatedRidesId = :generatedRidesId")
-    String findRouteCoordinatesByGeneratedRidesId(@Param("generatedRidesId") Integer generatedRidesId);
+    String findRouteCoordinatesByGeneratedRidesId(@Param("generatedRidesId") String generatedRidesId);
 
     Page<Rides> findAll(Pageable pageable);
 
-//    List<Rides> findByUsername_Username(String username);
-
-    @Modifying
-    @Transactional
-    @Query(value = "INSERT INTO ride_participants (ride_id, rider_username) VALUES (:rideId, :riderId)", nativeQuery = true)
-    void addParticipantToRide(@Param("rideId") Integer rideId, @Param("riderId") Integer riderId);
-
-    @Modifying
-    @Transactional
-    @Query("UPDATE Rides r SET r.active = false WHERE r.generatedRidesId = :generatedRidesId")
-    void deactivateRide(@Param("generatedRidesId") Integer generatedRidesId);
 
 
     @Query("SELECT r FROM Rides r " +
@@ -50,16 +40,7 @@ public interface RidesRepository extends JpaRepository<Rides, Integer> {
     Page<Rides> findAllActiveSummary(Pageable pageable);
 
 
-//    @Query("SELECT r FROM Rides r " +
-//            "LEFT JOIN FETCH r.username " +
-//            "LEFT JOIN FETCH r.riderType " +
-//            "WHERE (r.active = true OR r.active IS NULL) " +
-//            "ORDER BY r.date DESC")
-//    Page<Rides> findAllActiveSummary(Pageable pageable);
-    /**
-     * Use for detail views - loads everything needed
-     * Single query with all relationships
-     */
+
     @EntityGraph(attributePaths = {
             "username",
             "riderType",
@@ -67,14 +48,9 @@ public interface RidesRepository extends JpaRepository<Rides, Integer> {
             "stopPoints"
     })
     @Query("SELECT r FROM Rides r WHERE r.generatedRidesId = :generatedRidesId")
-    Optional<Rides> findByGeneratedRidesIdWithDetails(@Param("generatedRidesId") Integer generatedRidesId);
+    Optional<Rides> findByGeneratedRidesIdWithDetails(@Param("generatedRidesId") String generatedRidesId);
 
-    /**
-     * Use for map display - only spatial data
-     */
-    @Query("SELECT r.generatedRidesId, r.ridesName, r.location, r.startingLocation, " +
-            "r.endingLocation FROM Rides r WHERE r.active = true")
-    List<Object[]> findAllActiveLocations();
+
 
 
 

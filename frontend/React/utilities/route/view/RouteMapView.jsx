@@ -8,7 +8,6 @@ import layout from '../../../styles/base/layout';
 
 const RouteMapView = ({
   generatedRidesId,
-  token,
   startingPoint,
   endingPoint,
   stopPoints = [],
@@ -31,7 +30,7 @@ const RouteMapView = ({
     handleWebViewMessage,
     handleWebViewError,
     updateUserLocationOnMap,
-  } = useRouteMapLogic(generatedRidesId, token);
+  } = useRouteMapLogic(generatedRidesId);
 
   // ─────────────────────────────────────────────────────────────────
   // injectRiderMarkers — stable helper that pushes the markers object

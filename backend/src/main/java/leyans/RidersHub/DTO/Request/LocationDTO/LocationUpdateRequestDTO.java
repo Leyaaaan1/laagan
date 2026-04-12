@@ -1,10 +1,19 @@
 package leyans.RidersHub.DTO.Request.LocationDTO;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+
 import java.time.LocalDateTime;
 
 public class LocationUpdateRequestDTO {
-    private Integer generatedRidesId;
+    private String generatedRidesId;
+
+    @DecimalMin(value = "-90.0", message = "Latitude must be between -90 and 90")
+    @DecimalMax(value = "90.0", message = "Latitude must be between -90 and 90")
     private double latitude;
+
+    @DecimalMin(value = "-180.0", message = "Longitude must be between -180 and 180")
+    @DecimalMax(value = "180.0", message = "Longitude must be between -180 and 180")
     private double longitude;
 
     private String locationName;
@@ -13,7 +22,7 @@ public class LocationUpdateRequestDTO {
     private String initiator;
 
 
-    public LocationUpdateRequestDTO(Integer generatedRidesId, String initiator, double latitude, double longitude, String locationName, double distanceMeters, LocalDateTime timestamp) {
+    public LocationUpdateRequestDTO(String generatedRidesId, String initiator, double latitude, double longitude, String locationName, double distanceMeters, LocalDateTime timestamp) {
         this.generatedRidesId = generatedRidesId;
         this.initiator = initiator;
         this.latitude = latitude;
@@ -38,12 +47,11 @@ public class LocationUpdateRequestDTO {
         this.initiator = initiator;
     }
 
-
-    public Integer getGeneratedRidesId() {
+    public String getGeneratedRidesId() {
         return generatedRidesId;
     }
 
-    public void setGeneratedRidesId(Integer generatedRidesId) {
+    public void setGeneratedRidesId(String generatedRidesId) {
         this.generatedRidesId = generatedRidesId;
     }
 

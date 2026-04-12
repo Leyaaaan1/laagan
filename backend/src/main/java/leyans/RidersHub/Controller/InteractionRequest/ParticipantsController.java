@@ -19,7 +19,7 @@ public class ParticipantsController {
     }
 
     @PostMapping("/{rideId}/add/{username}")
-    public ResponseEntity<?> addParticipant(@PathVariable("rideId") Integer generatedRidesId,
+    public ResponseEntity<?> addParticipant(@PathVariable("rideId") String generatedRidesId,
                                             @PathVariable("username") String username) {
         try {
             ResponseEntity<?> authResponse = SecurityUtils.validateAuthentication();
@@ -38,7 +38,7 @@ public class ParticipantsController {
     }
 
     @DeleteMapping("/{rideId}/remove/{username}")
-    public ResponseEntity<?> removeParticipant(@PathVariable("rideId") Integer generatedRidesId,
+    public ResponseEntity<?> removeParticipant(@PathVariable("rideId") String generatedRidesId,
                                                @PathVariable("username") String username) {
         try {
             ResponseEntity<?> authResponse = SecurityUtils.validateAuthentication();

@@ -25,7 +25,7 @@ public class RideJoinRequestController {
 
     @PostMapping("/{generatedRidesId}/join-requests")
     public ResponseEntity<JoinResponseCreateDto> createJoinRequest(
-            @PathVariable Integer generatedRidesId) {
+            @PathVariable String generatedRidesId) {
 
         ResponseEntity<?> authResponse = SecurityUtils.validateAuthentication();
         if (authResponse != null) {
@@ -45,7 +45,7 @@ public class RideJoinRequestController {
     //rideId is the id in the  ride participants table,
     @PutMapping("/{generatedRidesId}/{username}/accept")
     public ResponseEntity<JoinResponseCreateDto> acceptJoinRequest(
-            @PathVariable Integer generatedRidesId,
+            @PathVariable String generatedRidesId,
             @PathVariable String username) {
 
         ResponseEntity<?> authResponse = SecurityUtils.validateAuthentication();
@@ -61,7 +61,7 @@ public class RideJoinRequestController {
 
 
     @GetMapping("/{generatedRidesId}/list-requests")
-    public ResponseEntity<?> getJoinRequestsByRideId(@PathVariable Integer generatedRidesId) {
+    public ResponseEntity<?> getJoinRequestsByRideId(@PathVariable String generatedRidesId) {
         ResponseEntity<?> authResponse = SecurityUtils.validateAuthentication();
         if (authResponse != null) {
             return ResponseEntity.status(authResponse.getStatusCode()).build();

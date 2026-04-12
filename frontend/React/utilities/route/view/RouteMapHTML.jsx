@@ -1,5 +1,5 @@
 import routeMapStyles from './RouteMapStyles.js.jsx';
-import { createMapScript } from '../RouteMapScript.jsx';
+import {createMapScript} from '../map/RouteMapScript';
 
 export const createMapHTML = () => {
   return `

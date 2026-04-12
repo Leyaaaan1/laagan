@@ -5,7 +5,7 @@
 -- EVENT RIDES (Planned rides)
 CREATE TABLE public.event_rides (
                                     rides_id SERIAL PRIMARY KEY,
-                                    generated_rides_id INTEGER NOT NULL UNIQUE,
+                                    generated_rides_id VARCHAR(12) NOT NULL UNIQUE,
                                     location_name VARCHAR(255) NOT NULL,
                                     rides_name VARCHAR(255) NOT NULL,
                                     description TEXT,

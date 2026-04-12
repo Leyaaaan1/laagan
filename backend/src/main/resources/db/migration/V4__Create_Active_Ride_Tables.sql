@@ -6,7 +6,7 @@
 CREATE TABLE public.started_rides (
                                       id SERIAL PRIMARY KEY,
                                       initiator_username VARCHAR(255) NOT NULL REFERENCES public.rider(username) ON DELETE CASCADE,
-                                      rides_id INTEGER NOT NULL REFERENCES public.event_rides(generated_rides_id) ON DELETE CASCADE,
+                                      rides_id VARCHAR(12) NOT NULL REFERENCES public.event_rides(generated_rides_id) ON DELETE CASCADE,
                                       start_time TIMESTAMP NOT NULL,
                                       location GEOMETRY(Point, 4326),
                                       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

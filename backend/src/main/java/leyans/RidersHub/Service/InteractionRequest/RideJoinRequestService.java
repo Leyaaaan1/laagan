@@ -22,21 +22,24 @@ public class RideJoinRequestService {
 
     private final RideJoinRequestRepository rideJoinRequestRepository;
     private final RidesRepository ridesRepository;
-
+    private final RideParticipantService rideParticipantService;  // ← ADD THIS
     private final RiderUtil riderUtil;
 
     @Autowired
     public RideJoinRequestService(
             RideJoinRequestRepository rideJoinRequestRepository,
-            RidesRepository ridesRepository, RiderUtil riderUtil) {
+            RidesRepository ridesRepository,
+            RideParticipantService rideParticipantService,  // ← ADD THIS
+            RiderUtil riderUtil) {
         this.rideJoinRequestRepository = rideJoinRequestRepository;
         this.ridesRepository = ridesRepository;
+        this.rideParticipantService = rideParticipantService;  // ← ADD THIS
         this.riderUtil = riderUtil;
     }
 
     @Transactional
     public JoinResponseCreateDto createJoinRequest(JoinRequestCreateDto createDto) {
-        Integer generatedRidesId = createDto.getGeneratedRidesId();
+        String generatedRidesId = createDto.getGeneratedRidesId();
         String username = createDto.getUsername();
 
         Optional<RideJoinRequest> existingRequest =
@@ -67,7 +70,7 @@ public class RideJoinRequestService {
     }
 
     @Transactional
-    public JoinResponseCreateDto acceptJoinRequest(Integer generatedRidesId, String username, String ridesOwner) {
+    public JoinResponseCreateDto acceptJoinRequest(String generatedRidesId, String username, String ridesOwner) {
         RideJoinRequest request = rideJoinRequestRepository
                 .findByGeneratedRidesId_GeneratedRidesIdAndRider_Username(generatedRidesId, username)
                 .orElseThrow(() -> new RuntimeException("Join request not found"));
@@ -78,9 +81,8 @@ public class RideJoinRequestService {
             throw new RuntimeException("Only the ride owner can accept join requests");
         }
 
-        Rider rider = request.getRider();
-        ride.addParticipant(rider);
-        ridesRepository.save(ride);
+        // ✅ FIX: Use RideParticipantService to add participant
+        rideParticipantService.addParticipantToRide(generatedRidesId, username);
 
         JoinResponseCreateDto responseDTO = convertToDTO(request);
         rideJoinRequestRepository.delete(request);
@@ -88,7 +90,7 @@ public class RideJoinRequestService {
     }
 
     @Transactional(readOnly = true)
-    public List<JoinResponseDTO> getJoinRequestsByRideId(Integer generatedRidesId, String requestingUsername) {
+    public List<JoinResponseDTO> getJoinRequestsByRideId(String generatedRidesId, String requestingUsername) {
         try {
             Rides ride = riderUtil.findRideById(generatedRidesId);
 
@@ -117,6 +119,4 @@ public class RideJoinRequestService {
         responseDTO.setUsername(request.getRider().getUsername());
         return responseDTO;
     }
-
-
 }

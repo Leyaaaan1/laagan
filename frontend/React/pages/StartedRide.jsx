@@ -1,4 +1,4 @@
-import React, {useState, useRef, useEffect} from 'react';
+import React, {useState, useRef, useEffect, useMemo} from 'react';
 import {
   View,
   Text,
@@ -18,14 +18,24 @@ import RouteMapView from '../utilities/route/view/RouteMapView';
 import {startService} from '../services/startService';
 import {useRideLocationPolling} from '../hooks/useRideLocationPolling';
 import {buildRideStep4Params} from '../utilities/NavigationParamsBuilder';
+import {useAuth} from '../context/AuthContext';
 
 const StartedRide = ({route, navigation}) => {
-  const {activeRide, token, username} = route.params || {};
+  // activeRide comes from route.params (passed by RiderPage)
+  // username comes from AuthContext
+  const {activeRide, username: routeUsername} = route?.params || {};
+  const {username: authUsername} = useAuth();
+  const username = authUsername || routeUsername;
+
   const [showRouteInfo, setShowRouteInfo] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const [riderMarkers, setRiderMarkers] = useState({});
   const [pollingError, setPollingError] = useState(null);
+  const prevMarkersRef = useRef({});
+  const [pillVisible, setPillVisible] = useState(true);
+  const pillTimerRef = useRef(null);
 
+  // ── Guard BEFORE accessing activeRide properties ──────────────────────
   if (!activeRide) {
     return (
       <View style={feedback.emptyContainer}>
@@ -34,33 +44,37 @@ const StartedRide = ({route, navigation}) => {
     );
   }
 
-  const mapData = processRideCoordinates(activeRide);
   const rideId = activeRide.generatedRidesId || activeRide.id;
+  const mapData = useMemo(
+    () => processRideCoordinates(activeRide),
+    [activeRide],
+  );
 
-  // ─────────────────────────────────────────────────────────────────
-  // LOCATION POLLING
-  //
-  // FIX: The original code used  enabled: activeRide.status === 'ACTIVE'
-  // but the activeRide object usually has no `status` field, so `enabled`
-  // was always false and polling never started.
-  //
-  // We now let the hook default to enabled=true.  The hook itself already
-  // guards against missing rideId or token.
-  // ─────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (isPolling && !pollingError) {
+      if (pillTimerRef.current) clearTimeout(pillTimerRef.current);
+      pillTimerRef.current = setTimeout(() => setPillVisible(false), 3000);
+      setPillVisible(true);
+    } else if (pollingError || !isPolling) {
+      setPillVisible(true);
+      if (pillTimerRef.current) clearTimeout(pillTimerRef.current);
+    }
+    return () => {
+      if (pillTimerRef.current) clearTimeout(pillTimerRef.current);
+    };
+  }, [riderMarkers, isPolling, pollingError]);
+
+  // ── Location polling ──────────────────────────────────────────────────
   const {
     isPolling,
     error: pollingHookError,
     retryCount,
+    isOffline,
   } = useRideLocationPolling({
     rideId,
-    token,
-    // enabled defaults to true — no status check needed
     onLocationsUpdate: locations => {
-      console.log('🎯 onLocationsUpdate:', locations.length, 'riders');
-
       const markers = {};
       locations.forEach(loc => {
-        // `initiator` is the username field returned by LocationUpdateRequestDTO
         markers[loc.initiator] = {
           latitude: loc.latitude,
           longitude: loc.longitude,
@@ -70,8 +84,31 @@ const StartedRide = ({route, navigation}) => {
         };
       });
 
-      console.log('🎨 Markers:', Object.keys(markers));
-      setRiderMarkers(markers);
+      let hasChanged = false;
+      if (
+        Object.keys(markers).length !==
+        Object.keys(prevMarkersRef.current).length
+      ) {
+        hasChanged = true;
+      } else {
+        for (const u in markers) {
+          const prev = prevMarkersRef.current[u];
+          const curr = markers[u];
+          if (
+            !prev ||
+            Math.abs(prev.latitude - curr.latitude) > 0.00001 ||
+            Math.abs(prev.longitude - curr.longitude) > 0.00001
+          ) {
+            hasChanged = true;
+            break;
+          }
+        }
+      }
+
+      if (hasChanged) {
+        setRiderMarkers(markers);
+        prevMarkersRef.current = markers;
+      }
       setPollingError(null);
     },
     onError: err => {
@@ -81,7 +118,7 @@ const StartedRide = ({route, navigation}) => {
   });
 
   const handleSwipeToDetails = () => {
-    const params = buildRideStep4Params(activeRide, token, username);
+    const params = buildRideStep4Params(activeRide, username);
     navigation.navigate('RideStep4', params);
   };
 
@@ -97,13 +134,12 @@ const StartedRide = ({route, navigation}) => {
           onPress: async () => {
             try {
               setIsStopping(true);
-              await startService.deactivateRide(rideId, token);
-
-              const params = buildRideStep4Params(activeRide, token, username);
+              await startService.deactivateRide(rideId);
+              const params = buildRideStep4Params(activeRide, username);
               navigation.reset({
                 index: 1,
                 routes: [
-                  {name: 'RiderPage', params: {username, token}},
+                  {name: 'RiderPage', params: {username}},
                   {name: 'RideStep4', params},
                 ],
               });
@@ -144,53 +180,76 @@ const StartedRide = ({route, navigation}) => {
           }}
         />
 
-        {/* Map — riderMarkers is updated by the polling hook every 5 s */}
         <RouteMapView
           generatedRidesId={rideId}
           startingPoint={mapData.startingPoint}
           endingPoint={mapData.endingPoint}
           stopPoints={mapData.stopPoints}
-          token={token}
           style={{flex: 1}}
           isDark={true}
           riderMarkers={riderMarkers}
           currentUsername={username}
         />
 
-        {/* Polling status pill — top right */}
-        <View
-          style={{
-            position: 'absolute',
-            top: 60,
-            right: 16,
-            backgroundColor: 'rgba(20, 20, 20, 0.85)',
-            paddingVertical: 8,
-            paddingHorizontal: 12,
-            borderRadius: 6,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
-            borderWidth: 1,
-            borderColor: isPolling
-              ? 'rgba(76, 175, 80, 0.5)'
-              : 'rgba(244, 67, 54, 0.5)',
-          }}>
+        {/* Polling status pill */}
+        {pillVisible && (
           <View
             style={{
-              width: 8,
-              height: 8,
-              borderRadius: 4,
-              backgroundColor: isPolling ? '#4CAF50' : '#f44336',
-            }}
-          />
-          <Text style={{color: '#fff', fontSize: 11, fontWeight: '500'}}>
-            {isPolling
-              ? `${Object.keys(riderMarkers).length} rider${
-                  Object.keys(riderMarkers).length !== 1 ? 's' : ''
-                } live`
-              : `Retry: ${retryCount}`}
-          </Text>
-        </View>
+              position: 'absolute',
+              top: 60,
+              right: 16,
+              backgroundColor: 'rgba(20, 20, 20, 0.85)',
+              paddingVertical: 8,
+              paddingHorizontal: 12,
+              borderRadius: 6,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              borderWidth: 1,
+              borderColor: isPolling
+                ? 'rgba(76,175,80,0.4)'
+                : 'rgba(244,67,54,0.4)',
+            }}>
+            <View
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: isPolling ? '#4CAF50' : '#f44336',
+              }}
+            />
+            <Text style={{color: '#fff', fontSize: 11}}>
+              {isPolling ? 'Live' : pollingError ? 'Error' : 'Connecting…'}
+            </Text>
+          </View>
+        )}
+
+        {/* Offline banner */}
+        {isOffline && (
+          <View
+            style={{
+              position: 'absolute',
+              bottom: 120,
+              left: 16,
+              right: 16,
+              backgroundColor: 'rgba(30,30,30,0.9)',
+              borderRadius: 8,
+              padding: 10,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+            }}>
+            <FontAwesome
+              name="wifi"
+              size={14}
+              color="#fff"
+              style={{opacity: 0.6}}
+            />
+            <Text style={{color: '#fff', fontSize: 11, fontWeight: '500'}}>
+              No connection — location paused
+            </Text>
+          </View>
+        )}
 
         {/* Route info overlay */}
         <View style={startedRide.routeInfoOverlay}>
@@ -220,7 +279,6 @@ const StartedRide = ({route, navigation}) => {
               style={startedRide.routeScrollContainer}
               showsVerticalScrollIndicator={true}
               contentContainerStyle={startedRide.routeScrollContainer}>
-              {/* Starting Point */}
               <View style={startedRide.routePointContainer}>
                 <View style={{flexDirection: 'row', alignItems: 'center'}}>
                   <View
@@ -236,8 +294,7 @@ const StartedRide = ({route, navigation}) => {
                 </Text>
               </View>
 
-              {/* Stop Points */}
-              {mapData.stopPoints && mapData.stopPoints.length > 0 && (
+              {mapData.stopPoints?.length > 0 && (
                 <View style={startedRide.routePointContainer}>
                   {mapData.stopPoints.map((stop, index) => (
                     <View key={index} style={startedRide.stopPointWrapper}>
@@ -263,7 +320,6 @@ const StartedRide = ({route, navigation}) => {
                 </View>
               )}
 
-              {/* Ending Point */}
               <View style={startedRide.routePointContainer}>
                 <View style={startedRide.routeRow}>
                   <View
@@ -279,7 +335,6 @@ const StartedRide = ({route, navigation}) => {
                 </Text>
               </View>
 
-              {/* Participants — show live location from riderMarkers */}
               <View style={startedRide.participantsContainer}>
                 <View style={startedRide.participantsHeader}>
                   <FontAwesome
@@ -289,11 +344,11 @@ const StartedRide = ({route, navigation}) => {
                     style={{marginRight: 8}}
                   />
                   <Text style={startedRide.participantsTitle}>
-                    PARTICIPANTS ({activeRide.participants.length})
+                    PARTICIPANTS ({activeRide.participants?.length ?? 0})
                   </Text>
                 </View>
 
-                {activeRide.participants.length > 0 ? (
+                {activeRide.participants?.length > 0 ? (
                   activeRide.participants.map((participant, index) => {
                     const liveLocation = riderMarkers[participant.username];
                     return (
@@ -356,7 +411,7 @@ const StartedRide = ({route, navigation}) => {
                 {pollingError && (
                   <View
                     style={{
-                      backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                      backgroundColor: 'rgba(244,67,54,0.1)',
                       borderRadius: 6,
                       padding: 10,
                       marginTop: 8,
@@ -378,7 +433,7 @@ const StartedRide = ({route, navigation}) => {
           <TouchableOpacity
             style={[
               startedRide.actionButton,
-              {flex: 1, backgroundColor: 'rgba(140, 35, 35, 0.9)'},
+              {flex: 1, backgroundColor: 'rgba(140,35,35,0.9)'},
             ]}
             onPress={handleSwipeToDetails}>
             <FontAwesome name="info-circle" size={23} color="#fff" />
@@ -388,7 +443,7 @@ const StartedRide = ({route, navigation}) => {
           <TouchableOpacity
             style={[
               startedRide.actionButton,
-              {flex: 1, backgroundColor: 'rgba(30, 30, 30, 0.95)'},
+              {flex: 1, backgroundColor: 'rgba(30,30,30,0.95)'},
             ]}
             onPress={handleStopRide}
             disabled={isStopping}>

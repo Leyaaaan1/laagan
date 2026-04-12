@@ -88,12 +88,12 @@ public class RiderController {
     }
 
     @GetMapping("/{generatedRidesId}/stop-points")
-    public List<StopPointDTO> getStopPointsByRideId(@PathVariable Integer generatedRidesId) {
+    public List<StopPointDTO> getStopPointsByRideId(@PathVariable String generatedRidesId) {
         return ridesUtil.getStopPointsDTOByGeneratedRideId(generatedRidesId);
     }
 
     @GetMapping("/{generatedRidesId}/map-image")
-    public ResponseEntity<String> getRideMapImage(@PathVariable Integer generatedRidesId) {
+    public ResponseEntity<String> getRideMapImage(@PathVariable String generatedRidesId) {
         try {
             String mapImageUrl = ridesUtil.getRideMapImageUrlById(generatedRidesId);
             return ResponseEntity.ok(mapImageUrl);
@@ -107,7 +107,7 @@ public class RiderController {
     }
 
     @GetMapping("/{generatedRidesId}")
-    public ResponseEntity<?> getRideDetailsByGeneratedId(@PathVariable Integer generatedRidesId) {
+    public ResponseEntity<?> getRideDetailsByGeneratedId(@PathVariable String generatedRidesId) {
         try {
             RideDetailDTO ride = ridesUtil.findRideByGeneratedId(generatedRidesId);  // ← RideDetailDTO
             return ResponseEntity.ok(ride);

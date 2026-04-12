@@ -1,71 +1,129 @@
 package leyans.RidersHub.Controller.Auth;
+
 import leyans.RidersHub.Config.JWT.JwtUtil;
+import leyans.RidersHub.Config.Security.SecurityUtils;
+import leyans.RidersHub.Config.Security.ClientIpResolver;
 import leyans.RidersHub.DTO.Request.LoginRequest;
 import leyans.RidersHub.DTO.Request.RegisterRequest;
 import leyans.RidersHub.DTO.Response.LoginResponse;
 import leyans.RidersHub.DTO.Response.RegisterResponse;
+import leyans.RidersHub.Service.Auth.AccountLockoutService;
+import leyans.RidersHub.Service.Auth.RefreshTokenService;
 import leyans.RidersHub.Service.RiderService;
-import leyans.RidersHub.model.Rider;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/riders")
 public class LoginController {
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private static final Logger log = LoggerFactory.getLogger(LoginController.class);
 
-    @Autowired
-    private JwtUtil jwtUtil;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtil jwtUtil;
+    private final RiderService riderService;
+    private final RefreshTokenService refreshTokenService;
+    private final AccountLockoutService accountLockoutService;
+    private final ClientIpResolver clientIpResolver;
+    private final HttpServletRequest request;
 
-    @Autowired
-    private RiderService riderService;
-
-
+    public LoginController(
+            AuthenticationManager authenticationManager,
+            JwtUtil jwtUtil,
+            RiderService riderService,
+            RefreshTokenService refreshTokenService,
+            AccountLockoutService accountLockoutService,
+            ClientIpResolver clientIpResolver,
+            HttpServletRequest request) {
+        this.authenticationManager = authenticationManager;
+        this.jwtUtil = jwtUtil;
+        this.riderService = riderService;
+        this.refreshTokenService = refreshTokenService;
+        this.accountLockoutService = accountLockoutService;
+        this.clientIpResolver = clientIpResolver;
+        this.request = request;
+    }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
+        String username = loginRequest.getUsername();
+        log.info(" Login attempt for user: {}", username);
+
+        // Check if account is locked
+        if (accountLockoutService.isAccountLocked(username)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(createResponse(HttpStatus.FORBIDDEN.value(), "Account temporarily locked",
+                            "Account is locked due to too many failed login attempts. Please try again in 15 minutes."));
+        }
+
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginRequest.getUsername(),
-                            loginRequest.getPassword()
-                    )
-            );
+                    new UsernamePasswordAuthenticationToken(username, loginRequest.getPassword()));
 
-            String token = jwtUtil.generateToken(loginRequest.getUsername());
-            return ResponseEntity.ok(new LoginResponse(token));
+            String accessToken = jwtUtil.generateToken(username);
+            String refreshToken = refreshTokenService.createRefreshToken(username);
+            accountLockoutService.resetFailedAttempts(username);
+
+            log.info(" Login successful for user: {}", username);
+            return ResponseEntity.ok(new LoginResponse(accessToken, refreshToken));
 
         } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            accountLockoutService.recordFailedLoginAttempt(username);
+            int remaining = accountLockoutService.getRemainingAttempts(username);
+            log.warn(" Login failed for user: {} | {} attempts remaining", username, remaining);
+
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(createResponse(HttpStatus.UNAUTHORIZED.value(), "Invalid username or password",
+                            remaining > 0 ? "Failed attempt. " + remaining + " attempts remaining before account lockout."
+                                    : "Account locked due to too many failed attempts."));
         }
     }
 
     @PostMapping("/register")
-    public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest) {
+        String clientIp = clientIpResolver.getClientIp(request);
+        log.info(" Register attempt from IP: {}", clientIp);
+
         try {
-            String username = riderService.registerRider(
+            String username = riderService.registerRiderWithValidation(
                     registerRequest.getUsername(),
                     registerRequest.getPassword(),
-                    registerRequest.getRiderType()
-            );
+                    registerRequest.getRiderType(),
+                    clientIp,
+                    accountLockoutService);
 
-            String token = jwtUtil.generateToken(username);
-            return ResponseEntity.ok(new RegisterResponse(token, "Registration successful"));
+            String accessToken = jwtUtil.generateToken(username);
+            String refreshToken = refreshTokenService.createRefreshToken(username);
+
+            log.info(" New user registered: {} from IP: {}", username, clientIp);
+            return ResponseEntity.ok(new RegisterResponse(accessToken, refreshToken));
 
         } catch (RuntimeException e) {
+            accountLockoutService.recordFailedRegisterAttempt(clientIp);
+            log.warn(" Registration failed from IP: {} | Error: {}", clientIp, e.getMessage());
+
             return ResponseEntity.badRequest()
-                    .body(new RegisterResponse(null, e.getMessage()));
+                    .body(createResponse(HttpStatus.BAD_REQUEST.value(), "Registration failed", e.getMessage()));
         }
     }
+
+    // Helper method to reduce boilerplate
+    private Map<String, Object> createResponse(int status, String error, String message) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", status);
+        response.put("error", error);
+        response.put("message", message);
+        return response;
 }
-
-
-
-
+}

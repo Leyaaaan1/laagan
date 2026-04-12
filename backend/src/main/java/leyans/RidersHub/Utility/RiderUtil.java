@@ -28,7 +28,7 @@ public class RiderUtil {
         this.riderRepository = riderRepository;
     }
 
-    public Rides findRideById(Integer generatedRidesId) {
+    public Rides findRideById(String generatedRidesId) {
         return ridesRepository.findByGeneratedRidesId(generatedRidesId)
                 .orElseThrow(() -> new EntityNotFoundException("Ride not found with ID: " + generatedRidesId));
     }
@@ -43,7 +43,7 @@ public class RiderUtil {
     }
 
 
-    public StartedRide findStartedRideByRideId(Integer generatedRidesId) {
+    public StartedRide findStartedRideByRideId(String generatedRidesId) {
         return startedRideRepository.findByRideGeneratedRidesId(generatedRidesId)
                 .orElseThrow(() -> new EntityNotFoundException("Started ride not found with ride ID: " + generatedRidesId));
     }

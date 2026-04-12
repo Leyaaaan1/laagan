@@ -1,6 +1,8 @@
 // frontend/React/utilities/NavigationParamsBuilder.js
 
-export const buildRideStep4Params = (rideData, token, currentUsername) => {
+import {parseCoordinateSafely} from './validator/CoordinateValidator';
+
+export const buildRideStep4Params = (rideData, currentUsername) => {
   if (!rideData) {
     console.warn('buildRideStep4Params: rideData is empty');
     return {};
@@ -32,13 +34,11 @@ export const buildRideStep4Params = (rideData, token, currentUsername) => {
     // Participants
     participants: rideData.participants || [],
 
-    // ✅ AUTH & ROLE INFORMATION
-    token: token,
-    username: rideData.username,              // ride owner
-    currentUsername: currentUsername,         // logged-in user
+    username: rideData.username, // ride owner
+    currentUsername: currentUsername, // logged-in user
     startedBy: rideData.startedBy || rideData.username,
-    isOwner: isOwner,                         // ✅ NEW: Boolean flag
-    role: isOwner ? 'OWNER' : 'VISITOR',     // ✅ NEW: Role string
+    isOwner: isOwner, // ✅ NEW: Boolean flag
+    role: isOwner ? 'OWNER' : 'VISITOR', // ✅ NEW: Role string
 
     // Images (optional)
     mapImage: rideData.mapImage || null,
@@ -48,26 +48,42 @@ export const buildRideStep4Params = (rideData, token, currentUsername) => {
     rideNameImage: rideData.rideNameImage || [],
 
     // Coordinates
-    startLat: parseFloat(rideData.startLat) || parseFloat(rideData.startingLatitude) || 0,
-    startLng: parseFloat(rideData.startLng) || parseFloat(rideData.startingLongitude) || 0,
-    endLat: parseFloat(rideData.endLat) || parseFloat(rideData.endingLatitude) || 0,
-    endLng: parseFloat(rideData.endLng) || parseFloat(rideData.endingLongitude) || 0,
+    startLat:
+      parseCoordinateSafely(rideData.startLat) ??
+      parseCoordinateSafely(rideData.startingLatitude) ??
+      null, //  SAFE
+    startLng:
+      parseCoordinateSafely(rideData.startLng) ??
+      parseCoordinateSafely(rideData.startingLongitude) ??
+      null, //  SAFE
+    endLat:
+      parseCoordinateSafely(rideData.endLat) ??
+      parseCoordinateSafely(rideData.endingLatitude) ??
+      null, //  SAFE
+    endLng:
+      parseCoordinateSafely(rideData.endLng) ??
+      parseCoordinateSafely(rideData.endingLongitude) ??
+      null,
   };
 };
 
-export const buildRideStep4ResetParams = (rideData, token, currentUsername, username) => {
-  const params = buildRideStep4Params(rideData, token, currentUsername);
+export const buildRideStep4ResetParams = (
+  rideData,
+  currentUsername,
+  username,
+) => {
+  const params = buildRideStep4Params(rideData, currentUsername); // ← Remove token param
 
   return {
     index: 1,
     routes: [
       {
         name: 'RiderPage',
-        params: { username: username, token: token }
+        params: {}, // ← No params needed, RiderPage uses useAuth()
       },
       {
         name: 'RideStep4',
-        params: params
+        params: params,
       },
     ],
   };

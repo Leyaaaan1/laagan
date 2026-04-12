@@ -63,7 +63,7 @@ public class JoinRequestService {
         return joinRequestRepository.save(joinRequest);
     }
     @Transactional(readOnly = true)
-    public List<JoinerDto> listJoinersByRide(Integer generatedRidesId, JoinRequest.JoinStatus status) {
+    public List<JoinerDto> listJoinersByRide(String generatedRidesId, JoinRequest.JoinStatus status) {
         if (status != null) {
             // reuse InviteUtil method that already maps to JoinerDto
             return participantUtil.listJoinersByRideIdAndStatus(generatedRidesId, status);

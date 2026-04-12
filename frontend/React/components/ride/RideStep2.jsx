@@ -16,10 +16,11 @@ import layout from '../../styles/base/layout';
 import text from '../../styles/base/text';
 import spacing from '../../styles/tokens/spacing';
 import {buildSearchHandlers} from './utilities/RideStepUtils';
+import {DEFAULT_COORDS} from '../../utilities/route/map/appDefaults';
 
 // Philippines centre — safe default when no coords are available yet
-const DEFAULT_LAT = 12.8797;
-const DEFAULT_LNG = 121.7740;
+const DEFAULT_LAT = parseFloat(DEFAULT_COORDS.latitude);
+const DEFAULT_LNG = parseFloat(DEFAULT_COORDS.longitude);
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -126,14 +127,14 @@ const RideStep2 = ({
   const fetchLocationImages = useCallback(async (name) => {
     setLocationImageLoading(true);
     try {
-      const imgs = await getLocationImage(name, token);
+      const imgs = await getLocationImage(name);
       setLocationImages(Array.isArray(imgs) ? imgs : []);
     } catch {
       setLocationImages([]);
     } finally {
       setLocationImageLoading(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     if (locationName?.trim()) {

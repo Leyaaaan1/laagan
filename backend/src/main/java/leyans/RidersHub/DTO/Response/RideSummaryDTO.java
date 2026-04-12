@@ -10,7 +10,7 @@ import java.util.List;
  * and unnecessary until the user opens a specific ride.
  */
 public record RideSummaryDTO(
-        Integer generatedRidesId,
+        String generatedRidesId,
         String  ridesName,
         String  locationName,
         String  riderType,

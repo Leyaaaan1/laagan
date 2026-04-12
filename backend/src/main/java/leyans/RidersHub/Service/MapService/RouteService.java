@@ -102,7 +102,7 @@ public class RouteService {
     }
 
     @Transactional(readOnly = true)
-    public JsonNode getSavedRouteGeoJson(Integer generatedRidesId) {
+    public JsonNode getSavedRouteGeoJson(String generatedRidesId) {
         try {
             String routeGeoJson =
                     ridesRepository.findRouteCoordinatesByGeneratedRidesId(generatedRidesId);

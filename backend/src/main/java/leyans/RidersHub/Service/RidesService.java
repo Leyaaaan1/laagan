@@ -65,7 +65,7 @@ public class RidesService {
     }
 
     public RideDetailDTO createRide(
-            Integer generatedRidesId, String creatorUsername, String ridesName,
+            String generatedRidesId, String creatorUsername, String ridesName,
             String locationName, String riderType, LocalDateTime date,
             List<String> participantUsernames, String description,
             double latitude, double longitude,
@@ -161,7 +161,7 @@ public class RidesService {
 
     // 3) Build Rides object from futures results and save
     private RideDetailDTO buildAndSaveRide(
-            Integer generatedRidesId, String creatorUsername, String ridesName,
+            String generatedRidesId, String creatorUsername, String ridesName,
             String riderType, LocalDateTime date, List<String> participantUsernames, String description,
             double latitude, double longitude,
             double startLatitude, double startLongitude,

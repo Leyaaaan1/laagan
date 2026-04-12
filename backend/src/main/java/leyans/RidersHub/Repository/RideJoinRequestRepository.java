@@ -11,9 +11,9 @@ public interface RideJoinRequestRepository extends JpaRepository<RideJoinRequest
 
     // Fetches all join requests made by a specific rider identified by their ID.
 
-    Optional<RideJoinRequest> findByGeneratedRidesId_GeneratedRidesIdAndRider_Username(Integer generatedRidesId, String username);
+    Optional<RideJoinRequest> findByGeneratedRidesId_GeneratedRidesIdAndRider_Username(String generatedRidesId, String username);
 
-    List<RideJoinRequest> findByGeneratedRidesId_GeneratedRidesId(Integer generatedRidesId);
+    List<RideJoinRequest> findByGeneratedRidesId_GeneratedRidesId(String generatedRidesId);
 
 
 }

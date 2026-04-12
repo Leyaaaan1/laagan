@@ -12,7 +12,7 @@ import java.util.List;
  * which are only needed when the user is viewing one specific ride.
  */
 public record RideDetailDTO(
-        Integer generatedRidesId,
+        String generatedRidesId,
         String  ridesName,
         String  locationName,
         String  riderType,

@@ -19,7 +19,7 @@ public interface StartedRideRepository extends JpaRepository<StartedRide, Intege
 
 
     boolean existsByUsername(Rider username);
-    Optional<StartedRide> findByRideGeneratedRidesId(Integer generatedRidesId);
+    Optional<StartedRide> findByRideGeneratedRidesId(String generatedRidesId);
 
 
 
@@ -53,5 +53,19 @@ public interface StartedRideRepository extends JpaRepository<StartedRide, Intege
     WHERE p.username = :username
 """)
     Optional<StartedRide> findByParticipantUsername(@Param("username") String username);
+
+    @Query("""
+    SELECT CASE 
+        WHEN sr.username.id = :riderId THEN true
+        WHEN EXISTS (
+            SELECT 1 FROM sr.participants p WHERE p.id = :riderId
+        ) THEN true
+        ELSE false
+    END
+    FROM StartedRide sr
+    WHERE sr.id = :startedRideId
+""")
+    boolean isRiderAuthorizedForStartedRide(@Param("startedRideId") Integer startedRideId,
+                                            @Param("riderId") Integer riderId);
 
 }

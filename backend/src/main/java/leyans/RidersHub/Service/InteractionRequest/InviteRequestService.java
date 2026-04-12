@@ -40,7 +40,7 @@ public class InviteRequestService {
     }
 
     @Transactional
-    public InviteRequest generateInviteForNewRide(Integer generatedRidesId,
+    public InviteRequest generateInviteForNewRide(String generatedRidesId,
                                                   Rider creator,
                                                   InviteRequest.InviteStatus inviteStatus,
                                                   LocalDateTime createdAt,

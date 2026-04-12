@@ -5,6 +5,7 @@ import jakarta.transaction.Transactional;
 import leyans.RidersHub.DTO.Request.RiderDTO.RiderDTO;
 import leyans.RidersHub.DTO.Response.RiderResponseDTO;
 import leyans.RidersHub.Repository.RiderTypeRepository;
+import leyans.RidersHub.Service.Auth.AccountLockoutService;
 import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.RiderType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +49,21 @@ public class RiderService {
     }
 
 
+    @Transactional
+    public String registerRiderWithValidation(String username, String password,
+                                              String riderType, String clientIp,
+                                              AccountLockoutService lockoutService) {
+        // Check registration rate limit first
+        int attempts = lockoutService.getRegisterAttempts(clientIp);
+        if (attempts >= 3) {
+            throw new RuntimeException("Registration limit exceeded for this IP");
+        }
+
+        // Existing registration logic
+        return registerRider(username, password, riderType);
+    }
+
+
 
     public String registerRider(String username, String password, String riderType) {
         Rider existingRider = riderRepository.findByUsername(username);
@@ -70,16 +86,6 @@ public class RiderService {
         return username; // Return only username, not the full entity
     }
 
-    public RiderResponseDTO getRiderDetailsByUsername(String username) {
-        Rider rider = riderRepository.findByUsername(username);
-        if (rider == null) {
-            throw new IllegalArgumentException("Rider not found: " + username);
-        }
-        return new RiderResponseDTO(rider);
-    }
-
-
-
 
 
     public Rider getRiderByUsername(String username) {
@@ -98,9 +104,7 @@ public class RiderService {
         return type;
     }
 
-//    public Rides getParicipantRideById(Integer generatedRidesId) {
-//
-//    }
+
 }
 
 
