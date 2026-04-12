@@ -12,6 +12,7 @@ import {
   createTimeoutManager,
   createPollLock,
 } from '../services/locationPollingService';
+import {useAuth} from '../context/AuthContext';
 
 export const useLocationPermission = () => {
   const [granted, setGranted] = useState(false);
@@ -53,11 +54,11 @@ export const useLocationPermission = () => {
 
 export const useRideLocationPolling = ({
   rideId,
-  token,
   enabled = true,
   onLocationsUpdate,
   onError,
 }) => {
+  const {token} = useAuth();
   const [isPolling, setIsPolling] = useState(false);
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -137,7 +138,6 @@ export const useRideLocationPolling = ({
         rideId,
         latitude,
         longitude,
-        token,
       );
 
       retryCountRef.current = 0;
@@ -154,7 +154,7 @@ export const useRideLocationPolling = ({
     } finally {
       pollLock.current.release();
     }
-  }, [rideId, token, onLocationsUpdate, handlePollingError]);
+  }, [rideId,  token, onLocationsUpdate, handlePollingError]);
 
   // Keep ref up to date
   useEffect(() => {
@@ -213,8 +213,7 @@ export const useRideLocationPolling = ({
     return () => {
       unsubscribe();
     };
-  }, [rideId, token, stopPolling, startPolling]);
-  // ✅ FIXED: Removed isOffline from deps — only re-subscribe when rideId or token change
+  }, [rideId, stopPolling, token, startPolling]);
 
   useEffect(() => {
     if (enabled && rideId && token) {
@@ -224,7 +223,7 @@ export const useRideLocationPolling = ({
     }
 
     return () => stopPolling();
-  }, [enabled, rideId, token, startPolling, stopPolling]);
+  }, [enabled, rideId, startPolling, stopPolling]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextState => {

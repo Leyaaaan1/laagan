@@ -1,123 +1,81 @@
-import { BASE_URL } from '@env';
+import {api} from './Apiclient';
 
-const API_BASE_URL = BASE_URL;
-
-// ── GET /profiles/me ──────────────────────────────────────────────────────────
-export const getMyProfile = async (token) => {
+export const getMyProfile = async (token = null) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/profiles/me`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    // ✅ CHECK status FIRST before parsing
-    if (!response.ok) {
-      return { success: false, message: `HTTP ${response.status}` };
-    }
-
-    // ✅ NOW parse JSON
+    const response = await api.get('/profiles/me', token);
+    if (!response.ok)
+      return {success: false, message: `HTTP ${response.status}`};
     const result = await response.json();
-    return { success: true, data: result };
+    return {success: true, data: result};
   } catch (error) {
     console.error('getMyProfile error:', error);
-    return { success: false, message: 'Network error occurred' };
+    return {success: false, message: error.message};
   }
 };
-// ── GET /profiles/{username} ──────────────────────────────────────────────────
-export const getProfileByUsername = async (token, username) => {
+
+export const getProfileByUsername = async (username, token = null) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/profiles/${username}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
+    const response = await api.get(`/profiles/${username}`, token);
     const result = await response.json();
-
-    if (response.ok) {
-      return { success: true, data: result };
-    } else {
-      return { success: false, message: result.message || 'Failed to fetch profile' };
-    }
+    if (response.ok) return {success: true, data: result};
+    return {
+      success: false,
+      message: result.message || 'Failed to fetch profile',
+    };
   } catch (error) {
     console.error('getProfileByUsername error:', error);
-    return { success: false, message: 'Network error occurred' };
+    return {success: false, message: error.message};
   }
 };
 
-// ── PUT /profiles/edit ────────────────────────────────────────────────────────
-export const updateMyProfile = async (token, updates) => {
+export const updateMyProfile = async (updates, token = null) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/profiles/edit`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(updates),
-    });
-
+    const response = await api.put('/profiles/edit', updates, token);
     const result = await response.json();
-
-    if (response.ok) {
-      return { success: true, data: result };
-    } else {
-      return { success: false, message: result.message || 'Failed to update profile' };
-    }
+    if (response.ok) return {success: true, data: result};
+    return {
+      success: false,
+      message: result.message || 'Failed to update profile',
+    };
   } catch (error) {
     console.error('updateMyProfile error:', error);
-    return { success: false, message: 'Network error occurred' };
+    return {success: false, message: error.message};
   }
 };
 
-export const addRiderType = async (token, typeName) => {
+export const addRiderType = async (typeName, token = null) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/profiles/add/rider-types/${encodeURIComponent(typeName)}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
+    const response = await api.post(
+      `/profiles/add/rider-types/${encodeURIComponent(typeName)}`,
+      {},
+      token,
+    );
     const result = await response.json();
-
-    if (response.ok) {
-      return { success: true, data: result };
-    } else {
-      return { success: false, message: result.message || 'Failed to add rider type' };
-    }
+    if (response.ok) return {success: true, data: result};
+    return {
+      success: false,
+      message: result.message || 'Failed to add rider type',
+    };
   } catch (error) {
     console.error('addRiderType error:', error);
-    return { success: false, message: 'Network error occurred' };
+    return {success: false, message: error.message};
   }
 };
 
-// ── DELETE /profiles/rider-types/{typeName} ───────────────────────────────────
-export const removeRiderType = async (token, typeName) => {
+export const removeRiderType = async (typeName, token = null) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/profiles/rider-types/${encodeURIComponent(typeName)}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
+    const response = await api.delete(
+      `/profiles/rider-types/${encodeURIComponent(typeName)}`,
+      token,
+    );
     const result = await response.json();
-
-    if (response.ok) {
-      return { success: true, data: result };
-    } else {
-      return { success: false, message: result.message || 'Failed to remove rider type' };
-    }
+    if (response.ok) return {success: true, data: result};
+    return {
+      success: false,
+      message: result.message || 'Failed to remove rider type',
+    };
   } catch (error) {
     console.error('removeRiderType error:', error);
-    return { success: false, message: 'Network error occurred' };
+    return {success: false, message: error.message};
   }
 };

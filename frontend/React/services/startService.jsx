@@ -1,153 +1,70 @@
+import {api} from './Apiclient';
 
-
-import { BASE_URL  } from '@env';
-
-// Use API_BASE_URL instead of hardcoded value
-const API_BASE_URL = BASE_URL  || 'http://localhost:8080';
 export const startService = {
-    startRide: async (generatedRidesId, token) => {
-        try {
-            const response = await fetch(`${API_BASE_URL}/start/${generatedRidesId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                const status = response.status;
-                let errorMessage = '';
-
-                switch (status) {
-                    case 403:
-                        errorMessage = 'You are not authorized to start this ride.';
-                        break;
-                    case 404:
-                        errorMessage = 'Ride not found.';
-                        break;
-                    case 409:
-                        errorMessage = 'This ride has already been started.';
-                        break;
-                    case 410:
-                        errorMessage = 'You have currently rides ongoing.';
-                        break;
-                    default:
-                        errorMessage = 'An error occurred while starting the ride.';
-                }
-
-                throw new Error(errorMessage);
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('Error starting ride:', error);
-            throw error;
-        }
-    },
-
-    deactivateRide: async (generatedRidesId, token) => {
-        try {
-            const response = await fetch(`${API_BASE_URL}/start/update/${generatedRidesId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                const status = response.status;
-                let errorMessage = '';
-
-                switch (status) {
-                    case 404:
-                        errorMessage = 'Ride not found.';
-                        break;
-                    case 409:
-                        errorMessage = 'Ride is in a conflicting state.';
-                        break;
-                    default:
-                        errorMessage = 'An error occurred while stopping the ride.';
-                }
-
-                throw new Error(errorMessage);
-            }
-
-            return true;
-        } catch (error) {
-            console.error('Error deactivating ride:', error);
-            throw error;
-        }
-    },
-};
-export async function getActiveRide(token) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/start/active`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
-
-        if (!response.ok) {
-            const status = response.status;
-            switch (status) {
-                case 404:
-                    throw new Error('No active ride found');
-                case 409:
-                    throw new Error('Ride is in conflicting state');
-                default:
-                    throw new Error('Failed to fetch active ride');
-            }
-        }
-
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error('Error fetching active ride:', error);
-        throw error;
+  startRide: async (generatedRidesId, token = null) => {
+    const response = await api.post(`/start/${generatedRidesId}`, {}, token);
+    if (!response.ok) {
+      const messages = {
+        403: 'You are not authorized to start this ride.',
+        404: 'Ride not found.',
+        409: 'This ride has already been started.',
+        410: 'You have a ride currently ongoing.',
+      };
+      throw new Error(
+        messages[response.status] ||
+          'An error occurred while starting the ride.',
+      );
     }
-}
+    return response.json();
+  },
 
-export async function getStopPointsByRideId(generatedRidesId, token) {
-  try {
-
-    const response = await fetch(
-      `${API_BASE_URL}/riders/${generatedRidesId}/stop-points`,
-      {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      },
+  deactivateRide: async (generatedRidesId, token = null) => {
+    const response = await api.post(
+      `/start/update/${generatedRidesId}`,
+      {},
+      token,
     );
     if (!response.ok) {
-      const status = response.status;
-      let errorMessage = '';
-
-      switch (status) {
-        case 404:
-          errorMessage = 'Ride not found.';
-          break;
-        case 401:
-          errorMessage = 'Unauthorized. Please log in again.';
-          break;
-        case 403:
-          errorMessage =
-            "You do not have permission to view this ride's stop points.";
-          break;
-        default:
-          errorMessage = 'Failed to fetch stop points. Please try again.';
-      }
-
-      throw new Error(errorMessage);
+      const messages = {
+        404: 'Ride not found.',
+        409: 'Ride is in a conflicting state.',
+      };
+      throw new Error(
+        messages[response.status] ||
+          'An error occurred while stopping the ride.',
+      );
     }
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching stop points:', error);
-    throw error;
+    return true;
+  },
+};
+
+export const getActiveRide = async (token = null) => {
+  const response = await api.get('/start/active', token);
+  if (!response.ok) {
+    const messages = {
+      404: 'No active ride found',
+      409: 'Ride is in conflicting state',
+    };
+    throw new Error(messages[response.status] || 'Failed to fetch active ride');
   }
-}
+  return response.json();
+};
+
+export const getStopPointsByRideId = async (generatedRidesId, token = null) => {
+  const response = await api.get(
+    `/riders/${generatedRidesId}/stop-points`,
+    token,
+  );
+  if (!response.ok) {
+    const messages = {
+      404: 'Ride not found.',
+      401: 'Unauthorized. Please log in again.',
+      403: "You do not have permission to view this ride's stop points.",
+    };
+    throw new Error(
+      messages[response.status] ||
+        'Failed to fetch stop points. Please try again.',
+    );
+  }
+  return response.json();
+};

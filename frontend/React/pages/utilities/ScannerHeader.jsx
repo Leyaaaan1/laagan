@@ -15,122 +15,127 @@ import { joinService } from '../../services/joinService';
 import { getRideDetails } from '../../services/rideService';
 import { buildRideStep4Params } from '../../utilities/NavigationParamsBuilder';
 import scanner from '../../styles/components/scanner';
+import {useAuth} from '../../context/AuthContext';
 
-const ScannerHeader = ({ token, username, navigation }) => {
+const ScannerHeader = ({navigation}) => {
+  const {token, username} = useAuth();
   const [scannerVisible, setScannerVisible] = useState(false);
   const [scanning, setScanning] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [scanMode, setScanMode] = useState('invite'); // 'invite' or 'ride'
 
-  const { hasPermission, requestPermission } = useCameraPermission();
+  const {hasPermission, requestPermission} = useCameraPermission();
   const device = useCameraDevice('back');
 
-  const handleBarCodeScanned = useCallback(async (data) => {
-    if (!scanning || processing || !data) return;
+  const handleBarCodeScanned = useCallback(
+    async data => {
+      if (!scanning || processing || !data) return;
 
-    setScanning(false);
-    setProcessing(true);
+      setScanning(false);
+      setProcessing(true);
 
-    try {
-      // ─────────────────────────────────────────────────────────────────
-      // MODE 1: INVITE LINK (Join ride by QR code invite)
-      // ─────────────────────────────────────────────────────────────────
-      if (scanMode === 'invite') {
-        let inviteToken = data;
+      try {
+        // ─────────────────────────────────────────────────────────────────
+        // MODE 1: INVITE LINK (Join ride by QR code invite)
+        // ─────────────────────────────────────────────────────────────────
+        if (scanMode === 'invite') {
+          let inviteToken = data;
 
-        if (data.includes('/invite/link/')) {
-          inviteToken = data.split('/invite/link/')[1];
-        } else if (data.includes('/invite/')) {
-          inviteToken = data.split('/invite/')[1];
-        }
+          if (data.includes('/invite/link/')) {
+            inviteToken = data.split('/invite/link/')[1];
+          } else if (data.includes('/invite/')) {
+            inviteToken = data.split('/invite/')[1];
+          }
 
-        if (!inviteToken) {
-          Alert.alert(
-            'Invalid QR Code',
-            'This QR code does not contain a valid invite link.',
-          );
+          if (!inviteToken) {
+            Alert.alert(
+              'Invalid QR Code',
+              'This QR code does not contain a valid invite link.',
+            );
+            setScannerVisible(false);
+            setProcessing(false);
+            return;
+          }
+
+          const result = await joinService.joinRideByToken(inviteToken);
+          console.log('Join ride result:', result);
+
           setScannerVisible(false);
-          setProcessing(false);
-          return;
-        }
 
-        const result = await joinService.joinRideByToken(inviteToken, token);
-        console.log('Join ride result:', result);
-
-        setScannerVisible(false);
-
-        Alert.alert(
-          'Request Submitted',
-          'Your join request has been submitted! Waiting for the ride creator to approve.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                // Optionally navigate to a status page
-                // navigation.navigate('JoinRequestStatus', { joinRequest: result });
+          Alert.alert(
+            'Request Submitted',
+            'Your join request has been submitted! Waiting for the ride creator to approve.',
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  // Optionally navigate to a status page
+                  // navigation.navigate('JoinRequestStatus', { joinRequest: result });
+                },
               },
-            },
-          ],
-        );
-      }
+            ],
+          );
+        }
         // ─────────────────────────────────────────────────────────────────
         // MODE 2: RIDE ID (View ride details by scanning ride ID QR code)
-      // ─────────────────────────────────────────────────────────────────
-      else if (scanMode === 'ride') {
-        const rideId = data.trim();
+        // ─────────────────────────────────────────────────────────────────
+        else if (scanMode === 'ride') {
+          const rideId = data.trim();
 
-        if (!rideId || isNaN(rideId)) {
-          Alert.alert(
-            'Invalid QR Code',
-            'This QR code does not contain a valid ride ID.',
-          );
+          if (!rideId || isNaN(rideId)) {
+            Alert.alert(
+              'Invalid QR Code',
+              'This QR code does not contain a valid ride ID.',
+            );
+            setScannerVisible(false);
+            setProcessing(false);
+            return;
+          }
+
+          const ride = await getRideDetails(parseInt(rideId));
+          const params = buildRideStep4Params(ride, username);
+
           setScannerVisible(false);
-          setProcessing(false);
-          return;
+          navigation.navigate('RideStep4', params);
         }
-
-        const ride = await getRideDetails(parseInt(rideId), token);
-        const params = buildRideStep4Params(ride, token, username);
-
+      } catch (error) {
         setScannerVisible(false);
-        navigation.navigate('RideStep4', params);
-      }
-    } catch (error) {
-      setScannerVisible(false);
 
-      let errorMessage = 'Failed to process QR code';
+        let errorMessage = 'Failed to process QR code';
 
-      if (scanMode === 'invite') {
-        if (error.message.includes('already have a join request')) {
-          errorMessage = 'You already have a pending request for this ride';
-        } else if (error.message.includes('already a participant')) {
-          errorMessage = 'You are already a participant in this ride';
-        } else if (error.message.includes('creator of this ride')) {
-          errorMessage = 'You cannot join your own ride';
-        } else if (error.message.includes('expired')) {
-          errorMessage = 'This invite link has expired';
-        } else if (error.message) {
-          errorMessage = error.message;
+        if (scanMode === 'invite') {
+          if (error.message.includes('already have a join request')) {
+            errorMessage = 'You already have a pending request for this ride';
+          } else if (error.message.includes('already a participant')) {
+            errorMessage = 'You are already a participant in this ride';
+          } else if (error.message.includes('creator of this ride')) {
+            errorMessage = 'You cannot join your own ride';
+          } else if (error.message.includes('expired')) {
+            errorMessage = 'This invite link has expired';
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+        } else if (scanMode === 'ride') {
+          if (error.message.includes('not found')) {
+            errorMessage = 'Ride not found';
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
         }
-      } else if (scanMode === 'ride') {
-        if (error.message.includes('not found')) {
-          errorMessage = 'Ride not found';
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
-      }
 
-      Alert.alert('Error', errorMessage);
-    } finally {
-      setProcessing(false);
-      setScanning(true);
-    }
-  }, [scanning, processing, scanMode, username, token, navigation]);
+        Alert.alert('Error', errorMessage);
+      } finally {
+        setProcessing(false);
+        setScanning(true);
+      }
+    },
+    [scanning, processing, scanMode, username, token, navigation],
+  );
 
   // Use the built-in code scanner
   const codeScanner = useCodeScanner({
     codeTypes: ['qr'],
-    onCodeScanned: (codes) => {
+    onCodeScanned: codes => {
       if (codes.length > 0 && scanning && !processing) {
         handleBarCodeScanned(codes[0].value);
       }
@@ -145,9 +150,9 @@ const ScannerHeader = ({ token, username, navigation }) => {
           'Camera Permission Required',
           'Please enable camera permission in your device settings to scan QR codes.',
           [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Open Settings', onPress: () => Linking.openSettings() },
-          ]
+            {text: 'Cancel', style: 'cancel'},
+            {text: 'Open Settings', onPress: () => Linking.openSettings()},
+          ],
         );
         return;
       }
@@ -166,8 +171,7 @@ const ScannerHeader = ({ token, username, navigation }) => {
       <TouchableOpacity
         style={scanner.scanButton}
         onPress={() => openScanner('invite')}
-        activeOpacity={0.7}
-      >
+        activeOpacity={0.7}>
         <FontAwesome name="qrcode" size={16} color="#fff" />
       </TouchableOpacity>
 
@@ -177,8 +181,7 @@ const ScannerHeader = ({ token, username, navigation }) => {
         onRequestClose={() => {
           setScannerVisible(false);
           setScanning(true);
-        }}
-      >
+        }}>
         <View style={scanner.scannerContainer}>
           <View style={scanner.scannerHeader}>
             <TouchableOpacity
@@ -186,14 +189,13 @@ const ScannerHeader = ({ token, username, navigation }) => {
               onPress={() => {
                 setScannerVisible(false);
                 setScanning(true);
-              }}
-            >
+              }}>
               <FontAwesome name="times" size={24} color="#fff" />
             </TouchableOpacity>
             <Text style={scanner.scannerTitle}>
               {scanMode === 'invite' ? 'Scan Ride Invite' : 'Scan Ride ID'}
             </Text>
-            <View style={{ width: 40 }} />
+            <View style={{width: 40}} />
           </View>
 
           <View style={scanner.cameraContainer}>
@@ -209,8 +211,12 @@ const ScannerHeader = ({ token, username, navigation }) => {
             <View style={scanner.scanFrame}>
               <View style={scanner.scanCorner} />
               <View style={[scanner.scanCorner, scanner.scanCornerTopRight]} />
-              <View style={[scanner.scanCorner, scanner.scanCornerBottomLeft]} />
-              <View style={[scanner.scanCorner, scanner.scanCornerBottomRight]} />
+              <View
+                style={[scanner.scanCorner, scanner.scanCornerBottomLeft]}
+              />
+              <View
+                style={[scanner.scanCorner, scanner.scanCornerBottomRight]}
+              />
             </View>
 
             {processing && (
@@ -226,14 +232,12 @@ const ScannerHeader = ({ token, username, navigation }) => {
             <Text style={scanner.instructionsTitle}>
               {scanMode === 'invite'
                 ? 'Align invite QR code within frame'
-                : 'Align ride QR code within frame'
-              }
+                : 'Align ride QR code within frame'}
             </Text>
             <Text style={scanner.instructionsText}>
               {scanMode === 'invite'
                 ? 'Point your camera at the ride invite QR code'
-                : 'Point your camera at the ride ID QR code'
-              }
+                : 'Point your camera at the ride ID QR code'}
             </Text>
           </View>
         </View>

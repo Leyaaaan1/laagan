@@ -1,401 +1,109 @@
-import {BASE_URL} from '@env';
+import {api} from './Apiclient';
 import {routeCache} from './cache/routeCache';
 
-// Use API_BASE_URL instead of hardcoded value
-const API_BASE_URL = BASE_URL || 'http://localhost:8080';
-
-const cleanAndValidateToken = token => {
-  if (!token) {
-    throw new Error('No authentication token provided. Please log in again.');
-  }
-
-  if (typeof token !== 'string') {
-    throw new Error('Invalid token type. Please log in again.');
-  }
-
-  // Remove Bearer prefix if it exists
-  let cleanToken = token.trim();
-  if (cleanToken.startsWith('Bearer ')) {
-    cleanToken = cleanToken.substring(7).trim();
-  }
-
-  // Validate JWT format (3 parts separated by 2 periods)
-  const parts = cleanToken.split('.');
-  if (parts.length !== 3) {
-    console.error(
-      '❌ Invalid JWT format. Parts:',
-      parts.length,
-      'Token preview:',
-      cleanToken.substring(0, 50),
+export const searchLocation = async (query) => {
+    const response = await api.get(
+      `/location/search?query=${encodeURIComponent(query)}`,
     );
-    throw new Error('Invalid token format. Please log in again.');
-  }
-
-  console.log('✅ Token validated successfully');
-  return cleanToken;
+  if (!response.ok)
+    throw new Error(`Failed to fetch location: ${response.status}`);
+  return response.json();
 };
 
-export const searchLocation = async (token, query) => {
-  try {
-    const cleanToken = cleanAndValidateToken(token);
+export const searchCityOrLandmark = async (query, token = null) => {
+  const response = await api.get(
+    `/location/search-landmark?query=${encodeURIComponent(query)}`,
 
-    const response = await fetch(
-      `${API_BASE_URL}/location/search?query=${encodeURIComponent(query)}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${cleanToken}`,
-        },
-      },
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Failed to fetch location: ${response.status} ${errorText}`,
-      );
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('searchLocation error:', error);
-    throw error;
-  }
+  );
+  if (!response.ok)
+    throw new Error(`Failed to fetch landmarks: ${response.status}`);
+  return response.json();
 };
 
-export const searchCityOrLandmark = async (token, query) => {
+export const reverseGeocode = async (lat, lon = null) => {
   try {
-    const cleanToken = cleanAndValidateToken(token);
-
-    const response = await fetch(
-      `${API_BASE_URL}/location/search-landmark?query=${encodeURIComponent(
-        query,
-      )}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${cleanToken}`,
-        },
-      },
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Failed to fetch landmarks: ${response.status} ${errorText}`,
-      );
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('searchCityOrLandmark error:', error);
-    throw error;
-  }
-};
-
-export const reverseGeocode = async (token, lat, lon) => {
-  try {
-    const cleanToken = cleanAndValidateToken(token);
-
-    const response = await fetch(
-      `${API_BASE_URL}/location/reverse?lat=${lat}&lon=${lon}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${cleanToken}`,
-        },
-      },
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Failed to reverse geocode: ${response.status} ${errorText}`,
-      );
-    }
-
-    return await response.text();
+    const response = await api.get(`/location/reverse?lat=${lat}&lon=${lon}`);
+    if (!response.ok)
+      throw new Error(`Failed to reverse geocode: ${response.status}`);
+    return response.text();
   } catch (err) {
     console.error('Reverse geocode fetch failed:', err);
     return null;
   }
 };
 
-export const reverseGeocodeLandmark = async (token, lat, lon) => {
+export const reverseGeocodeLandmark = async (lat, lon = null) => {
   try {
-    const cleanToken = cleanAndValidateToken(token);
-
-    const response = await fetch(
-      `${API_BASE_URL}/location/landmark?lat=${lat}&lon=${lon}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${cleanToken}`,
-        },
-      },
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Failed to reverse geocode: ${response.status} ${errorText}`,
-      );
-    }
-
-    return await response.text();
+    const response = await api.get(`/location/landmark?lat=${lat}&lon=${lon}`);
+    if (!response.ok)
+      throw new Error(`Failed to reverse geocode landmark: ${response.status}`);
+    return response.text();
   } catch (err) {
-    console.error('Reverse geocode fetch failed:', err);
+    console.error('Reverse geocode landmark failed:', err);
     return null;
   }
 };
+export const getLocationImage = async (rideName, token = null) => {
+  const response = await api.get(
+    `/wikimedia/location?locationName=${encodeURIComponent(rideName)}`,
+  );
+  if (!response.ok) {
+    if (response.status === 404) return [];
+    throw new Error(`Failed to fetch location images: ${response.status}`);
+  }
+  return response.json();
+};
 
-export const getLocationImage = async (rideName, token) => {
+export const createRide = async (rideData) => {
+  const response = await api.post('/riders/create', rideData);
+  const responseText = await response.text();
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${responseText}`);
+  if (!responseText || responseText.trim() === '') return {success: true};
   try {
-    const cleanToken = cleanAndValidateToken(token);
-
-    const response = await fetch(
-      `${API_BASE_URL}/wikimedia/location?locationName=${encodeURIComponent(
-        rideName,
-      )}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${cleanToken}`,
-        },
-      },
-    );
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        return []; // No images found
-      }
-      const errorText = await response.text();
-      throw new Error(
-        `Failed to fetch location images: ${response.status} ${errorText}`,
-      );
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching location images:', error);
-    throw error;
+    return JSON.parse(responseText);
+  } catch {
+    return {success: true, rawResponse: responseText};
   }
 };
 
+export const fetchRideMapImage = async (generatedRidesId ) => {
+  const response = await api.get(
+    `/riders/${generatedRidesId}/map-image`
+  );
+  if (!response.ok) throw new Error('Failed to fetch map image');
+  return response.text();
+};
 
-// Fixed createRide service function with proper error handling
-export const createRide = async (rideData, token) => {
-  try {
-    console.log('=== CREATE RIDE DEBUG ===');
-    console.log('API URL:', `${API_BASE_URL}/riders/create`);
-
-    const cleanToken = cleanAndValidateToken(token);
-    console.log(
-      'Token (first 20 chars):',
-      cleanToken ? cleanToken.substring(0, 20) + '...' : 'No token',
-    );
-    console.log('Request data:', JSON.stringify(rideData, null, 2));
-
-    const headers = {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${cleanToken}`,
-    };
-
-    console.log('Request header:', headers);
-
-    const response = await fetch(`${API_BASE_URL}/riders/create`, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(rideData),
-    });
-
-    console.log('Response status:', response.status);
-    console.log('Response statusText:', response.statusText);
-
-    const responseText = await response.text();
-    console.log('Raw response text:', responseText);
-
-    if (!response.ok) {
-      console.error('HTTP Error:', response.status, responseText);
-      throw new Error(
-        `HTTP ${response.status}: ${responseText || response.statusText}`,
-      );
-    }
-
-    if (!responseText || responseText.trim() === '') {
-      console.log('Empty response - assuming success');
-      return {success: true, message: 'Ride created successfully'};
-    }
-
-    let result;
-    try {
-      result = JSON.parse(responseText);
-      console.log('Parsed JSON result:', result);
-    } catch (parseError) {
-      console.error('JSON parse error:', parseError);
-      return {
-        success: true,
-        message: 'Ride created successfully',
-        rawResponse: responseText,
-      };
-    }
-
-    return result;
-  } catch (error) {
-    console.error('=== CREATE RIDE ERROR ===');
-    console.error('Error type:', error.constructor.name);
-    console.error('Error message:', error.message);
-    console.error('Full error:', error);
-
-    if (error.message.includes('Failed to fetch')) {
-      throw new Error(
-        'Network connection failed. Please check your internet connection.',
-      );
-    }
-
-    if (error.message.includes('403')) {
-      throw new Error('Authentication failed. Please try logging in again.');
-    }
-
-    if (error.message.includes('401')) {
-      throw new Error('Access denied. Please log in again.');
-    }
-
-    if (error.message.includes('500')) {
-      throw new Error('Server error. Please try again later.');
-    }
-
-    throw error;
+export const getRideDetails = async (generatedRidesId, ) => {
+  const response = await api.get(`/riders/${generatedRidesId}`);
+  if (!response.ok) {
+    if (response.status === 404) throw new Error('No ride found');
+    throw new Error(`Failed to fetch ride details: ${response.status}`);
   }
-};// Alternative version using axios (if you're using axios instead of fetch)
-
-
-
-
-
-export const fetchRideMapImage = async (generatedRidesId, token) => {
-  try {
-    const response = await fetch(
-      `${API_BASE_URL}/riders/${generatedRidesId}/map-image`,
-      {
-        headers: token
-          ? {
-              Authorization: `Bearer ${token}`,
-            }
-          : {},
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch map image');
-    }
-
-    const imageUrl = await response.text();
-    console.log('Map image URL fetched from backend:', imageUrl);
-    return imageUrl;
-  } catch (error) {
-    console.error('Error fetching ride map image:', error);
-    throw error;
+  const details = await response.json();
+  const cached = await routeCache.get(generatedRidesId);
+  if (cached) {
+    return {...details, routeCoordinates: cached};
+  } else {
+    await routeCache.save(generatedRidesId, details.routeCoordinates);
+    return details;
   }
 };
 
-export const getRideDetails = async (generatedRidesId, token) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/riders/${generatedRidesId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 404) throw new Error('No ride found');
-      const errorText = await response.text();
-      throw new Error(`Failed to fetch ride details: ${errorText}`);
-    }
-
-    const details = await response.json();
-
-    // Check local cache first
-    const cached = await routeCache.get(generatedRidesId);
-
-    if (cached) {
-      // Cache hit — use local coordinates, ignore what the server sent
-      console.log(`[routeCache] HIT for ride ${generatedRidesId}`);
-      return {...details, routeCoordinates: cached};
-    } else {
-      // Cache miss — save what the server returned for next time
-      console.log(
-        `[routeCache] MISS for ride ${generatedRidesId}, caching now`,
-      );
-      await routeCache.save(generatedRidesId, details.routeCoordinates);
-      return details;
-    }
-  } catch (error) {
-    console.warn('getRideDetails failed:', error);
-    throw error;
-  }
-};
-export const fetchRides = async (token, page = 0, size = 10) => {
-    try {
-        const response = await fetch(`${API_BASE_URL}/riders/rides?page=${page}&size=${size}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`Error fetching rides: ${response.status} ${errorText}`);
-            throw new Error(`Failed to fetch rides: ${errorText}`);
-        }
-
-        const data = await response.json();
-        console.log('API Response (All Rides):', data);
-        console.log('Total rides:', data.totalElements);
-        return data;
-    } catch (error) {
-        console.error('Failed to fetch rides:', error);
-        throw error;
-    }
+export const fetchRides = async ( page = 0, size = 10) => {
+  const response = await api.get(
+    `/riders/rides?page=${page}&size=${size}`
+  );
+  if (!response.ok)
+    throw new Error(`Failed to fetch rides: ${response.status}`);
+  return response.json();
 };
 
-export const fetchMyRides = async (token, page = 0, size = 10) => {
-    try {
-        const response = await fetch(`${API_BASE_URL}/riders/my-rides?page=${page}&size=${size}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`Error fetching my rides: ${response.status} ${errorText}`);
-            throw new Error(`Failed to fetch my rides: ${errorText}`);
-        }
-
-        const data = await response.json();
-        console.log('API Response (My Rides):', data);
-        console.log('My rides count:', data.totalElements);
-        return data;
-    } catch (error) {
-        console.error('Failed to fetch my rides:', error);
-        throw error;
-    }
+export const fetchMyRides = async ( page = 0, size = 10) => {
+  const response = await api.get(
+    `/riders/my-rides?page=${page}&size=${size}`
+  );
+  if (!response.ok)
+    throw new Error(`Failed to fetch my rides: ${response.status}`);
+  return response.json();
 };
-
-
-
-
-
-

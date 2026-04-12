@@ -1,43 +1,44 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useState} from 'react';
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  StatusBar,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  KeyboardAvoidingView,
-  Platform,
-  StatusBar,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { loginUser, registerUser } from '../services/authService';
+import {loginUser, registerUser} from '../services/authService';
 import inputs from '../styles/base/inputs';
 import buttons from '../styles/base/buttons';
 import text from '../styles/base/text';
 import layout from '../styles/base/layout';
 import colors from '../styles/tokens/colors';
 import spacing from '../styles/tokens/spacing';
+import {useAuth} from '../context/AuthContext';
 
 const AuthForm = ({
-                    isLogin,
-                    username,
-                    password,
-                    riderType,
-                    setUsername,
-                    setPassword,
-                    setRiderType,
-                    handleAuth,
-                    toggleMode,
-                  }) => (
+  isLogin,
+  username,
+  password,
+  riderType,
+  setUsername,
+  setPassword,
+  setRiderType,
+  handleAuth,
+  toggleMode,
+}) => (
   <KeyboardAvoidingView
     style={layout.center}
-    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-  >
-    <Text style={[text.titleCenter, { marginBottom: spacing.lg, letterSpacing: 1 }]}>
+    behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <Text
+      style={[text.titleCenter, {marginBottom: spacing.lg, letterSpacing: 1}]}>
       {isLogin ? 'WELCOME BACK' : 'CREATE ACCOUNT'}
     </Text>
 
-    <Text style={[text.bodyMuted, { textAlign: 'center', marginBottom: spacing.lg }]}>
+    <Text
+      style={[text.bodyMuted, {textAlign: 'center', marginBottom: spacing.lg}]}>
       {isLogin
         ? 'Sign in to continue laags'
         : 'Join the community and start riding'}
@@ -50,6 +51,7 @@ const AuthForm = ({
       onChangeText={setUsername}
       style={inputs.auth}
       autoCapitalize="none"
+      autoCorrect={false}
     />
 
     <TextInput
@@ -59,6 +61,7 @@ const AuthForm = ({
       onChangeText={setPassword}
       style={inputs.auth}
       secureTextEntry
+      autoCorrect={false}
     />
 
     {!isLogin && (
@@ -72,10 +75,9 @@ const AuthForm = ({
     )}
 
     <TouchableOpacity
-      style={[buttons.pill, { width: 280, marginBottom: spacing.sm }]}
-      onPress={handleAuth}
-    >
-      <Text style={[text.white, { fontSize: 16 }]}>
+      style={[buttons.pill, {width: 280, marginBottom: spacing.sm}]}
+      onPress={handleAuth}>
+      <Text style={[text.white, {fontSize: 16}]}>
         {isLogin ? 'Login' : 'Register'}
       </Text>
     </TouchableOpacity>
@@ -84,17 +86,15 @@ const AuthForm = ({
       <TouchableOpacity
         style={[
           buttons.pill,
-          { width: 280, marginBottom: spacing.sm, backgroundColor: '#1877F2' },
-        ]}
-      >
-        <Text style={[text.white, { fontSize: 16 }]}>Continue with Facebook</Text>
+          {width: 280, marginBottom: spacing.sm, backgroundColor: '#1877F2'},
+        ]}>
+        <Text style={[text.white, {fontSize: 16}]}>Continue with Facebook</Text>
       </TouchableOpacity>
     )}
 
     <TouchableOpacity
-      style={[buttons.ghost, { marginTop: spacing.xs }]}
-      onPress={toggleMode}
-    >
+      style={[buttons.ghost, {marginTop: spacing.xs}]}
+      onPress={toggleMode}>
       <Text style={text.muted}>
         {isLogin
           ? "Don't have an account? Register"
@@ -104,16 +104,13 @@ const AuthForm = ({
   </KeyboardAvoidingView>
 );
 
-const AuthScreen = ({ navigation }) => {
-  const [isLogin, setIsLogin]     = useState(true);
-  const [username, setUsername]   = useState('lean');
-  const [password, setPassword]   = useState('Lean');
+const AuthScreen = ({navigation}) => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [riderType, setRiderType] = useState('');
+  const {saveAuth} = useAuth();
 
-  // ── Define handleAuth BEFORE the useEffect that calls it ──────────────────
-  // `const` is NOT hoisted like `function` declarations. If handleAuth is
-  // declared below the useEffect, the closure captures `undefined` and you get
-  // "handleAuth is not a function" at runtime.
   const handleAuth = async () => {
     try {
       const result = isLogin
@@ -121,58 +118,29 @@ const AuthScreen = ({ navigation }) => {
         : await registerUser(username, password, riderType);
 
       if (result.success) {
-        if (result.data.token) {
-          await AsyncStorage.setItem('userToken', result.data.token);
-          await AsyncStorage.setItem('username', username);
+        // Backend returns accessToken (not token)
+        const accessToken = result.data?.accessToken;
+        if (accessToken) {
+          await saveAuth(accessToken, username);
         }
-
         Alert.alert(isLogin ? 'Login Successful' : 'Registration Successful');
-
-        if (result.success) {
-          if (result.data.token) {
-            await AsyncStorage.setItem('userToken', result.data.token);
-            await AsyncStorage.setItem('username', username);
-          }
-
-
-          if (isLogin && username && navigation) {
-            navigation.navigate('RiderPage', {
-              username: username,
-              token: result.data.token,
-            });
-          }
-          return true;
-        }        return true;
+        if (isLogin && navigation) {
+          navigation.navigate('RiderPage');
+        }
       } else {
         Alert.alert('Error', result.message || 'Operation failed');
-        return false;
       }
     } catch (error) {
-      console.error(error);
+      console.error('Auth error:', error);
       Alert.alert('Error', 'Please try again later.');
-      return false;
     }
   };
 
-  // ── One-time auto-login on mount ───────────────────────────────────────────
-  // The ref prevents a double-fire in React 18 StrictMode (dev builds mount
-  // every component twice to surface side-effect bugs).
-  const hasAutoLoginRun = useRef(false);
-  useEffect(() => {
-    if (hasAutoLoginRun.current) return;
-    hasAutoLoginRun.current = true;
-
-    if (isLogin && username && password) {
-      handleAuth();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    // Intentional: runs once on mount with the hardcoded initial credentials.
-  }, []);
-
-  const toggleMode = () => setIsLogin((prev) => !prev);
+  const toggleMode = () => setIsLogin(prev => !prev);
 
   return (
-    <View style={[layout.screen, { alignItems: 'center', justifyContent: 'center' }]}>
+    <View
+      style={[layout.screen, {alignItems: 'center', justifyContent: 'center'}]}>
       <StatusBar barStyle="light-content" backgroundColor={colors.black} />
       <AuthForm
         isLogin={isLogin}

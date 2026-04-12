@@ -105,7 +105,7 @@ const useCreateRide = ({token, username}) => {
       if (mapMode === 'location') {
         setLatitude(lat.toString());
         setLongitude(lng.toString());
-        reverseGeocodeLandmark(token, lat, lng)
+        reverseGeocodeLandmark(lat, lng)
           .then(name => {
             if (name) {
               setLocationName(name);
@@ -115,7 +115,7 @@ const useCreateRide = ({token, username}) => {
       } else if (mapMode === 'starting') {
         setStartingLatitude(lat.toString());
         setStartingLongitude(lng.toString());
-        reverseGeocode(token, lat, lng)
+        reverseGeocode(lat, lng)
           .then(name => {
             if (name) {
               setStartingPoint(name);
@@ -125,7 +125,7 @@ const useCreateRide = ({token, username}) => {
       } else if (mapMode === 'ending') {
         setEndingLatitude(lat.toString());
         setEndingLongitude(lng.toString());
-        reverseGeocode(token, lat, lng)
+        reverseGeocode( lat, lng)
           .then(name => {
             if (name) {
               setEndingPoint(name);
@@ -157,7 +157,7 @@ const useCreateRide = ({token, username}) => {
       mapMode === 'location' ? searchCityOrLandmark : searchLocation;
 
     const timer = setTimeout(() => {
-      searchFn(token, searchQuery)
+      searchFn( searchQuery)
         .then(data => setSearchResults(data))
         .catch(() =>
           Alert.alert('Error', ERROR_MESSAGES.LOCATION.SEARCH_FAILED),
@@ -166,7 +166,7 @@ const useCreateRide = ({token, username}) => {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, locationSelected, mapMode, token]);
+  }, [searchQuery, locationSelected, mapMode]);
 
   // ─── Location selection (from search result) ──────────────────────────────
   const handleLocationSelect = async location => {
@@ -182,7 +182,7 @@ const useCreateRide = ({token, username}) => {
       setLatitude(lat.toString());
       setLongitude(lon.toString());
       setLocationName(selectedName);
-      getLocationImage(selectedName, token)
+      getLocationImage(selectedName)
         .then(imgs => setRideNameImage(imgs))
         .catch(() => setRideNameImage([]));
     } else if (mapMode === 'starting') {
@@ -317,9 +317,8 @@ const useCreateRide = ({token, username}) => {
         date: rideData.date,
       });
 
-      const result = await createRide(rideData, token);
+      const result = await createRide(rideData);
 
-      console.log('✅ Ride creation response:', result);
 
       // ────────────────────────────────────────────────────────────────────────
       // STEP 4: EXTRACT AND VALIDATE RIDE ID

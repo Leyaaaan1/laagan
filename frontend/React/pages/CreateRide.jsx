@@ -6,11 +6,13 @@ import RideStep3 from '../components/ride/RideStep3';
 import RideStep4 from '../components/ride/RideStep4';
 import createRideUtils from './utilities/CreateRideUtils';
 import {parseCoordinateSafely} from '../utilities/validator/CoordinateValidator';
+import {useAuth} from '../context/AuthContext';
 
-const CreateRide = ({ route, navigation }) => {
-  const { token, username } = route.params;
+const CreateRide = ({}) => {
+  const {token, username} = useAuth();
 
-  const ride = createRideUtils({ token, username });
+  const ride = createRideUtils({token, username});
+
 
   return (
     <View style={{flex: 1}}>
@@ -47,7 +49,6 @@ const CreateRide = ({ route, navigation }) => {
           setLocationName={ride.setLocationName}
           prevStep={ride.prevStep}
           nextStep={ride.nextStep}
-          token={token}
         />
       )}
 
@@ -76,7 +77,6 @@ const CreateRide = ({ route, navigation }) => {
           nextStep={ride.nextStep}
           handleCreateRide={ride.handleCreateRide}
           loading={ride.loading}
-          token={token}
         />
       )}
 
@@ -94,7 +94,6 @@ const CreateRide = ({ route, navigation }) => {
             endingPoint={ride.endingPoint}
             participants={ride.participants}
             description={ride.description}
-            token={token}
             username={username}
             stopPoints={ride.stopPoints}
             currentUsername={username}

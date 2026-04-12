@@ -127,14 +127,14 @@ const RideStep2 = ({
   const fetchLocationImages = useCallback(async (name) => {
     setLocationImageLoading(true);
     try {
-      const imgs = await getLocationImage(name, token);
+      const imgs = await getLocationImage(name);
       setLocationImages(Array.isArray(imgs) ? imgs : []);
     } catch {
       setLocationImages([]);
     } finally {
       setLocationImageLoading(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     if (locationName?.trim()) {

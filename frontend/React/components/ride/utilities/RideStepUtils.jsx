@@ -68,24 +68,38 @@ export const buildSearchHandlers = ({
 export const buildCenterMapScript = (lat, lng, zoom = 15) =>
   `if(window.centerMap&&window.updateMarker){window.centerMap(${lat},${lng},${zoom});window.updateMarker(${lat},${lng});}true;`;
 
-
 export const buildDrawRouteScript = ({
-                                       routeGeoJSON,
-                                       startLat, startLng,
-                                       endLat, endLng,
-                                       stopPoints = [],
-                                     }) => `
+  routeGeoJSON,
+  startLat,
+  startLng,
+  endLat,
+  endLng,
+  stopPoints = [],
+}) => {
+  // Convert strings to numbers and validate
+  const sLat = parseFloat(startLat) || 0;
+  const sLng = parseFloat(startLng) || 0;
+  const eLat = parseFloat(endLat) || 0;
+  const eLng = parseFloat(endLng) || 0;
+
+  // Validate all coordinates exist
+  if (!sLat || !sLng || !eLat || !eLng) {
+    return 'console.warn("Invalid route coordinates for drawing"); true;';
+  }
+
+  return `
   (function(){
     try {
       const g = ${JSON.stringify(routeGeoJSON)};
       if (window.clearRoute)           { window.clearRoute(); }
       if (window.drawGeoJsonRoute)     { window.drawGeoJsonRoute(g, {color:'#1e40af',weight:4,opacity:0.8}); }
       if (window.addRouteMarkers)      { window.addRouteMarkers(
-        [${startLat},${startLng}],
-        [${endLat},${endLng}],
+        [${sLat},${sLng}],
+        [${eLat},${eLng}],
         ${JSON.stringify(stopPoints.map(s => [s.lat, s.lng]))}
       ); }
       if (window.fitGeoJsonRouteToMap) { window.fitGeoJsonRouteToMap(g); }
     } catch(e){ console.error(e); }
   })(); true;
 `;
+};

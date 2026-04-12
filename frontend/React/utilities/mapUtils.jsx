@@ -1,7 +1,5 @@
-// React/utils/mapUtils.js
 import { reverseGeocode, reverseGeocodeLandmark } from '../services/rideService';
 
-// Add to your state: const [stopPoints, setStopPoints] = useState([]);
 export const handleWebViewMessage = async (event, state) => {
     const data = JSON.parse(event.nativeEvent.data);
 
@@ -12,7 +10,6 @@ export const handleWebViewMessage = async (event, state) => {
             setEndingLatitude, setEndingLongitude,
             setLocationName, setStartingPoint, setEndingPoint, setSearchQuery,
             stopPoints, setStopPoints, // Add these
-            token
         } = state;
 
         if (mapMode === 'location') {
@@ -38,9 +35,9 @@ export const handleWebViewMessage = async (event, state) => {
         try {
             let locationName;
             if (mapMode === 'location') {
-                locationName = await reverseGeocodeLandmark(token, data.lat, data.lng);
+                locationName = await reverseGeocodeLandmark( data.lat, data.lng);
             }  else if (mapMode === 'starting' || mapMode === 'ending' || mapMode === 'stop') {
-                locationName = await reverseGeocode(token, data.lat, data.lng);
+                locationName = await reverseGeocode(data.lat, data.lng);
             }
             if (locationName) {
                 if (mapMode === 'location') {

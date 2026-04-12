@@ -60,7 +60,7 @@ public class RouteController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }    @GetMapping("/coordinate/{generatedRidesId}")
-    public ResponseEntity<JsonNode> getRideRoute(@PathVariable Integer generatedRidesId) {
+    public ResponseEntity<JsonNode> getRideRoute(@PathVariable String generatedRidesId) {
         JsonNode geoJson = routeService.getSavedRouteGeoJson(generatedRidesId);
         return ResponseEntity.ok(geoJson);
     }

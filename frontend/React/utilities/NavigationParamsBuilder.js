@@ -2,7 +2,7 @@
 
 import {parseCoordinateSafely} from './validator/CoordinateValidator';
 
-export const buildRideStep4Params = (rideData, token, currentUsername) => {
+export const buildRideStep4Params = (rideData, currentUsername) => {
   if (!rideData) {
     console.warn('buildRideStep4Params: rideData is empty');
     return {};
@@ -34,8 +34,6 @@ export const buildRideStep4Params = (rideData, token, currentUsername) => {
     // Participants
     participants: rideData.participants || [],
 
-    // ✅ AUTH & ROLE INFORMATION
-    token: token,
     username: rideData.username, // ride owner
     currentUsername: currentUsername, // logged-in user
     startedBy: rideData.startedBy || rideData.username,
@@ -69,19 +67,23 @@ export const buildRideStep4Params = (rideData, token, currentUsername) => {
   };
 };
 
-export const buildRideStep4ResetParams = (rideData, token, currentUsername, username) => {
-  const params = buildRideStep4Params(rideData, token, currentUsername);
+export const buildRideStep4ResetParams = (
+  rideData,
+  currentUsername,
+  username,
+) => {
+  const params = buildRideStep4Params(rideData, currentUsername); // ← Remove token param
 
   return {
     index: 1,
     routes: [
       {
         name: 'RiderPage',
-        params: { username: username, token: token }
+        params: {}, // ← No params needed, RiderPage uses useAuth()
       },
       {
         name: 'RideStep4',
-        params: params
+        params: params,
       },
     ],
   };

@@ -132,7 +132,7 @@ const RideStep3 = ({
     setRouteLoading(true);
     try {
       const routeData   = createRouteData(sLat, sLng, eLat, eLng, stopPoints);
-      const routeGeoJSON = await getRoutePreview(token, routeData);
+      const routeGeoJSON = await getRoutePreview(routeData, token);
       if (!routeGeoJSON?.features?.length) { return; }
 
       webViewRef.current?.injectJavaScript(
@@ -170,7 +170,7 @@ const RideStep3 = ({
 
     setCurrentStop({ lat: data.lat, lng: data.lng, name: 'Fetching…' });
     setAddingStopLoading(true);
-    const name = await reverseGeocodeLandmark(token, data.lat, data.lng);
+    const name = await reverseGeocodeLandmark( data.lat, data.lng);
     setCurrentStop({ lat: data.lat, lng: data.lng, name: name || `${data.lat.toFixed(4)}, ${data.lng.toFixed(4)}` });
     setAddingStopLoading(false);
   };

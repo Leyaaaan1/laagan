@@ -76,7 +76,7 @@ const RideRoutesPage = ({route}) => {
         setLoadingImages(prev => ({...prev, [stopName]: false}));
       }
     },
-    [token],
+    [],
   );
 
   // ✅ FIXED: Load all images at once

@@ -2,17 +2,15 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Alert, Platform, PermissionsAndroid } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import { getRouteCoordinates } from '../../services/RouteService';
+import {useAuth} from '../../context/AuthContext';
 
-export const useRouteMapLogic = (generatedRidesId, token) => {
+export const useRouteMapLogic = (generatedRidesId) => {
+  const {token} = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [routeData, setRouteData] = useState(null);
   const [error, setError] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
 
-  const tokenRef = useRef(token);
-  useEffect(() => {
-    tokenRef.current = token;
-  }, [token]);
 
   // ── getUserLocationOnce ───────────────────────────────────────────────────
   const getUserLocationOnce = useCallback(() => {
@@ -94,10 +92,7 @@ export const useRouteMapLogic = (generatedRidesId, token) => {
       setIsLoading(true);
       setError(null);
 
-      const data = await getRouteCoordinates(
-        tokenRef.current,
-        generatedRidesId,
-      );
+      const data = await getRouteCoordinates(generatedRidesId);
 
       if (!data) {
         throw new Error('No route data received from server');
@@ -127,7 +122,7 @@ export const useRouteMapLogic = (generatedRidesId, token) => {
     } finally {
       setIsLoading(false);
     }
-  }, [generatedRidesId]);  // tokenRef is a ref — stable, does not need to be listed
+  }, [generatedRidesId]); // tokenRef is a ref — stable, does not need to be listed
 
   // ── Main effect: fetch route + request location on mount / id change ──────
   useEffect(() => {
