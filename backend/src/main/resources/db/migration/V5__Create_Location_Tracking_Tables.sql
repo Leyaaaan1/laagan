@@ -7,7 +7,7 @@ CREATE TABLE public.rider_locations (
                                         id SERIAL PRIMARY KEY,
                                         rider_username VARCHAR(255) NOT NULL REFERENCES public.rider(username) ON DELETE CASCADE,
                                         started_ride_id INTEGER NOT NULL REFERENCES public.started_rides(id) ON DELETE CASCADE,
-                                        location_name VARCHAR(255) NOT NULL,
+                                        location_name VARCHAR(255),
                                         location GEOMETRY(Point, 4326) NOT NULL,
                                         distance_meters DOUBLE PRECISION,
                                         timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP

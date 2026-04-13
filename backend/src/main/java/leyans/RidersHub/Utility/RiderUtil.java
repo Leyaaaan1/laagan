@@ -50,13 +50,22 @@ public class RiderUtil {
 
     public String getCurrentUsername() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        System.out.println("Getting current username - Auth: " + authentication);
-
-        if (authentication == null || !authentication.isAuthenticated()) {
+        if (authentication == null || !authentication.isAuthenticated() ||
+                "anonymousUser".equals(authentication.getName())) {  // ← add this
             throw new IllegalStateException("User not authenticated");
         }
-
         return authentication.getName();
+    }
+
+
+    public StartedRide findStartedRideByIdWithParticipants(Integer startedRideId) {
+        return startedRideRepository.findByIdWithParticipants(startedRideId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Started ride not found with ID: " + startedRideId));
+    }
+    public StartedRide findStartedRideById(Integer startedRideId) {
+        return startedRideRepository.findById(startedRideId)
+                .orElseThrow(() -> new EntityNotFoundException("Started ride not found with ID: " + startedRideId));
     }
 
 

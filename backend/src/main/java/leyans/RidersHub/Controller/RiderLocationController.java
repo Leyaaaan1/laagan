@@ -23,9 +23,9 @@ public class RiderLocationController {
     // No logic changes needed — updateLocation() in the service now upserts,
     // so this endpoint automatically stops creating duplicate rows.
     // -------------------------------------------------------------------------
-    @PostMapping("/{generatedRidesId}")
+    @PostMapping("/{startedRideId}")
     public ResponseEntity<?> updateParticipantLocation(
-            @PathVariable String generatedRidesId,
+            @PathVariable Integer startedRideId,
             @RequestBody Map<String, Double> coordinates) {
 
         try {
@@ -33,7 +33,7 @@ public class RiderLocationController {
             double longitude = coordinates.get("longitude");
 
             LocationUpdateRequestDTO response =
-                    rideLocationService.updateLocation(generatedRidesId, latitude, longitude);
+                    rideLocationService.updateLocation(startedRideId, latitude, longitude);
 
             return ResponseEntity.ok(response);
 

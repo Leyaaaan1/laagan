@@ -8,6 +8,7 @@ import java.util.List;
 
 public class StartRideResponseDTO implements Serializable {
     private String generatedRidesId;
+    private Integer startedRideId;
     private String ridesName;
     private String locationName;
 
@@ -32,20 +33,9 @@ public class StartRideResponseDTO implements Serializable {
     private String routeCoordinates;
     private Integer estimatedDistance;
 
-    public StartRideResponseDTO(String generatedRidesId, String initiator, String ridesName, String locationName, List<String> participantUsernames, double longitude, double latitude, LocalDateTime startTime) {
+    public StartRideResponseDTO(String generatedRidesId, Integer startedRideId, String ridesName, String locationName, double latitude, double longitude, LocalDateTime startTime, String initiator, List<String> participantUsernames, double startLatitude, double startLongitude, String startPointName, List<ParticipantLocationDTO> participants, String routeCoordinates, Integer estimatedDistance) {
         this.generatedRidesId = generatedRidesId;
-        this.initiator = initiator;
-        this.ridesName = ridesName;
-        this.locationName = locationName;
-        this.startTime = startTime;
-        this.participantUsernames = participantUsernames;
-        this.latitude = latitude;
-        this.longitude = longitude;
-
-    }
-
-    public StartRideResponseDTO(String generatedRidesId, String ridesName, String locationName, double latitude, double longitude, LocalDateTime startTime, String initiator, List<String> participantUsernames, double startLatitude, double startLongitude, String startPointName, List<ParticipantLocationDTO> participants, String routeCoordinates, Integer estimatedDistance) {
-        this.generatedRidesId = generatedRidesId;
+        this.startedRideId = startedRideId;
         this.ridesName = ridesName;
         this.locationName = locationName;
         this.latitude = latitude;
@@ -59,6 +49,14 @@ public class StartRideResponseDTO implements Serializable {
         this.participants = participants;
         this.routeCoordinates = routeCoordinates;
         this.estimatedDistance = estimatedDistance;
+    }
+
+    public Integer getStartedRideId() {
+        return startedRideId;
+    }
+
+    public void setStartedRideId(Integer startedRideId) {
+        this.startedRideId = startedRideId;
     }
 
     public StartRideResponseDTO() {

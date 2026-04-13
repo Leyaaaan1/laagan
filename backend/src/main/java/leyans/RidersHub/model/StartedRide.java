@@ -6,7 +6,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "started_rides")
@@ -37,16 +39,17 @@ public class StartedRide {
             inverseJoinColumns = @JoinColumn(name = "rider_username", referencedColumnName = "username")
     )
     @JsonIgnore
-    private List<Rider> participants = new ArrayList<>();
+    private Set<Rider> participants = new HashSet<>();
 
     public StartedRide() {}
 
-    public StartedRide(Rides ride, LocalDateTime startTime, Point location, List<Rider> participants, Rider username) {
+    public StartedRide(Integer id, Rider username, Rides ride, LocalDateTime startTime, Point location, Set<Rider> participants) {
+        this.id = id;
+        this.username = username;
         this.ride = ride;
         this.startTime = startTime;
         this.location = location;
-        this.participants = participants != null ? new ArrayList<>(participants) : new ArrayList<>();
-        this.username = username;
+        this.participants = participants;
     }
 
     public Rider getUsername() {
@@ -65,11 +68,11 @@ public class StartedRide {
         this.location = location;
     }
 
-    public List<Rider> getParticipants() {
+    public Set<Rider> getParticipants() {
         return participants;
     }
 
-    public void setParticipants(List<Rider> participants) {
+    public void setParticipants(Set<Rider> participants) {
         this.participants = participants;
     }
 

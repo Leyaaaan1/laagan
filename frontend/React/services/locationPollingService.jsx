@@ -49,6 +49,18 @@ export const shareLocationAndFetchAll = async (rideId, latitude, longitude) => {
   const authToken = await AsyncStorage.getItem('userToken');
   if (!authToken) throw new Error('AUTH_MISSING');
 
+  // ✅ Log to verify rideId is an Integer
+  console.log('📍 Sending location to backend:', {
+    rideId,
+    rideIdType: typeof rideId,
+    latitude: typeof latitude === 'number' ? latitude : parseFloat(latitude),
+    longitude:
+      typeof longitude === 'number' ? longitude : parseFloat(longitude),
+    latitudeType: typeof latitude,
+    longitudeType: typeof longitude,
+    url: `${API_BASE_URL}/location/${rideId}/share?latitude=${latitude}&longitude=${longitude}`,
+  });
+
   const response = await fetch(
     `${API_BASE_URL}/location/${rideId}/share?latitude=${latitude}&longitude=${longitude}`,
     {
@@ -72,9 +84,12 @@ export const shareLocationAndFetchAll = async (rideId, latitude, longitude) => {
 
   return response.json();
 };
+
 export const calculateBackoffDelay = retryCount =>
   Math.min(Math.pow(2, retryCount - 1) * 1000, 30000);
+
 export const shouldRetry = retryCount => retryCount <= 3;
+
 export const isAuthError = err =>
   err.message.includes('Session expired') ||
   err.message.includes('Unauthorized') ||

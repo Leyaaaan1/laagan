@@ -6,7 +6,7 @@ import jakarta.validation.constraints.DecimalMin;
 import java.time.LocalDateTime;
 
 public class LocationUpdateRequestDTO {
-    private String generatedRidesId;
+    private Integer startedRideId;
 
     @DecimalMin(value = "-90.0", message = "Latitude must be between -90 and 90")
     @DecimalMax(value = "90.0", message = "Latitude must be between -90 and 90")
@@ -21,9 +21,8 @@ public class LocationUpdateRequestDTO {
 
     private String initiator;
 
-
-    public LocationUpdateRequestDTO(String generatedRidesId, String initiator, double latitude, double longitude, String locationName, double distanceMeters, LocalDateTime timestamp) {
-        this.generatedRidesId = generatedRidesId;
+    public LocationUpdateRequestDTO(Integer startedRideId, String initiator, double latitude, double longitude, String locationName, double distanceMeters, LocalDateTime timestamp) {
+        this.startedRideId = startedRideId;
         this.initiator = initiator;
         this.latitude = latitude;
         this.longitude = longitude;
@@ -47,12 +46,12 @@ public class LocationUpdateRequestDTO {
         this.initiator = initiator;
     }
 
-    public String getGeneratedRidesId() {
-        return generatedRidesId;
+    public Integer getStartedRideId() {
+        return startedRideId;
     }
 
-    public void setGeneratedRidesId(String generatedRidesId) {
-        this.generatedRidesId = generatedRidesId;
+    public void setStartedRideId(Integer startedRideId) {
+        this.startedRideId = startedRideId;
     }
 
     public double getLatitude() {
