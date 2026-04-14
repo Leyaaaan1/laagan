@@ -6,55 +6,187 @@ import React, {
   useState,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Keychain from 'react-native-keychain';
+import {API_BASE_URL} from '../services/Apiclient';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({children}) => {
-  const [token, setToken] = useState(null);
+  const [token, setToken] = useState(null);              // Access token (in memory only)
   const [username, setUsername] = useState(null);
   const [ready, setReady] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const tokenRef = useRef(null);
+  const refreshTokenRef = useRef(null);
 
+  // Initialize on app start
   useEffect(() => {
-    AsyncStorage.multiGet(['userToken', 'username'])
-      .then(pairs => {
-        const storedToken = pairs[0]?.[1] ?? null;
-        const storedUsername = pairs[1]?.[1] ?? null;
-        tokenRef.current = storedToken;
-        setToken(storedToken);
-        setUsername(storedUsername);
-        setReady(true);
-      })
-      .catch(err => {
-        console.error('Failed to load auth:', err);
-        setReady(true);
-      });
+    initializeAuth();
   }, []);
 
-  const saveAuth = async (newToken, newUsername) => {
-    await AsyncStorage.multiSet([
-      ['userToken', newToken],
-      ['username', newUsername],
-    ]);
-    tokenRef.current = newToken;
-    setToken(newToken);
-    setUsername(newUsername);
-    return newToken;
+  const initializeAuth = async () => {
+    try {
+      // Load refresh token from Keychain
+      const credentials = await Keychain.getGenericPassword();
+      if (credentials && credentials.password) {
+        refreshTokenRef.current = credentials.password;
+      }
+
+      // Load username from AsyncStorage (not sensitive)
+      const storedUsername = await AsyncStorage.getItem('username');
+      if (storedUsername) {
+        setUsername(storedUsername);
+      }
+
+      setReady(true);
+    } catch (err) {
+      console.error('Failed to initialize auth:', err);
+      setReady(true);
+    }
   };
 
+  /**
+   * Save auth tokens after login
+   * - Access token: in memory only (tokenRef + setToken)
+   * - Refresh token: in Keychain (encrypted)
+   * - Username: in AsyncStorage (not sensitive)
+   */
+  const saveAuth = async (newAccessToken, newRefreshToken, newUsername) => {
+    try {
+      // 1. Store refresh token in Keychain (encrypted)
+      await Keychain.setGenericPassword(
+        'userToken',
+        newRefreshToken,
+        {
+          accessibilityLevel: Keychain.ACCESSIBLE_WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+          service: 'com.ridershub.auth', // Unique identifier
+        }
+      );
+
+      // 2. Store username in AsyncStorage (not sensitive)
+      await AsyncStorage.setItem('username', newUsername);
+
+      // 3. Keep access token in memory only
+      tokenRef.current = newAccessToken;
+      setToken(newAccessToken);
+      setUsername(newUsername);
+      refreshTokenRef.current = newRefreshToken;
+
+      return newAccessToken;
+    } catch (error) {
+      console.error('Failed to save auth:', error);
+      throw error;
+    }
+  };
+
+  /**
+   * Refresh access token using refresh token
+   * Called automatically on 401 response
+   */
+  const refreshAccessToken = async () => {
+    if (isRefreshing || !refreshTokenRef.current) {
+      return null;
+    }
+
+    setIsRefreshing(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/riders/refresh`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({refreshToken: refreshTokenRef.current}),
+      });
+
+      if (!response.ok) {
+        // Refresh failed — logout
+        await clearAuth();
+        return null;
+      }
+
+      const data = await response.json();
+      tokenRef.current = data.accessToken;
+      setToken(data.accessToken);
+      refreshTokenRef.current = data.refreshToken;
+
+      // Save new refresh token to Keychain
+      await Keychain.setGenericPassword(
+        'userToken',
+        data.refreshToken,
+        {
+          accessibilityLevel: Keychain.ACCESSIBLE_WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+          service: 'com.ridershub.auth',
+        }
+      );
+
+      console.log('[Auth] Access token refreshed successfully');
+      return data.accessToken;
+
+    } catch (error) {
+      console.error('[Auth] Token refresh failed:', error);
+      await clearAuth();
+      return null;
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  /**
+   * Clear all tokens on logout
+   */
   const clearAuth = async () => {
-    await AsyncStorage.multiRemove(['userToken', 'username']);
+    try {
+      // Remove refresh token from Keychain
+      await Keychain.resetGenericPassword({service: 'com.ridershub.auth'});
+      // Remove username from AsyncStorage
+      await AsyncStorage.removeItem('username');
+    } catch (error) {
+      console.error('Failed to clear auth:', error);
+    }
+
     tokenRef.current = null;
     setToken(null);
     setUsername(null);
+    refreshTokenRef.current = null;
   };
 
-  // Reads from ref — always returns the latest token even before re-render
+  /**
+   * Logout: Notify backend to revoke tokens
+   */
+  const logout = async () => {
+    try {
+      if (tokenRef.current) {
+        // Notify backend to blacklist token and revoke refresh tokens
+        await fetch(`${API_BASE_URL}/riders/logout`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${tokenRef.current}`,
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Error notifying backend of logout:', error);
+    } finally {
+      // Clear tokens locally regardless
+      await clearAuth();
+    }
+  };
+
+  // Read token from ref (always returns latest token)
   const getToken = () => tokenRef.current;
 
   return (
     <AuthContext.Provider
-      value={{token, username, ready, saveAuth, clearAuth, getToken}}>
+      value={{
+        token,
+        username,
+        ready,
+        saveAuth,
+        clearAuth,
+        logout,
+        getToken,
+        refreshAccessToken,
+        isRefreshing,
+      }}>
       {children}
     </AuthContext.Provider>
   );

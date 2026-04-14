@@ -1,22 +1,17 @@
 import {BASE_URL} from '@env';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useAuth} from '../context/AuthContext';
 
 export const API_BASE_URL = BASE_URL || 'http://localhost:8080';
 
-/**
- * CENTRALIZED API CLIENT
- *
- * - Automatically reads the token from AsyncStorage on every request.
- * - Never build Authorization headers manually in service files.
- * - For public endpoints (login, register) use the `public` helpers below.
- */
+// Global reference to avoid circular dependency
+let authContextRef = null;
+
+export const setAuthContextRef = auth => {
+  authContextRef = auth;
+};
 
 const getStoredToken = async () => {
-  try {
-    return await AsyncStorage.getItem('userToken');
-  } catch {
-    return null;
-  }
+  return authContextRef?.getToken?.() || null;
 };
 
 export const apiFetch = async (
@@ -24,8 +19,11 @@ export const apiFetch = async (
   options = {},
   overrideToken = null,
   isPublic = false,
+  retryCount = 0,
 ) => {
-  // Use the override token if provided, otherwise read from AsyncStorage
+  const MAX_RETRIES = 1;
+
+  // Use override token if provided, otherwise get from context
   const token = isPublic ? null : overrideToken ?? (await getStoredToken());
 
   if (!isPublic && !token) {
@@ -43,6 +41,22 @@ export const apiFetch = async (
     headers,
   });
 
+  // ✅ Handle 401: Attempt token refresh
+  if (response.status === 401 && !isPublic && retryCount < MAX_RETRIES) {
+    console.log('[API] Token expired, attempting refresh...');
+
+    if (authContextRef?.refreshAccessToken) {
+      const newToken = await authContextRef.refreshAccessToken();
+      if (newToken) {
+        // Retry the request with new token
+        return apiFetch(path, options, newToken, isPublic, retryCount + 1);
+      }
+    }
+
+    // Refresh failed — user is logged out
+    throw new Error('AUTH_EXPIRED');
+  }
+
   if (response.status === 401) throw new Error('AUTH_EXPIRED');
   if (response.status === 403) throw new Error('AUTH_FORBIDDEN');
 
@@ -50,15 +64,12 @@ export const apiFetch = async (
 };
 
 export const api = {
-  // Authenticated requests — token is read from AsyncStorage automatically
   get: (path, token = null) => apiFetch(path, {method: 'GET'}, token),
   post: (path, body, token = null) =>
     apiFetch(path, {method: 'POST', body: JSON.stringify(body)}, token),
   put: (path, body, token = null) =>
     apiFetch(path, {method: 'PUT', body: JSON.stringify(body)}, token),
   delete: (path, token = null) => apiFetch(path, {method: 'DELETE'}, token),
-
-  // Public requests — no token attached (login, register)
   publicPost: (path, body) =>
     apiFetch(path, {method: 'POST', body: JSON.stringify(body)}, null, true),
   publicGet: path => apiFetch(path, {method: 'GET'}, null, true),

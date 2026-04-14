@@ -9,6 +9,7 @@ import leyans.RidersHub.DTO.Response.LoginResponse;
 import leyans.RidersHub.DTO.Response.RegisterResponse;
 import leyans.RidersHub.Service.Auth.AccountLockoutService;
 import leyans.RidersHub.Service.Auth.RefreshTokenService;
+import leyans.RidersHub.Service.Auth.TokenBlacklistService;
 import leyans.RidersHub.Service.RiderService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,6 +38,8 @@ public class LoginController {
     private final AccountLockoutService accountLockoutService;
     private final ClientIpResolver clientIpResolver;
     private final HttpServletRequest request;
+    private final TokenBlacklistService tokenBlacklistService;
+
 
     public LoginController(
             AuthenticationManager authenticationManager,
@@ -45,7 +48,7 @@ public class LoginController {
             RefreshTokenService refreshTokenService,
             AccountLockoutService accountLockoutService,
             ClientIpResolver clientIpResolver,
-            HttpServletRequest request) {
+            HttpServletRequest request, TokenBlacklistService tokenBlacklistService) {
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.riderService = riderService;
@@ -53,6 +56,7 @@ public class LoginController {
         this.accountLockoutService = accountLockoutService;
         this.clientIpResolver = clientIpResolver;
         this.request = request;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @PostMapping("/login")
@@ -126,4 +130,37 @@ public class LoginController {
         response.put("message", message);
         return response;
 }
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request) {
+        try {
+            String header = request.getHeader("Authorization");
+            if (header != null && header.startsWith("Bearer ")) {
+                String token = header.substring(7);
+
+                // Blacklist the access token
+                String jti = jwtUtil.getJtiFromToken(token);
+                if (jti != null) {
+                    long remainingMs = jwtUtil.getTokenExpirationMs(token);
+                    // Inject TokenBlacklistService in the controller constructor
+                    tokenBlacklistService.blacklistToken(jti, Math.max(remainingMs, 1000));
+                }
+
+                // Get authenticated user and revoke all refresh tokens
+                String username = jwtUtil.getUsernameFromToken(token);
+                refreshTokenService.revokeAll(username);
+
+                log.info("User logged out successfully: {}", username);
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", 200);
+            response.put("message", "Logged out successfully");
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("Error during logout", e);
+            return ResponseEntity.status(500)
+                    .body(createResponse(500, "Logout failed", e.getMessage()));
+        }
+    }
 }

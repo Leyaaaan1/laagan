@@ -1,13 +1,19 @@
 
-import React from 'react';
+import React, {useEffect} from 'react';
 
 import {NavigationContainer} from '@react-navigation/native';
 import MainNavigator from './React/navigation/MainNavigator';
-import {AuthProvider} from './React/context/AuthContext';
+import {AuthProvider, useAuth} from './React/context/AuthContext';
+import {setAuthContextRef} from './React/services/Apiclient';
 
 
 
 export default function App() {
+  const auth = useAuth();
+
+  useEffect(() => {
+    setAuthContextRef(auth);
+  }, [auth]);
   return (
     <AuthProvider>
       <NavigationContainer>
