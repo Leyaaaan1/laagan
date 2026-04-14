@@ -17,7 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class StartRideService {
@@ -42,9 +44,7 @@ public class StartRideService {
         Rider initiator = startedUtil.authenticateAndGetInitiator();
         Rides ride = ridesUtil.validateAndGetRide(generatedRidesId, initiator);
 
-        // ✅ FIXED: Only the ride creator (owner) can start the ride
         boolean isCreator = ride.getUsername().getUsername().equals(initiator.getUsername());
-
         if (!isCreator) {
             throw new AccessDeniedException("Only the ride creator can start the ride");
         }
@@ -60,12 +60,9 @@ public class StartRideService {
         startedRide.setStartTime(LocalDateTime.now());
         startedRide.setLocation(startingPoint);
 
-        List<Rider> allParticipants = new ArrayList<>(ride.getParticipants());
-        boolean creatorAlreadyIncluded = allParticipants.stream()
-                .anyMatch(p -> p.getUsername().equals(ride.getUsername().getUsername()));
-        if (!creatorAlreadyIncluded) {
-            allParticipants.add(ride.getUsername());
-        }
+        // ✅ Use Set — creator is automatically deduped
+        Set<Rider> allParticipants = new HashSet<>(ride.getParticipants());
+        allParticipants.add(ride.getUsername()); // no duplicate check needed, Set handles it
 
         startedRide.setParticipants(allParticipants);
         startedRide = startedRideRepository.save(startedRide);
@@ -73,15 +70,15 @@ public class StartRideService {
         ride.setActive(true);
         ridesRepository.save(ride);
 
+        // ✅ Convert to List only for initializeParticipantLocations (it expects List<Rider>)
         List<ParticipantLocation> participantLocations = startedUtil.initializeParticipantLocations(
                 startedRide,
-                allParticipants,
+                new ArrayList<>(allParticipants),
                 startingPoint
         );
 
         return startedUtil.buildStartRideResponse(startedRide, ride, participantLocations);
     }
-
 
 
     @Transactional

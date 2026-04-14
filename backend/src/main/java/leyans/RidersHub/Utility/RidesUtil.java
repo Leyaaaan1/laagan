@@ -3,6 +3,7 @@ package leyans.RidersHub.Utility;
 
 import jakarta.persistence.EntityNotFoundException;
 import leyans.RidersHub.DTO.Request.RidesDTO.StopPointDTO;
+import leyans.RidersHub.DTO.Response.ActiveRideDTO;
 import leyans.RidersHub.DTO.Response.RideDetailDTO;
 import leyans.RidersHub.DTO.Response.RideResponseDTO;
 import leyans.RidersHub.DTO.Response.RideSummaryDTO;
@@ -42,6 +43,44 @@ public class RidesUtil {
         this.riderUtil = riderUtil;
     }
 
+    public ActiveRideDTO mapToActiveDTO(Rides ride, Integer startedRideId) {
+        List<StopPointDTO> stopDTOs = ride.getStopPoints().stream()
+                .map(sp -> new StopPointDTO(
+                        sp.getStopName(),
+                        sp.getStopLocation().getX(),
+                        sp.getStopLocation().getY()
+                ))
+                .collect(Collectors.toList());
+
+        return new ActiveRideDTO(
+                startedRideId,  // ← Add this from StartedRide
+                ride.getGeneratedRidesId(),
+                ride.getRidesName(),
+                ride.getLocationName(),
+                ride.getRiderType().getRiderType(),
+                ride.getDistance(),
+                ride.getDate(),
+                ride.getLocation().getY(),
+                ride.getLocation().getX(),
+                ride.getStartingPointName(),
+                ride.getStartingLocation().getY(),
+                ride.getStartingLocation().getX(),
+                ride.getEndingPointName(),
+                ride.getEndingLocation().getY(),
+                ride.getEndingLocation().getX(),
+                ride.getMapImageUrl(),
+                ride.getMagImageStartingLocation(),
+                ride.getMagImageEndingLocation(),
+                ride.getUsername().getUsername(),
+                ride.getParticipants().stream()
+                        .map(r -> r.getUsername())
+                        .collect(Collectors.toList()),
+                ride.getDescription(),
+                ride.getActive(),
+                ride.getRouteCoordinates(),
+                stopDTOs
+        );
+    }
 
     @Transactional
     public Rides saveRideWithTransaction(Rides ride, Rider creator) {

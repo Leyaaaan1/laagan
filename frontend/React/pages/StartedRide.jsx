@@ -21,8 +21,6 @@ import {buildRideStep4Params} from '../utilities/NavigationParamsBuilder';
 import {useAuth} from '../context/AuthContext';
 
 const StartedRide = ({route, navigation}) => {
-  // activeRide comes from route.params (passed by RiderPage)
-  // username comes from AuthContext
   const {activeRide, username: routeUsername} = route?.params || {};
   const {username: authUsername} = useAuth();
   const username = authUsername || routeUsername;
@@ -35,7 +33,6 @@ const StartedRide = ({route, navigation}) => {
   const [pillVisible, setPillVisible] = useState(true);
   const pillTimerRef = useRef(null);
 
-  // ── Guard BEFORE accessing activeRide properties ──────────────────────
   if (!activeRide) {
     return (
       <View style={feedback.emptyContainer}>
@@ -44,7 +41,9 @@ const StartedRide = ({route, navigation}) => {
     );
   }
 
-  const rideId = activeRide.generatedRidesId || activeRide.id;
+  // ✅ FIX: Use startedRideId (Integer) instead of generatedRidesId (String)
+  const rideId = activeRide.startedRideId;
+
   const mapData = useMemo(
     () => processRideCoordinates(activeRide),
     [activeRide],
@@ -134,7 +133,8 @@ const StartedRide = ({route, navigation}) => {
           onPress: async () => {
             try {
               setIsStopping(true);
-              await startService.deactivateRide(rideId);
+              // Use generatedRidesId for deactivateRide
+              await startService.deactivateRide(activeRide.generatedRidesId);
               const params = buildRideStep4Params(activeRide, username);
               navigation.reset({
                 index: 1,
@@ -181,7 +181,7 @@ const StartedRide = ({route, navigation}) => {
         />
 
         <RouteMapView
-          generatedRidesId={rideId}
+          generatedRidesId={activeRide.generatedRidesId}
           startingPoint={mapData.startingPoint}
           endingPoint={mapData.endingPoint}
           stopPoints={mapData.stopPoints}

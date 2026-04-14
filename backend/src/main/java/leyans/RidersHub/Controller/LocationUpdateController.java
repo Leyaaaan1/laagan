@@ -24,20 +24,13 @@ public class LocationUpdateController {
         this.rideLocationService = rideLocationService;
     }
 
-    // -------------------------------------------------------------------------
-    // GET /location/{generatedRidesId}/all-riders
-    //
-    // FIX: The old signature had no @PathVariable, so it called the service
-    //      with no rideId — it would not compile against the updated service.
-    //      Added @PathVariable Integer generatedRidesId to match the service.
-    // -------------------------------------------------------------------------
-    @GetMapping("/{generatedRidesId}/all-riders")
+    @GetMapping("/{startedRideId}/all-riders")  // ← Update path variable name
     public ResponseEntity<List<LocationUpdateRequestDTO>> getAllRiderLocations(
-            @PathVariable String generatedRidesId) {
+            @PathVariable Integer startedRideId) {  // ← Changed to Integer
 
-        System.out.println("\n📍 [GET /{generatedRidesId}/all-riders] Fetching all rider locations for Ride: " + generatedRidesId);
+        System.out.println("\n📍 [GET /{startedRideId}/all-riders] Fetching all rider locations for Ride: " + startedRideId);
         try {
-            List<LocationUpdateRequestDTO> locations = rideLocationService.getAllRiderLocations(generatedRidesId);
+            List<LocationUpdateRequestDTO> locations = rideLocationService.getAllRiderLocations(startedRideId);
             System.out.println("✅ Returning " + locations.size() + " locations\n");
             return ResponseEntity.ok(locations);
         } catch (Exception e) {
@@ -46,68 +39,15 @@ public class LocationUpdateController {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // POST /location/{generatedRidesId}/share?latitude=x&longitude=y
-    //
-    // FIX: .badRequest().build() returned an empty body — the caller had no
-    //      idea what went wrong.  Now returns the error message in the body.
-    // -------------------------------------------------------------------------
-    @PostMapping("/{generatedRidesId}/share")
-    public ResponseEntity<?> shareLocationAndGetParticipants(
-            @PathVariable String generatedRidesId,
-            @RequestParam
-            @DecimalMin(value = "-90.0", message = "Latitude must be between -90 and 90")
-            @DecimalMax(value = "90.0", message = "Latitude must be between -90 and 90")
-            double latitude,
-            @RequestParam
-            @DecimalMin(value = "-180.0", message = "Longitude must be between -180 and 180")
-            @DecimalMax(value = "180.0", message = "Longitude must be between -180 and 180")
-            double longitude) {
-
-        try {
-            rideLocationService.updateLocation(generatedRidesId, latitude, longitude);
-
-            List<LocationUpdateRequestDTO> allLocations =
-                    rideLocationService.getLatestParticipantLocations(generatedRidesId);
-
-            return ResponseEntity.ok(allLocations);
-
-        } catch (UnauthorizedAccessException.UnauthorizedException e) {
-            // ✅ FIXED: Return 403 for authorization failures
-            Map<String, Object> error = new HashMap<>();
-            error.put("status", HttpStatus.FORBIDDEN.value());
-            error.put("error", "Unauthorized");
-            error.put("message", "You are not authorized to update location for this ride");
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
-
-        } catch (IllegalArgumentException e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("status", HttpStatus.BAD_REQUEST.value());
-            error.put("error", "Bad Request");
-            error.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
-
-        } catch (Exception e) {
-            // ✅ FIXED: Never expose internal error messages
-            Map<String, Object> error = new HashMap<>();
-            error.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-            error.put("error", "Internal Server Error");
-            error.put("message", "Failed to update location");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-        }
-    }    // -------------------------------------------------------------------------
-    // GET /location/{generatedRidesId}/locations
-    // No changes needed — already calls the correct service method.
-    // -------------------------------------------------------------------------
-    @GetMapping("/{generatedRidesId}/locations")
+    @GetMapping("/{startedRideId}/locations")  // ← Update path variable name
     public ResponseEntity<List<LocationUpdateRequestDTO>> getParticipantsLocations(
-            @PathVariable String generatedRidesId) {
+            @PathVariable Integer startedRideId) {  // ← Changed to Integer
 
-        System.out.println("\n📍 [GET /locations] Called for Ride: " + generatedRidesId);
+        System.out.println("\n📍 [GET /locations] Called for Ride: " + startedRideId);
 
         try {
             List<LocationUpdateRequestDTO> locations =
-                    rideLocationService.getLatestParticipantLocations(generatedRidesId);
+                    rideLocationService.getLatestParticipantLocations(startedRideId);
             System.out.println("✅ Returning " + locations.size() + " locations\n");
             return ResponseEntity.ok(locations);
 
@@ -118,21 +58,61 @@ public class LocationUpdateController {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // GET /location/{generatedRidesId}/test  — debug endpoint, no changes needed
-    // -------------------------------------------------------------------------
-    @GetMapping("/{generatedRidesId}/test")
-    public ResponseEntity<Map<String, Object>> testDatabaseState(
-            @PathVariable String generatedRidesId) {
 
-        System.out.println("\n🧪 [TEST] Database check for ride: " + generatedRidesId);
+
+    @PostMapping("/{startedRideId}/share")
+    public ResponseEntity<?> shareLocationAndGetParticipants(
+            @PathVariable Integer startedRideId,
+            @RequestParam double latitude,
+            @RequestParam double longitude) {
+
+        try {
+            rideLocationService.updateLocation(startedRideId, latitude, longitude);
+            List<LocationUpdateRequestDTO> allLocations =
+                    rideLocationService.getLatestParticipantLocations(startedRideId);
+            return ResponseEntity.ok(allLocations);
+
+        } catch (UnauthorizedAccessException.UnauthorizedException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("status", HttpStatus.FORBIDDEN.value());
+            error.put("error", "Unauthorized");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("status", HttpStatus.BAD_REQUEST.value());
+            error.put("error", "Bad Request");
+            error.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+
+        } catch (IllegalStateException e) {          // ← NEW: catches "User not authenticated"
+            Map<String, Object> error = new HashMap<>();
+            error.put("status", HttpStatus.UNAUTHORIZED.value());
+            error.put("error", "Unauthorized");
+            error.put("message", e.getMessage());    // ← exposes real reason
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+            error.put("error", "Internal Server Error");
+            error.put("message", e.getMessage());    // ← temporarily expose real message for debugging
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+    @GetMapping("/{startedRideId}/test")
+    public ResponseEntity<Map<String, Object>> testDatabaseState(
+            @PathVariable Integer startedRideId) {
+
+        System.out.println("\n🧪 [TEST] Database check for started ride: " + startedRideId);
 
         Map<String, Object> response = new HashMap<>();
 
         try {
             List<LocationUpdateRequestDTO> locations =
-                    rideLocationService.getLatestParticipantLocations(generatedRidesId);
-            response.put("rideId", generatedRidesId);
+                    rideLocationService.getLatestParticipantLocations(startedRideId);
+            response.put("startedRideId", startedRideId);
             response.put("success", true);
             response.put("locationCount", locations.size());
             response.put("locations", locations);
@@ -141,7 +121,7 @@ public class LocationUpdateController {
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            response.put("rideId", generatedRidesId);
+            response.put("startedRideId", startedRideId);
             response.put("success", false);
             response.put("error", e.getMessage());
             response.put("type", e.getClass().getSimpleName());
@@ -149,4 +129,5 @@ public class LocationUpdateController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
+
 }

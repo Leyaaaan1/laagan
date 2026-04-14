@@ -68,4 +68,11 @@ public interface StartedRideRepository extends JpaRepository<StartedRide, Intege
     boolean isRiderAuthorizedForStartedRide(@Param("startedRideId") Integer startedRideId,
                                             @Param("riderId") Integer riderId);
 
+
+    @Query("SELECT s FROM StartedRide s " +
+            "LEFT JOIN FETCH s.username " +
+            "LEFT JOIN FETCH s.participants " +
+            "WHERE s.id = :id")
+    Optional<StartedRide> findByIdWithParticipants(@Param("id") Integer id);
+
 }

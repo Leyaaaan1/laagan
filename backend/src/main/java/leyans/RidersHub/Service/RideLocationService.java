@@ -38,29 +38,18 @@ public class RideLocationService {
         this.startedRideRepository = startedRideRepository;
         this.riderUtil = riderUtil;
     }
-
-    // =========================================================================
-    // GET ALL RIDER LOCATIONS (used by /all-riders endpoint)
-    // Returns the single latest location row per rider for the given ride.
-    // =========================================================================
     @Transactional(readOnly = true)
-    public List<LocationUpdateRequestDTO> getAllRiderLocations(String generatedRidesId) {
-
+    public List<LocationUpdateRequestDTO> getAllRiderLocations(Integer startedRideId) {
         try {
-            StartedRide started = riderUtil.findStartedRideByRideId(generatedRidesId);
-            if (started == null) {
-                System.err.println("❌ Ride not found: " + generatedRidesId);
-                return new ArrayList<>();
-            }
+            StartedRide started = riderUtil.findStartedRideById(startedRideId);
 
-            // findLatestLocationPerParticipant returns ONE row per rider (MAX id per username)
             List<RiderLocation> locations = locationRepo.findLatestLocationPerParticipant(started.getId());
             System.out.println("✅ Retrieved " + locations.size() + " location updates");
 
             List<LocationUpdateRequestDTO> result = locations.stream().map(loc -> {
                 Point p = loc.getLocation();
                 return new LocationUpdateRequestDTO(
-                        generatedRidesId,
+                        startedRideId,  // ← Pass Integer directly
                         loc.getUsername().getUsername(),
                         p.getY(),   // latitude
                         p.getX(),   // longitude
@@ -81,142 +70,77 @@ public class RideLocationService {
     }
 
     // =========================================================================
-    // UPDATE LOCATION  (used by POST /{id}/share  and  POST /update/{id})
-    //
-    // FIX: UPSERT instead of always inserting a new row.
-    //      - If this rider already has a row for this ride  → UPDATE it.
-    //      - If this is their first update               → INSERT a new row.
-    //
-    // This means the table always has exactly ONE row per rider per ride,
-    // so every call to findLatestLocationPerParticipant returns fresh data.
-    // =========================================================================
+// UPDATE LOCATION
+// =========================================================================
     @Transactional
-    public LocationUpdateRequestDTO updateLocation(String generatedRidesId,
+    public LocationUpdateRequestDTO updateLocation(Integer startedRideId,
                                                    double latitude,
                                                    double longitude) {
-        System.out.println("\n=== 💾 UPDATING LOCATION ===");
-        System.out.println("Ride ID: " + generatedRidesId);
-        System.out.println("Lat: " + latitude + " | Lng: " + longitude);
+        StartedRide started = riderUtil.findStartedRideById(startedRideId);
 
-        try {
-            // 1. Resolve the active StartedRide
-            StartedRide started = riderUtil.findStartedRideByRideId(generatedRidesId);
-            if (started == null) {
-                throw new IllegalArgumentException("Ride not found");
-            }
-            System.out.println("✓ Found started ride: " + started.getId());
+        String username = riderUtil.getCurrentUsername();
+        Rider rider = riderUtil.findRiderByUsername(username);
 
-            // 2. Get the currently authenticated rider
-            String username = riderUtil.getCurrentUsername();
-            System.out.println("✓ Current user: " + username);
+        boolean isOwner = started.getUsername().getUsername().equals(username);
+        boolean isParticipant = started.getParticipants().stream()
+                .anyMatch(p -> p.getUsername().equals(username));
 
-            Rider rider = riderUtil.findRiderByUsername(username);
-            if (rider == null) {
-                throw new IllegalArgumentException("Rider not found");
-            }
-
-            // 3. ✅ FIXED: Authorization check using database query
-            //    - Check if user is owner OR participant in started_ride
-            //    - No lazy loading, no in-memory iteration
-            //    - Single database query prevents bypass attacks
-            boolean isAuthorized = startedRideRepository.isRiderAuthorizedForStartedRide(
-                    started.getId(),
-                    rider.getId()
-            );
-
-            if (!isAuthorized) {
-                System.err.println("❌ User is not authorized to update location for this ride");
-                throw new UnauthorizedAccessException.UnauthorizedException("You are not authorized to update location for this ride");
-            }
-            System.out.println("✓ Rider is authorized to update location");
-
-            // 4. Build geometry
-            Point userPoint = locationService.createPoint(longitude, latitude);
-            if (userPoint == null) {
-                throw new IllegalArgumentException("Could not create Point geometry");
-            }
-            System.out.println("✓ Point created: " + userPoint);
-
-            // 5. Reverse-geocode to a barangay name
-            String barangayName = locationService.resolveBarangayName(null, latitude, longitude);
-            String locationName = null;
-            if (barangayName != null) {
-                List<PsgcData> psgcDataList = psgcDataRepository.findByNameIgnoreCase(barangayName);
-                locationName = psgcDataList.stream()
-                        .findFirst()
-                        .map(PsgcData::getName)
-                        .orElse(barangayName);
-                System.out.println("✓ Location name: " + locationName);
-            }
-
-            // 6. Distance from the ride's start point
-            Point startPoint = started.getLocation();
-            double distanceMeters = locationRepo.getDistanceBetweenPoints(userPoint, startPoint);
-            System.out.println("✓ Distance from start: " + distanceMeters + "m");
-
-            // 7. UPSERT — reuse existing row if one already exists for this rider+ride
-            RiderLocation loc = locationRepo
-                    .findFirstByStartedRideAndUsernameOrderByIdDesc(started, rider)
-                    .orElse(new RiderLocation());
-
-            loc.setStartedRide(started);
-            loc.setUsername(rider);
-            loc.setLocation(userPoint);
-            loc.setTimestamp(LocalDateTime.now());
-            loc.setDistanceMeters(distanceMeters);
-            if (locationName != null) {
-                loc.setLocationName(locationName);
-            }
-
-            loc = locationRepo.save(loc);
-
-            // Self-heal: delete any old duplicate rows
-            locationRepo.deleteOldDuplicates(started, rider, loc.getId());
-
-            System.out.println("✅ Location saved / updated with ID: " + loc.getId());
-            System.out.println("=== ✅ END ===\n");
-
-            return new LocationUpdateRequestDTO(
-                    generatedRidesId,
-                    username,
-                    latitude,
-                    longitude,
-                    locationName,
-                    distanceMeters,
-                    loc.getTimestamp()
-            );
-
-        } catch (UnauthorizedAccessException.UnauthorizedException e) {
-            System.err.println("❌ Authorization failed: " + e.getMessage());
-            throw e;
-        } catch (IllegalArgumentException e) {
-            System.err.println("❌ Validation error: " + e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            System.err.println("❌ Unexpected error: " + e.getClass().getSimpleName());
-            // ✅ FIXED: Never expose internal error details in API responses
-            throw new RuntimeException("Failed to update location");
+        if (!isOwner && !isParticipant) {
+            throw new UnauthorizedAccessException.UnauthorizedException(
+                    "User is not authorised for this ride");
         }
+
+        Point userPoint = locationService.createPoint(longitude, latitude);
+
+        // ✅ FIX: Provide a fallback so location_name is never null
+        String barangayName = locationService.resolveBarangayName(null, latitude, longitude);
+        String locationName = "Unknown Location"; // ← fallback default
+        if (barangayName != null) {
+            List<PsgcData> psgcDataList = psgcDataRepository.findByNameIgnoreCase(barangayName);
+            locationName = psgcDataList.stream()
+                    .findFirst()
+                    .map(PsgcData::getName)
+                    .orElse(barangayName);
+        }
+
+        Point startPoint = started.getLocation();
+        double distanceMeters = locationRepo.getDistanceBetweenPoints(userPoint, startPoint);
+
+        RiderLocation loc = locationRepo
+                .findFirstByStartedRideAndUsernameOrderByIdDesc(started, rider)
+                .orElse(new RiderLocation());
+
+        loc.setStartedRide(started);
+        loc.setUsername(rider);
+        loc.setLocation(userPoint);
+        loc.setTimestamp(LocalDateTime.now());
+        loc.setDistanceMeters(distanceMeters);
+        loc.setLocationName(locationName); // ← always set, never null
+
+        loc = locationRepo.save(loc);
+        locationRepo.deleteOldDuplicates(started, rider, loc.getId());
+
+        return new LocationUpdateRequestDTO(
+                startedRideId,
+                username,
+                latitude,
+                longitude,
+                locationName,
+                distanceMeters,
+                loc.getTimestamp()
+        );
     }    // =========================================================================
-    // GET LATEST PARTICIPANT LOCATIONS  (used by GET /{id}/locations)
-    //
-    // FIX: Use a LinkedHashSet when building the "all riders" list so that
-    //      lean (who is stored as BOTH owner and participant) is only counted once.
-    // =========================================================================
+// GET LATEST PARTICIPANT LOCATIONS
+// =========================================================================
     @Transactional(readOnly = true)
-    public List<LocationUpdateRequestDTO> getLatestParticipantLocations(String generatedRidesId) {
+    public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer startedRideId) {
         System.out.println("\n=== 🔍 GET LATEST PARTICIPANT LOCATIONS ===");
-        System.out.println("Ride ID: " + generatedRidesId);
+        System.out.println("Started Ride ID: " + startedRideId);
 
         try {
-            StartedRide started = riderUtil.findStartedRideByRideId(generatedRidesId);
-            if (started == null) {
-                System.err.println("❌ Ride not found: " + generatedRidesId);
-                return new ArrayList<>();
-            }
+            StartedRide started = riderUtil.findStartedRideById(startedRideId);
 
-            // ✅ FIX: Use a Set so the owner is never counted twice even if they
-            //         were accidentally added to the participants collection as well.
+            // ✅ Use a Set so the owner is never counted twice
             Set<String> allRiderUsernames = new LinkedHashSet<>();
 
             if (started.getUsername() != null) {
@@ -229,7 +153,6 @@ public class RideLocationService {
                 if (added) {
                     System.out.println("✓ Participant: " + participant.getUsername());
                 } else {
-                    // The owner was also stored as a participant — skip the duplicate
                     System.out.println("⚠️  Skipping duplicate entry for: " + participant.getUsername());
                 }
             }
@@ -249,9 +172,9 @@ public class RideLocationService {
 
             // Convert to DTOs
             List<LocationUpdateRequestDTO> result = locations.stream().map(loc -> {
-                Point p   = loc.getLocation();
+                Point p = loc.getLocation();
                 return new LocationUpdateRequestDTO(
-                        generatedRidesId,
+                        startedRideId,  // ← Pass Integer directly
                         loc.getUsername().getUsername(),
                         p.getY(),   // latitude
                         p.getX(),   // longitude

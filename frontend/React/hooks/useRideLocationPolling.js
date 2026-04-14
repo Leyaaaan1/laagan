@@ -53,11 +53,11 @@ export const useLocationPermission = () => {
 };
 
 export const useRideLocationPolling = ({
-  rideId,
-  enabled = true,
-  onLocationsUpdate,
-  onError,
-}) => {
+                                         rideId,
+                                         enabled = true,
+                                         onLocationsUpdate,
+                                         onError,
+                                       }) => {
   const {token} = useAuth();
   const [isPolling, setIsPolling] = useState(false);
   const [error, setError] = useState(null);
@@ -73,14 +73,12 @@ export const useRideLocationPolling = ({
   const appStateRef = useRef(AppState.currentState);
   const enabledRef = useRef(enabled);
   const isPollingRef = useRef(false);
-  // ✅ NEW: Track offline state in a ref so effect doesn't re-subscribe on state changes
   const isOfflineRef = useRef(false);
 
   useEffect(() => {
     enabledRef.current = enabled;
   }, [enabled]);
 
-  // ✅ NEW: Keep isOfflineRef in sync with state
   useEffect(() => {
     isOfflineRef.current = isOffline;
   }, [isOffline]);
@@ -90,7 +88,6 @@ export const useRideLocationPolling = ({
       retryCountRef.current += 1;
       const count = retryCountRef.current;
 
-      // ✅ Auth errors should NOT retry
       if (isAuthError(err)) {
         setIsPolling(false);
         isPollingRef.current = false;
@@ -101,7 +98,6 @@ export const useRideLocationPolling = ({
         return;
       }
 
-      // ✅ Check if should retry
       if (shouldRetry(count)) {
         const nextDelay = calculateBackoffDelay(count);
         setRetryCount(count);
@@ -112,7 +108,6 @@ export const useRideLocationPolling = ({
           pollOnceRef.current();
         }, nextDelay);
       } else {
-        // Max retries exceeded
         setError(`Failed after 3 retries: ${err.message}`);
         setIsPolling(false);
         isPollingRef.current = false;
@@ -134,6 +129,7 @@ export const useRideLocationPolling = ({
     try {
       const {latitude, longitude} = await getCurrentPosition();
 
+      // ✅ Pass rideId (now an Integer from startedRideId)
       const allLocations = await shareLocationAndFetchAll(
         rideId,
         latitude,
@@ -154,9 +150,8 @@ export const useRideLocationPolling = ({
     } finally {
       pollLock.current.release();
     }
-  }, [rideId,  token, onLocationsUpdate, handlePollingError]);
+  }, [rideId, token, onLocationsUpdate, handlePollingError]);
 
-  // Keep ref up to date
   useEffect(() => {
     pollOnceRef.current = pollLocationOnce;
   }, [pollLocationOnce]);
@@ -184,7 +179,6 @@ export const useRideLocationPolling = ({
     }, 8000);
   }, []);
 
-  // ✅ FIXED: NetInfo effect — only re-subscribes when rideId or token change, not isOffline
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       console.log('📡 Network state changed:', {
@@ -193,12 +187,9 @@ export const useRideLocationPolling = ({
       });
 
       if (!state.isConnected) {
-        // Network disconnected
         stopPolling();
         setIsOffline(true);
       } else if (state.isConnected && isOfflineRef.current) {
-        // ✅ FIXED: Read from ref instead of state, so we don't need isOffline in deps
-        // Network reconnected
         retryCountRef.current = 0;
         setRetryCount(0);
         setError(null);
@@ -252,7 +243,6 @@ export const useRideLocationPolling = ({
     const timeout = timeoutManager.current;
 
     return () => {
-      // ✅ Use captured locals instead of accessing refs directly
       interval.clear();
       timeout.clear();
       console.log('🧹 Location polling cleanup completed');

@@ -1,5 +1,6 @@
 package leyans.RidersHub.Controller;
 
+import leyans.RidersHub.DTO.Response.ActiveRideDTO;
 import leyans.RidersHub.DTO.Response.RideDetailDTO;
 import leyans.RidersHub.DTO.Response.RideResponseDTO;
 import leyans.RidersHub.DTO.Response.StartRideResponseDTO;
@@ -44,9 +45,9 @@ public class StartRideController {
     }
 
     @GetMapping("/active")
-    public ResponseEntity<RideDetailDTO> getActiveRide() {
+    public ResponseEntity<ActiveRideDTO> getActiveRide() {  // ← Change to ActiveRideDTO
         try {
-            RideDetailDTO rideDetails = startedUtil.getStartedRideDetails();
+            ActiveRideDTO rideDetails = startedUtil.getStartedRideDetails();
             return ResponseEntity.ok(rideDetails);
         } catch (AccessDeniedException ex) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();

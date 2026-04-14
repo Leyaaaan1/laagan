@@ -1,6 +1,7 @@
 package leyans.RidersHub.Utility;
 
 import leyans.RidersHub.DTO.Request.ParticipantLocationDTO;
+import leyans.RidersHub.DTO.Response.ActiveRideDTO;
 import leyans.RidersHub.DTO.Response.RideDetailDTO;
 import leyans.RidersHub.DTO.Response.RideResponseDTO;
 import leyans.RidersHub.DTO.Response.StartRideResponseDTO;
@@ -88,7 +89,7 @@ public class StartedUtil {
 
     @PreAuthorize("isAuthenticated()")
     @Transactional(readOnly = true)
-    public RideDetailDTO getStartedRideDetails() throws AccessDeniedException {
+    public ActiveRideDTO getStartedRideDetails() throws AccessDeniedException {  // ← Return ActiveRideDTO
         Rider requester = authenticateAndGetInitiator();
         String username = requester.getUsername();
 
@@ -105,9 +106,12 @@ public class StartedUtil {
             throw new IllegalStateException("Started ride has no associated ride");
         }
 
-        return mapToRideDetailDTO(ride);        // ← renamed call
+        return mapToActiveRideDTO(ride, active.getId());  // ← Include startedRideId
     }
 
+    public ActiveRideDTO mapToActiveRideDTO(Rides ride, Integer startedRideId) {
+        return ridesUtil.mapToActiveDTO(ride, startedRideId);
+    }
     public RideDetailDTO mapToRideDetailDTO(Rides ride) {
         return ridesUtil.mapToDetailDTO(ride);
     }
@@ -119,6 +123,10 @@ public class StartedUtil {
             List<ParticipantLocation> participantLocations) {
 
         StartRideResponseDTO response = new StartRideResponseDTO();
+
+        // ✅ ADD THIS LINE - Include the startedRideId
+        response.setStartedRideId(startedRide.getId());
+
         response.setGeneratedRidesId(ride.getGeneratedRidesId());
         response.setRidesName(ride.getRidesName());
         response.setLocationName(ride.getLocationName());
