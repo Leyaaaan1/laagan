@@ -120,8 +120,10 @@ const AuthScreen = ({navigation}) => {
       if (result.success) {
         // Backend returns accessToken (not token)
         const accessToken = result.data?.accessToken;
-        if (accessToken) {
-          await saveAuth(accessToken, username);
+        const refreshToken = result.data?.refreshToken;
+        if (accessToken && refreshToken) {
+          // ← Check both exist
+          await saveAuth(accessToken, refreshToken, username);
         }
         Alert.alert(isLogin ? 'Login Successful' : 'Registration Successful');
         if (isLogin && navigation) {
@@ -136,7 +138,10 @@ const AuthScreen = ({navigation}) => {
     }
   };
 
-  const toggleMode = () => setIsLogin(prev => !prev);
+
+
+
+const toggleMode = () => setIsLogin(prev => !prev);
 
   return (
     <View

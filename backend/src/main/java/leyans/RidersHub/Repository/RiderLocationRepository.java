@@ -54,6 +54,7 @@ public interface RiderLocationRepository extends JpaRepository<RiderLocation, In
     // row per rider anyway, but the MAX(id) sub-select is kept as a safety net.
     // -------------------------------------------------------------------------
     @Query("SELECT rl FROM RiderLocation rl " +
+            "JOIN FETCH rl.username " +
             "WHERE rl.startedRide.id = :rideId " +
             "AND rl.id IN (" +
             "   SELECT MAX(r.id) FROM RiderLocation r " +
@@ -61,8 +62,7 @@ public interface RiderLocationRepository extends JpaRepository<RiderLocation, In
             "   GROUP BY r.username " +
             ") " +
             "ORDER BY rl.timestamp DESC")
-    List<RiderLocation> findLatestLocationPerParticipant(@Param("rideId") Integer rideId);
-
+    List<RiderLocation> findLatestLocationPerParticipantOptimized(@Param("rideId") Integer rideId);
 
 
     // -------------------------------------------------------------------------

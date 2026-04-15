@@ -1,6 +1,8 @@
 package leyans.RidersHub.Controller.Auth;
 
 import leyans.RidersHub.Config.JWT.JwtUtil;
+import leyans.RidersHub.DTO.Request.RefreshTokenRequest;
+import leyans.RidersHub.DTO.Response.RefreshTokenResponse;
 import leyans.RidersHub.Service.Auth.RefreshTokenService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -9,7 +9,6 @@ import spacing from '../tokens/spacing';
 import { fontSize, fontWeight } from '../tokens/typography';
 
 const cards = StyleSheet.create({
-
   // ── Base card ────────────────────────────────
   base: {
     backgroundColor: colors.surface,
@@ -25,7 +24,7 @@ const cards = StyleSheet.create({
     borderRadius: 16,
     padding: spacing.md,
     shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
@@ -59,7 +58,7 @@ const cards = StyleSheet.create({
     gap: 6,
   },
   heroMetaText: {
-    color: colors.primary,
+    color: colors.white,
     fontSize: fontSize.md,
     fontWeight: fontWeight.semi,
   },
@@ -82,7 +81,7 @@ const cards = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   infoValue: {
-    color: colors.primary,
+    color: colors.white,
     fontSize: fontSize.sm,
     fontStyle: 'italic',
     fontWeight: fontWeight.semi,
@@ -96,12 +95,14 @@ const cards = StyleSheet.create({
 
   // ── Description card ─────────────────────────
   description: {
-    borderRadius: 8,
-    padding: spacing.sm,
+    borderRadius: 12,
+    padding: 12,
+    height: 150, // ← Add this fixed height
+    backgroundColor: colors.borderLight, // ← Optional: add background for clarity
   },
   descriptionText: {
     color: '#ccc',
-    fontSize: fontSize.base,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.regular,
     fontStyle: 'italic',
   },

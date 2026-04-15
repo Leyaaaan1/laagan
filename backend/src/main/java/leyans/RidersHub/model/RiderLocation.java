@@ -12,7 +12,7 @@ public class RiderLocation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "rider_username", referencedColumnName = "username", nullable = false)
     private Rider username;
 

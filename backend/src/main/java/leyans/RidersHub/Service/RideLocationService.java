@@ -43,7 +43,7 @@ public class RideLocationService {
         try {
             StartedRide started = riderUtil.findStartedRideById(startedRideId);
 
-            List<RiderLocation> locations = locationRepo.findLatestLocationPerParticipant(started.getId());
+            List<RiderLocation> locations = locationRepo.findLatestLocationPerParticipantOptimized(started.getId());
             System.out.println("✅ Retrieved " + locations.size() + " location updates");
 
             List<LocationUpdateRequestDTO> result = locations.stream().map(loc -> {
@@ -161,7 +161,7 @@ public class RideLocationService {
 
             // Fetch ONE location row per rider (latest by id)
             List<RiderLocation> locations =
-                    locationRepo.findLatestLocationPerParticipant(started.getId());
+                    locationRepo.findLatestLocationPerParticipantOptimized(started.getId());
 
             System.out.println("✅ Latest locations retrieved: " + locations.size());
             locations.forEach(loc ->
@@ -209,4 +209,33 @@ public class RideLocationService {
             return new ArrayList<>();
         }
     }
+
+    @Transactional
+    public List<LocationUpdateRequestDTO> updateLocationAndFetchAll(
+            Integer startedRideId,
+            double latitude,
+            double longitude) {
+
+        // Step 1: Update location (single write operation)
+        updateLocation(startedRideId, latitude, longitude);
+
+        // Step 2: Fetch all latest locations in ONE query with JOIN FETCH
+        List<RiderLocation> locations =
+                locationRepo.findLatestLocationPerParticipantOptimized(startedRideId);
+
+        // Step 3: Convert to DTOs
+        return locations.stream().map(loc -> {
+            Point p = loc.getLocation();
+            return new LocationUpdateRequestDTO(
+                    startedRideId,
+                    loc.getUsername().getUsername(),
+                    p.getY(),   // latitude
+                    p.getX(),   // longitude
+                    loc.getLocationName(),
+                    loc.getDistanceMeters(),
+                    loc.getTimestamp()
+            );
+        }).collect(Collectors.toList());
+    }
+
 }
