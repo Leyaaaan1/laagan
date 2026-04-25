@@ -5,6 +5,7 @@ import leyans.RidersHub.ExceptionHandler.UnauthorizedAccessException;
 import leyans.RidersHub.Repository.*;
 import leyans.RidersHub.Utility.RiderUtil;
 import leyans.RidersHub.model.*;
+import leyans.RidersHub.model.participant.ParticipantLocation;
 import org.springframework.stereotype.Service;
 import org.locationtech.jts.geom.Point;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,24 +27,29 @@ public class RideLocationService {
 
     private final StartedRideRepository startedRideRepository;
     private final RiderUtil riderUtil;
+    private final ParticipantLocationRepository participantLocationRepository;
+
+
+
 
     @Autowired
     public RideLocationService(RiderLocationRepository locationRepo,
                                PsgcDataRepository psgcDataRepository,
                                LocationService locationService, StartedRideRepository startedRideRepository,
-                               RiderUtil riderUtil) {
+                               RiderUtil riderUtil, ParticipantLocationRepository participantLocationRepository) {
         this.locationRepo = locationRepo;
         this.psgcDataRepository = psgcDataRepository;
         this.locationService = locationService;
         this.startedRideRepository = startedRideRepository;
         this.riderUtil = riderUtil;
+        this.participantLocationRepository = participantLocationRepository;
     }
     @Transactional(readOnly = true)
     public List<LocationUpdateRequestDTO> getAllRiderLocations(Integer startedRideId) {
         try {
             StartedRide started = riderUtil.findStartedRideById(startedRideId);
 
-            List<RiderLocation> locations = locationRepo.findLatestLocationPerParticipant(started.getId());
+            List<RiderLocation> locations = locationRepo.findLatestLocationPerParticipantOptimized(started.getId());
             System.out.println("✅ Retrieved " + locations.size() + " location updates");
 
             List<LocationUpdateRequestDTO> result = locations.stream().map(loc -> {
@@ -132,81 +138,126 @@ public class RideLocationService {
     }    // =========================================================================
 // GET LATEST PARTICIPANT LOCATIONS
 // =========================================================================
-    @Transactional(readOnly = true)
-    public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer startedRideId) {
-        System.out.println("\n=== 🔍 GET LATEST PARTICIPANT LOCATIONS ===");
-        System.out.println("Started Ride ID: " + startedRideId);
+@Transactional(readOnly = true)
+public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer startedRideId) {
+    System.out.println("\n=== 🔍 GET LATEST PARTICIPANT LOCATIONS ===");
+    System.out.println("Started Ride ID: " + startedRideId);
 
-        try {
-            StartedRide started = riderUtil.findStartedRideById(startedRideId);
+    try {
+        StartedRide started = riderUtil.findStartedRideById(startedRideId);
 
-            // ✅ Use a Set so the owner is never counted twice
-            Set<String> allRiderUsernames = new LinkedHashSet<>();
-
-            if (started.getUsername() != null) {
-                allRiderUsernames.add(started.getUsername().getUsername());
-                System.out.println("✓ Owner: " + started.getUsername().getUsername());
-            }
-
-            for (Rider participant : started.getParticipants()) {
-                boolean added = allRiderUsernames.add(participant.getUsername());
-                if (added) {
-                    System.out.println("✓ Participant: " + participant.getUsername());
-                } else {
-                    System.out.println("⚠️  Skipping duplicate entry for: " + participant.getUsername());
-                }
-            }
-
-            System.out.println("📊 Total unique riders in ride: " + allRiderUsernames.size());
-
-            // Fetch ONE location row per rider (latest by id)
-            List<RiderLocation> locations =
-                    locationRepo.findLatestLocationPerParticipant(started.getId());
-
-            System.out.println("✅ Latest locations retrieved: " + locations.size());
-            locations.forEach(loc ->
-                    System.out.println("  ✓ Rider: " + loc.getUsername().getUsername()
-                            + " | Lat: "  + loc.getLocation().getY()
-                            + " | Lng: "  + loc.getLocation().getX()
-                            + " | Time: " + loc.getTimestamp()));
-
-            // Convert to DTOs
-            List<LocationUpdateRequestDTO> result = locations.stream().map(loc -> {
-                Point p = loc.getLocation();
-                return new LocationUpdateRequestDTO(
-                        startedRideId,  // ← Pass Integer directly
-                        loc.getUsername().getUsername(),
-                        p.getY(),   // latitude
-                        p.getX(),   // longitude
-                        loc.getLocationName(),
-                        loc.getDistanceMeters(),
-                        loc.getTimestamp()
-                );
-            }).collect(Collectors.toList());
-
-            System.out.println("📤 Returning: " + result.size() + " DTOs");
-
-            // Diagnostic — show who is still missing a location update
-            Set<String> ridersWithLocations = result.stream()
-                    .map(LocationUpdateRequestDTO::getInitiator)
-                    .collect(Collectors.toSet());
-
-            Set<String> ridersWithoutLocations = new LinkedHashSet<>(allRiderUsernames);
-            ridersWithoutLocations.removeAll(ridersWithLocations);
-
-            if (!ridersWithoutLocations.isEmpty()) {
-                System.out.println("⚠️  Riders WITHOUT a saved location yet:");
-                ridersWithoutLocations.forEach(r ->
-                        System.out.println("  - " + r + " (waiting for first location share)"));
-            }
-
-            System.out.println("=== ✅ END ===\n");
-            return result;
-
-        } catch (Exception e) {
-            System.err.println("❌ ERROR in getLatestParticipantLocations: " + e.getMessage());
-            e.printStackTrace();
-            return new ArrayList<>();
+        Set<String> allRiderUsernames = new LinkedHashSet<>();
+        if (started.getUsername() != null) {
+            allRiderUsernames.add(started.getUsername().getUsername());
+            System.out.println("✓ Owner: " + started.getUsername().getUsername());
         }
+
+        for (Rider participant : started.getParticipants()) {
+            boolean added = allRiderUsernames.add(participant.getUsername());
+            if (added) {
+                System.out.println("✓ Participant: " + participant.getUsername());
+            }
+        }
+
+        System.out.println("📊 Total unique riders in ride: " + allRiderUsernames.size());
+
+        // Step 1: Get latest LIVE locations from rider_locations
+        List<RiderLocation> liveLocations = locationRepo
+                .findLatestLocationPerParticipantOptimized(started.getId());
+
+        System.out.println("✅ Live locations (rider_locations): " + liveLocations.size());
+
+        // Step 2: Find who is missing
+        Set<String> ridersWithLiveLocations = liveLocations.stream()
+                .map(rl -> rl.getUsername().getUsername())
+                .collect(Collectors.toSet());
+
+        Set<String> ridersWithoutLiveLocations = new LinkedHashSet<>(allRiderUsernames);
+        ridersWithoutLiveLocations.removeAll(ridersWithLiveLocations);
+
+        System.out.println("⚠️  Riders without live locations: " + ridersWithoutLiveLocations.size());
+
+        // Step 3: For those missing, get from participant_location (fallback)
+        List<ParticipantLocation> fallbackLocations = new ArrayList<>();
+        for (String username : ridersWithoutLiveLocations) {
+            Rider rider = riderUtil.findRiderByUsername(username);
+            List<ParticipantLocation> participantLocs = participantLocationRepository
+                    .findByStartedRideAndRider(started, rider);
+
+            if (!participantLocs.isEmpty()) {
+                fallbackLocations.add(participantLocs.get(0));
+                System.out.println("  ↩️  Fallback for " + username + " from participant_location");
+            }
+        }
+
+        // Step 4: Combine and convert to DTOs
+        List<LocationUpdateRequestDTO> result = new ArrayList<>();
+
+        // Add live locations
+        result.addAll(liveLocations.stream().map(loc -> {
+            Point p = loc.getLocation();
+            return new LocationUpdateRequestDTO(
+                    startedRideId,
+                    loc.getUsername().getUsername(),
+                    p.getY(),   // latitude
+                    p.getX(),   // longitude
+                    loc.getLocationName(),
+                    loc.getDistanceMeters(),
+                    loc.getTimestamp()
+            );
+        }).collect(Collectors.toList()));
+
+        // Add fallback locations (from participant_location)
+        result.addAll(fallbackLocations.stream().map(loc -> {
+            Point p = loc.getParticipantLocation();
+            return new LocationUpdateRequestDTO(
+                    startedRideId,
+                    loc.getRider().getUsername(),
+                    p.getY(),   // latitude
+                    p.getX(),   // longitude
+                    "Starting Point",  // or get from location name
+                    0.0,  // no distance available
+                    loc.getLastUpdate()
+            );
+        }).collect(Collectors.toList()));
+
+        System.out.println("📤 Returning: " + result.size() + " total DTOs (live + fallback)");
+        System.out.println("=== ✅ END ===\n");
+        return result;
+
+    } catch (Exception e) {
+        System.err.println("❌ ERROR in getLatestParticipantLocations: " + e.getMessage());
+        e.printStackTrace();
+        return new ArrayList<>();
     }
+}
+
+    @Transactional
+    public List<LocationUpdateRequestDTO> updateLocationAndFetchAll(
+            Integer startedRideId,
+            double latitude,
+            double longitude) {
+
+        // Step 1: Update location (single write operation)
+        updateLocation(startedRideId, latitude, longitude);
+
+        // Step 2: Fetch all latest locations in ONE query with JOIN FETCH
+        List<RiderLocation> locations =
+                locationRepo.findLatestLocationPerParticipantOptimized(startedRideId);
+
+        // Step 3: Convert to DTOs
+        return locations.stream().map(loc -> {
+            Point p = loc.getLocation();
+            return new LocationUpdateRequestDTO(
+                    startedRideId,
+                    loc.getUsername().getUsername(),
+                    p.getY(),   // latitude
+                    p.getX(),   // longitude
+                    loc.getLocationName(),
+                    loc.getDistanceMeters(),
+                    loc.getTimestamp()
+            );
+        }).collect(Collectors.toList());
+    }
+
 }

@@ -84,9 +84,15 @@ const RideHeroCard = ({
     {description && (
       <View style={cards.description}>
         <Text style={[mapStyles.routePointLabel, {marginLeft: 8}]}>
-          Description
+          Details
         </Text>
-        <Text style={cards.descriptionText}>{description}</Text>
+        <ScrollView
+          scrollEnabled={true}
+          showsVerticalScrollIndicator={true}
+          nestedScrollEnabled={true}
+          style={{flex: 1}}>
+          <Text style={cards.descriptionText}>{description}</Text>
+        </ScrollView>
       </View>
     )}
 

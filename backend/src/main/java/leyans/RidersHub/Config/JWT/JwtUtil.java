@@ -1,9 +1,6 @@
 package leyans.RidersHub.Config.JWT;
 
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,9 +9,9 @@ import org.springframework.stereotype.Component;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.security.MessageDigest;
-
 import java.security.Key;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class JwtUtil {
@@ -47,8 +44,13 @@ public class JwtUtil {
         }
     }
 
+    /**
+     * UPDATED: Generate access token WITH JTI (JWT ID) for revocation
+     */
     public String generateToken(String username) {
+        String jti = UUID.randomUUID().toString();
         return Jwts.builder()
+                .setId(jti)                    // ← ADD THIS: Unique token ID for revocation
                 .setSubject(username)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtConfig.getExpiration()))
@@ -66,8 +68,40 @@ public class JwtUtil {
     }
 
     /**
+     * NEW: Extract JTI from token
+     */
+    public String getJtiFromToken(String token) {
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .getId();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * NEW: Get token expiration time
+     */
+    public long getTokenExpirationMs(String token) {
+        try {
+            Date expiration = Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .getExpiration();
+            return expiration.getTime() - System.currentTimeMillis();
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    /**
      * Returns true only if the token signature is valid AND it is not expired.
-     * Logs the specific reason for failure server-side — never exposed to the client.
      */
     public boolean isTokenValid(String token) {
         try {

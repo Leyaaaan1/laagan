@@ -10,7 +10,6 @@ import spacing from '../tokens/spacing';
 import { fontSize, fontWeight } from '../tokens/typography';
 
 const rideCard = StyleSheet.create({
-
   // ── Container ────────────────────────────────
   container: {
     backgroundColor: colors.surface,
@@ -59,7 +58,7 @@ const rideCard = StyleSheet.create({
     alignItems: 'center',
   },
   distanceText: {
-    color: colors.primary,
+    color: colors.white,
     fontWeight: fontWeight.bold,
     fontSize: fontSize.sm,
   },
@@ -109,12 +108,14 @@ const rideCard = StyleSheet.create({
   },
 
   // ── Description ───────────────────────────────
+  // ── Description card ─────────────────────────
   description: {
-    marginTop: 12,
-    color: '#ccc',
-    fontStyle: 'italic',
-    fontSize: fontSize.sm,
+    borderRadius: 12,
+    padding: 12,
+    height: 150, // ← Add this fixed height
+    backgroundColor: colors.borderLight, // ← Optional: add background for clarity
   },
+
 
   // ── Footer row ───────────────────────────────
   footerContainer: {

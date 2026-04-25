@@ -15,6 +15,7 @@ public class JwtConfig {
 
     private String secret;
     private long expiration;
+    private long refreshExpirationMs;     // 7 days
 
     @PostConstruct
     public void validate() {
@@ -28,12 +29,19 @@ public class JwtConfig {
                             "Minimum required: " + MINIMUM_SECRET_BYTES + " bytes (256 bits). " +
                             "Generate one with: openssl rand -hex 32");
         }
-        log.info("JWT configuration validated — secret length: {} bytes, expiration: {}ms",
-                secret.getBytes().length, expiration);
+        log.info("JWT configuration validated — " +
+                        "secret length: {} bytes, " +
+                        "access token TTL: {}ms (15 min), " +
+                        "refresh token TTL: {}ms (7 days)",
+                secret.getBytes().length, expiration, refreshExpirationMs);
     }
 
     public String getSecret() { return secret; }
     public void setSecret(String secret) { this.secret = secret; }
     public long getExpiration() { return expiration; }
     public void setExpiration(long expiration) { this.expiration = expiration; }
+    public long getRefreshExpirationMs() { return refreshExpirationMs; }
+    public void setRefreshExpirationMs(long refreshExpirationMs) {
+        this.refreshExpirationMs = refreshExpirationMs;
+    }
 }

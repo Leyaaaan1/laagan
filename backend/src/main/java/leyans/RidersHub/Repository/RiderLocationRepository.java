@@ -3,6 +3,7 @@ package leyans.RidersHub.Repository;
 import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.RiderLocation;
 import leyans.RidersHub.model.StartedRide;
+import leyans.RidersHub.model.participant.ParticipantLocation;
 import org.locationtech.jts.geom.Point;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -31,6 +32,12 @@ public interface RiderLocationRepository extends JpaRepository<RiderLocation, In
     Optional<RiderLocation> findFirstByStartedRideAndUsernameOrderByIdDesc(
             StartedRide startedRide, Rider username);
 
+    @Query("SELECT pl FROM ParticipantLocation pl " +
+            "WHERE pl.startedRide = :startedRide AND pl.rider = :rider")
+    List<ParticipantLocation> findByStartedRideAndRider(
+            @Param("startedRide") StartedRide startedRide,
+            @Param("rider") Rider rider);
+
     // -------------------------------------------------------------------------
     // Cleanup — deletes all OLD duplicate rows for a rider in a ride, keeping
     // only the one with the highest id.  Called once inside updateLocation()
@@ -54,6 +61,7 @@ public interface RiderLocationRepository extends JpaRepository<RiderLocation, In
     // row per rider anyway, but the MAX(id) sub-select is kept as a safety net.
     // -------------------------------------------------------------------------
     @Query("SELECT rl FROM RiderLocation rl " +
+            "JOIN FETCH rl.username " +
             "WHERE rl.startedRide.id = :rideId " +
             "AND rl.id IN (" +
             "   SELECT MAX(r.id) FROM RiderLocation r " +
@@ -61,8 +69,7 @@ public interface RiderLocationRepository extends JpaRepository<RiderLocation, In
             "   GROUP BY r.username " +
             ") " +
             "ORDER BY rl.timestamp DESC")
-    List<RiderLocation> findLatestLocationPerParticipant(@Param("rideId") Integer rideId);
-
+    List<RiderLocation> findLatestLocationPerParticipantOptimized(@Param("rideId") Integer rideId);
 
 
     // -------------------------------------------------------------------------

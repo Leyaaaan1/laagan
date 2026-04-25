@@ -19,11 +19,11 @@ public class LocationUpdateRequestDTO {
     private String locationName;
     private double distanceMeters;
 
-    private String initiator;
+    private String username;
 
-    public LocationUpdateRequestDTO(Integer startedRideId, String initiator, double latitude, double longitude, String locationName, double distanceMeters, LocalDateTime timestamp) {
+    public LocationUpdateRequestDTO(Integer startedRideId, String username, double latitude, double longitude, String locationName, double distanceMeters, LocalDateTime timestamp) {
         this.startedRideId = startedRideId;
-        this.initiator = initiator;
+        this.username = username;
         this.latitude = latitude;
         this.longitude = longitude;
         this.distanceMeters = distanceMeters;
@@ -38,12 +38,12 @@ public class LocationUpdateRequestDTO {
         this.locationName = locationName;
     }
 
-    public String getInitiator() {
-        return initiator;
+    public String getUsername() {
+        return username;
     }
 
-    public void setInitiator(String initiator) {
-        this.initiator = initiator;
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public Integer getStartedRideId() {

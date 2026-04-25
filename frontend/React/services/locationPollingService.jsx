@@ -2,6 +2,7 @@ import {API_BASE_URL} from './Apiclient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Geolocation from '@react-native-community/geolocation';
 import {Platform, PermissionsAndroid} from 'react-native';
+import * as Keychain from 'react-native-keychain';
 
 export const getCurrentPosition = async () => {
   return new Promise(async (resolve, reject) => {
@@ -46,20 +47,14 @@ export const getCurrentPosition = async () => {
 export const shareLocationAndFetchAll = async (rideId, latitude, longitude) => {
   if (!rideId) throw new Error('Missing rideId');
 
-  const authToken = await AsyncStorage.getItem('userToken');
+  // ✅ SECURE: Get token from Keychain instead of AsyncStorage
+  const credentials = await Keychain.getGenericPassword({
+    service: 'com.ridershub.auth',
+  });
+  const authToken = credentials ? credentials.password : null;
+
   if (!authToken) throw new Error('AUTH_MISSING');
 
-  // ✅ Log to verify rideId is an Integer
-  console.log('📍 Sending location to backend:', {
-    rideId,
-    rideIdType: typeof rideId,
-    latitude: typeof latitude === 'number' ? latitude : parseFloat(latitude),
-    longitude:
-      typeof longitude === 'number' ? longitude : parseFloat(longitude),
-    latitudeType: typeof latitude,
-    longitudeType: typeof longitude,
-    url: `${API_BASE_URL}/location/${rideId}/share?latitude=${latitude}&longitude=${longitude}`,
-  });
 
   const response = await fetch(
     `${API_BASE_URL}/location/${rideId}/share?latitude=${latitude}&longitude=${longitude}`,
@@ -84,7 +79,6 @@ export const shareLocationAndFetchAll = async (rideId, latitude, longitude) => {
 
   return response.json();
 };
-
 export const calculateBackoffDelay = retryCount =>
   Math.min(Math.pow(2, retryCount - 1) * 1000, 30000);
 

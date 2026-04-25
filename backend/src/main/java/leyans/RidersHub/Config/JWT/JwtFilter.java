@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import leyans.RidersHub.Service.Auth.TokenBlacklistService;
 import leyans.RidersHub.Service.UserDetailsManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -13,7 +14,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 
 @Component
@@ -27,13 +27,16 @@ public class JwtFilter extends OncePerRequestFilter {
     @Autowired
     private UserDetailsManager userDetailsManager;
 
+    @Autowired
+    private TokenBlacklistService tokenBlacklistService;  // ← ADD THIS
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
         String path = request.getRequestURI();
 
-        // ✅ Skip auth for login, register, refresh, and facebook endpoints
+        // ✅ Skip auth for login, register, refresh endpoints
         if (path.equals("/riders/login")
                 || path.equals("/riders/register")
                 || path.equals("/riders/refresh")
@@ -53,7 +56,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
         // ✅ Check for Bearer prefix
         if (!header.startsWith("Bearer ")) {
-            logger.warn("Authorization header missing Bearer prefix: {}", header.substring(0, Math.min(20, header.length())));
+            logger.warn("Authorization header missing Bearer prefix");
             filterChain.doFilter(request, response);
             return;
         }
@@ -63,6 +66,14 @@ public class JwtFilter extends OncePerRequestFilter {
         // ✅ Validate token format before parsing
         if (!isValidTokenFormat(token)) {
             logger.warn("Invalid token format — must be 3 JWT parts (header.payload.signature)");
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // ✅ Check if token is blacklisted
+        String jti = jwtUtil.getJtiFromToken(token);  // ← ADD THIS
+        if (jti != null && tokenBlacklistService.isTokenBlacklisted(jti)) {  // ← ADD THIS
+            logger.warn("Token is blacklisted (revoked): {}", jti);
             filterChain.doFilter(request, response);
             return;
         }
@@ -95,7 +106,6 @@ public class JwtFilter extends OncePerRequestFilter {
         if (token == null || token.trim().isEmpty()) {
             return false;
         }
-        // JWT must have exactly 2 periods (3 parts)
         int periodCount = (int) token.chars().filter(ch -> ch == '.').count();
         return periodCount == 2;
     }

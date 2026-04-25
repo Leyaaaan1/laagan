@@ -3,16 +3,20 @@ package leyans.RidersHub.Service.InteractionRequest;
 import leyans.RidersHub.DTO.Request.JoinDTO.JoinRequestCreateDto;
 import leyans.RidersHub.DTO.Response.JoinResponseCreateDto;
 import leyans.RidersHub.DTO.Response.JoinResponseDTO;
+import leyans.RidersHub.Repository.ParticipantLocationRepository;
 import leyans.RidersHub.Repository.RideJoinRequestRepository;
 import leyans.RidersHub.Repository.RidesRepository;
+import leyans.RidersHub.Repository.StartedRideRepository;
 import leyans.RidersHub.Utility.RiderUtil;
 import leyans.RidersHub.model.RideJoinRequest;
 import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.Rides;
+import leyans.RidersHub.model.participant.ParticipantLocation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -25,16 +29,22 @@ public class RideJoinRequestService {
     private final RideParticipantService rideParticipantService;  // ← ADD THIS
     private final RiderUtil riderUtil;
 
+    private final StartedRideRepository startedRideRepository;
+
+    private final ParticipantLocationRepository participantLocationRepository;
+
     @Autowired
     public RideJoinRequestService(
             RideJoinRequestRepository rideJoinRequestRepository,
             RidesRepository ridesRepository,
             RideParticipantService rideParticipantService,  // ← ADD THIS
-            RiderUtil riderUtil) {
+            RiderUtil riderUtil, StartedRideRepository startedRideRepository,ParticipantLocationRepository participantLocationRepository) {
         this.rideJoinRequestRepository = rideJoinRequestRepository;
         this.ridesRepository = ridesRepository;
         this.rideParticipantService = rideParticipantService;  // ← ADD THIS
         this.riderUtil = riderUtil;
+        this.startedRideRepository = startedRideRepository;
+        this.participantLocationRepository = participantLocationRepository;
     }
 
     @Transactional
@@ -81,14 +91,35 @@ public class RideJoinRequestService {
             throw new RuntimeException("Only the ride owner can accept join requests");
         }
 
-        // ✅ FIX: Use RideParticipantService to add participant
+        // ✅ Add participant to the Rides entity
         rideParticipantService.addParticipantToRide(generatedRidesId, username);
+
+        // ✅ NEW: If ride is already started, also add to StartedRide
+        if (ride.getActive()) {
+            startedRideRepository.findByRideGeneratedRidesId(generatedRidesId)
+                    .ifPresent(startedRide -> {
+                        Rider rider = riderUtil.findRiderByUsername(username);
+
+                        // Add to started_ride_participants
+                        if (!startedRide.getParticipants().contains(rider)) {
+                            startedRide.getParticipants().add(rider);
+                            startedRideRepository.save(startedRide);
+                        }
+
+                        // Add to participant_locations with starting location
+                        ParticipantLocation location = new ParticipantLocation();
+                        location.setStartedRide(startedRide);
+                        location.setRider(rider);
+                        location.setParticipantLocation(startedRide.getLocation());
+                        location.setLastUpdate(LocalDateTime.now());
+                        participantLocationRepository.save(location);
+                    });
+        }
 
         JoinResponseCreateDto responseDTO = convertToDTO(request);
         rideJoinRequestRepository.delete(request);
         return responseDTO;
     }
-
     @Transactional(readOnly = true)
     public List<JoinResponseDTO> getJoinRequestsByRideId(String generatedRidesId, String requestingUsername) {
         try {

@@ -67,9 +67,10 @@ public class LocationUpdateController {
             @RequestParam double longitude) {
 
         try {
-            rideLocationService.updateLocation(startedRideId, latitude, longitude);
+            // ✅ OPTIMIZED: Single operation combines update + fetch
             List<LocationUpdateRequestDTO> allLocations =
-                    rideLocationService.getLatestParticipantLocations(startedRideId);
+                    rideLocationService.updateLocationAndFetchAll(
+                            startedRideId, latitude, longitude);
             return ResponseEntity.ok(allLocations);
 
         } catch (UnauthorizedAccessException.UnauthorizedException e) {
@@ -86,21 +87,23 @@ public class LocationUpdateController {
             error.put("message", e.getMessage());
             return ResponseEntity.badRequest().body(error);
 
-        } catch (IllegalStateException e) {          // ← NEW: catches "User not authenticated"
+        } catch (IllegalStateException e) {
             Map<String, Object> error = new HashMap<>();
             error.put("status", HttpStatus.UNAUTHORIZED.value());
             error.put("error", "Unauthorized");
-            error.put("message", e.getMessage());    // ← exposes real reason
+            error.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
 
         } catch (Exception e) {
             Map<String, Object> error = new HashMap<>();
             error.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
             error.put("error", "Internal Server Error");
-            error.put("message", e.getMessage());    // ← temporarily expose real message for debugging
+            error.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
+
+
     @GetMapping("/{startedRideId}/test")
     public ResponseEntity<Map<String, Object>> testDatabaseState(
             @PathVariable Integer startedRideId) {
