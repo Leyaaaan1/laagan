@@ -3,6 +3,7 @@ package leyans.RidersHub.Repository;
 import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.RiderLocation;
 import leyans.RidersHub.model.StartedRide;
+import leyans.RidersHub.model.participant.ParticipantLocation;
 import org.locationtech.jts.geom.Point;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -30,6 +31,12 @@ public interface RiderLocationRepository extends JpaRepository<RiderLocation, In
     // -------------------------------------------------------------------------
     Optional<RiderLocation> findFirstByStartedRideAndUsernameOrderByIdDesc(
             StartedRide startedRide, Rider username);
+
+    @Query("SELECT pl FROM ParticipantLocation pl " +
+            "WHERE pl.startedRide = :startedRide AND pl.rider = :rider")
+    List<ParticipantLocation> findByStartedRideAndRider(
+            @Param("startedRide") StartedRide startedRide,
+            @Param("rider") Rider rider);
 
     // -------------------------------------------------------------------------
     // Cleanup — deletes all OLD duplicate rows for a rider in a ride, keeping
