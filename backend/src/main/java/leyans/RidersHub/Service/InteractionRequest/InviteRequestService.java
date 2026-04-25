@@ -12,6 +12,7 @@ import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.Rides;
 import leyans.RidersHub.model.Interaction.InviteRequest;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,25 +46,82 @@ public class InviteRequestService {
                                                   InviteRequest.InviteStatus inviteStatus,
                                                   LocalDateTime createdAt,
                                                   LocalDateTime expiresAt) {
-        Rides ride = riderUtil.findRideById(generatedRidesId);
 
-        InviteRequest inviteLink = new InviteRequest(ride, creator, inviteStatus, createdAt, expiresAt);
+        System.out.println("📋 [INVITE] Generating invite for ride: " + generatedRidesId);
 
-        String inviteUrl = baseUrl + "/invite/link/" + inviteLink.getInviteToken();
-        inviteLink.setInviteLink(inviteUrl);
+        try {
+            // ✅ NEW: Validate inputs before processing
+            if (generatedRidesId == null || generatedRidesId.isBlank()) {
+                throw new IllegalArgumentException("Ride ID cannot be empty");
+            }
+            if (creator == null) {
+                throw new IllegalArgumentException("Creator cannot be null");
+            }
 
-        String qrCodeBase64 = generateQRCodeBase64(inviteUrl);
-        inviteLink.setQrCodeBase64(qrCodeBase64);
+            // Fetch the ride
+            Rides ride = riderUtil.findRideById(generatedRidesId);
 
-        String cloudinaryUrl = uploadImageService.uploadQrCodeBase64(qrCodeBase64, "ride_invites");
-        inviteLink.setQr(cloudinaryUrl);
+            // Create invite request
+            InviteRequest inviteLink = new InviteRequest(ride, creator, inviteStatus, createdAt, expiresAt);
 
-        System.out.println("Invite token: " + inviteLink.getInviteToken());
+            // Build invite URL
+            String inviteUrl = baseUrl + "/invite/link/" + inviteLink.getInviteToken();
+            inviteLink.setInviteLink(inviteUrl);
 
+            // Generate QR code in Base64
+            String qrCodeBase64 = generateQRCodeBase64(inviteUrl);
+            inviteLink.setQrCodeBase64(qrCodeBase64);
 
-        return inviteRequestRepository.save(inviteLink);
+            String cloudinaryUrl = uploadQrCodeWithFallback(qrCodeBase64, generatedRidesId);
+
+            if (cloudinaryUrl != null) {
+                inviteLink.setQr(cloudinaryUrl);
+            } else {
+                inviteLink.setQr("data:image/png;base64," + qrCodeBase64);
+            }
+
+            System.out.println("🎫 Invite token: " + inviteLink.getInviteToken());
+
+            // Save to database
+            InviteRequest savedInvite = inviteRequestRepository.save(inviteLink);
+            System.out.println("✅ Invite saved with ID: " + savedInvite.getInviteId());
+
+            return savedInvite;
+
+        } catch (IllegalArgumentException e) {
+            System.err.println("❌ [INVITE] Validation error: " + e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            System.err.println("❌ [INVITE] Error generating invite: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to generate invite: " + e.getMessage(), e);
+        }
     }
 
+
+    private String uploadQrCodeWithFallback(String qrCodeBase64, String rideId) {
+        try {
+            System.out.println("☁️  [CLOUDINARY] Uploading QR code for ride: " + rideId);
+
+            String cloudinaryUrl = uploadImageService.uploadQrCodeBase64(
+                    qrCodeBase64,
+                    "ride_invites"
+            );
+
+            if (cloudinaryUrl != null && !cloudinaryUrl.isBlank()) {
+                System.out.println("✅ [CLOUDINARY] Upload successful");
+                return cloudinaryUrl;
+            } else {
+                System.err.println("⚠️  [CLOUDINARY] Returned null URL");
+                return null;
+            }
+
+        } catch (Exception e) {
+            System.err.println("❌ [CLOUDINARY] Upload failed: " + e.getMessage());
+            System.err.println("   💡 Tip: Invite will use Base64 QR code instead");
+            return null; // Return null, not throw exception
+        }
+    }
     private String generateQRCodeBase64(String urlToken) {
 
         try {

@@ -5,6 +5,7 @@ import leyans.RidersHub.ExceptionHandler.UnauthorizedAccessException;
 import leyans.RidersHub.Repository.*;
 import leyans.RidersHub.Utility.RiderUtil;
 import leyans.RidersHub.model.*;
+import leyans.RidersHub.model.participant.ParticipantLocation;
 import org.springframework.stereotype.Service;
 import org.locationtech.jts.geom.Point;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,126 +13,214 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 public class RideLocationService {
 
-    private final RiderLocationRepository locationRepo;
+    private final ParticipantLocationRepository participantLocationRepo;
     private final PsgcDataRepository psgcDataRepository;
     private final LocationService locationService;
-
-    private final StartedRideRepository startedRideRepository;
     private final RiderUtil riderUtil;
+    private final StartedRideRepository startedRideRepository;
+
+    private static final double DEFAULT_PROXIMITY_RADIUS_METERS = 5000.0;
 
     @Autowired
-    public RideLocationService(RiderLocationRepository locationRepo,
+    public RideLocationService(ParticipantLocationRepository participantLocationRepo,
                                PsgcDataRepository psgcDataRepository,
-                               LocationService locationService, StartedRideRepository startedRideRepository,
-                               RiderUtil riderUtil) {
-        this.locationRepo = locationRepo;
+                               LocationService locationService,
+                               RiderUtil riderUtil,
+                               StartedRideRepository startedRideRepository) {
+        this.participantLocationRepo = participantLocationRepo;
         this.psgcDataRepository = psgcDataRepository;
         this.locationService = locationService;
-        this.startedRideRepository = startedRideRepository;
         this.riderUtil = riderUtil;
-    }
-    @Transactional(readOnly = true)
-    public List<LocationUpdateRequestDTO> getAllRiderLocations(Integer startedRideId) {
-        try {
-            StartedRide started = riderUtil.findStartedRideById(startedRideId);
-
-            List<RiderLocation> locations = locationRepo.findLatestLocationPerParticipantOptimized(started.getId());
-            System.out.println("✅ Retrieved " + locations.size() + " location updates");
-
-            List<LocationUpdateRequestDTO> result = locations.stream().map(loc -> {
-                Point p = loc.getLocation();
-                return new LocationUpdateRequestDTO(
-                        startedRideId,  // ← Pass Integer directly
-                        loc.getUsername().getUsername(),
-                        p.getY(),   // latitude
-                        p.getX(),   // longitude
-                        loc.getLocationName(),
-                        loc.getDistanceMeters(),
-                        loc.getTimestamp()
-                );
-            }).collect(Collectors.toList());
-
-            System.out.println("📤 Returning " + result.size() + " locations\n");
-            return result;
-
-        } catch (Exception e) {
-            System.err.println("❌ ERROR in getAllRiderLocations: " + e.getMessage());
-            e.printStackTrace();
-            return new ArrayList<>();
-        }
+        this.startedRideRepository = startedRideRepository;
     }
 
-    // =========================================================================
-// UPDATE LOCATION
-// =========================================================================
     @Transactional
     public LocationUpdateRequestDTO updateLocation(Integer startedRideId,
                                                    double latitude,
                                                    double longitude) {
-        StartedRide started = riderUtil.findStartedRideById(startedRideId);
+        try {
+            System.out.println("🔵 STEP 1: Finding started ride: " + startedRideId);
+            StartedRide started = riderUtil.findStartedRideById(startedRideId);
+            System.out.println("🔵 STEP 2: Found ride: " + started.getId());
 
-        String username = riderUtil.getCurrentUsername();
-        Rider rider = riderUtil.findRiderByUsername(username);
+            String username = riderUtil.getCurrentUsername();
+            System.out.println("🔵 STEP 3: Username: " + username);
 
-        boolean isOwner = started.getUsername().getUsername().equals(username);
-        boolean isParticipant = started.getParticipants().stream()
-                .anyMatch(p -> p.getUsername().equals(username));
+            Rider rider = riderUtil.findRiderByUsername(username);
+            System.out.println("🔵 STEP 4: Rider found: " + rider.getUsername());
 
-        if (!isOwner && !isParticipant) {
-            throw new UnauthorizedAccessException.UnauthorizedException(
-                    "User is not authorised for this ride");
+            boolean isOwner = started.getUsername().getUsername().equals(username);
+            boolean isParticipant = started.getParticipants().stream()
+                    .anyMatch(p -> p.getUsername().equals(username));
+
+            if (!isOwner && !isParticipant) {
+                isParticipant = startedRideRepository.isRiderAuthorizedForStartedRide(
+                        startedRideId, rider.getId());
+            }
+
+            if (!isOwner && !isParticipant) {
+                throw new UnauthorizedAccessException.UnauthorizedException(
+                        "User is not authorised for this ride");
+            }
+
+            Point userPoint = locationService.createPoint(longitude, latitude);
+            System.out.println("🔵 STEP 6: Point created");
+
+            String barangayName = locationService.resolveBarangayName(null, latitude, longitude);
+            System.out.println("🔵 STEP 7: Barangay: " + barangayName);
+
+            String locationName = "Unknown Location";
+            if (barangayName != null) {
+                List<PsgcData> psgcDataList = psgcDataRepository.findByNameIgnoreCase(barangayName);
+                locationName = psgcDataList.stream()
+                        .findFirst()
+                        .map(PsgcData::getName)
+                        .orElse(barangayName);
+            }
+            System.out.println("🔵 STEP 8: locationName: " + locationName);
+
+            Point startPoint = started.getLocation();
+            System.out.println("🔵 STEP 9: startPoint: " + startPoint);
+
+            double distanceMeters = participantLocationRepo.getDistanceBetweenPoints(
+                    latitude, longitude,
+                    startPoint.getY(), startPoint.getX());
+            System.out.println("🔵 STEP 10: distanceMeters: " + distanceMeters);
+
+            ParticipantLocation loc = participantLocationRepo
+                    .findByStartedRide_IdAndRider_Username(startedRideId, username)
+                    .orElse(new ParticipantLocation());
+            System.out.println("🔵 STEP 11: ParticipantLocation found or new");
+
+            loc.setStartedRide(started);
+            loc.setRider(rider);
+            loc.setParticipantLocation(userPoint);
+            loc.setLastUpdate(LocalDateTime.now());
+
+            System.out.println("🔵 STEP 12: Saving...");
+            loc = participantLocationRepo.save(loc);
+            System.out.println("🔵 STEP 13: Saved with id: " + loc.getParticipantLocationId());
+
+            System.out.println("🔵 STEP 14: DONE.");
+
+            return new LocationUpdateRequestDTO(
+                    startedRideId, username, latitude, longitude,
+                    locationName, distanceMeters, loc.getLastUpdate());
+
+        } catch (Exception e) {
+            System.err.println("💥 updateLocation CRASHED at: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
+    }
 
-        Point userPoint = locationService.createPoint(longitude, latitude);
+    @Transactional
+    public List<LocationUpdateRequestDTO> updateLocationAndFetchAll(
+            Integer startedRideId,
+            double latitude,
+            double longitude) {
 
-        // ✅ FIX: Provide a fallback so location_name is never null
-        String barangayName = locationService.resolveBarangayName(null, latitude, longitude);
-        String locationName = "Unknown Location"; // ← fallback default
-        if (barangayName != null) {
-            List<PsgcData> psgcDataList = psgcDataRepository.findByNameIgnoreCase(barangayName);
-            locationName = psgcDataList.stream()
-                    .findFirst()
-                    .map(PsgcData::getName)
-                    .orElse(barangayName);
+        System.out.println("\n=== 📤 UPDATE LOCATION AND FETCH ALL ===");
+        System.out.println("Started Ride ID: " + startedRideId);
+        System.out.println("Location: " + latitude + ", " + longitude);
+
+        try {
+            // ✅ Step 1: Update the location
+            System.out.println("🔵 Step 1: Updating location...");
+            updateLocation(startedRideId, latitude, longitude);
+            System.out.println("✅ Location updated successfully");
+
+            // ✅ Step 2: Flush to ensure database persistence
+            System.out.println("🔵 Step 2: Flushing to database...");
+            participantLocationRepo.flush();
+            System.out.println("✅ Flushed to database");
+
+            // ✅ Step 3: Fetch all latest locations (no radius filter in query)
+            System.out.println("🔵 Step 3: Fetching all latest participant locations...");
+            List<ParticipantLocation> allLocations = participantLocationRepo
+                    .findLatestPerParticipantWithinRadius(startedRideId);
+
+            System.out.println("✅ Found " + allLocations.size() + " total locations");
+
+            // ✅ Step 4: Filter by radius in Java (more reliable than complex SQL)
+            System.out.println("🔵 Step 4: Filtering locations by radius (" + DEFAULT_PROXIMITY_RADIUS_METERS + "m)...");
+            List<ParticipantLocation> filteredLocations = new ArrayList<>();
+
+            for (ParticipantLocation loc : allLocations) {
+                double distance = participantLocationRepo.getDistanceBetweenPoints(
+                        latitude, longitude,
+                        loc.getParticipantLocation().getY(),
+                        loc.getParticipantLocation().getX());
+
+                System.out.println("   Checking: " + loc.getRider().getUsername() + " - Distance: " +
+                        String.format("%.2f", distance / 1000) + " km");
+
+                if (distance <= DEFAULT_PROXIMITY_RADIUS_METERS) {
+                    filteredLocations.add(loc);
+                    System.out.println("   ✅ Within radius - INCLUDED");
+                } else {
+                    System.out.println("   ❌ Outside radius - EXCLUDED");
+                }
+            }
+
+            System.out.println("✅ Filtered to " + filteredLocations.size() + " locations within " +
+                    (DEFAULT_PROXIMITY_RADIUS_METERS / 1000) + "km radius");
+
+            // ✅ Step 5: If no one nearby, return all participants
+            if (filteredLocations.isEmpty()) {
+                System.out.println("⚠️  No locations within radius, returning all participants...");
+                filteredLocations = allLocations;
+            }
+
+            // ✅ Step 6: Build response DTOs
+            System.out.println("🔵 Step 5: Building response DTOs...");
+            List<LocationUpdateRequestDTO> result = new ArrayList<>();
+
+            for (ParticipantLocation loc : filteredLocations) {
+                try {
+                    Point p = loc.getParticipantLocation();
+                    double dist = participantLocationRepo.getDistanceBetweenPoints(
+                            latitude, longitude,
+                            p.getY(), p.getX());
+
+                    LocationUpdateRequestDTO dto = new LocationUpdateRequestDTO(
+                            startedRideId,
+                            loc.getRider().getUsername(),
+                            p.getY(),
+                            p.getX(),
+                            null,
+                            dist,
+                            loc.getLastUpdate()
+                    );
+                    result.add(dto);
+                    System.out.println("   ✅ DTO created for: " + loc.getRider().getUsername());
+                } catch (Exception e) {
+                    System.err.println("   ❌ ERROR creating DTO for rider: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+
+            System.out.println("✅ All DTOs built successfully");
+            System.out.println("📤 Returning: " + result.size() + " locations");
+            System.out.println("=== ✅ END ===\n");
+            return result;
+
+        } catch (Exception e) {
+            System.err.println("\n❌ ERROR in updateLocationAndFetchAll");
+            System.err.println("❌ Exception Type: " + e.getClass().getSimpleName());
+            System.err.println("❌ Exception Message: " + e.getMessage());
+            e.printStackTrace();
+            System.err.println("=== ❌ END ERROR ===\n");
+            throw e;
         }
+    }
 
-        Point startPoint = started.getLocation();
-        double distanceMeters = locationRepo.getDistanceBetweenPoints(userPoint, startPoint);
-
-        RiderLocation loc = locationRepo
-                .findFirstByStartedRideAndUsernameOrderByIdDesc(started, rider)
-                .orElse(new RiderLocation());
-
-        loc.setStartedRide(started);
-        loc.setUsername(rider);
-        loc.setLocation(userPoint);
-        loc.setTimestamp(LocalDateTime.now());
-        loc.setDistanceMeters(distanceMeters);
-        loc.setLocationName(locationName); // ← always set, never null
-
-        loc = locationRepo.save(loc);
-        locationRepo.deleteOldDuplicates(started, rider, loc.getId());
-
-        return new LocationUpdateRequestDTO(
-                startedRideId,
-                username,
-                latitude,
-                longitude,
-                locationName,
-                distanceMeters,
-                loc.getTimestamp()
-        );
-    }    // =========================================================================
-// GET LATEST PARTICIPANT LOCATIONS
-// =========================================================================
     @Transactional(readOnly = true)
     public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer startedRideId) {
         System.out.println("\n=== 🔍 GET LATEST PARTICIPANT LOCATIONS ===");
@@ -140,66 +229,30 @@ public class RideLocationService {
         try {
             StartedRide started = riderUtil.findStartedRideById(startedRideId);
 
-            // ✅ Use a Set so the owner is never counted twice
-            Set<String> allRiderUsernames = new LinkedHashSet<>();
-
-            if (started.getUsername() != null) {
-                allRiderUsernames.add(started.getUsername().getUsername());
-                System.out.println("✓ Owner: " + started.getUsername().getUsername());
-            }
-
-            for (Rider participant : started.getParticipants()) {
-                boolean added = allRiderUsernames.add(participant.getUsername());
-                if (added) {
-                    System.out.println("✓ Participant: " + participant.getUsername());
-                } else {
-                    System.out.println("⚠️  Skipping duplicate entry for: " + participant.getUsername());
-                }
-            }
-
-            System.out.println("📊 Total unique riders in ride: " + allRiderUsernames.size());
-
-            // Fetch ONE location row per rider (latest by id)
-            List<RiderLocation> locations =
-                    locationRepo.findLatestLocationPerParticipantOptimized(started.getId());
+            List<ParticipantLocation> locations =
+                    participantLocationRepo.findLatestPerParticipant(started.getId());
 
             System.out.println("✅ Latest locations retrieved: " + locations.size());
             locations.forEach(loc ->
-                    System.out.println("  ✓ Rider: " + loc.getUsername().getUsername()
-                            + " | Lat: "  + loc.getLocation().getY()
-                            + " | Lng: "  + loc.getLocation().getX()
-                            + " | Time: " + loc.getTimestamp()));
+                    System.out.println("  ✓ Rider: " + loc.getRider().getUsername()
+                            + " | Lat: " + loc.getParticipantLocation().getY()
+                            + " | Lng: " + loc.getParticipantLocation().getX()
+                            + " | Time: " + loc.getLastUpdate()));
 
-            // Convert to DTOs
             List<LocationUpdateRequestDTO> result = locations.stream().map(loc -> {
-                Point p = loc.getLocation();
+                Point p = loc.getParticipantLocation();
                 return new LocationUpdateRequestDTO(
-                        startedRideId,  // ← Pass Integer directly
-                        loc.getUsername().getUsername(),
-                        p.getY(),   // latitude
-                        p.getX(),   // longitude
-                        loc.getLocationName(),
-                        loc.getDistanceMeters(),
-                        loc.getTimestamp()
+                        startedRideId,
+                        loc.getRider().getUsername(),
+                        p.getY(),
+                        p.getX(),
+                        null,
+                        0.0,
+                        loc.getLastUpdate()
                 );
             }).collect(Collectors.toList());
 
             System.out.println("📤 Returning: " + result.size() + " DTOs");
-
-            // Diagnostic — show who is still missing a location update
-            Set<String> ridersWithLocations = result.stream()
-                    .map(LocationUpdateRequestDTO::getInitiator)
-                    .collect(Collectors.toSet());
-
-            Set<String> ridersWithoutLocations = new LinkedHashSet<>(allRiderUsernames);
-            ridersWithoutLocations.removeAll(ridersWithLocations);
-
-            if (!ridersWithoutLocations.isEmpty()) {
-                System.out.println("⚠️  Riders WITHOUT a saved location yet:");
-                ridersWithoutLocations.forEach(r ->
-                        System.out.println("  - " + r + " (waiting for first location share)"));
-            }
-
             System.out.println("=== ✅ END ===\n");
             return result;
 
@@ -210,32 +263,68 @@ public class RideLocationService {
         }
     }
 
-    @Transactional
-    public List<LocationUpdateRequestDTO> updateLocationAndFetchAll(
+    @Transactional(readOnly = true)
+    public List<LocationUpdateRequestDTO> getNearbyParticipantLocations(
             Integer startedRideId,
-            double latitude,
-            double longitude) {
+            double userLatitude,
+            double userLongitude,
+            double radiusMeters) {
 
-        // Step 1: Update location (single write operation)
-        updateLocation(startedRideId, latitude, longitude);
+        System.out.println("\n=== 📍 GET NEARBY PARTICIPANT LOCATIONS (Radius: " + radiusMeters + "m) ===");
+        System.out.println("Started Ride ID: " + startedRideId);
+        System.out.println("User Location: " + userLatitude + ", " + userLongitude);
 
-        // Step 2: Fetch all latest locations in ONE query with JOIN FETCH
-        List<RiderLocation> locations =
-                locationRepo.findLatestLocationPerParticipantOptimized(startedRideId);
+        try {
+            StartedRide started = riderUtil.findStartedRideById(startedRideId);
 
-        // Step 3: Convert to DTOs
-        return locations.stream().map(loc -> {
-            Point p = loc.getLocation();
-            return new LocationUpdateRequestDTO(
-                    startedRideId,
-                    loc.getUsername().getUsername(),
-                    p.getY(),   // latitude
-                    p.getX(),   // longitude
-                    loc.getLocationName(),
-                    loc.getDistanceMeters(),
-                    loc.getTimestamp()
-            );
-        }).collect(Collectors.toList());
+            List<ParticipantLocation> locations = participantLocationRepo
+                    .findLatestPerParticipantWithinRadius(started.getId());
+
+// Then filter by radius in Java
+            locations = locations.stream()
+                    .filter(loc -> {
+                        double distance = participantLocationRepo.getDistanceBetweenPoints(
+                                userLatitude, userLongitude,
+                                loc.getParticipantLocation().getY(),
+                                loc.getParticipantLocation().getX());
+                        return distance <= radiusMeters;
+                    })
+                    .toList();
+
+            System.out.println("✅ Nearby locations found: " + locations.size());
+            locations.forEach(loc -> {
+                double dist = participantLocationRepo.getDistanceBetweenPoints(
+                        userLatitude, userLongitude,
+                        loc.getParticipantLocation().getY(), loc.getParticipantLocation().getX());
+                System.out.println("  ✓ Rider: " + loc.getRider().getUsername()
+                        + " | Distance: " + String.format("%.2f", dist / 1000) + " km"
+                        + " | Time: " + loc.getLastUpdate());
+            });
+
+            List<LocationUpdateRequestDTO> result = locations.stream().map(loc -> {
+                Point p = loc.getParticipantLocation();
+                double dist = participantLocationRepo.getDistanceBetweenPoints(
+                        userLatitude, userLongitude,
+                        p.getY(), p.getX());
+                return new LocationUpdateRequestDTO(
+                        startedRideId,
+                        loc.getRider().getUsername(),
+                        p.getY(),
+                        p.getX(),
+                        null,
+                        dist,
+                        loc.getLastUpdate()
+                );
+            }).collect(Collectors.toList());
+
+            System.out.println("📤 Returning: " + result.size() + " nearby participants");
+            System.out.println("=== ✅ END ===\n");
+            return result;
+
+        } catch (Exception e) {
+            System.err.println("❌ ERROR in getNearbyParticipantLocations: " + e.getMessage());
+            e.printStackTrace();
+            return new ArrayList<>();  // ✅ Return empty list on error
+        }
     }
-
 }

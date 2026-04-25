@@ -47,14 +47,10 @@ export const getCurrentPosition = async () => {
 export const shareLocationAndFetchAll = async (rideId, latitude, longitude) => {
   if (!rideId) throw new Error('Missing rideId');
 
-  // ✅ SECURE: Get token from Keychain instead of AsyncStorage
-  const credentials = await Keychain.getGenericPassword({
-    service: 'com.ridershub.auth',
-  });
-  const authToken = credentials ? credentials.password : null;
+  // ✅ CORRECT: Get token from AsyncStorage (where it's actually stored)
+  const authToken = await AsyncStorage.getItem('userToken');
 
   if (!authToken) throw new Error('AUTH_MISSING');
-
 
   const response = await fetch(
     `${API_BASE_URL}/location/${rideId}/share?latitude=${latitude}&longitude=${longitude}`,
@@ -68,10 +64,18 @@ export const shareLocationAndFetchAll = async (rideId, latitude, longitude) => {
   );
 
   if (response.status === 401 || response.status === 403) {
+    let errorMessage = '';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.message || errorData.error || '';
+    } catch (e) {
+      errorMessage = response.statusText;
+    }
+
     throw new Error(
       response.status === 401
-        ? 'Session expired. Please log in again.'
-        : 'Unauthorized to share location.',
+        ? `Session expired: ${errorMessage}`
+        : `Unauthorized: ${errorMessage}`,
     );
   }
   if (!response.ok)
@@ -79,6 +83,7 @@ export const shareLocationAndFetchAll = async (rideId, latitude, longitude) => {
 
   return response.json();
 };
+
 export const calculateBackoffDelay = retryCount =>
   Math.min(Math.pow(2, retryCount - 1) * 1000, 30000);
 

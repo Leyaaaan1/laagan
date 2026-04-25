@@ -13,6 +13,7 @@ import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuil
 import org.apache.hc.client5.http.io.HttpClientConnectionManager;
 import org.apache.hc.core5.util.Timeout;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.*;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
@@ -63,6 +64,14 @@ public class RouteService {
     }
 
 
+    @Cacheable(
+            value = "routes",
+            key = "'route_' + T(java.lang.Math).round(#startLng * 100) + '_' + " +
+                    "T(java.lang.Math).round(#startLat * 100) + '_' + " +
+                    "T(java.lang.Math).round(#endLng * 100) + '_' + " +
+                    "T(java.lang.Math).round(#endLat * 100)",
+            unless = "#result == null"
+    )
     @RateLimiter(name = "graphhopper", fallbackMethod = "routeFallback")
     public String getRouteDirections(double startLng, double startLat,
                                      double endLng,   double endLat,

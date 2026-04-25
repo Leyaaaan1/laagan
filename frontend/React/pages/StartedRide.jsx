@@ -74,7 +74,7 @@ const StartedRide = ({route, navigation}) => {
     onLocationsUpdate: locations => {
       const markers = {};
       locations.forEach(loc => {
-        markers[loc.initiator] = {
+        markers[loc.username] = {
           latitude: loc.latitude,
           longitude: loc.longitude,
           updatedAt: loc.timestamp,

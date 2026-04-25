@@ -82,8 +82,11 @@ public class LocationService {
     }
 
 
+    // LocationService.java
     public int calculateDistance(Point startPoint, Point endPoint) {
-        double metres = riderLocationRepository.getDistanceBetweenPoints(startPoint, endPoint);
+        double metres = riderLocationRepository.getDistanceBetweenPoints(
+                startPoint.getY(), startPoint.getX(),
+                endPoint.getY(), endPoint.getX());
         return (int) Math.round(metres / 1000.0);
     }
 

@@ -13,32 +13,37 @@ import java.util.Map;
 public class UploadImageService {
 
     private final Cloudinary cloudinary;
+    private final ImageOptimizationService imageOptimizer;
+
     private final RestTemplate restTemplate;
 
-    @Autowired
-    public UploadImageService(Cloudinary cloudinary) {
+    public UploadImageService(Cloudinary cloudinary, ImageOptimizationService imageOptimizer, RestTemplate restTemplate) {
         this.cloudinary = cloudinary;
-        this.restTemplate = new RestTemplate();
-
-
+        this.imageOptimizer = imageOptimizer;
+        this.restTemplate = restTemplate;
     }
+
     public String uploadMapImage(String mapboxImageUrl) {
         try {
             ResponseEntity<byte[]> imageResponse = restTemplate.getForEntity(mapboxImageUrl, byte[].class);
 
             if (imageResponse.getStatusCode().is2xxSuccessful()) {
                 byte[] imageBytes = imageResponse.getBody();
-                Map uploadResult = cloudinary.uploader().upload(imageBytes, ObjectUtils.asMap(
-                        "resource_type", "image"
-                ));
+
+                // ✅ NEW: Optimize image before upload
+                byte[] optimizedBytes = imageOptimizer.compressImage(imageBytes);
+
+                System.out.println("📊 Size reduction: " + imageBytes.length +
+                        " → " + optimizedBytes.length + " bytes (" +
+                        (100 - (optimizedBytes.length * 100 / imageBytes.length)) + "% smaller)");
+
+                Map uploadResult = cloudinary.uploader().upload(optimizedBytes,
+                        ObjectUtils.asMap("resource_type", "image"));
 
                 return uploadResult.get("secure_url").toString();
-            } else {
-                System.err.println("Mapbox API error: " + imageResponse.getStatusCode());
             }
         } catch (Exception e) {
             System.err.println("Image upload failed: " + e.getMessage());
-            e.printStackTrace(); // Add this for more detailed error information
         }
         return null;
     }
