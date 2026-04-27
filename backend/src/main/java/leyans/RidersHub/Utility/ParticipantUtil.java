@@ -7,6 +7,7 @@ import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import jakarta.persistence.EntityNotFoundException;
+import leyans.RidersHub.DTO.Request.InviteDetailDTO;
 import leyans.RidersHub.DTO.Request.JoinDTO.JoinerDto;
 import leyans.RidersHub.Repository.Auth.InviteRequestRepository;
 import leyans.RidersHub.Repository.Auth.JoinRequestRepository;
@@ -51,6 +52,14 @@ public class ParticipantUtil {
         return invite.getQr();
     }
 
+
+    public InviteDetailDTO convertInviteToDetailDto(InviteRequest invite) {
+        return new InviteDetailDTO(
+                invite.getInviteToken(),
+                invite.getRides().getGeneratedRidesId(),
+                invite.getInviteStatus().toString()
+        );
+    }
 
 
     public InviteRequest findInviteByToken(String inviteToken) {
@@ -139,6 +148,7 @@ public class ParticipantUtil {
 //        validateInviteNotExpired(invite);
         return invite.getQrCodeBase64();
     }
+
 
 
 

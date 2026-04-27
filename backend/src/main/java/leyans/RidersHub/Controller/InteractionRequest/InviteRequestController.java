@@ -2,6 +2,7 @@ package leyans.RidersHub.Controller.InteractionRequest;
 
 
 import com.google.zxing.WriterException;
+import leyans.RidersHub.DTO.Request.InviteDetailDTO;
 import leyans.RidersHub.Utility.ParticipantUtil;
 import leyans.RidersHub.model.Interaction.InviteRequest;
 import org.springframework.http.ResponseEntity;
@@ -49,6 +50,19 @@ public class InviteRequestController {
     public ResponseEntity<String> getInviteUDetailsUrl(@PathVariable String generatedRidesId) {
         String inviteDetails = participantUtil.getInviteUrlByRideId(generatedRidesId);
         return ResponseEntity.ok(inviteDetails);
+    }
+
+    @GetMapping("/token/{inviteToken}")
+    public ResponseEntity<?> getInviteDetailsByToken(@PathVariable String inviteToken) {
+        try {
+            InviteRequest invite = participantUtil.findInviteByToken(inviteToken);
+            InviteDetailDTO detailDto = participantUtil.convertInviteToDetailDto(invite);
+            return ResponseEntity.ok(detailDto);
+        } catch (Exception e) {
+            System.err.println("Error getting invite details for token " + inviteToken + ": " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(404).body("Invite not found or expired");
+        }
     }
 
 

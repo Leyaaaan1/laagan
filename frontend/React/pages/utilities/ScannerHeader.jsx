@@ -16,6 +16,7 @@ import { getRideDetails } from '../../services/rideService';
 import { buildRideStep4Params } from '../../utilities/NavigationParamsBuilder';
 import scanner from '../../styles/components/scanner';
 import {useAuth} from '../../context/AuthContext';
+import {inviteService} from '../../services/inviteService';
 
 const ScannerHeader = ({navigation}) => {
   const {token, username} = useAuth();
@@ -36,7 +37,7 @@ const ScannerHeader = ({navigation}) => {
 
       try {
         // ─────────────────────────────────────────────────────────────────
-        // MODE 1: INVITE LINK (Join ride by QR code invite)
+        // MODE 1: INVITE LINK (View ride details from invite QR code)
         // ─────────────────────────────────────────────────────────────────
         if (scanMode === 'invite') {
           let inviteToken = data;
@@ -57,24 +58,20 @@ const ScannerHeader = ({navigation}) => {
             return;
           }
 
-          const result = await joinService.joinRideByToken(inviteToken);
-          console.log('Join ride result:', result);
+          // ✅ Get invite details to extract ride ID
+          const inviteDetails = await inviteService.getInviteDetailsByToken(
+            inviteToken,
+          );
+          const generatedRidesId = inviteDetails.generatedRidesId;
+
+          // ✅ Fetch full ride details
+          const ride = await getRideDetails(generatedRidesId);
+          const params = buildRideStep4Params(ride, username);
 
           setScannerVisible(false);
 
-          Alert.alert(
-            'Request Submitted',
-            'Your join request has been submitted! Waiting for the ride creator to approve.',
-            [
-              {
-                text: 'OK',
-                onPress: () => {
-                  // Optionally navigate to a status page
-                  // navigation.navigate('JoinRequestStatus', { joinRequest: result });
-                },
-              },
-            ],
-          );
+          navigation.navigate('RideStep4', params);
+
         }
         // ─────────────────────────────────────────────────────────────────
         // MODE 2: RIDE ID (View ride details by scanning ride ID QR code)
@@ -104,12 +101,8 @@ const ScannerHeader = ({navigation}) => {
         let errorMessage = 'Failed to process QR code';
 
         if (scanMode === 'invite') {
-          if (error.message.includes('already have a join request')) {
-            errorMessage = 'You already have a pending request for this ride';
-          } else if (error.message.includes('already a participant')) {
-            errorMessage = 'You are already a participant in this ride';
-          } else if (error.message.includes('creator of this ride')) {
-            errorMessage = 'You cannot join your own ride';
+          if (error.message.includes('not found')) {
+            errorMessage = 'Invite or ride not found';
           } else if (error.message.includes('expired')) {
             errorMessage = 'This invite link has expired';
           } else if (error.message) {
@@ -131,6 +124,7 @@ const ScannerHeader = ({navigation}) => {
     },
     [scanning, processing, scanMode, username, token, navigation],
   );
+
 
   // Use the built-in code scanner
   const codeScanner = useCodeScanner({

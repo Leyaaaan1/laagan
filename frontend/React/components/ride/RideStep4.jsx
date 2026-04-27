@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -6,8 +6,10 @@ import {
   ScrollView,
   StatusBar,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import {rideAction} from '../../services/rideAction';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import {
   fetchRideMapImage,
@@ -35,12 +37,91 @@ import {
 import useJoinRide from './utilities/RideHandler';
 import {useAuth} from '../../context/AuthContext';
 
-const RideActionButton = ({isOwner, onJoin, onStart}) =>
-  isOwner ? (
-    <TouchableOpacity style={rideStep4Styles.startButton} onPress={onStart}>
-      <FontAwesome name="play" size={16} color="#fff" />
-    </TouchableOpacity>
-  ) : (
+// ─────────────────────────────────────────────────────────────────────────────
+// RideActionButton
+// Shows a loading spinner while the action status is being fetched,
+// so the owner never briefly sees "Join".
+// ─────────────────────────────────────────────────────────────────────────────
+const RideActionButton = ({
+  isOwner,
+  onJoin,
+  onStart,
+  hasJoined,
+  hasPendingRequest,
+  rideStarted,
+  isLoading,
+}) => {
+  // While the status fetch is in-flight, show a neutral spinner instead of
+  // the default "Join" button — this prevents the owner from seeing "Join"
+  // for the split second before the API responds.
+  if (isLoading) {
+    return (
+      <View style={[rideStep4Styles.joinButton, {opacity: 0.6}]}>
+        <ActivityIndicator size="small" color="#fff" />
+      </View>
+    );
+  }
+
+  // ── Owner branch ──────────────────────────────────────────────────────────
+  if (isOwner) {
+    if (rideStarted) {
+      return (
+        <TouchableOpacity
+          style={[rideStep4Styles.startButton, {opacity: 0.5}]}
+          disabled={true}
+          onPress={() => Alert.alert('Info', 'Ride already started')}>
+          <FontAwesome name="check" size={16} color="#fff" />
+        </TouchableOpacity>
+      );
+    }
+
+    return (
+      <TouchableOpacity style={rideStep4Styles.startButton} onPress={onStart}>
+        <FontAwesome name="play" size={16} color="#fff" />
+      </TouchableOpacity>
+    );
+  }
+
+  // ── Participant branch ────────────────────────────────────────────────────
+  if (hasJoined) {
+    return (
+      <TouchableOpacity
+        style={[rideStep4Styles.joinButton, {opacity: 0.5}]}
+        disabled={true}
+        onPress={() => Alert.alert('Info', 'You already joined this ride')}>
+        <FontAwesome
+          name="check-circle"
+          size={14}
+          color="#fff"
+          style={{marginRight: 6}}
+        />
+        <Text style={rideStep4Styles.joinButtonText}>Joined</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  if (hasPendingRequest) {
+    return (
+      <TouchableOpacity
+        style={[
+          rideStep4Styles.joinButton,
+          {opacity: 0.6, backgroundColor: '#ffa500'},
+        ]}
+        disabled={true}
+        onPress={() => Alert.alert('Info', 'Join request pending')}>
+        <FontAwesome
+          name="hourglass-half"
+          size={14}
+          color="#fff"
+          style={{marginRight: 6}}
+        />
+        <Text style={rideStep4Styles.joinButtonText}>Pending</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  // ── Default: can join ─────────────────────────────────────────────────────
+  return (
     <TouchableOpacity style={rideStep4Styles.joinButton} onPress={onJoin}>
       <FontAwesome
         name="plus"
@@ -51,7 +132,11 @@ const RideActionButton = ({isOwner, onJoin, onStart}) =>
       <Text style={rideStep4Styles.joinButtonText}>Join</Text>
     </TouchableOpacity>
   );
+};
 
+// ─────────────────────────────────────────────────────────────────────────────
+// RideHeroCard — unchanged
+// ─────────────────────────────────────────────────────────────────────────────
 const RideHeroCard = ({
   rideName,
   date,
@@ -124,9 +209,12 @@ const RideHeroCard = ({
   </View>
 );
 
+// ─────────────────────────────────────────────────────────────────────────────
+// RideStep4
+// ─────────────────────────────────────────────────────────────────────────────
 const RideStep4 = props => {
   const navigation = useNavigation();
-  const {username: authUsername} = useAuth(); // ← token auto-read by ApiClient
+  const {username: authUsername} = useAuth();
 
   const routeParams = props.route?.params || {};
   const merged = {...routeParams, ...props};
@@ -150,12 +238,26 @@ const RideStep4 = props => {
     skipCoordsFetch = false,
   } = merged;
 
-  // Use auth username as fallback for currentUsername
+  // Prefer the currentUsername passed via params (set by buildRideStep4Params),
+  // fall back to the auth context username.
   const resolvedCurrentUsername = currentUsername || authUsername;
 
   const hasFetchedRef = useRef(skipCoordsFetch && !!passedRideDetails);
   const {joinRide} = useJoinRide();
 
+  // ── Action status ─────────────────────────────────────────────────────────
+  // Start as "loading" so the button shows a spinner instead of "Join"
+  // while the API call is in flight. This prevents the owner seeing "Join".
+  const [actionStatusLoading, setActionStatusLoading] = useState(true);
+  const [actionStatus, setActionStatus] = useState({
+    isOwner: false,
+    hasJoined: false,
+    hasPendingRequest: false,
+    rideStarted: false,
+    isActive: false,
+  });
+
+  // ── UI state ──────────────────────────────────────────────────────────────
   const [state, setState] = useState({
     mapImage: null,
     startMapImage: passedRideDetails?.magImageStartingLocation || null,
@@ -171,51 +273,44 @@ const RideStep4 = props => {
 
   const patchState = patch => setState(prev => ({...prev, ...patch}));
 
-  const rawFallbackCoords = {
-    startingPoint: startingPoint
-      ? typeof startingPoint === 'string'
-        ? isValidCoordinate(merged.startLat, merged.startLng)
-          ? {
-              name: startingPoint,
-              lat: parseFloat(merged.startLat),
-              lng: parseFloat(merged.startLng),
-            }
-          : null
-        : startingPoint
-      : null,
-    endingPoint: endingPoint
-      ? typeof endingPoint === 'string'
-        ? isValidCoordinate(merged.endLat, merged.endLng)
-          ? {
-              name: endingPoint,
-              lat: parseFloat(merged.endLat),
-              lng: parseFloat(merged.endLng),
-            }
-          : null
-        : endingPoint
-      : null,
-    stopPoints: Array.isArray(stopPoints) ? stopPoints : [],
-  };
+  // ── fetchActionStatus — defined with useCallback so it is stable ──────────
+  // The backend derives the username from the JWT in the Authorization header,
+  // so we do NOT need to send the username from the frontend.
+  const fetchActionStatus = useCallback(async () => {
+    if (!generatedRidesId) return;
+    setActionStatusLoading(true);
+    try {
+      const status = await rideAction.getRideActionStatus(generatedRidesId);
+      console.log('Action status response:', status);
 
-  const mapCoords = useMemo(
-    () =>
-      processRideCoordinates(state.rideDetailsWithCoords) || rawFallbackCoords,
-    [state.rideDetailsWithCoords],
-  );
+      setActionStatus({
+        isOwner: status?.isOwner ?? false,
+        hasJoined: status?.hasJoined ?? false,
+        hasPendingRequest: status?.hasPendingRequest ?? false,
+        rideStarted: status?.rideStarted ?? false,
+        isActive: status?.isActive ?? false,
+      });
+    } catch (error) {
+      console.warn('Failed to fetch action status:', error);
+    } finally {
+      setActionStatusLoading(false);
+    }
+  }, [generatedRidesId]);
 
-  const hasValidRouteData =
-    (mapCoords.startingPoint?.lat && mapCoords.startingPoint?.lng) ||
-    (mapCoords.endingPoint?.lat && mapCoords.endingPoint?.lng) ||
-    state.rideDetailsWithCoords;
-
+  // ── Handlers ──────────────────────────────────────────────────────────────
   const handleJoinRide = () => {
+    // Safety guard: owner should never reach this, but just in case
+    if (actionStatus.isOwner) {
+      Alert.alert('Info', 'You are the owner of this ride.');
+      return;
+    }
     if (!generatedRidesId) {
       Alert.alert('Error', 'Missing ride information. Please try again.');
       return;
     }
-    joinRide(generatedRidesId, null, () =>
-      console.log('Successfully requested to join ride'),
-    );
+    joinRide(generatedRidesId, null, () => {
+      fetchActionStatus();
+    });
   };
 
   const handleSwipeToMap = () => {
@@ -234,19 +329,24 @@ const RideStep4 = props => {
         startedBy: resolvedCurrentUsername,
         startingPointName: rideDetails?.startingPointName || startingPoint,
         endingPointName: rideDetails?.endingPointName || endingPoint,
-        // ✅ Pass full coordinate objects, not strings
         startingPoint: mapCoords.startingPoint,
         endingPoint: mapCoords.endingPoint,
         stopPoints: mapCoords.stopPoints || [],
         participants: participants || [],
+        mapImage: state.mapImage || null,
+        startMapImage: state.startMapImage || null,
+        endMapImage: state.endMapImage || null,
+        rideNameImage: state.rideNameImage || [],
         isActive: true,
       },
       username: resolvedCurrentUsername,
     });
   };
+
   const handleStartRide = async () => {
     try {
       await startService.startRide(generatedRidesId);
+      fetchActionStatus();
       navigation.navigate('StartedRide', {
         activeRide: {
           generatedRidesId,
@@ -280,7 +380,53 @@ const RideStep4 = props => {
     }
   };
 
-  // ── Data fetching — all services auto-read token from AsyncStorage ────────
+  // ── Coordinate processing ─────────────────────────────────────────────────
+  const rawFallbackCoords = {
+    startingPoint: startingPoint
+      ? typeof startingPoint === 'string'
+        ? isValidCoordinate(merged.startLat, merged.startLng)
+          ? {
+              name: startingPoint,
+              lat: parseFloat(merged.startLat),
+              lng: parseFloat(merged.startLng),
+            }
+          : null
+        : startingPoint
+      : null,
+    endingPoint: endingPoint
+      ? typeof endingPoint === 'string'
+        ? isValidCoordinate(merged.endLat, merged.endLng)
+          ? {
+              name: endingPoint,
+              lat: parseFloat(merged.endLat),
+              lng: parseFloat(merged.endLng),
+            }
+          : null
+        : endingPoint
+      : null,
+    stopPoints: Array.isArray(stopPoints) ? stopPoints : [],
+  };
+
+  const mapCoords = useMemo(() => {
+    if (state.rideDetailsWithCoords) {
+      return processRideCoordinates(state.rideDetailsWithCoords);
+    }
+    return rawFallbackCoords;
+  }, [state.rideDetailsWithCoords, rawFallbackCoords]);
+
+  const hasValidRouteData =
+    (mapCoords.startingPoint?.lat && mapCoords.startingPoint?.lng) ||
+    (mapCoords.endingPoint?.lat && mapCoords.endingPoint?.lng) ||
+    state.rideDetailsWithCoords;
+
+  // ── Effects ───────────────────────────────────────────────────────────────
+
+  // Fetch action status when the ride ID is available
+  useEffect(() => {
+    fetchActionStatus();
+  }, [fetchActionStatus]);
+
+  // Fetch location image
   useEffect(() => {
     if (!locationName) return;
     patchState({rideNameImageLoading: true, rideNameImageError: null});
@@ -296,6 +442,7 @@ const RideStep4 = props => {
       .finally(() => patchState({rideNameImageLoading: false}));
   }, [locationName]);
 
+  // Fetch map image
   useEffect(() => {
     if (!generatedRidesId) return;
     patchState({imageLoading: true});
@@ -305,6 +452,7 @@ const RideStep4 = props => {
       .finally(() => patchState({imageLoading: false}));
   }, [generatedRidesId]);
 
+  // Fetch ride details with coordinates
   useEffect(() => {
     if (!generatedRidesId || hasFetchedRef.current) return;
     hasFetchedRef.current = true;
@@ -327,6 +475,7 @@ const RideStep4 = props => {
       });
   }, [generatedRidesId]);
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <View style={rideStep4Styles.container}>
       <StatusBar
@@ -349,9 +498,13 @@ const RideStep4 = props => {
         </View>
         <View style={header.right}>
           <RideActionButton
-            isOwner={username === resolvedCurrentUsername}
+            isOwner={actionStatus.isOwner}
             onJoin={handleJoinRide}
             onStart={handleStartRide}
+            hasJoined={actionStatus.hasJoined}
+            hasPendingRequest={actionStatus.hasPendingRequest}
+            rideStarted={actionStatus.rideStarted}
+            isLoading={actionStatusLoading}
           />
         </View>
       </View>
@@ -380,13 +533,12 @@ const RideStep4 = props => {
           {hasValidRouteData && (
             <RouteMapView
               generatedRidesId={generatedRidesId}
-              startingPoint={mapCoords.startingPoint} // ← Use mapCoords object, not string
-              endingPoint={mapCoords.endingPoint} // ← Use mapCoords object, not string
+              startingPoint={mapCoords.startingPoint}
+              endingPoint={mapCoords.endingPoint}
               stopPoints={mapCoords.stopPoints}
               style={{flex: 1}}
               isDark={true}
             />
-
           )}
         </View>
 

@@ -3,6 +3,7 @@ package leyans.RidersHub.Controller;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import leyans.RidersHub.Config.Security.SecurityUtils;
+import leyans.RidersHub.DTO.Request.RideActionStatusDTO;
 import leyans.RidersHub.DTO.Request.RiderDTO.RiderTypeRequest;
 import leyans.RidersHub.DTO.Request.RidesDTO.RideRequestDTO;
 import leyans.RidersHub.DTO.Request.RidesDTO.StopPointDTO;
@@ -10,6 +11,7 @@ import leyans.RidersHub.DTO.Response.RideDetailDTO;    // ← new
 import leyans.RidersHub.DTO.Response.RideSummaryDTO;  // ← new
 import leyans.RidersHub.Service.RiderService;
 import leyans.RidersHub.Service.RidesService;
+import leyans.RidersHub.Utility.RideActionUtil;
 import leyans.RidersHub.Utility.RidesUtil;
 import leyans.RidersHub.model.RiderType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,11 +32,14 @@ public class RiderController {
     private final RidesService ridesService;
     private final RidesUtil ridesUtil;
 
+    private final RideActionUtil rideActionUtil;
+
     @Autowired
-    public RiderController(RiderService riderService, RidesService ridesService, RidesUtil ridesUtil) {
+    public RiderController(RiderService riderService, RidesService ridesService, RidesUtil ridesUtil, RideActionUtil rideActionUtil) {
         this.riderService = riderService;
         this.ridesService = ridesService;
         this.ridesUtil = ridesUtil;
+        this.rideActionUtil = rideActionUtil;
     }
 
     @PostMapping("/rider-type")
@@ -153,6 +158,18 @@ public class RiderController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error retrieving rides: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{generatedRidesId}/action-status")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<RideActionStatusDTO> getRideActionStatus(
+            @PathVariable String generatedRidesId) {
+        try {
+            RideActionStatusDTO status = rideActionUtil.getRideActionStatusForCurrentUser(generatedRidesId);
+            return ResponseEntity.ok(status);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

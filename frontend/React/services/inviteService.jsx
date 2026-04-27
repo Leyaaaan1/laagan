@@ -28,6 +28,15 @@ export const inviteService = {
     return response.text();
   },
 
+  getInviteDetailsByToken: async (inviteToken, token = null) => {
+    const response = await api.get(
+      `/invite-request/token/${inviteToken}`,
+      token,
+    );
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return response.json();
+  },
+
   getAllInviteData: async (generatedRidesId, token = null) => {
     const [qrUrl, qrBase64, inviteLink] = await Promise.all([
       inviteService.getQrCodeUrl(generatedRidesId, token).catch(() => null),

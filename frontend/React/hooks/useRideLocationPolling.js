@@ -53,12 +53,12 @@ export const useLocationPermission = () => {
 };
 
 export const useRideLocationPolling = ({
-                                         rideId,
-                                         enabled = true,
-                                         onLocationsUpdate,
-                                         onError,
-                                       }) => {
-  const {token} = useAuth();
+  rideId,
+  enabled = true,
+  onLocationsUpdate,
+  onError,
+}) => {
+  const {token} = useAuth(); // ✅ Get token from auth context
   const [isPolling, setIsPolling] = useState(false);
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -74,6 +74,7 @@ export const useRideLocationPolling = ({
   const enabledRef = useRef(enabled);
   const isPollingRef = useRef(false);
   const isOfflineRef = useRef(false);
+  const tokenRef = useRef(token); // ✅ Keep track of token updates
 
   useEffect(() => {
     enabledRef.current = enabled;
@@ -82,6 +83,15 @@ export const useRideLocationPolling = ({
   useEffect(() => {
     isOfflineRef.current = isOffline;
   }, [isOffline]);
+
+  // ✅ NEW: Update tokenRef whenever token changes
+  useEffect(() => {
+    tokenRef.current = token;
+    console.log(
+      '🔐 Auth token updated:',
+      token ? '✅ Available' : '❌ Missing',
+    );
+  }, [token]);
 
   const handlePollingError = useCallback(
     err => {
@@ -127,13 +137,27 @@ export const useRideLocationPolling = ({
     }
 
     try {
+      // ✅ Check if token is available
+      if (!tokenRef.current) {
+        throw new Error('AUTH_MISSING - No access token available');
+      }
+
       const {latitude, longitude} = await getCurrentPosition();
 
-      // ✅ Pass rideId (now an Integer from startedRideId)
+      console.log('📍 Location obtained, sharing:', {latitude, longitude});
+
+      // ✅ FIX: Pass token as 4th parameter
       const allLocations = await shareLocationAndFetchAll(
         rideId,
         latitude,
         longitude,
+        tokenRef.current, // ← PASS THE TOKEN HERE
+      );
+
+      console.log(
+        '✅ Locations received:',
+        allLocations.length,
+        'participants',
       );
 
       retryCountRef.current = 0;
@@ -150,7 +174,7 @@ export const useRideLocationPolling = ({
     } finally {
       pollLock.current.release();
     }
-  }, [rideId, token, onLocationsUpdate, handlePollingError]);
+  }, [rideId, handlePollingError]); // ✅ Remove token from deps, use tokenRef
 
   useEffect(() => {
     pollOnceRef.current = pollLocationOnce;
@@ -165,6 +189,13 @@ export const useRideLocationPolling = ({
 
   const startPolling = useCallback(() => {
     if (intervalManager.current.isRunning()) {
+      return;
+    }
+
+    // ✅ Check token before starting
+    if (!tokenRef.current) {
+      console.warn('⚠️  Cannot start polling: no access token available');
+      setError('AUTH_MISSING - Please login again');
       return;
     }
 
@@ -195,7 +226,7 @@ export const useRideLocationPolling = ({
         setError(null);
         setIsOffline(false);
 
-        if (enabledRef.current && rideId && token) {
+        if (enabledRef.current && rideId && tokenRef.current) {
           startPolling();
         }
       }
@@ -204,17 +235,17 @@ export const useRideLocationPolling = ({
     return () => {
       unsubscribe();
     };
-  }, [rideId, stopPolling, token, startPolling]);
+  }, [rideId, stopPolling, startPolling]);
 
   useEffect(() => {
-    if (enabled && rideId && token) {
+    if (enabled && rideId && tokenRef.current) {
       startPolling();
     } else {
       stopPolling();
     }
 
     return () => stopPolling();
-  }, [enabled, rideId, startPolling, stopPolling]);
+  }, [enabled, rideId, token, startPolling, stopPolling]); // ✅ Add token to dependencies
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextState => {
@@ -224,7 +255,7 @@ export const useRideLocationPolling = ({
 
       if (wasBackground && isNowActive) {
         console.log('📲 App foregrounded — resuming polling');
-        if (enabledRef.current && !isPollingRef.current) {
+        if (enabledRef.current && !isPollingRef.current && tokenRef.current) {
           startPolling();
         }
       } else if (isNowBackground) {

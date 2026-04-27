@@ -51,7 +51,6 @@ const SearchHeader = ({ navigation}) => {
             placeholderTextColor="#ccc"
             value={searchId}
             onChangeText={setSearchId}
-            keyboardType="numeric"
           />
           <TouchableOpacity
             onPress={handleSearch}

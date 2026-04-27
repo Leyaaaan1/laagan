@@ -15,18 +15,18 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableCaching
 public class RidersHubApplication {
 
-	public static void main(String[] args) {
-		// Load .env file from classpath or working directory
+	static {
 		Dotenv dotenv = Dotenv.configure()
+				.directory("./backend")  // Adjust path if needed
 				.ignoreIfMissing()
 				.load();
 
-		// Apply dotenv variables to system properties
 		dotenv.entries().forEach(entry ->
 				System.setProperty(entry.getKey(), entry.getValue())
 		);
-
-		SpringApplication.run(RidersHubApplication.class, args);
 	}
 
+	public static void main(String[] args) {
+		SpringApplication.run(RidersHubApplication.class, args);
+	}
 }
