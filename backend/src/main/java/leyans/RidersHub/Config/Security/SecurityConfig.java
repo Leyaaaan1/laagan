@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -19,6 +20,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+// ─────────────────────────────────────────────────────────────────────────────
+// ADDED: @EnableMethodSecurity enables @PreAuthorize / @PostAuthorize on
+//        individual controller methods. Without this, @PreAuthorize annotations
+//        are silently ignored even if you add them.
+// ─────────────────────────────────────────────────────────────────────────────
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Autowired
@@ -28,14 +35,20 @@ public class SecurityConfig {
         this.jwtFilter = jwtFilter;
     }
 
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/riders/login", "/riders/register", "/riders/refresh").permitAll()
+
+                        // Public endpoints — no token required
+                        .requestMatchers("/riders/login", "/riders/register", "/riders/refresh")
+                        .permitAll()
+
+                        // All authenticated riders can access all app endpoints.
+                        // Role-based restrictions can be added later via
+                        // @PreAuthorize on individual controller methods.
                         .requestMatchers(
                                 "/rides/*/start",
                                 "/riders/rider-type",
@@ -62,6 +75,7 @@ public class SecurityConfig {
                                 "/update"
                         )
                         .authenticated()
+
                         .anyRequest().authenticated())
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -76,7 +90,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(UserDetailsManager userDetailsManager, PasswordEncoder passwordEncoder) {
+    public AuthenticationManager authenticationManager(UserDetailsManager userDetailsManager,
+                                                       PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
         authenticationProvider.setUserDetailsService(userDetailsManager);
         authenticationProvider.setPasswordEncoder(passwordEncoder);

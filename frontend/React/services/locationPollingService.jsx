@@ -21,6 +21,7 @@ export const getCurrentPosition = async () => {
           longitude: position.coords.longitude,
         }),
       () => {
+        // Fallback to quick low-accuracy location
         Geolocation.getCurrentPosition(
           position =>
             resolve({
@@ -28,13 +29,17 @@ export const getCurrentPosition = async () => {
               longitude: position.coords.longitude,
             }),
           err => reject(new Error(`GPS Error (${err.code}): ${err.message}`)),
-          {enableHighAccuracy: false, timeout: 10000, maximumAge: 30000},
+          {
+            enableHighAccuracy: false,
+            timeout: 5000, // ← REDUCED from 10000
+            maximumAge: 60000,
+          },
         );
       },
       {
         enableHighAccuracy: true,
-        timeout: 45000,
-        maximumAge: 10000,
+        timeout: 8000, // ← REDUCED from 45000
+        maximumAge: 5000, // ← REDUCED from 10000
         forceRequestLocation: true,
         showLocationDialog: true,
       },

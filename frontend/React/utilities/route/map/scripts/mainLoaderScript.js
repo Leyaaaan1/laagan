@@ -15,13 +15,18 @@ export const mainLoaderScript = () => `
             return;
         }
 
-        const routeDisplayed = window.displayRoute(routeData);
-
-        if (routeDisplayed) {
-            setTimeout(() => {
-                window.addRouteMarkers();
-            }, 200);
+        // ✨ NEW: Try to display route, but don't fail if routeData is null
+        let routeDisplayed = false;
+        if (routeData) {
+            routeDisplayed = window.displayRoute(routeData);
+        } else {
+            console.warn('⚠️ No route data provided, skipping route display');
         }
+
+        // Always add markers (start, end, stops) regardless of route availability
+        setTimeout(() => {
+            window.addRouteMarkers();
+        }, 200);
 
         if (userLocation) {
             window.updateUserLocation(userLocation);

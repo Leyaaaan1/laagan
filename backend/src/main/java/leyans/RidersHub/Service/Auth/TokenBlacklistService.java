@@ -1,5 +1,6 @@
 package leyans.RidersHub.Service.Auth;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
@@ -21,13 +22,18 @@ public class TokenBlacklistService {
 
     private final RedisTemplate<String, String> redisTemplate;
 
-    public TokenBlacklistService(RedisTemplate<String, String> redisTemplate) {
+    // CHANGED: Added @Qualifier("ridersHubRedisTemplate") to explicitly pick our
+    // custom bean. Without this, Spring sees two RedisTemplate<String, String>
+    // candidates — ours and Spring Boot's own "stringRedisTemplate" — and fails
+    // with a NoUniqueBeanDefinitionException.
+    public TokenBlacklistService(
+            @Qualifier("ridersHubRedisTemplate") RedisTemplate<String, String> redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 
     /**
-     * Add a token JTI to the blacklist
-     * TTL = token expiration time
+     * Add a token JTI to the blacklist.
+     * TTL = remaining token lifetime so the key auto-expires.
      */
     public void blacklistToken(String jti, long expirationMs) {
         String key = BLACKLIST_PREFIX + jti;
@@ -41,8 +47,8 @@ public class TokenBlacklistService {
     }
 
     /**
-     * Check if a token JTI is blacklisted
-     * Returns true if token is revoked, false if still valid
+     * Check if a token JTI is blacklisted.
+     * Returns true if revoked, false if still valid.
      */
     public boolean isTokenBlacklisted(String jti) {
         String key = BLACKLIST_PREFIX + jti;
@@ -51,13 +57,13 @@ public class TokenBlacklistService {
             return exists != null && exists;
         } catch (Exception e) {
             log.warn("Error checking token blacklist for: {}", jti, e);
-            // Fail SECURE: assume token is invalid if we can't check
+            // Fail secure: treat as invalid if Redis is unreachable
             return true;
         }
     }
 
     /**
-     * Manually revoke a token (for logout, account deletion, etc)
+     * Manually revoke a token (logout, account deletion, etc.)
      */
     public void revokeToken(String jti, long remainingTimeMs) {
         if (remainingTimeMs > 0) {

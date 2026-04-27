@@ -171,7 +171,7 @@ const useCreateRide = ({token, username}) => {
   // ─── Location selection (from search result) ──────────────────────────────
   const handleLocationSelect = async location => {
     const lat = parseFloat(location.lat);
-    const lon = parseFloat(location.lng);
+    const lon = parseFloat(location.lon);
     setLocationSelected(true);
 
     const selectedName = location.display_name

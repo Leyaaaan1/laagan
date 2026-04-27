@@ -203,11 +203,15 @@ export const useRideLocationPolling = ({
     isPollingRef.current = true;
     setError(null);
 
+    // ✨ IMMEDIATE first poll - no waiting
+    console.log('🚀 Starting location polling with immediate first update');
     pollOnceRef.current();
 
+    // Then set interval for subsequent polls (every 8 seconds)
+    // ℹ️ You can reduce 8000 to 5000 for faster updates if needed
     intervalManager.current.start(() => {
       pollOnceRef.current();
-    }, 8000);
+    }, 8000); // 8 seconds between polls (after first immediate one)
   }, []);
 
   useEffect(() => {

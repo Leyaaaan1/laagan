@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useCallback, useRef} from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StatusBar,
+  RefreshControl,
+  ScrollView,
 } from 'react-native';
+import {useFocusEffect} from '@react-navigation/native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import SearchHeader from './utilities/SearchHeader';
 import {getActiveRide} from '../services/startService';
@@ -49,6 +52,8 @@ const RiderPage = ({navigation}) => {
   const [profile, setProfile] = useState(null);
   const [activeRide, setActiveRide] = useState(null);
   const [activeRideLoading, setActiveRideLoading] = useState(false);
+  const [profileRefreshing, setProfileRefreshing] = useState(false);
+  const ridesListRefRef = useRef(null);
 
   // Wait for auth to be ready before rendering
   if (!ready) {
@@ -63,41 +68,59 @@ const RiderPage = ({navigation}) => {
     );
   }
 
-  useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      try {
-        setActiveRideLoading(true);
-        const result = await getActiveRide();
-        if (!cancelled) setActiveRide(result);
-      } catch {
-        if (!cancelled) setActiveRide(null);
-      } finally {
-        if (!cancelled) setActiveRideLoading(false);
-      }
-    };
-    run();
-    return () => {
-      cancelled = true;
-    };
+  // ── Fetch active ride ─────────────────────────────────────────────────────
+  const fetchActiveRide = useCallback(async () => {
+    try {
+      setActiveRideLoading(true);
+      const result = await getActiveRide();
+      setActiveRide(result);
+    } catch (err) {
+      console.warn('Failed to fetch active ride:', err);
+      setActiveRide(null);
+    } finally {
+      setActiveRideLoading(false);
+    }
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      try {
-        const result = await getMyProfile();
-        if (!cancelled && result.success) setProfile(result.data);
-      } catch {
-      } finally {
-        if (!cancelled) setLoading(false);
+  // ── Fetch profile ─────────────────────────────────────────────────────────
+  const fetchProfile = useCallback(async () => {
+    try {
+      const result = await getMyProfile();
+      if (result.success) {
+        setProfile(result.data);
       }
-    };
-    run();
-    return () => {
-      cancelled = true;
-    };
+    } catch (err) {
+      console.warn('Failed to fetch profile:', err);
+    } finally {
+      setLoading(false);
+      setProfileRefreshing(false);
+    }
   }, []);
+
+  // ── Refresh all data ──────────────────────────────────────────────────────
+  const handleRefreshAll = useCallback(async () => {
+    setProfileRefreshing(true);
+    await Promise.all([fetchActiveRide(), fetchProfile()]);
+    // Also refresh the rides list if available
+    if (ridesListRefRef.current?.refreshRides) {
+      ridesListRefRef.current.refreshRides();
+    }
+  }, [fetchActiveRide, fetchProfile]);
+
+  // ── Load data on mount ────────────────────────────────────────────────────
+  useEffect(() => {
+    fetchActiveRide();
+    fetchProfile();
+  }, [fetchActiveRide, fetchProfile]);
+
+  // ── Refresh when screen comes into focus ──────────────────────────────────
+  // This is the KEY fix: useFocusEffect runs when the screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      // Refresh active ride and profile data when screen comes into focus
+      handleRefreshAll();
+    }, [handleRefreshAll]),
+  );
 
   const handleRideSelect = ride => {
     const params = buildRideStep4Params(ride, username);
@@ -222,7 +245,12 @@ const RiderPage = ({navigation}) => {
       </TouchableOpacity>
 
       <View style={{flex: 1}}>
-        <RidesList onRideSelect={handleRideSelect} mode="all" pageSize={10} />
+        <RidesList
+          onRideSelect={handleRideSelect}
+          mode="all"
+          pageSize={10}
+          ref={ridesListRefRef}
+        />
       </View>
     </View>
   );

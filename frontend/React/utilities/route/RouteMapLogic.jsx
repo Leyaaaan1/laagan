@@ -10,6 +10,7 @@ export const useRouteMapLogic = (generatedRidesId) => {
   const [routeData, setRouteData] = useState(null);
   const [error, setError] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
+  const [routeError, setRouteError] = useState(null);
 
 
   // ── getUserLocationOnce ───────────────────────────────────────────────────
@@ -91,6 +92,7 @@ export const useRouteMapLogic = (generatedRidesId) => {
     try {
       setIsLoading(true);
       setError(null);
+      setRouteError(null); // Clear previous route errors
 
       const data = await getRouteCoordinates(generatedRidesId);
 
@@ -102,18 +104,41 @@ export const useRouteMapLogic = (generatedRidesId) => {
     } catch (err) {
       const message = err?.message || 'Failed to load route data';
 
-      // ✅ FIXED: Now properly detects 401/403 errors from typed error objects
+      // Fatal errors: Session expired
       if (err?.status === 401 || err?.status === 403) {
         setError('Session expired. Please log in again.');
-        // DO NOT show a retry button for 401/403
+        setRouteData(null);
+        setRouteError(null);
         Alert.alert(
           'Session Expired',
           'Your login session has expired. Please log in again.',
           [{text: 'OK', style: 'default'}],
         );
-      } else {
-        // For other errors, keep the retry logic
+      }
+      // Non-fatal errors: GraphHopper rate limit, network issues, etc.
+      // ✨ NEW: Allow map to display with landmarks, just no route polyline
+      else if (
+        message.includes('GraphHopper') ||
+        message.includes('rate limit') ||
+        message.includes('API error')
+      ) {
+        console.warn('⚠️ Route unavailable (non-fatal):', message);
+        setRouteError(message); // Show warning but DON'T block map
+        setRouteData(null);
+        setError(null); // Don't show error screen
+        setIsLoading(false); // Allow map to render immediately
+        Alert.alert(
+          'Route Unavailable',
+          'The route cannot be loaded right now, but landmarks will be displayed.',
+          [{text: 'OK', style: 'default'}],
+        );
+        return; // Exit early — don't show retry dialog
+      }
+      // Other errors
+      else {
         setError(message);
+        setRouteError(null);
+        setRouteData(null);
         Alert.alert('Route Loading Error', message, [
           {text: 'Retry', onPress: () => fetchRouteData()},
           {text: 'Cancel', style: 'cancel'},
@@ -122,7 +147,7 @@ export const useRouteMapLogic = (generatedRidesId) => {
     } finally {
       setIsLoading(false);
     }
-  }, [generatedRidesId]); // tokenRef is a ref — stable, does not need to be listed
+  }, [generatedRidesId]);  // tokenRef is a ref — stable, does not need to be listed
 
   // ── Main effect: fetch route + request location on mount / id change ──────
   useEffect(() => {
@@ -163,7 +188,8 @@ export const useRouteMapLogic = (generatedRidesId) => {
       stopPoints,
       userLocation,
     ) => {
-      if (!webViewRef.current || !routeData) return;
+      if (!webViewRef.current) return;
+      // ✨ CHANGED: Allow routeData to be null now
 
       const script = `
       if (typeof window.loadRouteData === 'function') {
@@ -174,7 +200,9 @@ export const useRouteMapLogic = (generatedRidesId) => {
           ${JSON.stringify(stopPoints)},
           ${JSON.stringify(userLocation)}
         );
-        console.log('loadRouteData called');
+        console.log('loadRouteData called with routeData: ' + (${JSON.stringify(
+          routeData,
+        )} ? 'present' : 'null'));
       } else {
         console.error('loadRouteData function not available');
       }
@@ -220,6 +248,7 @@ export const useRouteMapLogic = (generatedRidesId) => {
     isLoading,
     routeData,
     error,
+    routeError,
     userLocation,
     fetchRouteData,
     handleWebViewLoad,
