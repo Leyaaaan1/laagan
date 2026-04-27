@@ -50,7 +50,7 @@ public class RideLocationService {
             StartedRide started = riderUtil.findStartedRideById(startedRideId);
 
             List<RiderLocation> locations = locationRepo.findLatestLocationPerParticipantOptimized(started.getId());
-            System.out.println("✅ Retrieved " + locations.size() + " location updates");
+            System.out.println(" Retrieved " + locations.size() + " location updates");
 
             List<LocationUpdateRequestDTO> result = locations.stream().map(loc -> {
                 Point p = loc.getLocation();
@@ -98,7 +98,6 @@ public class RideLocationService {
 
         Point userPoint = locationService.createPoint(longitude, latitude);
 
-        // ✅ FIX: Provide a fallback so location_name is never null
         String barangayName = locationService.resolveBarangayName(null, latitude, longitude);
         String locationName = "Unknown Location"; // ← fallback default
         if (barangayName != null) {

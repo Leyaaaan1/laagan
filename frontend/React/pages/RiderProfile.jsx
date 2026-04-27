@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import {getMyProfile} from '../services/profileService';
+import {authService} from '../services/authService';
 import {buildRideStep4Params} from '../utilities/NavigationParamsBuilder';
 import profileStyles from '../styles/screens/Profilestyles';
 import ProfileList from './utilities/ProfileList';
@@ -70,12 +72,13 @@ function SectionCard({title, children, right}) {
 }
 
 export default function RiderProfile({route, navigation}) {
-  const {username: authUsername} = useAuth();
+  const {username: authUsername, token, logout} = useAuth();
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -109,6 +112,29 @@ export default function RiderProfile({route, navigation}) {
     // buildRideStep4Params takes (rideData, currentUsername) — 2 args only
     const params = buildRideStep4Params(ride, loggedInUsername);
     navigation.navigate('RideStep4', params);
+  };
+
+  const handleLogout = async () => {
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      {text: 'Cancel', style: 'cancel'},
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          setLoggingOut(true);
+          try {
+            if (token) {
+              await authService.logout(token);
+            }
+            await logout();
+            navigation.navigate('AuthScreen');
+          } catch (err) {
+            Alert.alert('Error', 'Logout failed');
+            setLoggingOut(false);
+          }
+        },
+      },
+    ]);
   };
 
   if (loading) {
@@ -212,6 +238,40 @@ export default function RiderProfile({route, navigation}) {
             pageSize={5}
           />
         </SectionCard>
+
+        {/* ✅ NEW: Logout Button */}
+        <TouchableOpacity
+          onPress={handleLogout}
+          disabled={loggingOut}
+          style={{
+            marginHorizontal: 16,
+            marginVertical: 16,
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            backgroundColor: '#8c2323',
+            borderRadius: 8,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: loggingOut ? 0.6 : 1,
+          }}>
+          {loggingOut ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <FontAwesome name="sign-out" size={16} color="#fff" />
+              <Text
+                style={{
+                  color: '#fff',
+                  fontSize: 16,
+                  fontWeight: '600',
+                  marginLeft: 8,
+                }}>
+                Logout
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
 
         <View style={{height: 32}} />
       </ScrollView>

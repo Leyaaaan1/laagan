@@ -25,6 +25,7 @@ const StartedRide = ({route, navigation}) => {
   const {username: authUsername} = useAuth();
   const username = authUsername || routeUsername;
 
+
   const [showRouteInfo, setShowRouteInfo] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const [riderMarkers, setRiderMarkers] = useState({});
@@ -74,7 +75,7 @@ const StartedRide = ({route, navigation}) => {
     onLocationsUpdate: locations => {
       const markers = {};
       locations.forEach(loc => {
-        markers[loc.initiator] = {
+        markers[loc.username] = {
           latitude: loc.latitude,
           longitude: loc.longitude,
           updatedAt: loc.timestamp,
@@ -349,22 +350,19 @@ const StartedRide = ({route, navigation}) => {
                 </View>
 
                 {activeRide.participants?.length > 0 ? (
-                  activeRide.participants.map((participant, index) => {
-                    const liveLocation = riderMarkers[participant.username];
+                  activeRide.participants.map((participantUsername, index) => {
+                    // ✅ FIX: participantUsername is just a STRING, not an object
+                    const liveLocation = riderMarkers[participantUsername];
                     return (
                       <View key={index} style={startedRide.participantItem}>
                         <View style={startedRide.participantAvatar}>
                           <Text style={startedRide.participantInitial}>
-                            {(participant.username ||
-                              participant.name ||
-                              'U')[0].toUpperCase()}
+                            {(participantUsername || 'U')[0].toUpperCase()}
                           </Text>
                         </View>
                         <View style={startedRide.participantInfo}>
                           <Text style={startedRide.participantName}>
-                            {participant.username ||
-                              participant.name ||
-                              'Unknown User'}
+                            {participantUsername || 'Unknown User'}
                           </Text>
                           {liveLocation ? (
                             <Text
@@ -392,8 +390,7 @@ const StartedRide = ({route, navigation}) => {
                             startedRide.participantStatusDot,
                             liveLocation
                               ? {backgroundColor: '#4CAF50'}
-                              : participant.isActive &&
-                                startedRide.participantStatusActive,
+                              : startedRide.participantStatusActive,
                           ]}
                         />
                       </View>

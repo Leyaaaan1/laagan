@@ -1,6 +1,7 @@
 package leyans.RidersHub.Controller.Auth;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,7 +19,11 @@ public class HealthController {
 
     private static final Logger log = LoggerFactory.getLogger(HealthController.class);
 
+    // CHANGED: Added @Qualifier to explicitly pick our custom bean.
+    // Without it, Spring finds both ridersHubRedisTemplate and Spring Boot's
+    // stringRedisTemplate and fails with "expected single matching bean but found 2".
     @Autowired(required = false)
+    @Qualifier("ridersHubRedisTemplate")
     private RedisTemplate<String, String> redisTemplate;
 
     @GetMapping
@@ -28,7 +33,6 @@ public class HealthController {
         response.put("service", "RidersHub API");
 
         try {
-            // Test Redis connection
             if (redisTemplate != null) {
                 redisTemplate.opsForValue().set("health-check", "ok", Duration.ofSeconds(10));
                 String value = redisTemplate.opsForValue().get("health-check");

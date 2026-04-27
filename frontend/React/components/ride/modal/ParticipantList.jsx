@@ -166,13 +166,14 @@ const ParticipantList = ({
   useEffect(() => {
     if (!visible) return;
     if (state.activeTab === 'rides') loadMyRides();
-    else if (state.activeTab === 'requests' && generatedRidesId && isOwner)
+    // CHANGED: Load join requests for all participants, not just owner
+    else if (state.activeTab === 'requests' && generatedRidesId)
       loadJoinRequests();
-    if (isOwner && generatedRidesId) loadQrCode();
+    // CHANGED: Load QR code for all participants, not just owner
+    if (generatedRidesId) loadQrCode();
   }, [
     visible,
     state.activeTab,
-    isOwner,
     loadMyRides,
     loadJoinRequests,
     loadQrCode,
@@ -219,7 +220,8 @@ const ParticipantList = ({
               )}
             </View>
           </View>
-          {isPending && (
+          {/* CHANGED: Only show approve/reject buttons if isOwner AND status is PENDING */}
+          {isPending && isOwner && (
             <View style={modal.requestActions}>
               <TouchableOpacity
                 style={[modal.actionButton, modal.approveButton]}
@@ -268,34 +270,36 @@ const ParticipantList = ({
     <Modal visible={visible} animationType="slide" transparent>
       <View style={modal.overlay}>
         <View style={modal.container}>
-          {isOwner && (
-            <View style={modal.qrSection}>
-              <TouchableOpacity onPress={onClose} style={modal.closeButton}>
-                <FontAwesome name="times" size={20} color="#fff" />
-              </TouchableOpacity>
-              <Text style={modal.qrTitle}>Share Your Ride</Text>
-              {state.loadingQr ? (
-                <View style={feedback.loadingInline}>
-                  <ActivityIndicator size="small" color="#8c2323" />
-                  <Text style={feedback.loadingText}>Loading QR...</Text>
-                </View>
-              ) : state.qrCodeUrl ? (
-                <View style={modal.qrContainer}>
-                  <Image
-                    source={{uri: state.qrCodeUrl}}
-                    style={modal.qrImage}
-                    resizeMode="contain"
-                  />
-                </View>
-              ) : (
-                <View style={feedback.imagePlaceholder}>
-                  <FontAwesome name="qrcode" size={60} color="#cbd5e1" />
-                  <Text style={feedback.imagePlaceholderText}>
-                    QR Code Unavailable
-                  </Text>
-                </View>
-              )}
-              <View style={modal.qrActions}>
+          {/* CHANGED: Removed isOwner check - now visible to all participants */}
+          <View style={modal.qrSection}>
+            <TouchableOpacity onPress={onClose} style={modal.closeButton}>
+              <FontAwesome name="times" size={20} color="#fff" />
+            </TouchableOpacity>
+            <Text style={modal.qrTitle}>Share Your Ride</Text>
+            {state.loadingQr ? (
+              <View style={feedback.loadingInline}>
+                <ActivityIndicator size="small" color="#8c2323" />
+                <Text style={feedback.loadingText}>Loading QR...</Text>
+              </View>
+            ) : state.qrCodeUrl ? (
+              <View style={modal.qrContainer}>
+                <Image
+                  source={{uri: state.qrCodeUrl}}
+                  style={modal.qrImage}
+                  resizeMode="contain"
+                />
+              </View>
+            ) : (
+              <View style={feedback.imagePlaceholder}>
+                <FontAwesome name="qrcode" size={60} color="#cbd5e1" />
+                <Text style={feedback.imagePlaceholderText}>
+                  QR Code Unavailable
+                </Text>
+              </View>
+            )}
+            <View style={modal.qrActions}>
+              {/* CHANGED: Only show Share button if isOwner */}
+              {isOwner && (
                 <TouchableOpacity
                   style={modal.qrActionButton}
                   onPress={handleShareQrCode}
@@ -303,15 +307,18 @@ const ParticipantList = ({
                   <FontAwesome name="share-alt" size={16} color="#fff" />
                   <Text style={modal.qrActionButtonText}>Share</Text>
                 </TouchableOpacity>
+              )}
+              {/* CHANGED: Only show Refresh button if isOwner */}
+              {isOwner && (
                 <TouchableOpacity
                   style={[modal.qrActionButton, modal.qrActionButtonSecondary]}
                   onPress={loadQrCode}>
                   <FontAwesome name="refresh" size={16} color="#fff" />
                   <Text style={modal.qrActionButtonText}>Refresh</Text>
                 </TouchableOpacity>
-              </View>
+              )}
             </View>
-          )}
+          </View>
 
           <View style={modal.tabContainer}>
             <TouchableOpacity
@@ -341,35 +348,34 @@ const ParticipantList = ({
                 </View>
               )}
             </TouchableOpacity>
-            {isOwner && (
-              <TouchableOpacity
+            {/* CHANGED: Removed isOwner check - now visible to all participants */}
+            <TouchableOpacity
+              style={[
+                modal.tab,
+                state.activeTab === 'requests' && modal.tabActive,
+              ]}
+              onPress={() =>
+                setState(prev => ({...prev, activeTab: 'requests'}))
+              }>
+              <FontAwesome
+                name="clock-o"
+                size={16}
+                color={state.activeTab === 'requests' ? '#8c2323' : '#666'}
+                style={{marginRight: 8}}
+              />
+              <Text
                 style={[
-                  modal.tab,
-                  state.activeTab === 'requests' && modal.tabActive,
-                ]}
-                onPress={() =>
-                  setState(prev => ({...prev, activeTab: 'requests'}))
-                }>
-                <FontAwesome
-                  name="clock-o"
-                  size={16}
-                  color={state.activeTab === 'requests' ? '#8c2323' : '#666'}
-                  style={{marginRight: 8}}
-                />
-                <Text
-                  style={[
-                    modal.tabText,
-                    state.activeTab === 'requests' && modal.tabTextActive,
-                  ]}>
-                  Requests
-                </Text>
-                {pendingCount > 0 && (
-                  <View style={[modal.tabBadge, {backgroundColor: '#8c2323'}]}>
-                    <Text style={modal.tabBadgeText}>{pendingCount}</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            )}
+                  modal.tabText,
+                  state.activeTab === 'requests' && modal.tabTextActive,
+                ]}>
+                Requests
+              </Text>
+              {pendingCount > 0 && (
+                <View style={[modal.tabBadge, {backgroundColor: '#8c2323'}]}>
+                  <Text style={modal.tabBadgeText}>{pendingCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
           </View>
 
           <View style={modal.content}>
@@ -399,9 +405,10 @@ const ParticipantList = ({
                 )}
               </View>
             )}
-            {state.activeTab === 'requests' && isOwner && (
+            {/* CHANGED: Removed isOwner check - now visible to all participants */}
+            {state.activeTab === 'requests' && (
               <View style={{flex: 1}}>
-                {pendingCount > 0 && (
+                {pendingCount > 0 && isOwner && (
                   <TouchableOpacity
                     style={[modal.qrActionButton, {marginBottom: 16}]}
                     onPress={handleApproveAll}>

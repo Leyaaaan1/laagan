@@ -1,6 +1,5 @@
 package leyans.RidersHub.Config.Redis;
 
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -21,35 +20,53 @@ public class RedisConfig {
     private static final Logger log = LoggerFactory.getLogger(RedisConfig.class);
 
     @Bean
-    public RedisTemplate<String, Integer> redisTemplate(RedisConnectionFactory connectionFactory) {
-        log.info(" Configuring RedisTemplate with Lettuce...");
+    public RedisTemplate<String, String> ridersHubRedisTemplate(RedisConnectionFactory connectionFactory) {
+        log.info("Configuring ridersHubRedisTemplate<String, String> with Lettuce...");
 
-        RedisTemplate<String, Integer> template = new RedisTemplate<>();
+        RedisTemplate<String, String> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
 
         StringRedisSerializer stringSerializer = new StringRedisSerializer();
 
-        // Configure serializers
         template.setKeySerializer(stringSerializer);
         template.setValueSerializer(stringSerializer);
         template.setHashKeySerializer(stringSerializer);
         template.setHashValueSerializer(stringSerializer);
 
         template.afterPropertiesSet();
-        log.info(" RedisTemplate configured successfully");
+        log.info("ridersHubRedisTemplate configured successfully");
 
         return template;
     }
 
-    /**
-     * Configure Redis Cache Manager for Spring Cache Abstraction
-     * Caches: locationImages, routes, landmarks
-     */
+    @Bean
+    public RedisTemplate<String, Integer> redisTemplateInteger(RedisConnectionFactory connectionFactory) {
+        log.info("Configuring redisTemplateInteger<String, Integer>...");
+
+        RedisTemplate<String, Integer> template = new RedisTemplate<>();
+        template.setConnectionFactory(connectionFactory);
+
+        StringRedisSerializer stringSerializer = new StringRedisSerializer();
+        GenericJackson2JsonRedisSerializer jackson2JsonRedisSerializer = new GenericJackson2JsonRedisSerializer();
+
+        // Key serializer: String
+        template.setKeySerializer(stringSerializer);
+        template.setHashKeySerializer(stringSerializer);
+
+        // Value serializer: JSON (can deserialize to Integer)
+        template.setValueSerializer(jackson2JsonRedisSerializer);
+        template.setHashValueSerializer(jackson2JsonRedisSerializer);
+
+        template.afterPropertiesSet();
+        log.info("redisTemplateInteger configured successfully");
+
+        return template;
+    }
+
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-        log.info(" Configuring RedisCacheManager for Spring Cache...");
+        log.info("Configuring RedisCacheManager for Spring Cache...");
 
-        // Default cache configuration (1 hour TTL)
         RedisCacheConfiguration defaultCacheConfig = RedisCacheConfiguration
                 .defaultCacheConfig()
                 .entryTtl(Duration.ofHours(1))
@@ -62,9 +79,11 @@ public class RedisConfig {
                 .disableCachingNullValues();
 
         RedisCacheManager cacheManager = RedisCacheManager
-                .create(connectionFactory);
+                .builder(connectionFactory)
+                .cacheDefaults(defaultCacheConfig)
+                .build();
 
-        log.info(" RedisCacheManager configured for caching");
+        log.info("RedisCacheManager configured with 1-hour TTL and JSON serialization");
 
         return cacheManager;
     }

@@ -197,7 +197,7 @@ const RideStep3 = ({
   // ── Location selection + map update ──────────────────────────────────────
   const handleSelectLocationAndUpdateMap = async (item) => {
     const lat = parseFloat(item.lat);
-    const lon = parseFloat(item.lng);
+    const lon = parseFloat(item.lon);
     let resolvedName = item.display_name ? item.display_name.split(',')[0].trim() : `${lat}, ${lon}`;
 
     try {

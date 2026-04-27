@@ -13,6 +13,7 @@ import leyans.RidersHub.Service.InteractionRequest.InviteRequestService;
 import leyans.RidersHub.model.Interaction.InviteRequest;
 import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.Rides;
+import leyans.RidersHub.model.StartedRide;
 import leyans.RidersHub.model.StopPoint;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -43,7 +45,26 @@ public class RidesUtil {
         this.riderUtil = riderUtil;
     }
 
+    @Transactional(readOnly = true)
     public ActiveRideDTO mapToActiveDTO(Rides ride, Integer startedRideId) {
+        // ✅ Use StartedRide participants if available (for active rides)
+        List<String> participantsList;
+
+        if (startedRideId != null) {
+            Optional<StartedRide> startedRide = startedRideRepository.findById(startedRideId);
+            participantsList = startedRide.map(sr -> sr.getParticipants().stream()
+                            .map(Rider::getUsername)
+                            .collect(Collectors.toList()))
+                    .orElseGet(() -> ride.getParticipants().stream()
+                            .map(Rider::getUsername)
+                            .collect(Collectors.toList()));
+        } else {
+            // For non-active rides, use Rides participants
+            participantsList = ride.getParticipants().stream()
+                    .map(Rider::getUsername)
+                    .collect(Collectors.toList());
+        }
+
         List<StopPointDTO> stopDTOs = ride.getStopPoints().stream()
                 .map(sp -> new StopPointDTO(
                         sp.getStopName(),
@@ -53,7 +74,7 @@ public class RidesUtil {
                 .collect(Collectors.toList());
 
         return new ActiveRideDTO(
-                startedRideId,  // ← Add this from StartedRide
+                startedRideId,
                 ride.getGeneratedRidesId(),
                 ride.getRidesName(),
                 ride.getLocationName(),
@@ -72,9 +93,7 @@ public class RidesUtil {
                 ride.getMagImageStartingLocation(),
                 ride.getMagImageEndingLocation(),
                 ride.getUsername().getUsername(),
-                ride.getParticipants().stream()
-                        .map(r -> r.getUsername())
-                        .collect(Collectors.toList()),
+                participantsList,
                 ride.getDescription(),
                 ride.getActive(),
                 ride.getRouteCoordinates(),

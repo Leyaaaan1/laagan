@@ -24,6 +24,7 @@ const RouteMapView = ({
     isLoading,
     routeData,
     error,
+    routeError,
     userLocation,
     fetchRouteData,
     handleWebViewLoad,
@@ -124,12 +125,13 @@ const RouteMapView = ({
       <View style={[layout.screen, style, layout.center]}>
         <ActivityIndicator size="large" color="#1e40af" />
         <Text style={[feedback.loadingText, {color: isDark ? '#fff' : '#000'}]}>
-          Loading route…
+          Loading map…
         </Text>
       </View>
     );
   }
 
+  // Only show full error screen for fatal errors (not route-specific errors)
   if (error && !routeData) {
     return (
       <View style={[layout.screen, style, layout.center]}>
@@ -150,8 +152,43 @@ const RouteMapView = ({
     );
   }
 
+  // ✨ Map renders even if route failed — markers still visible
   return (
     <View style={[layout.screen, style]}>
+      {/* Show warning banner if route failed but map is showing */}
+      {routeError && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 10,
+            left: 10,
+            right: 10,
+            backgroundColor: '#fef3c7',
+            borderLeftWidth: 4,
+            borderLeftColor: '#f59e0b',
+            padding: 12,
+            borderRadius: 6,
+            zIndex: 100,
+          }}>
+          <Text
+            style={{
+              color: '#92400e',
+              fontSize: 13,
+              fontWeight: '600',
+            }}>
+            ⚠️ Route unavailable
+          </Text>
+          <Text
+            style={{
+              color: '#b45309',
+              fontSize: 12,
+              marginTop: 4,
+            }}>
+            Showing landmarks and starting/ending points only
+          </Text>
+        </View>
+      )}
+
       <WebView
         ref={webViewRef}
         source={{html: createMapHTML()}}

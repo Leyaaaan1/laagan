@@ -1,8 +1,6 @@
 import {API_BASE_URL} from './Apiclient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Geolocation from '@react-native-community/geolocation';
 import {Platform, PermissionsAndroid} from 'react-native';
-import * as Keychain from 'react-native-keychain';
 
 export const getCurrentPosition = async () => {
   return new Promise(async (resolve, reject) => {
@@ -23,6 +21,7 @@ export const getCurrentPosition = async () => {
           longitude: position.coords.longitude,
         }),
       () => {
+        // Fallback to quick low-accuracy location
         Geolocation.getCurrentPosition(
           position =>
             resolve({
@@ -30,13 +29,17 @@ export const getCurrentPosition = async () => {
               longitude: position.coords.longitude,
             }),
           err => reject(new Error(`GPS Error (${err.code}): ${err.message}`)),
-          {enableHighAccuracy: false, timeout: 10000, maximumAge: 30000},
+          {
+            enableHighAccuracy: false,
+            timeout: 5000, // ← REDUCED from 10000
+            maximumAge: 60000,
+          },
         );
       },
       {
         enableHighAccuracy: true,
-        timeout: 45000,
-        maximumAge: 10000,
+        timeout: 8000, // ← REDUCED from 45000
+        maximumAge: 5000, // ← REDUCED from 10000
         forceRequestLocation: true,
         showLocationDialog: true,
       },
@@ -44,17 +47,17 @@ export const getCurrentPosition = async () => {
   });
 };
 
-export const shareLocationAndFetchAll = async (rideId, latitude, longitude) => {
+// ✅ FIXED: Now accepts authToken as parameter instead of getting refresh token from Keychain
+export const shareLocationAndFetchAll = async (
+  rideId,
+  latitude,
+  longitude,
+  authToken,
+) => {
   if (!rideId) throw new Error('Missing rideId');
+  if (!authToken) throw new Error('AUTH_MISSING - No access token available');
 
-  // ✅ SECURE: Get token from Keychain instead of AsyncStorage
-  const credentials = await Keychain.getGenericPassword({
-    service: 'com.ridershub.auth',
-  });
-  const authToken = credentials ? credentials.password : null;
-
-  if (!authToken) throw new Error('AUTH_MISSING');
-
+  console.log('🌍 Sharing location:', {rideId, latitude, longitude});
 
   const response = await fetch(
     `${API_BASE_URL}/location/${rideId}/share?latitude=${latitude}&longitude=${longitude}`,
@@ -79,6 +82,7 @@ export const shareLocationAndFetchAll = async (rideId, latitude, longitude) => {
 
   return response.json();
 };
+
 export const calculateBackoffDelay = retryCount =>
   Math.min(Math.pow(2, retryCount - 1) * 1000, 30000);
 
