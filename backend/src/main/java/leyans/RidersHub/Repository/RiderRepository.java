@@ -13,7 +13,7 @@ import java.util.Optional;
 @Repository
 public interface RiderRepository extends JpaRepository<Rider, Integer> {
 
-    Rider findByUsername(String username);
+    Optional<Rider> findByUsername(String username);
 
 
 

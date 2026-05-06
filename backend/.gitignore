@@ -19,6 +19,20 @@ target/
 *.iml
 *.ipr
 
+/target/surefire-reports/
+/backend/target/surefire-reports/
+*.txt
+*.xml
+test-results/
+coverage/
+*.jacoco
+
+# Maven Build Output
+/target/
+/backend/target/
+*.class
+*.jar
+
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
@@ -58,6 +72,16 @@ DerivedData
 *.ipa
 *.xcuserstate
 **/.xcode.env.local
+
+.env
+
+logs/
+*.log
+*.log.gz
+*.log.zip
+
+# Spring Boot logs
+spring.log
 
 # Android/IntelliJ
 #

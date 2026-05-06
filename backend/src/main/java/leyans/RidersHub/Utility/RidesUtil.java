@@ -252,7 +252,7 @@ public class RidesUtil {
                 .toList();
     }
 
-    public Rides validateAndGetRide(String generatedRidesId, Rider initiator) throws AccessDeniedException {
+    public Rides validateAndGetRide(String generatedRidesId, Rider initiator)  {
         Rides ride = riderUtil.findRideById(generatedRidesId);
 
         if (ride == null) {

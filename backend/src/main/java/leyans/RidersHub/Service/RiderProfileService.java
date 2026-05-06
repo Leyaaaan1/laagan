@@ -5,6 +5,7 @@ import leyans.RidersHub.DTO.Request.RiderProfileRequestDTO;
 import leyans.RidersHub.DTO.Response.RiderProfileResponseDTO;
 import leyans.RidersHub.Repository.RiderProfileRepository;
 import leyans.RidersHub.Repository.RiderTypeRepository;
+import leyans.RidersHub.Utility.AppLogger;
 import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.RiderProfile;
 import leyans.RidersHub.model.RiderType;
@@ -95,14 +96,16 @@ public class RiderProfileService {
     private RiderProfile fetchProfileOrThrow(String username) {
         return riderProfileRepository
                 .findByRiderUsernameWithTypes(username)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Profile not found for user: " + username));
+                .orElseThrow(() -> {
+                    AppLogger.warn(this.getClass(), "Profile not found for user", "username", username);
+                    return new IllegalArgumentException("Profile not found for user: " + username);
+                });
     }
 
     private RiderType fetchRiderTypeOrThrow(String typeName) {
         RiderType type = riderTypeRepository.findByRiderType(typeName);
         if (type == null) {
-            throw new IllegalArgumentException("RiderType not found: " + typeName);
+            AppLogger.throwResourceNotFound(this.getClass(), "RiderType not found: " + typeName);
         }
         return type;
     }

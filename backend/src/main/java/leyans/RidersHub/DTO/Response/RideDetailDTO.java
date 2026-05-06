@@ -37,4 +37,8 @@ public record RideDetailDTO(
         // Detail-only fields
         String           routeCoordinates,
         List<StopPointDTO> stopPoints
-) {}
+)
+
+{
+
+}

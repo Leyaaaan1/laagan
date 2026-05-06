@@ -24,17 +24,15 @@ public class UserDetailsManager implements org.springframework.security.core.use
     @Transactional
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
-        Rider rider = riderRepository.findByUsername(username);
-        if (rider == null) {
-            throw new UsernameNotFoundException("Rider not found: " + username);
-        }
+        // ✅ Use orElseThrow with proper Spring Security exception
+        Rider rider = riderRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Rider not found: " + username));
 
         RiderType riderType = rider.getRiderType();
         String role;
         if (riderType != null && riderType.getRiderType() != null) {
             role = "ROLE_" + riderType.getRiderType().toUpperCase();
         } else {
-
             role = "ROLE_RIDER";
         }
 

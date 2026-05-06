@@ -3,6 +3,7 @@ package leyans.RidersHub.Service;
 import leyans.RidersHub.Repository.PsgcDataRepository;
 import leyans.RidersHub.Repository.RiderLocationRepository;
 import leyans.RidersHub.Service.MapService.NominatimService;
+import leyans.RidersHub.Utility.AppLogger;
 import leyans.RidersHub.model.PsgcData;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -52,26 +53,37 @@ public class LocationService {
 
 
 
+
     @Cacheable(value = "landmarks", key = "'barangay_' + #lat + '_' + #lon")
     public String resolveBarangayName(String fallback, double lat, double lon) {
+        AppLogger.info(this.getClass(), "resolveBarangayName called", "fallback", fallback, "lat", lat, "lon", lon);
+
         String nominatimBarangay = nominatimService.getBarangayNameFromCoordinates(lat, lon);
 
         if (nominatimBarangay == null) {
+            AppLogger.warn(this.getClass(), "No barangay found from Nominatim, using fallback", "fallback", fallback);
             return fallback != null ? fallback : formatCoordinates(lat, lon);
         }
 
-        // Attempt to match against the PSGC dataset for the canonical spelling
-        return psgcDataRepository.findByNameIgnoreCase(nominatimBarangay)
-                .stream()
-                .findFirst()
-                .map(PsgcData::getName)
-                .orElse(nominatimBarangay); // return raw Nominatim name if PSGC has no entry
+        try {
+            String result = psgcDataRepository.findByNameIgnoreCase(nominatimBarangay)
+                    .stream()
+                    .findFirst()
+                    .map(PsgcData::getName)
+                    .orElse(nominatimBarangay);
+            AppLogger.info(this.getClass(), "Barangay resolved successfully", "result", result);
+            return result;
+        } catch (Exception e) {
+            AppLogger.error(this.getClass(), "Failed to resolve barangay name", e);
+            return nominatimBarangay;
+        }
     }
-
 
     @Cacheable(value = "landmarks", key = "'landmark_' + #lat + '_' + #lon")
     public String resolveLandMark(String fallback, double lat, double lon) {
+
         return nominatimService.getCityOrLandmarkFromCoordinates(lat, lon)
+
                 .map(addr -> {
                     if (!addr.isLandmark()) {
                         return fallback != null ? fallback : formatCoordinates(lat, lon);
@@ -79,12 +91,17 @@ public class LocationService {
                     return addr.landmark();
                 })
                 .orElse(fallback != null ? fallback : formatCoordinates(lat, lon));
+
     }
 
 
+
     public int calculateDistance(Point startPoint, Point endPoint) {
+        AppLogger.info(this.getClass(), "calculateDistance called");
         double metres = riderLocationRepository.getDistanceBetweenPoints(startPoint, endPoint);
-        return (int) Math.round(metres / 1000.0);
+        int distanceKm = (int) Math.round(metres / 1000.0);
+        AppLogger.info(this.getClass(), "Distance calculated", "distanceKm", distanceKm);
+        return distanceKm;
     }
 
     private String formatCoordinates(double lat, double lon) {

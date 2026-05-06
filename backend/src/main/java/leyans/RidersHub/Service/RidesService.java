@@ -7,6 +7,7 @@ import leyans.RidersHub.DTO.Request.RidesDTO.StopPointDTO;
 import leyans.RidersHub.Service.InteractionRequest.RideParticipantService;
 import leyans.RidersHub.Service.MapService.MapBox.MapboxService;
 import leyans.RidersHub.Service.MapService.RouteService;
+import leyans.RidersHub.Utility.AppLogger;
 import leyans.RidersHub.Utility.RidesUtil;
 import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.RiderType;
@@ -72,7 +73,7 @@ public class RidesService {
             double startLatitude, double startLongitude,
             double endLatitude, double endLongitude,
             List<StopPointDTO> stopPointsDto) {
-
+        AppLogger.info(this.getClass(), "createRide called", "generatedRidesId", generatedRidesId, "creatorUsername", creatorUsername, "ridesName", ridesName);
         List<StopPointDTO> validStopPoints = stopPointsDto.stream()
                 .filter(stop -> stop.getStopLongitude() != 0.0 && stop.getStopLatitude() != 0.0)
                 .collect(Collectors.toList());
@@ -143,7 +144,9 @@ public class RidesService {
         return f;
     }
 
+
     private void awaitApiFuturesAndCollect(ApiFutures f) {
+        AppLogger.info(this.getClass(), "Awaiting parallel API futures");
         try {
             CompletableFuture<Void> allApiCalls = CompletableFuture.allOf(
                     f.mainImageFuture, f.startImageFuture, f.endImageFuture,
@@ -152,10 +155,40 @@ public class RidesService {
             );
 
             allApiCalls.get(60, TimeUnit.SECONDS);
+            AppLogger.info(this.getClass(), "All API futures completed successfully");
+
         } catch (TimeoutException e) {
-            throw new RuntimeException("API calls timed out after 30 seconds", e);
-        } catch (Exception e) {
-            throw new RuntimeException("Error during parallel API calls: " + e.getMessage(), e);
+            // API call took too long — likely network issue or service overload
+            AppLogger.error(this.getClass(),
+                    "API calls timed out after 60 seconds | Check network connectivity and external service health", e);
+            throw new RuntimeException("API timeout: External service did not respond within 60 seconds", e);
+
+        } catch (InterruptedException e) {
+            // Thread was interrupted — restore interrupt status and fail
+            AppLogger.error(this.getClass(),
+                    "API future await was interrupted", e);
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("API call interrupted", e);
+
+        } catch (java.util.concurrent.ExecutionException e) {
+            // ExecutionException wraps the actual error from the API call
+            // Unwrap it to get the root cause (auth error, network error, etc.)
+            Throwable cause = e.getCause();
+            if (cause != null) {
+                AppLogger.error(this.getClass(),
+                        "API call failed with: " + cause.getClass().getSimpleName() + " - " + cause.getMessage(), cause);
+
+                // Rethrow with original cause preserved
+                if (cause instanceof RuntimeException) {
+                    throw (RuntimeException) cause;
+                } else {
+                    throw new RuntimeException("API call failed: " + cause.getMessage(), cause);
+                }
+            } else {
+                AppLogger.error(this.getClass(),
+                        "API call failed with unknown error", e);
+                throw new RuntimeException("API call failed with ExecutionException", e);
+            }
         }
     }
 
@@ -220,7 +253,7 @@ public class RidesService {
 
         Rides savedRide = ridesUtil.saveRideWithTransaction(newRide, creator);
 
-        System.out.println("Ride created with ID: " + savedRide.getGeneratedRidesId());
+        AppLogger.info(this.getClass(), "Ride created successfully", "rideId", savedRide.getGeneratedRidesId(), "rideName", savedRide.getRidesName());
 
         return ridesUtil.mapToDetailDTO(savedRide);
 
