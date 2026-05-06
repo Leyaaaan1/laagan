@@ -1,8 +1,8 @@
 import {api} from './Apiclient';
 
-export const getMyProfile = async (token = null) => {
+export const getMyProfile = async () => {
   try {
-    const response = await api.get('/profiles/me', token);
+    const response = await api.get('/profiles/me');
     if (!response.ok)
       return {success: false, message: `HTTP ${response.status}`};
     const result = await response.json();
@@ -13,9 +13,9 @@ export const getMyProfile = async (token = null) => {
   }
 };
 
-export const getProfileByUsername = async (username, token = null) => {
+export const getProfileByUsername = async (username) => {
   try {
-    const response = await api.get(`/profiles/${username}`, token);
+    const response = await api.get(`/profiles/${username}`);
     const result = await response.json();
     if (response.ok) return {success: true, data: result};
     return {
@@ -28,9 +28,9 @@ export const getProfileByUsername = async (username, token = null) => {
   }
 };
 
-export const updateMyProfile = async (updates, token = null) => {
+export const updateMyProfile = async (updates) => {
   try {
-    const response = await api.put('/profiles/edit', updates, token);
+    const response = await api.put('/profiles/edit', updates);
     const result = await response.json();
     if (response.ok) return {success: true, data: result};
     return {
@@ -43,12 +43,11 @@ export const updateMyProfile = async (updates, token = null) => {
   }
 };
 
-export const addRiderType = async (typeName, token = null) => {
+export const addRiderType = async (typeName) => {
   try {
     const response = await api.post(
       `/profiles/add/rider-types/${encodeURIComponent(typeName)}`,
       {},
-      token,
     );
     const result = await response.json();
     if (response.ok) return {success: true, data: result};
@@ -62,11 +61,10 @@ export const addRiderType = async (typeName, token = null) => {
   }
 };
 
-export const removeRiderType = async (typeName, token = null) => {
+export const removeRiderType = async (typeName) => {
   try {
     const response = await api.delete(
       `/profiles/rider-types/${encodeURIComponent(typeName)}`,
-      token,
     );
     const result = await response.json();
     if (response.ok) return {success: true, data: result};

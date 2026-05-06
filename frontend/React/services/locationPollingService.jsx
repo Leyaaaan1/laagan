@@ -47,7 +47,7 @@ export const getCurrentPosition = async () => {
   });
 };
 
-// ✅ FIXED: Now accepts authToken as parameter instead of getting refresh token from Keychain
+
 export const shareLocationAndFetchAll = async (
   rideId,
   latitude,

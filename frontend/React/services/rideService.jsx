@@ -10,7 +10,7 @@ export const searchLocation = async (query) => {
   return response.json();
 };
 
-export const searchCityOrLandmark = async (query, token = null) => {
+export const searchCityOrLandmark = async (query) => {
   const response = await api.get(
     `/location/search-landmark?query=${encodeURIComponent(query)}`,
 
@@ -43,7 +43,7 @@ export const reverseGeocodeLandmark = async (lat, lon = null) => {
     return null;
   }
 };
-export const getLocationImage = async (rideName, token = null) => {
+export const getLocationImage = async (rideName) => {
   const response = await api.get(
     `/wikimedia/location?locationName=${encodeURIComponent(rideName)}`,
   );

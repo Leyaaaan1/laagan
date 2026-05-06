@@ -20,12 +20,13 @@ import {
 import {SUCCESS_MESSAGES} from '../../utilities/validator/successMessages';
 import {DEFAULT_COORDS} from '../../utilities/route/map/appDefaults';
 import {useUserLocation} from '../../hooks/useUserLocation';
+import {handleWebViewMessage} from '../../utilities/mapUtils';
 
 // ─── Default coordinates (Davao City) ────────────────────────────────────────
 const DEFAULT_LAT = '7.0731';
 const DEFAULT_LNG = '125.6128';
 
-const useCreateRide = ({token, username}) => {
+const useCreateRide = ({}) => {
   const webViewRef = useRef(null);
   const pendingRideIdRef = useRef(null);
 
@@ -93,52 +94,19 @@ const useCreateRide = ({token, username}) => {
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
 
   // ─── Map tap / drag ───────────────────────────────────────────────────────
-  const handleMessage = event => {
-    try {
-      const data = JSON.parse(event.nativeEvent.data);
-      if (data.type !== 'mapClick' && data.type !== 'markerDrag') {
-        return;
-      }
-
-      const {lat, lng} = data;
-
-      if (mapMode === 'location') {
-        setLatitude(lat.toString());
-        setLongitude(lng.toString());
-        reverseGeocodeLandmark(lat, lng)
-          .then(name => {
-            if (name) {
-              setLocationName(name);
-            }
-          })
-          .catch(err => console.warn('Reverse geocode error:', err));
-      } else if (mapMode === 'starting') {
-        setStartingLatitude(lat.toString());
-        setStartingLongitude(lng.toString());
-        reverseGeocode(lat, lng)
-          .then(name => {
-            if (name) {
-              setStartingPoint(name);
-            }
-          })
-          .catch(err => console.warn('Reverse geocode error:', err));
-      } else if (mapMode === 'ending') {
-        setEndingLatitude(lat.toString());
-        setEndingLongitude(lng.toString());
-        reverseGeocode( lat, lng)
-          .then(name => {
-            if (name) {
-              setEndingPoint(name);
-            }
-          })
-          .catch(err => console.warn('Reverse geocode error:', err));
-      }
-    } catch (err) {
-      console.error('handleMessage parse error:', err);
-    }
-  };
-
-  // ─── Search input (debounced by the child component, raw value here) ──────
+  const handleMessage = event =>
+    handleWebViewMessage(event, {
+      mapMode,
+      setLatitude,
+      setLongitude,
+      setStartingLatitude,
+      setStartingLongitude,
+      setEndingLatitude,
+      setEndingLongitude,
+      setLocationName,
+      setStartingPoint,
+      setEndingPoint,
+    });
   const handleSearchInputChange = value => {
     setLocationSelected(false);
     setSearchQuery(value);

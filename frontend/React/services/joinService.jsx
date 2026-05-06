@@ -1,10 +1,9 @@
 import {api} from './Apiclient';
 
 export const joinService = {
-  joinRideById: async (generatedRidesId, token = null) => {
+  joinRideById: async (generatedRidesId) => {
     const inviteResponse = await api.get(
       `/invite-request/${generatedRidesId}/invites`,
-      token,
     );
     if (!inviteResponse.ok)
       throw new Error(`Failed to get invite: ${inviteResponse.status}`);
@@ -15,7 +14,6 @@ export const joinService = {
     const joinResponse = await api.post(
       `/join-request/${inviteToken}`,
       {},
-      token,
     );
     if (!joinResponse.ok) {
       const err = await joinResponse
@@ -26,8 +24,8 @@ export const joinService = {
     return joinResponse.json();
   },
 
-  joinRideByToken: async (inviteToken, token = null) => {
-    const response = await api.post(`/join-request/${inviteToken}`, {}, token);
+  joinRideByToken: async (inviteToken) => {
+    const response = await api.post(`/join-request/${inviteToken}`, {});
     if (!response.ok) {
       const err = await response
         .text()
@@ -37,14 +35,13 @@ export const joinService = {
     return response.json();
   },
 
-  joinViaQrCode: async (scannedValue, token = null) => {
+  joinViaQrCode: async (scannedValue) => {
     const inviteToken = scannedValue.includes('/invite/link/')
       ? scannedValue.split('/invite/link/').pop()
       : scannedValue;
     const response = await api.post(
       `/join-request/qr/${inviteToken}`,
       {},
-      token,
     );
     if (!response.ok) {
       const err = await response
@@ -55,21 +52,19 @@ export const joinService = {
     return response.json();
   },
 
-  getJoinersByRide: async (generatedRidesId, status = null, token = null) => {
+  getJoinersByRide: async (generatedRidesId, status = null, ) => {
     const query = status ? `?status=${status}` : '';
     const response = await api.get(
       `/join-request/${generatedRidesId}/joiners${query}`,
-      token,
     );
     if (!response.ok) throw new Error(`Error: ${response.status}`);
     return response.json();
   },
 
-  approveJoinRequest: async (joinId, token = null) => {
+  approveJoinRequest: async (joinId) => {
     const response = await api.put(
       `/join-request/approve/${joinId}`,
       {},
-      token,
     );
     if (!response.ok) {
       const err = await response
@@ -80,8 +75,8 @@ export const joinService = {
     return response.json();
   },
 
-  rejectJoinRequest: async (joinId, token = null) => {
-    const response = await api.put(`/join-request/reject/${joinId}`, {}, token);
+  rejectJoinRequest: async (joinId) => {
+    const response = await api.put(`/join-request/reject/${joinId}`, {});
     if (!response.ok) throw new Error(`Error: ${response.status}`);
     return response.json();
   },

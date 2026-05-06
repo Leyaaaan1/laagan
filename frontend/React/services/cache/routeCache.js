@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PREFIX = 'route_coords_';
-
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 export const routeCache = {
   // Call this after getRideDetails() succeeds — save routeCoordinates locally
   save: async (generatedRidesId, routeCoordinates) => {

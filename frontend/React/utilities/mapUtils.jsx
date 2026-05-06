@@ -1,84 +1,54 @@
-import { reverseGeocode, reverseGeocodeLandmark } from '../services/rideService';
+import {reverseGeocode, reverseGeocodeLandmark} from '../services/rideService';
 
-export const handleWebViewMessage = async (event, state) => {
-    const data = JSON.parse(event.nativeEvent.data);
+export const handleWebViewMessage = (
+  event,
+  {
+    mapMode,
+    setLatitude,
+    setLongitude,
+    setStartingLatitude,
+    setStartingLongitude,
+    setEndingLatitude,
+    setEndingLongitude,
+    setLocationName,
+    setStartingPoint,
+    setEndingPoint,
+  },
+) => {
+  let data;
+  try {
+    data = JSON.parse(event.nativeEvent.data);
+  } catch {
+    return;
+  }
 
-    if (data.type === 'mapClick') {
-        const {
-            mapMode, setLatitude, setLongitude,
-            setStartingLatitude, setStartingLongitude,
-            setEndingLatitude, setEndingLongitude,
-            setLocationName, setStartingPoint, setEndingPoint, setSearchQuery,
-            stopPoints, setStopPoints, // Add these
-        } = state;
+  if (data?.type !== 'mapClick' && data?.type !== 'markerDrag') return;
 
-        if (mapMode === 'location') {
-            setLatitude(data.lat.toString());
-            setLongitude(data.lng.toString());
-            setLocationName('Fetching location name...');
-        } else if (mapMode === 'starting') {
-            setStartingLatitude(data.lat.toString());
-            setStartingLongitude(data.lng.toString());
-            setStartingPoint('Fetching location name...');
-        } else if (mapMode === 'ending') {
-            setEndingLatitude(data.lat.toString());
-            setEndingLongitude(data.lng.toString());
-            setEndingPoint('Fetching location name...');
-        } else if (mapMode === 'stop') {
-            // For stop points, add a placeholder while fetching
-            setStopPoints([
-                ...stopPoints,
-                { lat: data.lat, lng: data.lng, name: 'Fetching location name...' }
-            ]);
-        }
+  const {lat, lng} = data;
 
-        try {
-            let locationName;
-            if (mapMode === 'location') {
-                locationName = await reverseGeocodeLandmark( data.lat, data.lng);
-            }  else if (mapMode === 'starting' || mapMode === 'ending' || mapMode === 'stop') {
-                locationName = await reverseGeocode(data.lat, data.lng);
-            }
-            if (locationName) {
-                if (mapMode === 'location') {
-                    setLocationName(locationName);
-                    setSearchQuery(locationName);
-                } else if (mapMode === 'starting') {
-                    setStartingPoint(locationName);
-                    setSearchQuery(locationName);
-                } else if (mapMode === 'ending') {
-                    setEndingPoint(locationName);
-                    setSearchQuery(locationName);
-                } else if (mapMode === 'stop') {
-                    // Update the last stop point with the resolved name
-                    setStopPoints(prev =>
-                        prev.map((sp, idx) =>
-                            idx === prev.length - 1
-                                ? { ...sp, name: locationName }
-                                : sp
-                        )
-                    );
-                }
-            } else {
-                const fallbackName = `${data.lat.toFixed(4)}, ${data.lng.toFixed(4)}`;
-                if (mapMode === 'location') {
-                    setLocationName(fallbackName);
-                } else if (mapMode === 'starting') {
-                    setStartingPoint(fallbackName);
-                } else if (mapMode === 'ending') {
-                    setEndingPoint(fallbackName);
-                } else if (mapMode === 'stop') {
-                    setStopPoints(prev =>
-                        prev.map((sp, idx) =>
-                            idx === prev.length - 1
-                                ? { ...sp, name: fallbackName }
-                                : sp
-                        )
-                    );
-                }
-            }
-        } catch (error) {
-            console.error('Error reverse geocoding:', error);
-        }
-    }
+  if (mapMode === 'location') {
+    setLatitude(lat.toString());
+    setLongitude(lng.toString());
+    reverseGeocodeLandmark(lat, lng)
+      .then(name => {
+        if (name) setLocationName(name);
+      })
+      .catch(() => {});
+  } else if (mapMode === 'starting') {
+    setStartingLatitude(lat.toString());
+    setStartingLongitude(lng.toString());
+    reverseGeocode(lat, lng)
+      .then(name => {
+        if (name) setStartingPoint(name);
+      })
+      .catch(() => {});
+  } else if (mapMode === 'ending') {
+    setEndingLatitude(lat.toString());
+    setEndingLongitude(lng.toString());
+    reverseGeocode(lat, lng)
+      .then(name => {
+        if (name) setEndingPoint(name);
+      })
+      .catch(() => {});
+  }
 };

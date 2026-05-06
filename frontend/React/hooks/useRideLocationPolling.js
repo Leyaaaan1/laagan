@@ -174,7 +174,7 @@ export const useRideLocationPolling = ({
     } finally {
       pollLock.current.release();
     }
-  }, [rideId, handlePollingError]); // ✅ Remove token from deps, use tokenRef
+  }, [rideId, handlePollingError]);
 
   useEffect(() => {
     pollOnceRef.current = pollLocationOnce;
@@ -187,14 +187,12 @@ export const useRideLocationPolling = ({
     isPollingRef.current = false;
   }, []);
 
+  // 8 seconds + 0–2 second random jitter, 10 users spread their requests across a 2 second window instead of hitting simultaneously
   const startPolling = useCallback(() => {
-    if (intervalManager.current.isRunning()) {
-      return;
-    }
+    if (intervalManager.current.isRunning()) return;
 
-    // ✅ Check token before starting
     if (!tokenRef.current) {
-      console.warn('⚠️  Cannot start polling: no access token available');
+      console.warn('Cannot start polling: no access token');
       setError('AUTH_MISSING - Please login again');
       return;
     }
@@ -203,15 +201,16 @@ export const useRideLocationPolling = ({
     isPollingRef.current = true;
     setError(null);
 
-    // ✨ IMMEDIATE first poll - no waiting
-    console.log('🚀 Starting location polling with immediate first update');
+    // Immediate first poll
     pollOnceRef.current();
 
-    // Then set interval for subsequent polls (every 8 seconds)
-    // ℹ️ You can reduce 8000 to 5000 for faster updates if needed
-    intervalManager.current.start(() => {
-      pollOnceRef.current();
-    }, 8000); // 8 seconds between polls (after first immediate one)
+    // Add jitter so users don't all hit the server at the same time
+    const jitter = Math.floor(Math.random() * 2000);
+    setTimeout(() => {
+      intervalManager.current.start(() => {
+        pollOnceRef.current();
+      }, 8000);
+    }, jitter);
   }, []);
 
   useEffect(() => {
@@ -249,7 +248,7 @@ export const useRideLocationPolling = ({
     }
 
     return () => stopPolling();
-  }, [enabled, rideId, token, startPolling, stopPolling]); // ✅ Add token to dependencies
+  }, [enabled, rideId, token, startPolling, stopPolling]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextState => {
