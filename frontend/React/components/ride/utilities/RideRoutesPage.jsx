@@ -18,17 +18,27 @@ import badges from '../../../styles/base/badges';
 import feedback from '../../../styles/base/feedback';
 import images from '../../../styles/base/images';
 import text from '../../../styles/base/text';
+import {useAuth} from '../../../context/AuthContext';
 
 const RideRoutesPage = ({route}) => {
-  const {startingPoint, generatedRidesId, endingPoint, token} = route.params;
+  const {token: authToken} = useAuth();
+  const {
+    startingPoint,
+    generatedRidesId,
+    endingPoint,
+    token: paramToken,
+  } = route.params;
 
+  console.log('RideRoutesPage params:', route.params);
+
+  // Use token from params if provided, otherwise from auth
+  const token = paramToken || authToken;
   const [stopPoints, setStopPoints] = useState([]);
   const [stopPointsLoading, setStopPointsLoading] = useState(false);
   const [stopPointsError, setStopPointsError] = useState(null);
   const [stopPointImages, setStopPointImages] = useState({});
   const [loadingImages, setLoadingImages] = useState({});
 
-  // ✅ NEW: Track which stop points are currently being loaded/already loaded
   // This is a ref (not state) so it doesn't capture stale values
   const loadedStopsRef = useRef(new Set());
 
@@ -49,35 +59,32 @@ const RideRoutesPage = ({route}) => {
 
   // ✅ FIXED: Fetch images for a specific stop point (manual)
   // Now uses loadedStopsRef to guard against concurrent duplicate calls
-  const fetchImagesForStop = useCallback(
-    async stopName => {
-      // ✅ Guard: Check if already loaded or currently loading (from ref, not state)
-      if (loadedStopsRef.current.has(stopName)) {
-        return;
-      }
+  const fetchImagesForStop = useCallback(async stopName => {
+    // ✅ Guard: Check if already loaded or currently loading (from ref, not state)
+    if (loadedStopsRef.current.has(stopName)) {
+      return;
+    }
 
-      // Mark as loading before making the API call
-      loadedStopsRef.current.add(stopName);
-      setLoadingImages(prev => ({...prev, [stopName]: true}));
+    // Mark as loading before making the API call
+    loadedStopsRef.current.add(stopName);
+    setLoadingImages(prev => ({...prev, [stopName]: true}));
 
-      try {
-        const imgs = await getLocationImage(stopName, token);
-        setStopPointImages(prev => ({
-          ...prev,
-          [stopName]: Array.isArray(imgs) ? imgs : [],
-        }));
-      } catch (error) {
-        console.error(`Error fetching images for ${stopName}:`, error);
-        setStopPointImages(prev => ({
-          ...prev,
-          [stopName]: [], // Set empty array on error
-        }));
-      } finally {
-        setLoadingImages(prev => ({...prev, [stopName]: false}));
-      }
-    },
-    [],
-  );
+    try {
+      const imgs = await getLocationImage(stopName, token);
+      setStopPointImages(prev => ({
+        ...prev,
+        [stopName]: Array.isArray(imgs) ? imgs : [],
+      }));
+    } catch (error) {
+      console.error(`Error fetching images for ${stopName}:`, error);
+      setStopPointImages(prev => ({
+        ...prev,
+        [stopName]: [], // Set empty array on error
+      }));
+    } finally {
+      setLoadingImages(prev => ({...prev, [stopName]: false}));
+    }
+  }, []);
 
   // ✅ FIXED: Load all images at once
   // Now uses ref guard to prevent concurrent duplicate fetches

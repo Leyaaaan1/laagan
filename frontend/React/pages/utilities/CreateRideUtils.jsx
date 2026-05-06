@@ -406,6 +406,8 @@ const useCreateRide = ({}) => {
     setEndingPoint,
     endingLatitude,
     endingLongitude,
+    setEndingLatitude,
+    setEndingLongitude,
     stopPoints,
     setStopPoints,
     searchQuery,

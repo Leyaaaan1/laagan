@@ -44,10 +44,10 @@ export const useUserLocation = () => {
             position => {
               const {latitude, longitude} = position.coords;
               setLocation({
-                latitude: latitude.toString(),
-                longitude: longitude.toString(),
+                latitude,
+                longitude,
                 isDefault: false,
-              });
+              });;
               setError(null);
               resolve();
             },

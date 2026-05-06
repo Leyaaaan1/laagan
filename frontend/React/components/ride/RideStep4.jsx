@@ -218,7 +218,6 @@ const RideStep4 = props => {
 
   const routeParams = props.route?.params || {};
   const merged = {...routeParams, ...props};
-
   const {
     generatedRidesId,
     rideName,
@@ -237,6 +236,10 @@ const RideStep4 = props => {
     rideDetailsWithCoords: passedRideDetails = null,
     skipCoordsFetch = false,
   } = merged;
+
+  console.log('sam[ple',stopPoints);
+  console.log('all data', merged);
+  console.log('params', routeParams);
 
   // Prefer the currentUsername passed via params (set by buildRideStep4Params),
   // fall back to the auth context username.
@@ -582,29 +585,16 @@ const RideStep4 = props => {
               </>
             )}
 
-            <TouchableOpacity
-              style={buttons.bottomNav}
-              onPress={() =>
-                navigation.navigate('RideRoutesPage', {
-                  startMapImage: state.startMapImage,
-                  endMapImage: state.endMapImage,
-                  mapImage: state.mapImage,
-                  rideNameImage: state.rideNameImage,
-                  startingPoint: getLocationDisplayName(startingPoint),
-                  endingPoint: getLocationDisplayName(endingPoint),
-                  rideName,
-                  locationName,
-                  riderType,
-                  date,
-                  participants,
-                  description,
-                  distance,
-                  username,
-                  currentUsername: resolvedCurrentUsername,
-                  generatedRidesId,
-                })
-              }>
-              <FontAwesome name="map-marker" size={18} color="#fff" />
+            <TouchableOpacity  style={buttons.bottomNav}  onPress={() =>
+              navigation.navigate('RideRoutesPage', {
+                startingPoint: getLocationDisplayName(startingPoint),
+                endingPoint: getLocationDisplayName(endingPoint),
+                generatedRidesId,
+                stopPoints,
+              })
+            }>
+
+            <FontAwesome name="map-marker" size={18} color="#fff" />
               <Text style={buttons.textNav}>Stop Point</Text>
             </TouchableOpacity>
           </View>
