@@ -1,3 +1,4 @@
+
 package leyans.RidersHub.Controller;
 
 import leyans.RidersHub.DTO.Response.ActiveRideDTO;
@@ -12,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 @RestController
@@ -31,11 +31,9 @@ public class StartRideController {
     public ResponseEntity<StartRideResponseDTO> startRide(@PathVariable String generatedRidesId) {
         try {
             StartRideResponseDTO response = startRideService.startRide(generatedRidesId);
-
             return ResponseEntity.ok(response);
-        } catch (AccessDeniedException ex) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
         } catch (IllegalArgumentException ex) {
+            // ✅ Removed AccessDeniedException — now handled by GlobalExceptionHandler
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         } catch (IllegalStateException ex) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
@@ -45,13 +43,12 @@ public class StartRideController {
     }
 
     @GetMapping("/active")
-    public ResponseEntity<ActiveRideDTO> getActiveRide() {  // ← Change to ActiveRideDTO
+    public ResponseEntity<ActiveRideDTO> getActiveRide() {
         try {
             ActiveRideDTO rideDetails = startedUtil.getStartedRideDetails();
             return ResponseEntity.ok(rideDetails);
-        } catch (AccessDeniedException ex) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (IllegalArgumentException ex) {
+            // ✅ Removed AccessDeniedException — now handled by GlobalExceptionHandler
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         } catch (IllegalStateException ex) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
@@ -59,6 +56,7 @@ public class StartRideController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
     @PostMapping("/update/{generatedRidesId}")
     public ResponseEntity<Void> updateRide(@PathVariable String generatedRidesId) {
         try {
@@ -72,9 +70,4 @@ public class StartRideController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
-
 }
-
-
-

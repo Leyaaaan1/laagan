@@ -41,7 +41,7 @@ public class RouteService {
     private String grassApiKey;
 
     @Value("${USER_AGENT}")
-    private static String userAgent;
+    private String userAgent;
 
     private final ApiHelper apiHelper;
 

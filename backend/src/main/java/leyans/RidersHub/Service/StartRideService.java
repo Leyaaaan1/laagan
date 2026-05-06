@@ -1,6 +1,8 @@
+
 package leyans.RidersHub.Service;
 
 import leyans.RidersHub.DTO.Response.StartRideResponseDTO;
+import leyans.RidersHub.ExceptionHandler.RideAuthorizationException;
 import leyans.RidersHub.Repository.RidesRepository;
 import leyans.RidersHub.Repository.StartedRideRepository;
 import leyans.RidersHub.Utility.AppLogger;
@@ -15,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -41,16 +42,16 @@ public class StartRideService {
     }
 
     @Transactional
-    public StartRideResponseDTO startRide(String generatedRidesId) throws AccessDeniedException {
+    public StartRideResponseDTO startRide(String generatedRidesId) {
         AppLogger.info(this.getClass(), "startRide called", "generatedRidesId", generatedRidesId);
         Rider initiator = startedUtil.authenticateAndGetInitiator();
         Rides ride = ridesUtil.validateAndGetRide(generatedRidesId, initiator);
 
         boolean isCreator = ride.getUsername().getUsername().equals(initiator.getUsername());
         if (!isCreator) {
-            AppLogger.throwUnauthorized(this.getClass(), "Only the ride creator can start the ride");
-            throw new AccessDeniedException("Only the ride creator can start the ride");
-
+            AppLogger.warn(this.getClass(), "Unauthorized ride start attempt",
+                    "initiator", initiator.getUsername(), "rideId", generatedRidesId);
+            throw new RideAuthorizationException("Only the ride creator can start the ride");
         }
 
         Point startingPoint = ride.getStartingLocation();
@@ -65,7 +66,6 @@ public class StartRideService {
         startedRide.setStartTime(LocalDateTime.now());
         startedRide.setLocation(startingPoint);
 
-        // ✅ Use Set — creator is automatically deduped
         Set<Rider> allParticipants = new HashSet<>(ride.getParticipants());
         allParticipants.add(ride.getUsername()); // no duplicate check needed, Set handles it
 
@@ -75,7 +75,6 @@ public class StartRideService {
         ride.setActive(true);
         ridesRepository.save(ride);
 
-        // ✅ Convert to List only for initializeParticipantLocations (it expects List<Rider>)
         List<ParticipantLocation> participantLocations = startedUtil.initializeParticipantLocations(
                 startedRide,
                 new ArrayList<>(allParticipants),
@@ -118,4 +117,5 @@ public class StartRideService {
         ride.setActive(false);
         AppLogger.info(this.getClass(), "Ride deactivated successfully", "generatedRidesId", generatedRidesId);
         ridesRepository.save(ride);
-    }}
+    }
+}

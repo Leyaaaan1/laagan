@@ -1,3 +1,4 @@
+
 package leyans.RidersHub.ExceptionHandler;
 
 import org.springframework.http.HttpStatus;
@@ -37,6 +38,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<?> handleUnauthorized(UnauthorizedAccessException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(buildErrorBody(ex.getMessage(), HttpStatus.UNAUTHORIZED));
+    }
+
+    @ExceptionHandler(RideAuthorizationException.class)
+    public ResponseEntity<?> handleRideAuthorizationException(RideAuthorizationException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(buildErrorBody(ex.getMessage(), HttpStatus.FORBIDDEN));
     }
 
     @ExceptionHandler(Exception.class)

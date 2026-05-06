@@ -42,12 +42,11 @@ public class RiderService {
     }
 
     public RiderType getCurrentUserRiderType(String username) {
-        Rider rider = riderRepository.findByUsername(username);
-        if (rider == null) {
-            throw new RuntimeException("User not found");
-        }
+        Rider rider = riderRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
         return rider.getRiderType();
     }
+
 
 
     @Transactional
@@ -67,8 +66,8 @@ public class RiderService {
 
 
     public String registerRider(String username, String password, String riderType) {
-        Rider existingRider = riderRepository.findByUsername(username);
-        if (existingRider != null) {
+        // ✅ Check if Optional is present using isPresent()
+        if (riderRepository.findByUsername(username).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
 
@@ -84,7 +83,7 @@ public class RiderService {
         newRider.setRiderType(riderTypeName);
 
         riderRepository.save(newRider);
-        return username; // Return only username, not the full entity
+        return username;
     }
 
 
@@ -92,11 +91,13 @@ public class RiderService {
     public Rider getRiderByUsername(String username) {
         AppLogger.info(this.getClass(), "getRiderByUsername called", "username", username);
 
-        Rider rider = riderRepository.findByUsername(username);
-        if (rider == null) {
-            AppLogger.throwResourceNotFound(this.getClass(),
-                    "Rider not found: " + username);
-        }
+        // ✅ Use orElseThrow to handle Optional
+        Rider rider = riderRepository.findByUsername(username)
+                .orElseThrow(() -> {
+                    AppLogger.throwResourceNotFound(this.getClass(),
+                            "Rider not found: " + username);
+                    return new RuntimeException("Rider not found: " + username);
+                });
 
         AppLogger.info(this.getClass(), "Rider retrieved successfully", "username", username);
         return rider;

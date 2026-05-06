@@ -1,6 +1,6 @@
 package leyans.RidersHub.Repository;
 
-import io.lettuce.core.dynamic.annotation.Param;
+import org.springframework.data.repository.query.Param;
 import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.StartedRide;
 import leyans.RidersHub.model.participant.ParticipantLocation;

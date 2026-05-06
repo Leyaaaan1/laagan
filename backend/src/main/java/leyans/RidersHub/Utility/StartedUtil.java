@@ -1,3 +1,4 @@
+
 package leyans.RidersHub.Utility;
 
 import leyans.RidersHub.DTO.Request.ParticipantLocationDTO;
@@ -5,6 +6,7 @@ import leyans.RidersHub.DTO.Response.ActiveRideDTO;
 import leyans.RidersHub.DTO.Response.RideDetailDTO;
 import leyans.RidersHub.DTO.Response.RideResponseDTO;
 import leyans.RidersHub.DTO.Response.StartRideResponseDTO;
+import leyans.RidersHub.ExceptionHandler.RideAuthorizationException;
 import leyans.RidersHub.Repository.ParticipantLocationRepository;
 import leyans.RidersHub.Repository.StartedRideRepository;
 import leyans.RidersHub.Service.LocationService;
@@ -18,7 +20,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,20 +45,18 @@ public class StartedUtil {
         this.ridesUtil = ridesUtil;
     }
 
-
-
-    public Rider authenticateAndGetInitiator() throws AccessDeniedException {
+    // ✅ Removed throws AccessDeniedException — let RideAuthorizationException propagate
+    public Rider authenticateAndGetInitiator() {
         String username = riderUtil.getCurrentUsername();
         Rider initiator = riderUtil.findRiderByUsername(username);
 
         if (initiator == null) {
-            throw new AccessDeniedException("Rider not found with username: " + username);
+            // ✅ Use semantic exception for authorization failures
+            throw new RideAuthorizationException("Rider not found with username: " + username);
         }
 
         return initiator;
     }
-
-
 
     public List<ParticipantLocation> initializeParticipantLocations(
             StartedRide startedRide,
@@ -78,8 +77,8 @@ public class StartedUtil {
             );
 
             // Use the correct setter name from ParticipantLocation entity
-            location.setParticipantLocation(participantStartPoint);  // Changed from setLocation
-            location.setLastUpdate(LocalDateTime.now());  // Changed from setLastUpdated
+            location.setParticipantLocation(participantStartPoint);
+            location.setLastUpdate(LocalDateTime.now());
 
             locations.add(participantLocationRepository.save(location));
         }
@@ -89,7 +88,8 @@ public class StartedUtil {
 
     @PreAuthorize("isAuthenticated()")
     @Transactional(readOnly = true)
-    public ActiveRideDTO getStartedRideDetails() throws AccessDeniedException {  // ← Return ActiveRideDTO
+    // ✅ Removed throws AccessDeniedException — exceptions now propagate to global handler
+    public ActiveRideDTO getStartedRideDetails() {
         Rider requester = authenticateAndGetInitiator();
         String username = requester.getUsername();
 
@@ -106,16 +106,16 @@ public class StartedUtil {
             throw new IllegalStateException("Started ride has no associated ride");
         }
 
-        return mapToActiveRideDTO(ride, active.getId());  // ← Include startedRideId
+        return mapToActiveRideDTO(ride, active.getId());
     }
 
     public ActiveRideDTO mapToActiveRideDTO(Rides ride, Integer startedRideId) {
         return ridesUtil.mapToActiveDTO(ride, startedRideId);
     }
+
     public RideDetailDTO mapToRideDetailDTO(Rides ride) {
         return ridesUtil.mapToDetailDTO(ride);
     }
-
 
     public StartRideResponseDTO buildStartRideResponse(
             StartedRide startedRide,
@@ -124,9 +124,7 @@ public class StartedUtil {
 
         StartRideResponseDTO response = new StartRideResponseDTO();
 
-        // ✅ ADD THIS LINE - Include the startedRideId
         response.setStartedRideId(startedRide.getId());
-
         response.setGeneratedRidesId(ride.getGeneratedRidesId());
         response.setRidesName(ride.getRidesName());
         response.setLocationName(ride.getLocationName());
@@ -165,6 +163,4 @@ public class StartedUtil {
 
         return response;
     }
-
-
 }

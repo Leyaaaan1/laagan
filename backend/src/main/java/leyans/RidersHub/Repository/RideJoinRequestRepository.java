@@ -2,10 +2,13 @@ package leyans.RidersHub.Repository;
 
 import leyans.RidersHub.model.RideJoinRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
+
+@Repository
 public interface RideJoinRequestRepository extends JpaRepository<RideJoinRequest, Integer> {
 
 

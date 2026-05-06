@@ -1,3 +1,4 @@
+
 package leyans.RidersHub.Controller.Auth;
 
 import leyans.RidersHub.Config.Security.ClientIpResolver;
@@ -7,6 +8,7 @@ import leyans.RidersHub.DTO.Response.LoginResponse;
 import leyans.RidersHub.DTO.Response.RegisterResponse;
 import leyans.RidersHub.Service.Auth.LoginService;
 import leyans.RidersHub.Service.Auth.TokenBlacklistService;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -39,6 +41,7 @@ public class LoginController {
     }
 
     @PostMapping("/login")
+    @RateLimiter(name = "login", fallbackMethod = "loginFallback")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
         try {
             LoginResponse response = loginService.login(loginRequest);
@@ -55,7 +58,15 @@ public class LoginController {
         }
     }
 
+    public ResponseEntity<?> loginFallback(LoginRequest loginRequest, Exception ex) {
+        log.warn("⚠️  Rate limit exceeded for login endpoint: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(createResponse(429, "Too many login attempts",
+                        "Login rate limit exceeded. Please try again in 1 minute."));
+    }
+
     @PostMapping("/register")
+    @RateLimiter(name = "register", fallbackMethod = "registerFallback")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest,
                                       HttpServletRequest request) {
         try {
@@ -69,6 +80,14 @@ public class LoginController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(createResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Registration error", e.getMessage()));
         }
+    }
+
+    public ResponseEntity<?> registerFallback(RegisterRequest registerRequest,
+                                              HttpServletRequest request, Exception ex) {
+        log.warn("⚠️  Rate limit exceeded for register endpoint: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(createResponse(429, "Too many registration attempts",
+                        "Registration rate limit exceeded. Please try again in 10 minutes."));
     }
 
     @PostMapping("/logout")
