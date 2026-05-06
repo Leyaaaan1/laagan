@@ -11,6 +11,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
@@ -37,13 +40,14 @@ class RouteServiceTest {
     @Mock
     private ObjectMapper objectMapper;
 
+
     private RouteService routeService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        // We'll use reflection to inject the private restTemplate
-        routeService = new RouteService(apiHelper, ridesRepository, objectMapper);
+        // Pass the mock restTemplate to the 4-parameter constructor
+        routeService = new RouteService(apiHelper, ridesRepository, objectMapper, restTemplate);
     }
 
     @Test
@@ -63,10 +67,10 @@ class RouteServiceTest {
         when(apiHelper.mapProfile(profile)).thenReturn("car");
 
         String mockResponse = "{\"type\":\"FeatureCollection\",\"features\":[]}";
-        ResponseEntity<String> responseEntity = ResponseEntity.ok(mockResponse);
 
         when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(), eq(String.class)))
-                .thenReturn(responseEntity);
+                .thenReturn(ResponseEntity.ok(mockResponse));
+
 
         when(apiHelper.convertToGeoJson(mockResponse))
                 .thenReturn("{\"type\":\"FeatureCollection\",\"features\":[]}");

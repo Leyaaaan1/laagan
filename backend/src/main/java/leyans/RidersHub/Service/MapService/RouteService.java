@@ -13,6 +13,7 @@ import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.io.HttpClientConnectionManager;
 import org.apache.hc.core5.util.Timeout;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
@@ -55,14 +56,19 @@ public class RouteService {
      *   defaultMaxPerRoute=10 — up to 10 to the same host (graphhopper.com)
      *   connectTimeout=3s, responseTimeout=10s
      */
+    @Autowired
     public RouteService(ApiHelper apiHelper, RidesRepository ridesRepository,
-                        ObjectMapper objectMapper) {
+                        ObjectMapper objectMapper, RestTemplate restTemplate) {
         this.apiHelper = apiHelper;
         this.ridesRepository = ridesRepository;
         this.objectMapper    = objectMapper;
-        this.restTemplate    = buildPooledRestTemplate();
+        this.restTemplate = restTemplate;;
     }
 
+    public RouteService(ApiHelper apiHelper, RidesRepository ridesRepository,
+                        ObjectMapper objectMapper) {
+        this(apiHelper, ridesRepository, objectMapper, buildDefaultRestTemplate());
+    }
 
     @RateLimiter(name = "graphhopper", fallbackMethod = "routeFallback")
     public String getRouteDirections(double startLng, double startLat,
@@ -131,7 +137,7 @@ public class RouteService {
      *   for subsequent calls to the same host.
      */
 
-    private RestTemplate buildPooledRestTemplate() {
+    private static RestTemplate buildDefaultRestTemplate() {
         HttpClientConnectionManager connectionManager =
                 PoolingHttpClientConnectionManagerBuilder.create()
                         .setMaxConnTotal(20)
@@ -143,7 +149,7 @@ public class RouteService {
                 .setResponseTimeout(Timeout.ofSeconds(10))
                 .build();
 
-        HttpClient httpClient = HttpClients.custom()
+       HttpClient httpClient = HttpClients.custom()
                 .setConnectionManager(connectionManager)
                 .setDefaultRequestConfig(requestConfig)
                 .build();
