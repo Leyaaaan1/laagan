@@ -6,6 +6,7 @@ import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import leyans.RidersHub.DTO.Request.RidesDTO.StopPointDTO;
 import leyans.RidersHub.Repository.RidesRepository;
 import leyans.RidersHub.Service.MapService.utilities.ApiHelper;
+import leyans.RidersHub.Utility.AppLogger;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -69,6 +70,7 @@ public class RouteService {
                                      List<StopPointDTO> stopPoints,
                                      String profile) {
         try {
+            AppLogger.info(this.getClass(), "getRouteDirections called", "profile", profile, "startLat", startLat, "startLng", startLng);
             List<String> points = apiHelper.buildPointList(startLat, startLng, stopPoints, endLat, endLng);
 
             // UriComponentsBuilder doesn't support repeated same-key params natively,
@@ -91,12 +93,14 @@ public class RouteService {
 
             ResponseEntity<String> response = restTemplate.exchange(
                     url, HttpMethod.GET, entity, String.class);
-
+            AppLogger.info(this.getClass(), "Route directions retrieved successfully", "profile", profile);
             return apiHelper.convertToGeoJson(response.getBody());
 
         } catch (HttpClientErrorException e) {
+            AppLogger.throwInvalidRequest(this.getClass(), "GraphHopper API error: " + e.getResponseBodyAsString(), e);
             throw new RuntimeException("GraphHopper API error: " + e.getResponseBodyAsString(), e);
         } catch (Exception e) {
+            AppLogger.throwInvalidRequest(this.getClass(), "Failed to get route directions", e);
             throw new RuntimeException("Failed to get route directions: " + e.getMessage(), e);
         }
     }
@@ -111,7 +115,7 @@ public class RouteService {
             }
             return objectMapper.readTree(routeGeoJson);
         } catch (Exception e) {
-            System.err.println("Error reading saved route GeoJSON: " + e.getMessage());
+            AppLogger.error(this.getClass(), "Failed to read saved route GeoJSON", e);
             return objectMapper.createObjectNode();
         }
     }
@@ -152,11 +156,11 @@ public class RouteService {
                                 double endLng,   double endLat,
                                 List<StopPointDTO> stopPoints,
                                 String profile, Exception ex) {
-        System.err.println("GraphHopper rate limit exceeded: " + ex.getMessage());
+        AppLogger.warn(this.getClass(), "GraphHopper rate limit exceeded", "profile", profile, ex);
         return """
-               {"type":"FeatureCollection","features":[],
-                "error":"Rate limit exceeded. Please try again shortly."}
-               """;
+              {"type":"FeatureCollection","features":[],
+               "error":"Rate limit exceeded. Please try again shortly."}
+              """;
     }
 
 

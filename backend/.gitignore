@@ -59,6 +59,16 @@ DerivedData
 *.xcuserstate
 **/.xcode.env.local
 
+.env
+
+logs/
+*.log
+*.log.gz
+*.log.zip
+
+# Spring Boot logs
+spring.log
+
 # Android/IntelliJ
 #
 build/

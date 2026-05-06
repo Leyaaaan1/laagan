@@ -3,6 +3,7 @@ package leyans.RidersHub.Service;
 import leyans.RidersHub.DTO.Response.StartRideResponseDTO;
 import leyans.RidersHub.Repository.RidesRepository;
 import leyans.RidersHub.Repository.StartedRideRepository;
+import leyans.RidersHub.Utility.AppLogger;
 import leyans.RidersHub.Utility.RidesUtil;
 import leyans.RidersHub.Utility.StartedUtil;
 import leyans.RidersHub.model.Rider;
@@ -41,16 +42,20 @@ public class StartRideService {
 
     @Transactional
     public StartRideResponseDTO startRide(String generatedRidesId) throws AccessDeniedException {
+        AppLogger.info(this.getClass(), "startRide called", "generatedRidesId", generatedRidesId);
         Rider initiator = startedUtil.authenticateAndGetInitiator();
         Rides ride = ridesUtil.validateAndGetRide(generatedRidesId, initiator);
 
         boolean isCreator = ride.getUsername().getUsername().equals(initiator.getUsername());
         if (!isCreator) {
+            AppLogger.throwUnauthorized(this.getClass(), "Only the ride creator can start the ride");
             throw new AccessDeniedException("Only the ride creator can start the ride");
+
         }
 
         Point startingPoint = ride.getStartingLocation();
         if (startingPoint == null) {
+            AppLogger.throwInvalidRequest(this.getClass(), "Ride does not have a valid starting location");
             throw new RuntimeException("Ride does not have a valid starting location");
         }
 
@@ -66,7 +71,7 @@ public class StartRideService {
 
         startedRide.setParticipants(allParticipants);
         startedRide = startedRideRepository.save(startedRide);
-
+        AppLogger.info(this.getClass(), "Ride started successfully", "rideId", generatedRidesId);
         ride.setActive(true);
         ridesRepository.save(ride);
 
@@ -83,9 +88,13 @@ public class StartRideService {
 
     @Transactional
     public void deactivateRide(String generatedRidesId) {
+        AppLogger.info(this.getClass(), "deactivateRide called", "generatedRidesId", generatedRidesId);
         // 1. Find the ride — generatedRidesId is NOT the PK, so use findByGeneratedRidesId
         Rides ride = ridesRepository.findByGeneratedRidesId(generatedRidesId)
-                .orElseThrow(() -> new IllegalArgumentException("Ride not found: " + generatedRidesId));
+                .orElseThrow(() -> {
+                    AppLogger.warn(this.getClass(), "Ride not found for deactivation", "rideId", generatedRidesId);
+                    return new IllegalArgumentException("Ride not found: " + generatedRidesId);
+                });
 
         // 2. Find the StartedRide and delete it first (breaks the FK constraint before touching Rides)
         startedRideRepository.findByRideGeneratedRidesId(generatedRidesId).ifPresent(startedRide -> {
@@ -107,5 +116,6 @@ public class StartRideService {
         });
 
         ride.setActive(false);
+        AppLogger.info(this.getClass(), "Ride deactivated successfully", "generatedRidesId", generatedRidesId);
         ridesRepository.save(ride);
     }}

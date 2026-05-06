@@ -7,6 +7,7 @@ import leyans.RidersHub.DTO.Request.RidesDTO.StopPointDTO;
 import leyans.RidersHub.Service.InteractionRequest.RideParticipantService;
 import leyans.RidersHub.Service.MapService.MapBox.MapboxService;
 import leyans.RidersHub.Service.MapService.RouteService;
+import leyans.RidersHub.Utility.AppLogger;
 import leyans.RidersHub.Utility.RidesUtil;
 import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.RiderType;
@@ -72,7 +73,7 @@ public class RidesService {
             double startLatitude, double startLongitude,
             double endLatitude, double endLongitude,
             List<StopPointDTO> stopPointsDto) {
-
+        AppLogger.info(this.getClass(), "createRide called", "generatedRidesId", generatedRidesId, "creatorUsername", creatorUsername, "ridesName", ridesName);
         List<StopPointDTO> validStopPoints = stopPointsDto.stream()
                 .filter(stop -> stop.getStopLongitude() != 0.0 && stop.getStopLatitude() != 0.0)
                 .collect(Collectors.toList());
@@ -144,6 +145,7 @@ public class RidesService {
     }
 
     private void awaitApiFuturesAndCollect(ApiFutures f) {
+        AppLogger.info(this.getClass(), "Awaiting parallel API futures");
         try {
             CompletableFuture<Void> allApiCalls = CompletableFuture.allOf(
                     f.mainImageFuture, f.startImageFuture, f.endImageFuture,
@@ -152,10 +154,11 @@ public class RidesService {
             );
 
             allApiCalls.get(60, TimeUnit.SECONDS);
+            AppLogger.info(this.getClass(), "All API futures completed successfully");
         } catch (TimeoutException e) {
-            throw new RuntimeException("API calls timed out after 30 seconds", e);
+            AppLogger.throwInvalidRequest(this.getClass(), "API calls timed out after 60 seconds", e);
         } catch (Exception e) {
-            throw new RuntimeException("Error during parallel API calls: " + e.getMessage(), e);
+            AppLogger.throwInvalidRequest(this.getClass(), "Error during parallel API calls: " + e.getMessage(), e);
         }
     }
 
@@ -220,7 +223,7 @@ public class RidesService {
 
         Rides savedRide = ridesUtil.saveRideWithTransaction(newRide, creator);
 
-        System.out.println("Ride created with ID: " + savedRide.getGeneratedRidesId());
+        AppLogger.info(this.getClass(), "Ride created successfully", "rideId", savedRide.getGeneratedRidesId(), "rideName", savedRide.getRidesName());
 
         return ridesUtil.mapToDetailDTO(savedRide);
 

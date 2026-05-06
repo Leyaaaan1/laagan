@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import leyans.RidersHub.DTO.Request.LocationDTO.NominatimAddress;
 import leyans.RidersHub.Service.MapService.utilities.ApiHelper;
+import leyans.RidersHub.Utility.AppLogger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
@@ -64,8 +65,11 @@ public class NominatimService {
      * Reverse-geocode coordinates → barangay name.
      * zoom=18 resolves to village/suburb level.
      */
+
     @RateLimiter(name = "nominatim", fallbackMethod = "barangayFallback")
     public String getBarangayNameFromCoordinates(double lat, double lon) {
+        AppLogger.info(this.getClass(), "getBarangayNameFromCoordinates called", "lat", lat, "lon", lon);
+
         String url = UriComponentsBuilder.fromHttpUrl(nominatimApiBase + "/reverse")
                 .queryParam("format", "jsonv2")
                 .queryParam("lat", lat)
@@ -74,7 +78,7 @@ public class NominatimService {
                 .queryParam("addressdetails", 1)
                 .queryParam("bounded", 1)
                 .queryParam("viewbox", MINDANAO_VIEWBOX)
-                .build(false)          // false = do not encode again (already safe)
+                .build(false)
                 .toUriString();
 
         try {
@@ -85,16 +89,17 @@ public class NominatimService {
             if (body != null && body.containsKey("address")) {
                 @SuppressWarnings("unchecked")
                 Map<String, String> address = (Map<String, String>) body.get("address");
-                return address.getOrDefault("village",
+                String barangay = address.getOrDefault("village",
                         address.getOrDefault("neighbourhood",
                                 address.getOrDefault("suburb", null)));
+                AppLogger.info(this.getClass(), "Barangay found", "barangay", barangay);
+                return barangay;
             }
         } catch (Exception e) {
-            System.err.println("Nominatim reverse (barangay) error: " + e.getMessage());
+            AppLogger.error(this.getClass(), "Failed to reverse geocode barangay", e);
         }
         return null;
     }
-
     /**
      * Reverse-geocode coordinates → landmark or city name.
      * Prioritises named landmarks (tourism, amenity, etc.) over generic city names.
@@ -152,7 +157,7 @@ public class NominatimService {
             }
 
         } catch (Exception e) {
-            System.err.println("Nominatim reverse (landmark) error: " + e.getMessage());
+            AppLogger.error(this.getClass(), "Nominatim location search failed", e);
         }
         return Optional.empty();
     }
@@ -166,9 +171,10 @@ public class NominatimService {
      * Free-text location search, bounded to Mindanao.
      * Uses format=jsonv2 for a lighter payload.
      */
+
     @RateLimiter(name = "nominatim", fallbackMethod = "searchLocationFallback")
     public List<Map<String, Object>> searchLocation(String query, int limit) {
-        System.out.println("searchLocation called: " + query);
+        AppLogger.info(this.getClass(), "searchLocation called", "query", query, "limit", limit);
 
         String url = UriComponentsBuilder.fromHttpUrl(nominatimApiBase + "/search")
                 .queryParam("q", query)
@@ -184,13 +190,14 @@ public class NominatimService {
         try {
             ResponseEntity<List> response = restTemplate.exchange(
                     url, HttpMethod.GET, apiHelper.buildEntity(), List.class);
-            return response.getBody() != null ? response.getBody() : Collections.emptyList();
+            List<Map<String, Object>> results = response.getBody() != null ? response.getBody() : Collections.emptyList();
+            AppLogger.info(this.getClass(), "Location search completed", "query", query, "resultsCount", results.size());
+            return results;
         } catch (Exception e) {
-            System.err.println("Nominatim search error: " + e.getMessage());
+            AppLogger.error(this.getClass(), "Nominatim search failed", "query", query, e);
             return Collections.emptyList();
         }
     }
-
     /** Convenience overload — default limit 5. */
     public List<Map<String, Object>> searchCityOrLandmark(String query) {
         return searchCityOrLandmark(query, 5);
@@ -264,28 +271,29 @@ public class NominatimService {
             return filtered;
 
         } catch (Exception e) {
-            System.err.println("Nominatim searchCityOrLandmark error: " + e.getMessage());
+            AppLogger.error(this.getClass(), "searchCityOrLandmark failed", "query", query, e);
             return Collections.emptyList();
         }
     }
 
     public String barangayFallback(double lat, double lon, Exception ex) {
-        System.err.println("Nominatim rate limit (barangay): " + ex.getMessage());
+        AppLogger.warn(this.getClass(), "Nominatim rate limit exceeded (barangay)", "lat", lat, "lon", lon, ex);
         return null;
     }
 
     public Optional<NominatimAddress> cityLandmarkFallback(double lat, double lon, Exception ex) {
-        System.err.println("Nominatim rate limit (landmark): " + ex.getMessage());
+        AppLogger.warn(this.getClass(), "Nominatim rate limit exceeded (landmark)", "lat", lat, "lon", lon, ex);
         return Optional.empty();
     }
 
     public List<Map<String, Object>> searchLocationFallback(String query, int limit, Exception ex) {
-        System.err.println("Nominatim rate limit (searchLocation): " + ex.getMessage());
+        AppLogger.warn(this.getClass(), "Nominatim rate limit exceeded (searchLocation)", "query", query, ex);
         return Collections.emptyList();
     }
 
+
     public List<Map<String, Object>> searchCityOrLandmarkFallback(String query, int limit, Exception ex) {
-        System.err.println("Nominatim rate limit (searchCityOrLandmark): " + ex.getMessage());
+        AppLogger.warn(this.getClass(), "Nominatim rate limit exceeded (searchCityOrLandmark)", "query", query, ex);
         return Collections.emptyList();
     }
 

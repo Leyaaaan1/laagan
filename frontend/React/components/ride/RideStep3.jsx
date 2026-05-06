@@ -116,6 +116,8 @@ const RideStep3 = ({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Route drawing ─────────────────────────────────────────────────────────
+
+// ── Route drawing ─────────────────────────────────────────────────────────
   const drawRoadRoute = useCallback(async () => {
     const sLat = parseFloat(startingLatitude);
     const sLng = parseFloat(startingLongitude);
@@ -148,7 +150,7 @@ const RideStep3 = ({
     } finally {
       setRouteLoading(false);
     }
-  });
+  }, [startingLatitude, startingLongitude, endingLatitude, endingLongitude, stopPoints, token, webViewRef]);
 
   useEffect(() => {
 
@@ -159,7 +161,7 @@ const RideStep3 = ({
     const timer = setTimeout(() => drawRoadRoute(), 1000);
 
     return () => clearTimeout(timer);
-  }, [startingLatitude, startingLongitude, endingLatitude, endingLongitude, stopPoints, mapMode, drawRoadRoute]);
+  }, [startingLatitude, startingLongitude, endingLatitude, endingLongitude, stopPoints, mapMode]);
 
   // ── Stop point handlers ───────────────────────────────────────────────────
   const startAddStopPoint = () => { setMapMode('stop'); setIsAddingStop(true); setCurrentStop(null); };

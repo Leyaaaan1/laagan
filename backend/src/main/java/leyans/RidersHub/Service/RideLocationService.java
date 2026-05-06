@@ -3,6 +3,7 @@ package leyans.RidersHub.Service;
 import leyans.RidersHub.DTO.Request.LocationDTO.LocationUpdateRequestDTO;
 import leyans.RidersHub.ExceptionHandler.UnauthorizedAccessException;
 import leyans.RidersHub.Repository.*;
+import leyans.RidersHub.Utility.AppLogger;
 import leyans.RidersHub.Utility.RiderUtil;
 import leyans.RidersHub.model.*;
 import leyans.RidersHub.model.participant.ParticipantLocation;
@@ -46,11 +47,10 @@ public class RideLocationService {
     }
     @Transactional(readOnly = true)
     public List<LocationUpdateRequestDTO> getAllRiderLocations(Integer startedRideId) {
-        try {
             StartedRide started = riderUtil.findStartedRideById(startedRideId);
 
             List<RiderLocation> locations = locationRepo.findLatestLocationPerParticipantOptimized(started.getId());
-            System.out.println(" Retrieved " + locations.size() + " location updates");
+            AppLogger.info(this.getClass(), "Retrieved location updates", "count", locations.size());
 
             List<LocationUpdateRequestDTO> result = locations.stream().map(loc -> {
                 Point p = loc.getLocation();
@@ -65,15 +65,10 @@ public class RideLocationService {
                 );
             }).collect(Collectors.toList());
 
-            System.out.println("📤 Returning " + result.size() + " locations\n");
+            AppLogger.info(this.getClass(), "Returning location updates", "count", result.size());
             return result;
 
-        } catch (Exception e) {
-            System.err.println("❌ ERROR in getAllRiderLocations: " + e.getMessage());
-            e.printStackTrace();
-            return new ArrayList<>();
-        }
-    }
+            }
 
     // =========================================================================
 // UPDATE LOCATION
@@ -82,6 +77,7 @@ public class RideLocationService {
     public LocationUpdateRequestDTO updateLocation(Integer startedRideId,
                                                    double latitude,
                                                    double longitude) {
+        AppLogger.info(this.getClass(), "updateLocation called", "startedRideId", startedRideId, "latitude", latitude, "longitude", longitude);
         StartedRide started = riderUtil.findStartedRideById(startedRideId);
 
         String username = riderUtil.getCurrentUsername();
@@ -124,7 +120,7 @@ public class RideLocationService {
 
         loc = locationRepo.save(loc);
         locationRepo.deleteOldDuplicates(started, rider, loc.getId());
-
+        AppLogger.info(this.getClass(), "Location updated successfully", "username", username, "distance", distanceMeters);
         return new LocationUpdateRequestDTO(
                 startedRideId,
                 username,
@@ -139,32 +135,30 @@ public class RideLocationService {
 // =========================================================================
 @Transactional(readOnly = true)
 public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer startedRideId) {
-    System.out.println("\n=== 🔍 GET LATEST PARTICIPANT LOCATIONS ===");
-    System.out.println("Started Ride ID: " + startedRideId);
+    AppLogger.info(this.getClass(), "getLatestParticipantLocations called", "startedRideId", startedRideId);
 
-    try {
         StartedRide started = riderUtil.findStartedRideById(startedRideId);
 
         Set<String> allRiderUsernames = new LinkedHashSet<>();
         if (started.getUsername() != null) {
             allRiderUsernames.add(started.getUsername().getUsername());
-            System.out.println("✓ Owner: " + started.getUsername().getUsername());
+            AppLogger.info(this.getClass(), "Owner found", "username", started.getUsername().getUsername());
         }
 
         for (Rider participant : started.getParticipants()) {
             boolean added = allRiderUsernames.add(participant.getUsername());
             if (added) {
-                System.out.println("✓ Participant: " + participant.getUsername());
+                AppLogger.info(this.getClass(), "Participant found", "username", participant.getUsername());
             }
         }
 
-        System.out.println("📊 Total unique riders in ride: " + allRiderUsernames.size());
+        AppLogger.info(this.getClass(), "Total unique riders", "count", allRiderUsernames.size());
 
         // Step 1: Get latest LIVE locations from rider_locations
         List<RiderLocation> liveLocations = locationRepo
                 .findLatestLocationPerParticipantOptimized(started.getId());
 
-        System.out.println("✅ Live locations (rider_locations): " + liveLocations.size());
+        AppLogger.info(this.getClass(), "Live locations retrieved", "count", liveLocations.size());
 
         // Step 2: Find who is missing
         Set<String> ridersWithLiveLocations = liveLocations.stream()
@@ -174,7 +168,7 @@ public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer star
         Set<String> ridersWithoutLiveLocations = new LinkedHashSet<>(allRiderUsernames);
         ridersWithoutLiveLocations.removeAll(ridersWithLiveLocations);
 
-        System.out.println("⚠️  Riders without live locations: " + ridersWithoutLiveLocations.size());
+        AppLogger.warn(this.getClass(), "Riders without live locations", "count", ridersWithoutLiveLocations.size());
 
         // Step 3: For those missing, get from participant_location (fallback)
         List<ParticipantLocation> fallbackLocations = new ArrayList<>();
@@ -185,7 +179,7 @@ public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer star
 
             if (!participantLocs.isEmpty()) {
                 fallbackLocations.add(participantLocs.get(0));
-                System.out.println("  ↩️  Fallback for " + username + " from participant_location");
+                AppLogger.info(this.getClass(), "Using fallback location", "username", username);
             }
         }
 
@@ -220,15 +214,10 @@ public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer star
             );
         }).collect(Collectors.toList()));
 
-        System.out.println("📤 Returning: " + result.size() + " total DTOs (live + fallback)");
-        System.out.println("=== ✅ END ===\n");
+        AppLogger.info(this.getClass(), "Returning participant locations", "total", result.size());
         return result;
 
-    } catch (Exception e) {
-        System.err.println("❌ ERROR in getLatestParticipantLocations: " + e.getMessage());
-        e.printStackTrace();
-        return new ArrayList<>();
-    }
+
 }
 
     @Transactional

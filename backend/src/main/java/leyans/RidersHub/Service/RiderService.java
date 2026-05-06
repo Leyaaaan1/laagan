@@ -6,6 +6,7 @@ import leyans.RidersHub.DTO.Request.RiderDTO.RiderDTO;
 import leyans.RidersHub.DTO.Response.RiderResponseDTO;
 import leyans.RidersHub.Repository.RiderTypeRepository;
 import leyans.RidersHub.Service.Auth.AccountLockoutService;
+import leyans.RidersHub.Utility.AppLogger;
 import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.RiderType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,10 +90,15 @@ public class RiderService {
 
 
     public Rider getRiderByUsername(String username) {
+        AppLogger.info(this.getClass(), "getRiderByUsername called", "username", username);
+
         Rider rider = riderRepository.findByUsername(username);
         if (rider == null) {
-            throw new IllegalArgumentException("Rider not found: " + username);
+            AppLogger.throwResourceNotFound(this.getClass(),
+                    "Rider not found: " + username);
         }
+
+        AppLogger.info(this.getClass(), "Rider retrieved successfully", "username", username);
         return rider;
     }
 
