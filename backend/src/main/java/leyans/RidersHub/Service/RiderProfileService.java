@@ -37,28 +37,28 @@ public class RiderProfileService {
     }
 
 
+
     public RiderProfileResponseDTO getOrCreateProfile(String username) {
         return riderProfileRepository
                 .findByRiderUsernameWithTypes(username)
                 .map(RiderProfileResponseDTO::new)
                 .orElseGet(() -> {
-                    // getRiderByUsername uses the existing RiderRepository —
-                    // rider.riderType is eagerly needed here so it's fetched once
                     Rider rider = riderService.getRiderByUsername(username);
+                    // Force initialization of rider.riderTypes if needed
+                    rider.getRiderTypes().size();
 
                     RiderProfile blank = new RiderProfile();
                     blank.setRider(rider);
 
-                    RiderType registrationRiderType = rider.getRiderType();
-                    if (registrationRiderType != null) {
-                        List<RiderType> seeded = new ArrayList<>();
-                        seeded.add(registrationRiderType);
-                        blank.setRiderTypes(seeded);
+                    List<RiderType> registrationRiderTypes = rider.getRiderTypes();
+                    if (registrationRiderTypes != null && !registrationRiderTypes.isEmpty()) {
+                        blank.setRiderTypes(new ArrayList<>(registrationRiderTypes));
                     }
 
                     return new RiderProfileResponseDTO(riderProfileRepository.save(blank));
                 });
     }
+
 
     public RiderProfileResponseDTO updateProfile(String username, RiderProfileRequestDTO request) {
         RiderProfile profile = fetchProfileOrThrow(username);

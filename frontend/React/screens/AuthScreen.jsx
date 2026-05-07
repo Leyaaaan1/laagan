@@ -14,54 +14,76 @@ import inputs from '../styles/base/inputs';
 import buttons from '../styles/base/buttons';
 import text from '../styles/base/text';
 import layout from '../styles/base/layout';
+import authStyle from '../styles/screens/authStyles';
 import colors from '../styles/tokens/colors';
 import spacing from '../styles/tokens/spacing';
 import {useAuth} from '../context/AuthContext';
+import {
+  CONFIRM_RULES,
+  evaluateRules,
+  isFormValid,
+  PASSWORD_RULES,
+  USERNAME_RULES,
+} from '../utilities/validator/Authvalidation';
 
 
-const validateInputs = (isLogin, username, password, riderType) => {
-  const errors = {};
+const ValidationChecklist = ({rules, value, touched, isLogin}) => {
+  if (isLogin || !touched || value.length === 0) return null;
 
-  if (!username || username.trim().length === 0) {
-    errors.username = 'Username is required';
-  } else if (username.trim().length < 3) {
-    errors.username = 'Username must be at least 3 characters';
-  } else if (username.trim().length > 50) {
-    errors.username = 'Username must be under 50 characters';
-  } else if (!/^[a-zA-Z0-9_.-]+$/.test(username.trim())) {
-    errors.username = 'Username can only contain letters, numbers, _ . -';
-  }
+  const {rules: evaluated} = evaluateRules(rules, value);
 
-  if (!password || password.length === 0) {
-    errors.password = 'Password is required';
-  } else if (password.length < 8) {
-    errors.password = 'Password must be at least 8 characters';
-  } else if (password.length > 128) {
-    errors.password = 'Password is too long';
-  }
+  return (
+    <View style={authStyle.container}>
+      {evaluated.map(rule => {
+        const isPending = value.length === 0;
+        const dotStyle = isPending
+          ? authStyle.dotPending
+          : rule.passed
+          ? authStyle.dotPassed
+          : authStyle.dotFailed;
+        const labelStyle = isPending
+          ? authStyle.ruleTextPending
+          : rule.passed
+          ? authStyle.ruleTextPassed
+          : authStyle.ruleTextFailed;
 
-  if (!isLogin) {
-    if (!riderType || riderType.trim().length === 0) {
-      errors.riderType = 'Rider type is required';
-    }
-  }
-
-  return errors;
+        return (
+          <View key={rule.key} style={authStyle.ruleRow}>
+            <View style={[authStyle.dot, dotStyle]} />
+            <Text style={[authStyle.ruleText, labelStyle]}>{rule.label}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
 };
 
+// ─────────────────────────────────────────────
+// getInputBorderStyle
+// Returns border override based on validation state.
+// ─────────────────────────────────────────────
+const getInputBorderStyle = (rules, value, touched, isLogin) => {
+  if (isLogin || !touched || value.length === 0) return null;
+  const {allPassed} = evaluateRules(rules, value);
+  return allPassed ? authStyle.inputSuccess : authStyle.inputError;
+};
 
+// ─────────────────────────────────────────────
+// AuthForm
+// ─────────────────────────────────────────────
 const AuthForm = ({
-                    isLogin,
-                    username,
-                    password,
-                    riderType,
-                    setUsername,
-                    setPassword,
-                    setRiderType,
-                    handleAuth,
-                    toggleMode,
-                    fieldErrors,  // ADDED
-                  }) => (
+  isLogin,
+  username,
+  password,
+  confirmPassword,
+  setUsername,
+  setPassword,
+  setConfirmPassword,
+  handleAuth,
+  toggleMode,
+  touched,
+  setTouched,
+}) => (
   <KeyboardAvoidingView
     style={layout.center}
     behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -77,66 +99,94 @@ const AuthForm = ({
         : 'Join the community and start riding'}
     </Text>
 
-    <TextInput
-      placeholder="Username"
-      placeholderTextColor="#64748b"
-      value={username}
-      onChangeText={setUsername}
-      style={[
-        inputs.auth,
-        // ADDED: highlight field red if validation error exists
-        fieldErrors.username ? {borderColor: '#ef4444'} : null,
-      ]}
-      autoCapitalize="none"
-      autoCorrect={false}
-      maxLength={50}  // ADDED: enforce max length at input level
-    />
-    {/* ADDED: inline error message */}
-    {fieldErrors.username ? (
-      <Text style={{color: '#ef4444', fontSize: 12, marginBottom: 4, alignSelf: 'flex-start'}}>
-        {fieldErrors.username}
-      </Text>
-    ) : null}
+    {/* ── Username ── */}
+    <View style={authStyle.fieldBlock}>
+      <TextInput
+        placeholder="Username"
+        placeholderTextColor="#64748b"
+        value={username}
+        onChangeText={setUsername}
+        onFocus={() => setTouched(prev => ({...prev, username: true}))}
+        style={[
+          inputs.auth,
+          getInputBorderStyle(
+            USERNAME_RULES,
+            username,
+            touched.username,
+            isLogin,
+          ), //
+        ]}
+        autoCapitalize="none"
+        autoCorrect={false}
+        maxLength={50}
+      />
+      <ValidationChecklist
+        rules={USERNAME_RULES}
+        value={username}
+        touched={touched.username}
+        isLogin={isLogin}
+      />
+    </View>
 
-    <TextInput
-      placeholder="Password"
-      placeholderTextColor="#64748b"
-      value={password}
-      onChangeText={setPassword}
-      style={[
-        inputs.auth,
-        fieldErrors.password ? {borderColor: '#ef4444'} : null,
-      ]}
-      secureTextEntry
-      autoCorrect={false}
-      maxLength={128}  // ADDED
-    />
-    {fieldErrors.password ? (
-      <Text style={{color: '#ef4444', fontSize: 12, marginBottom: 4, alignSelf: 'flex-start'}}>
-        {fieldErrors.password}
-      </Text>
-    ) : null}
+    {/* ── Password ── */}
+    <View style={authStyle.fieldBlock}>
+      <TextInput
+        placeholder="Password"
+        placeholderTextColor="#64748b"
+        value={password}
+        onChangeText={setPassword}
+        onFocus={() => setTouched(prev => ({...prev, password: true}))}
+        style={[
+          inputs.auth,
+          getInputBorderStyle(
+            PASSWORD_RULES,
+            password,
+            touched.password,
+            isLogin,
+          ), //
+        ]}
+        secureTextEntry
+        autoCorrect={false}
+        maxLength={128}
+      />
+      <ValidationChecklist
+        rules={PASSWORD_RULES}
+        value={password}
+        touched={touched.password}
+        isLogin={isLogin}
+      />
+    </View>
 
+    {/* ── Confirm Password (register only) ── */}
     {!isLogin && (
-      <>
+      <View style={authStyle.fieldBlock}>
         <TextInput
-          placeholder="Rider Type"
+          placeholder="Confirm Password"
           placeholderTextColor="#64748b"
-          value={riderType}
-          onChangeText={setRiderType}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          onFocus={() => setTouched(prev => ({...prev, confirmPassword: true}))}
           style={[
             inputs.auth,
-            fieldErrors.riderType ? {borderColor: '#ef4444'} : null,
+            getInputBorderStyle(
+              CONFIRM_RULES(password),
+              confirmPassword,
+              touched.confirmPassword,
+            ),
           ]}
+          secureTextEntry
+          autoCorrect={false}
+          maxLength={128}
         />
-        {fieldErrors.riderType ? (
-          <Text style={{color: '#ef4444', fontSize: 12, marginBottom: 4, alignSelf: 'flex-start'}}>
-            {fieldErrors.riderType}
-          </Text>
-        ) : null}
-      </>
+        <ValidationChecklist
+          rules={CONFIRM_RULES(password)}
+          value={confirmPassword}
+          touched={touched.confirmPassword}
+        />
+      </View>
     )}
 
+    {/* ── Submit ── */}
     <TouchableOpacity
       style={[buttons.pill, {width: 280, marginBottom: spacing.sm}]}
       onPress={handleAuth}>
@@ -167,46 +217,57 @@ const AuthForm = ({
   </KeyboardAvoidingView>
 );
 
+// ─────────────────────────────────────────────
+// AuthScreen
+// ─────────────────────────────────────────────
 const AuthScreen = ({navigation}) => {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [riderType, setRiderType] = useState('');
-  // ADDED: validation error state
-  const [fieldErrors, setFieldErrors] = useState({});
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  // touched tracks whether user has interacted with each field
+  // validation checklist only appears after first focus
+  const [touched, setTouched] = useState({
+    username: false,
+    password: false,
+    confirmPassword: false,
+  });
+
   const {saveAuth} = useAuth();
 
   const handleAuth = async () => {
+    // Mark all fields as touched so errors show on submit attempt
+    setTouched({username: true, password: true, confirmPassword: true});
 
-    const errors = validateInputs(isLogin, username, password, riderType);
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors);
-      return;
+    if (!isFormValid(username, password, confirmPassword, isLogin)) {
+      return; // checklist already shows the issues inline
     }
-    setFieldErrors({});
 
     try {
       const result = isLogin
         ? await loginUser(username.trim(), password)
-        : await registerUser(username.trim(), password, riderType.trim());
+        : await registerUser(username.trim(), password);
+      // ✅ riderType removed — set via profile edit after registration
 
       if (result.success) {
-        const accessToken = result.data?.accessToken;
-        const refreshToken = result.data?.refreshToken;
+        const {accessToken, refreshToken} = result.data;
+
         if (accessToken && refreshToken) {
           await saveAuth(accessToken, refreshToken, username.trim());
         }
-        // CHANGED: More specific success messages, and clear form fields on success
-        Alert.alert(
-          isLogin ? 'Login Successful' : 'Registration Successful',
-          isLogin ? 'Welcome back!' : 'Account created. You can now log in.',
-        );
-        if (isLogin && navigation) {
-          navigation.navigate('RiderPage');
+
+        if (isLogin) {
+          Alert.alert('Welcome back!');
         }
+
+        // ✅ small delay to ensure token is stored before RiderPage fetches
+        setTimeout(() => {
+          if (navigation) {
+            navigation.navigate('RiderPage');
+          }
+        }, 300);
       } else {
-        // CHANGED: Show a generic error message rather than the raw backend
-        // message, which may reveal internal details (table names, field names, etc.)
         Alert.alert(
           'Error',
           isLogin
@@ -222,7 +283,10 @@ const AuthScreen = ({navigation}) => {
 
   const toggleMode = () => {
     setIsLogin(prev => !prev);
-    setFieldErrors({}); // ADDED: clear errors when switching between login/register
+    setUsername('');
+    setPassword('');
+    setConfirmPassword('');
+    setTouched({username: false, password: false, confirmPassword: false});
   };
 
   return (
@@ -233,13 +297,14 @@ const AuthScreen = ({navigation}) => {
         isLogin={isLogin}
         username={username}
         password={password}
-        riderType={riderType}
+        confirmPassword={confirmPassword}
         setUsername={setUsername}
         setPassword={setPassword}
-        setRiderType={setRiderType}
+        setConfirmPassword={setConfirmPassword}
         handleAuth={handleAuth}
         toggleMode={toggleMode}
-        fieldErrors={fieldErrors}  // ADDED
+        touched={touched}
+        setTouched={setTouched}
       />
     </View>
   );

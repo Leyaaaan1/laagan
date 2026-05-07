@@ -13,6 +13,19 @@ export const getMyProfile = async () => {
   }
 };
 
+export const updateProfile = async updates => {
+  try {
+    const response = await api.put('/profiles/edit', updates);
+    if (!response.ok)
+      return {success: false, message: `HTTP ${response.status}`};
+    const result = await response.json();
+    return {success: true, data: result};
+  } catch (error) {
+    console.error('updateProfile error:', error);
+    return {success: false, message: error.message};
+  }
+};
+
 export const getProfileByUsername = async (username) => {
   try {
     const response = await api.get(`/profiles/${username}`);

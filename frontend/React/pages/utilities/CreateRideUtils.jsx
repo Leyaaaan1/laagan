@@ -7,6 +7,7 @@ import {
   reverseGeocodeLandmark,
   reverseGeocode,
   getLocationImage,
+  getAllRiderTypes,
 } from '../../services/rideService';
 import {
   validateCoordinates,
@@ -77,6 +78,10 @@ const useCreateRide = ({}) => {
   // ── Map ───────────────────────────────────────────────────────────────────
   const [mapMode, setMapMode] = useState('starting');
 
+  const [riderTypeOptions, setRiderTypeOptions] = useState([]);
+  const [riderTypeLoading, setRiderTypeLoading] = useState(false);
+
+
   // ── Step-based map mode sync ──────────────────────────────────────────────
   useEffect(() => {
     if (currentStep === 2) {
@@ -112,6 +117,27 @@ const useCreateRide = ({}) => {
     setSearchQuery(value);
   };
 
+
+  useEffect(() => {
+    const fetchRiderTypes = async () => {
+      setRiderTypeLoading(true);
+      try {
+        const types = await getAllRiderTypes();
+        setRiderTypeOptions(types);
+        if (types.length > 0) {
+          setRiderType(types[0].riderType);
+        }
+      } catch (error) {
+        console.error('Failed to load rider types:', error);
+        setRiderType('ADV 160');
+      } finally {
+        setRiderTypeLoading(false);
+      }
+    };
+
+    fetchRiderTypes();
+  }, []);
+
   // ─── Trigger actual search after debounce settles ─────────────────────────
   useEffect(() => {
     const isValidQuery = searchQuery?.trim().length >= 3;
@@ -119,6 +145,7 @@ const useCreateRide = ({}) => {
       setSearchResults([]);
       return;
     }
+
 
     setIsSearching(true);
     const searchFn =
@@ -255,10 +282,21 @@ const useCreateRide = ({}) => {
     const locLatParsed = parseFloat(latitude);
     const locLngParsed = parseFloat(longitude);
 
+    const mapRiderTypeToDatabase = type => {
+      const typeMap = {
+        CAR: 'ADV 160',
+        MOTORCYCLE: 'ADV 160',
+        BIKE: 'ADV 160',
+        SCOOTER: 'PCX 160',
+        default: 'ADV 160',
+      };
+      return typeMap[type] || typeMap['default'];
+    };
+
     const rideData = {
       ridesName: rideName.trim(),
       locationName: locationName.trim(),
-      riderType: riderType || 'CAR',
+      riderType: mapRiderTypeToDatabase(riderType),
       date: date.toISOString(),
       description: description.trim(),
       latitude: locLatParsed || parseFloat(DEFAULT_LAT),

@@ -20,6 +20,8 @@ export const searchCityOrLandmark = async (query) => {
   return response.json();
 };
 
+
+
 export const reverseGeocode = async (lat, lon = null) => {
   try {
     const response = await api.get(`/location/reverse?lat=${lat}&lon=${lon}`);
@@ -106,4 +108,18 @@ export const fetchMyRides = async ( page = 0, size = 10) => {
   if (!response.ok)
     throw new Error(`Failed to fetch my rides: ${response.status}`);
   return response.json();
+};
+
+
+export const getAllRiderTypes = async () => {
+  try {
+    const response = await api.get('/riders/all');
+    if (!response.ok) {
+      throw new Error(`Failed to fetch rider types: ${response.status}`);
+    }
+    return response.json();
+  } catch (err) {
+    console.error('Error fetching rider types:', err);
+    throw err;
+  }
 };

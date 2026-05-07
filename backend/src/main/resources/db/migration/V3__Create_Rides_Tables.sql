@@ -19,8 +19,7 @@ CREATE TABLE public.event_rides (
                                     ride_date TIMESTAMP NOT NULL,
                                     location GEOMETRY(Point, 4326),
                                     map_image_url VARCHAR(500),
-                                    map_starting_url VARCHAR(500),
-                                    map_ending_url VARCHAR(500),
+
                                     route_coordinates TEXT,
                                     active BOOLEAN NOT NULL DEFAULT true,
                                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -1,17 +1,20 @@
 package leyans.RidersHub.DTO.Response;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class RiderResponseDTO {
     private Integer id;
     private String username;
     private Boolean enabled;
-    private String riderType;
+    private List<String> riderTypes;  // Changed from String to List<String>
 
-    public RiderResponseDTO(Integer id, String username, Boolean enabled, String riderType) {
+    public RiderResponseDTO(Integer id, String username, Boolean enabled, List<String> riderTypes) {
         this.id = id;
         this.username = username;
         this.enabled = enabled;
-        this.riderType = riderType;
+        this.riderTypes = riderTypes;
     }
 
     // Constructor that takes a Rider entity
@@ -19,7 +22,15 @@ public class RiderResponseDTO {
         this.id = rider.getId();
         this.username = rider.getUsername();
         this.enabled = rider.getEnabled();
-        this.riderType = rider.getRiderType() != null ? rider.getRiderType().getRiderType() : null;
+
+        // Handle List<RiderType> instead of single RiderType
+        if (rider.getRiderTypes() != null && !rider.getRiderTypes().isEmpty()) {
+            this.riderTypes = rider.getRiderTypes().stream()
+                    .map(rt -> rt.getRiderType())
+                    .collect(Collectors.toList());
+        } else {
+            this.riderTypes = new ArrayList<>();
+        }
     }
 
     // Getters and Setters
@@ -47,11 +58,11 @@ public class RiderResponseDTO {
         this.enabled = enabled;
     }
 
-    public String getRiderType() {
-        return riderType;
+    public List<String> getRiderTypes() {
+        return riderTypes;
     }
 
-    public void setRiderType(String riderType) {
-        this.riderType = riderType;
+    public void setRiderTypes(List<String> riderTypes) {
+        this.riderTypes = riderTypes;
     }
 }

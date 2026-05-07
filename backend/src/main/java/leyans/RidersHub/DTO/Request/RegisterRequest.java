@@ -16,7 +16,6 @@ public class RegisterRequest {
             message = "Password must be at least 6 characters and include both letters and numbers"
     )
     private String password;
-    private String riderType;
 
     public RegisterRequest() {}
 
@@ -36,11 +35,5 @@ public class RegisterRequest {
         this.password = password;
     }
 
-    public String getRiderType() {
-        return riderType;
-    }
 
-    public void setRiderType(String riderType) {
-        this.riderType = riderType;
-    }
 }

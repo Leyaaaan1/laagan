@@ -28,8 +28,6 @@ public class RideResponseDTO {
     double endLng;
 
     private String mapImageUrl;
-    private String magImageStartingLocation;
-    private String magImageEndingLocation;
 
     private String username;
     private String routeCoordinates;
@@ -49,7 +47,6 @@ public class RideResponseDTO {
                                    date, double latitude, double longitude, List<String> participants, String description,
                            String startingPointName, double startLat, double startLng,
                            String endingPointName, double endLat, double endLng,
-                           String mapImageUrl, String magImageStartingLocation, String magImageEndingLocation,
                            String username, String routeCoordinates,
                             List<StopPointDTO> stopPoints, Boolean active
 
@@ -72,8 +69,6 @@ public class RideResponseDTO {
         this.endLat = endLat;
         this.endLng = endLng;
         this.mapImageUrl = mapImageUrl;
-        this.magImageStartingLocation = magImageStartingLocation;
-        this.magImageEndingLocation = magImageEndingLocation;
         this.username = username;
         this.stopPoints = stopPoints;
         this.routeCoordinates = routeCoordinates;
@@ -112,22 +107,7 @@ public class RideResponseDTO {
     public void setUsername(String username) {
         this.username = username;
     }
-
-    public String getMagImageStartingLocation() {
-        return magImageStartingLocation;
-    }
-
-    public void setMagImageStartingLocation(String magImageStartingLocation) {
-        this.magImageStartingLocation = magImageStartingLocation;
-    }
-
-    public String getMagImageEndingLocation() {
-        return magImageEndingLocation;
-    }
-
-    public void setMagImageEndingLocation(String magImageEndingLocation) {
-        this.magImageEndingLocation = magImageEndingLocation;
-    }
+    
 
     public String getGeneratedRidesId() {
         return generatedRidesId;

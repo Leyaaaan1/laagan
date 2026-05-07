@@ -56,8 +56,6 @@ public class RidesService {
     }
     private static class ApiFutures {
         CompletableFuture<String> mainImageFuture;
-        CompletableFuture<String> startImageFuture;
-        CompletableFuture<String> endImageFuture;
         CompletableFuture<String> routeFuture;
         CompletableFuture<String> mainLocationFuture;
         CompletableFuture<String> startLocationFuture;
@@ -98,14 +96,6 @@ public class RidesService {
 
         f.mainImageFuture = CompletableFuture.supplyAsync(
                 () -> mapboxService.getStaticMapImageUrl(longitude, latitude),
-                externalApiExecutor
-        );
-        f.startImageFuture = CompletableFuture.supplyAsync(
-                () -> mapboxService.getStaticMapImageUrl(startLongitude, startLatitude),
-                externalApiExecutor
-        );
-        f.endImageFuture = CompletableFuture.supplyAsync(
-                () -> mapboxService.getStaticMapImageUrl(endLongitude, endLatitude),
                 externalApiExecutor
         );
         f.routeFuture = CompletableFuture.supplyAsync(
@@ -149,7 +139,7 @@ public class RidesService {
         AppLogger.info(this.getClass(), "Awaiting parallel API futures");
         try {
             CompletableFuture<Void> allApiCalls = CompletableFuture.allOf(
-                    f.mainImageFuture, f.startImageFuture, f.endImageFuture,
+                    f.mainImageFuture,
                     f.routeFuture, f.mainLocationFuture, f.startLocationFuture, f.endLocationFuture,
                     CompletableFuture.allOf(f.stopPointFutures.toArray(new CompletableFuture[0]))
             );
@@ -202,8 +192,6 @@ public class RidesService {
             ApiFutures f) {
 
         String imageUrl = f.mainImageFuture.join();
-        String startImageUrl = f.startImageFuture.join();
-        String endImageUrl = f.endImageFuture.join();
         String routeCoordinates = f.routeFuture.join();
         String resolvedLocationName = f.mainLocationFuture.join();
         String startLocationName = f.startLocationFuture.join();
@@ -246,8 +234,6 @@ public class RidesService {
         newRide.setEndingPointName(endLocationName);
         newRide.setDate(date);
         newRide.setMapImageUrl(imageUrl);
-        newRide.setMagImageStartingLocation(startImageUrl);
-        newRide.setMagImageEndingLocation(endImageUrl);
         newRide.setRouteCoordinates(routeCoordinates);
         newRide.setActive(false);
 

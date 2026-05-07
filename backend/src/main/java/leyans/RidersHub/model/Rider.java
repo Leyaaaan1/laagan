@@ -3,6 +3,9 @@ package leyans.RidersHub.model;
 import jakarta.persistence.*;
 import org.hibernate.annotations.NaturalId;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "rider")
 public class Rider {
@@ -22,16 +25,24 @@ public class Rider {
     @Column(name = "enabled", nullable = false)
     private Boolean enabled;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "rider_type", referencedColumnName = "rider_type_id")
-    private RiderType riderType;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "rider_rider_types",
+            joinColumns = @JoinColumn(name = "rider_id"),
+            inverseJoinColumns = @JoinColumn(name = "rider_type_id")
+    )
+    private List<RiderType> riderTypes = new ArrayList<>();
 
-    public Rider(Integer id, String username, String password, Boolean enabled, RiderType riderType) {
+    @Column(name = "about", length = 500, nullable = true)
+    private String about;
+
+    public Rider(Integer id, String username, String password, Boolean enabled, List<RiderType> riderTypes, String about) {
         this.id = id;
         this.username = username;
         this.password = password;
         this.enabled = enabled;
-        this.riderType = riderType;
+        this.riderTypes = riderTypes;
+        this.about = about;
     }
 
     public Rider() {
@@ -73,11 +84,19 @@ public class Rider {
         this.enabled = enabled;
     }
 
-    public RiderType getRiderType() {
-        return riderType;
+    public List<RiderType> getRiderTypes() {
+        return riderTypes;
     }
 
-    public void setRiderType(RiderType riderType) {
-        this.riderType = riderType;
+    public void setRiderTypes(List<RiderType> riderTypes) {
+        this.riderTypes = riderTypes;
+    }
+
+    public String getAbout() {
+        return about;
+    }
+
+    public void setAbout(String about) {
+        this.about = about;
     }
 }
