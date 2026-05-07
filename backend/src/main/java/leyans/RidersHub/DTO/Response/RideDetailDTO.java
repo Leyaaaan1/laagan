@@ -27,8 +27,6 @@ public record RideDetailDTO(
         double  endLat,
         double  endLng,
         String  mapImageUrl,
-        String  magImageStartingLocation,
-        String  magImageEndingLocation,
         String  username,
         List<String> participants,
         String  description,

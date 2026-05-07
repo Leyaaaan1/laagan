@@ -14,7 +14,6 @@ import RideCard from './RideCard';
 import {useAuth} from '../../../context/AuthContext';
 
 const RidesList = ({onRideSelect, mode = 'all', pageSize = 10}) => {
-  const {token} = useAuth();
   const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

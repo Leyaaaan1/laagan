@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import leyans.RidersHub.Repository.RiderRepository;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -41,47 +43,30 @@ public class RiderService {
         return riderTypeRepository.save(riderType);
     }
 
-    public RiderType getCurrentUserRiderType(String username) {
-        Rider rider = riderRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found: " + username));
-        return rider.getRiderType();
-    }
 
 
 
-    @Transactional
     public String registerRiderWithValidation(String username, String password,
-                                              String riderType, String clientIp,
+                                              String clientIp,
                                               AccountLockoutService lockoutService) {
-        // Check registration rate limit first
         int attempts = lockoutService.getRegisterAttempts(clientIp);
         if (attempts >= 3) {
             throw new RuntimeException("Registration limit exceeded for this IP");
         }
-
-        // Existing registration logic
-        return registerRider(username, password, riderType);
+        return registerRider(username, password);
     }
 
 
-
-    public String registerRider(String username, String password, String riderType) {
-        // ✅ Check if Optional is present using isPresent()
+    public String registerRider(String username, String password) {
         if (riderRepository.findByUsername(username).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
-
         String encodedPassword = passwordEncoder.encode(password);
-        RiderType riderTypeName = null;
-        if (riderType != null && !riderType.isEmpty()) {
-            riderTypeName = getRiderTypeByName(riderType);
-        }
         Rider newRider = new Rider();
         newRider.setUsername(username);
         newRider.setPassword(encodedPassword);
         newRider.setEnabled(true);
-        newRider.setRiderType(riderTypeName);
-
+        newRider.setRiderTypes(new ArrayList<>()); // empty — not required
         riderRepository.save(newRider);
         return username;
     }

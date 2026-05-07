@@ -28,7 +28,7 @@ const cards = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
-    overflow: 'hidden',
+    overflow: 'visible',
   },
 
   // ── Hero card (large feature card) ───────────

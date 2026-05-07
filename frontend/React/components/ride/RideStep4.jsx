@@ -36,12 +36,6 @@ import {
 } from './utilities/RideStepUtils';
 import useJoinRide from './utilities/RideHandler';
 import {useAuth} from '../../context/AuthContext';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// RideActionButton
-// Shows a loading spinner while the action status is being fetched,
-// so the owner never briefly sees "Join".
-// ─────────────────────────────────────────────────────────────────────────────
 const RideActionButton = ({
   isOwner,
   onJoin,
@@ -51,9 +45,6 @@ const RideActionButton = ({
   rideStarted,
   isLoading,
 }) => {
-  // While the status fetch is in-flight, show a neutral spinner instead of
-  // the default "Join" button — this prevents the owner from seeing "Join"
-  // for the split second before the API responds.
   if (isLoading) {
     return (
       <View style={[rideStep4Styles.joinButton, {opacity: 0.6}]}>
@@ -135,7 +126,7 @@ const RideActionButton = ({
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// RideHeroCard — unchanged
+// RideHeroCard
 // ─────────────────────────────────────────────────────────────────────────────
 const RideHeroCard = ({
   rideName,
@@ -145,6 +136,8 @@ const RideHeroCard = ({
   distance,
   description,
   rideDetailsWithCoords,
+  startingPointName,
+  endingPointName,
 }) => (
   <View style={cards.hero}>
     <View style={cards.heroHeader}>
@@ -193,7 +186,9 @@ const RideHeroCard = ({
           From
         </Text>
         <Text style={mapStyles.routePointText}>
-          {getLocationDisplayName(rideDetailsWithCoords?.startingPointName)}
+          {getLocationDisplayName(
+            rideDetailsWithCoords?.startingPointName || startingPointName,
+          )}
         </Text>
       </View>
       <View style={[cards.info, {width: '100%'}]}>
@@ -202,7 +197,9 @@ const RideHeroCard = ({
           To
         </Text>
         <Text style={mapStyles.routePointText}>
-          {getLocationDisplayName(rideDetailsWithCoords?.endingPointName)}
+          {getLocationDisplayName(
+            rideDetailsWithCoords?.endingPointName || endingPointName,
+          )}
         </Text>
       </View>
     </View>
@@ -218,7 +215,6 @@ const RideStep4 = props => {
 
   const routeParams = props.route?.params || {};
   const merged = {...routeParams, ...props};
-
   const {
     generatedRidesId,
     rideName,
@@ -227,6 +223,8 @@ const RideStep4 = props => {
     date,
     startingPoint,
     endingPoint,
+    startingPointName,
+    endingPointName,
     participants,
     description,
     distance,
@@ -237,6 +235,24 @@ const RideStep4 = props => {
     rideDetailsWithCoords: passedRideDetails = null,
     skipCoordsFetch = false,
   } = merged;
+
+  console.log('sam[ple', stopPoints);
+  console.log('all data', merged);
+  console.log('params', routeParams);
+
+  const startLat =
+    merged.startLat ??
+    merged.startingPoint?.lat ??
+    merged.startingPoint?.latitude;
+  const startLng =
+    merged.startLng ??
+    merged.startingPoint?.lng ??
+    merged.startingPoint?.longitude;
+  const endLat =
+    merged.endLat ?? merged.endingPoint?.lat ?? merged.endingPoint?.latitude;
+  const endLng =
+    merged.endLng ?? merged.endingPoint?.lng ?? merged.endingPoint?.longitude;
+
 
   // Prefer the currentUsername passed via params (set by buildRideStep4Params),
   // fall back to the auth context username.
@@ -381,43 +397,55 @@ const RideStep4 = props => {
   };
 
   // ── Coordinate processing ─────────────────────────────────────────────────
-  const rawFallbackCoords = {
-    startingPoint: startingPoint
-      ? typeof startingPoint === 'string'
-        ? isValidCoordinate(merged.startLat, merged.startLng)
-          ? {
-              name: startingPoint,
-              lat: parseFloat(merged.startLat),
-              lng: parseFloat(merged.startLng),
-            }
-          : null
-        : startingPoint
-      : null,
-    endingPoint: endingPoint
-      ? typeof endingPoint === 'string'
-        ? isValidCoordinate(merged.endLat, merged.endLng)
-          ? {
-              name: endingPoint,
-              lat: parseFloat(merged.endLat),
-              lng: parseFloat(merged.endLng),
-            }
-          : null
-        : endingPoint
-      : null,
-    stopPoints: Array.isArray(stopPoints) ? stopPoints : [],
-  };
-
   const mapCoords = useMemo(() => {
     if (state.rideDetailsWithCoords) {
       return processRideCoordinates(state.rideDetailsWithCoords);
     }
-    return rawFallbackCoords;
-  }, [state.rideDetailsWithCoords, rawFallbackCoords]);
+
+    const resolvedStart = isValidCoordinate({lat: startLat, lng: startLng})
+      ? {
+          name:
+            typeof startingPoint === 'string'
+              ? startingPoint
+              : startingPoint?.name || startingPointName || 'Starting Point',
+          lat: parseFloat(startLat),
+          lng: parseFloat(startLng),
+        }
+      : null;
+
+    const resolvedEnd = isValidCoordinate({lat: endLat, lng: endLng})
+      ? {
+          name:
+            typeof endingPoint === 'string'
+              ? endingPoint
+              : endingPoint?.name || endingPointName || 'Ending Point',
+          lat: parseFloat(endLat),
+          lng: parseFloat(endLng),
+        }
+      : null;
+
+    return {
+      startingPoint: resolvedStart,
+      endingPoint: resolvedEnd,
+      stopPoints: Array.isArray(stopPoints) ? stopPoints : [],
+    };
+  }, [
+    state.rideDetailsWithCoords,
+    startLat,
+    startLng,
+    endLat,
+    endLng,
+    startingPoint,
+    startingPointName,
+    endingPoint,
+    endingPointName,
+    stopPoints,
+  ]);
 
   const hasValidRouteData =
-    (mapCoords.startingPoint?.lat && mapCoords.startingPoint?.lng) ||
-    (mapCoords.endingPoint?.lat && mapCoords.endingPoint?.lng) ||
-    state.rideDetailsWithCoords;
+    isValidCoordinate(mapCoords.startingPoint) ||
+    isValidCoordinate(mapCoords.endingPoint) ||
+    !!state.rideDetailsWithCoords;
 
   // ── Effects ───────────────────────────────────────────────────────────────
 
@@ -553,6 +581,8 @@ const RideStep4 = props => {
             distance={distance}
             description={description}
             rideDetailsWithCoords={state.rideDetailsWithCoords}
+            startingPointName={startingPointName}
+            endingPointName={endingPointName}
           />
 
           <View style={header.bottomNav}>
@@ -586,22 +616,10 @@ const RideStep4 = props => {
               style={buttons.bottomNav}
               onPress={() =>
                 navigation.navigate('RideRoutesPage', {
-                  startMapImage: state.startMapImage,
-                  endMapImage: state.endMapImage,
-                  mapImage: state.mapImage,
-                  rideNameImage: state.rideNameImage,
                   startingPoint: getLocationDisplayName(startingPoint),
                   endingPoint: getLocationDisplayName(endingPoint),
-                  rideName,
-                  locationName,
-                  riderType,
-                  date,
-                  participants,
-                  description,
-                  distance,
-                  username,
-                  currentUsername: resolvedCurrentUsername,
                   generatedRidesId,
+                  stopPoints,
                 })
               }>
               <FontAwesome name="map-marker" size={18} color="#fff" />

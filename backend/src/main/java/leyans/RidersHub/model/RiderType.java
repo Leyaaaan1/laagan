@@ -23,8 +23,8 @@ public class RiderType {
     private String riderType;
 
 
-    @OneToMany(mappedBy = "riderType", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Rider> riders;
+    @ManyToMany(mappedBy = "riderTypes", fetch = FetchType.LAZY)
+    private List<Rider> riders = new ArrayList<>();
 
     public RiderType(Integer riderTypeId, String riderType) {
         this.riderTypeId = riderTypeId;
@@ -35,8 +35,22 @@ public class RiderType {
 
     }
 
+    public Integer getRiderTypeId() {
+        return riderTypeId;
+    }
 
-    // Getters and Setters
+    public void setRiderTypeId(Integer riderTypeId) {
+        this.riderTypeId = riderTypeId;
+    }
+
+    public List<Rider> getRiders() {
+        return riders;
+    }
+
+    public void setRiders(List<Rider> riders) {
+        this.riders = riders;
+    }
+// Getters and Setters
 
     public String getRiderType() {
         return riderType;

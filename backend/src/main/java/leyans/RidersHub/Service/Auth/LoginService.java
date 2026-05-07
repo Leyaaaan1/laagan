@@ -86,7 +86,6 @@ public class LoginService {
     public RegisterResponse register(RegisterRequest registerRequest, String clientIp) {
         String username = registerRequest.getUsername();
         String password = registerRequest.getPassword();
-        String riderType = registerRequest.getRiderType();
 
         log.info("📝 Register attempt from IP: {} for user: {}", clientIp, username);
 
@@ -102,7 +101,6 @@ public class LoginService {
             String registeredUsername = riderService.registerRiderWithValidation(
                     username,
                     password,
-                    riderType,
                     clientIp,
                     accountLockoutService
             );

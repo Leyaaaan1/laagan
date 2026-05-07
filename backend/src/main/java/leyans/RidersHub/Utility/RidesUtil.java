@@ -7,14 +7,12 @@ import leyans.RidersHub.DTO.Response.ActiveRideDTO;
 import leyans.RidersHub.DTO.Response.RideDetailDTO;
 import leyans.RidersHub.DTO.Response.RideResponseDTO;
 import leyans.RidersHub.DTO.Response.RideSummaryDTO;
+import leyans.RidersHub.Repository.RiderTypeRepository;
 import leyans.RidersHub.Repository.RidesRepository;
 import leyans.RidersHub.Repository.StartedRideRepository;
 import leyans.RidersHub.Service.InteractionRequest.InviteRequestService;
+import leyans.RidersHub.model.*;
 import leyans.RidersHub.model.Interaction.InviteRequest;
-import leyans.RidersHub.model.Rider;
-import leyans.RidersHub.model.Rides;
-import leyans.RidersHub.model.StartedRide;
-import leyans.RidersHub.model.StopPoint;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -35,14 +33,29 @@ public class RidesUtil {
     public final InviteRequestService inviteRequestService;
 
     private final StartedRideRepository startedRideRepository;
+    private final RiderTypeRepository riderTypeRepository;
 
     private final RiderUtil riderUtil;
 
-    public RidesUtil(RidesRepository ridesRepository, InviteRequestService inviteRequestService, StartedRideRepository startedRideRepository, RiderUtil riderUtil) {
+    public RidesUtil(RidesRepository ridesRepository, InviteRequestService inviteRequestService, StartedRideRepository startedRideRepository, RiderTypeRepository riderTypeRepository, RiderUtil riderUtil) {
         this.ridesRepository = ridesRepository;
         this.inviteRequestService = inviteRequestService;
         this.startedRideRepository = startedRideRepository;
+        this.riderTypeRepository = riderTypeRepository;
         this.riderUtil = riderUtil;
+    }
+
+
+    public List<RiderType> getAllRiderTypes() {
+        return riderTypeRepository.findAll();
+    }
+
+    public RiderType getRiderTypeById(Integer id) {
+        return riderTypeRepository.findById(id).orElse(null);
+    }
+
+    public RiderType getRiderTypeByName(String name) {
+        return riderTypeRepository.findByRiderType(name);
     }
 
     @Transactional(readOnly = true)
@@ -90,8 +103,6 @@ public class RidesUtil {
                 ride.getEndingLocation().getY(),
                 ride.getEndingLocation().getX(),
                 ride.getMapImageUrl(),
-                ride.getMagImageStartingLocation(),
-                ride.getMagImageEndingLocation(),
                 ride.getUsername().getUsername(),
                 participantsList,
                 ride.getDescription(),
@@ -191,8 +202,6 @@ public class RidesUtil {
                 ride.getEndingLocation().getY(),
                 ride.getEndingLocation().getX(),
                 ride.getMapImageUrl(),
-                ride.getMagImageStartingLocation(),
-                ride.getMagImageEndingLocation(),
                 ride.getUsername().getUsername(),
                 ride.getParticipants().stream()
                         .map(r -> r.getUsername())
@@ -228,8 +237,6 @@ public class RidesUtil {
                 ride.getEndingLocation().getY(),
                 ride.getEndingLocation().getX(),
                 ride.getMapImageUrl(),
-                ride.getMagImageStartingLocation(),
-                ride.getMagImageEndingLocation(),
                 ride.getUsername().getUsername(),
                 ride.getParticipants().stream()
                         .map(r -> r.getUsername())

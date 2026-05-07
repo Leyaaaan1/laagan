@@ -69,6 +69,11 @@ const CreateRide = ({}) => {
           endingLatitude={ride.endingLatitude}
           endingLongitude={ride.endingLongitude}
           handleMessage={ride.handleMessage}
+          step2LocationName={ride.locationName}
+          step2Latitude={ride.latitude}
+          step2Longitude={ride.longitude}
+          setEndingLatitude={ride.setEndingLatitude}
+          setEndingLongitude={ride.setEndingLongitude}
           startingPoint={ride.startingPoint}
           setStartingPoint={ride.setStartingPoint}
           endingPoint={ride.endingPoint}

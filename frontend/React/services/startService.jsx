@@ -1,8 +1,8 @@
 import {api} from './Apiclient';
 
 export const startService = {
-  startRide: async (generatedRidesId, token = null) => {
-    const response = await api.post(`/start/${generatedRidesId}`, {}, token);
+  startRide: async (generatedRidesId) => {
+    const response = await api.post(`/start/${generatedRidesId}`, {});
     if (!response.ok) {
       const messages = {
         403: 'You are not authorized to start this ride.',
@@ -18,11 +18,10 @@ export const startService = {
     return response.json();
   },
 
-  deactivateRide: async (generatedRidesId, token = null) => {
+  deactivateRide: async (generatedRidesId) => {
     const response = await api.post(
       `/start/update/${generatedRidesId}`,
       {},
-      token,
     );
     if (!response.ok) {
       const messages = {
@@ -38,8 +37,8 @@ export const startService = {
   },
 };
 
-export const getActiveRide = async (token = null) => {
-  const response = await api.get('/start/active', token);
+export const getActiveRide = async () => {
+  const response = await api.get('/start/active');
   if (!response.ok) {
     const messages = {
       404: 'No active ride found',
@@ -50,10 +49,9 @@ export const getActiveRide = async (token = null) => {
   return response.json();
 };
 
-export const getStopPointsByRideId = async (generatedRidesId, token = null) => {
+export const getStopPointsByRideId = async (generatedRidesId) => {
   const response = await api.get(
     `/riders/${generatedRidesId}/stop-points`,
-    token,
   );
   if (!response.ok) {
     const messages = {

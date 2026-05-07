@@ -40,7 +40,7 @@ public class Rides {
     private Rider username;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "rider_type", referencedColumnName = "rider_type_id", nullable = false)
+    @JoinColumn(name = "rider_type", referencedColumnName = "rider_type_id", nullable = true)
     private RiderType riderType;
 
     @Column(name = "distance")
@@ -79,11 +79,6 @@ public class Rides {
     @Column(name = "map_image_url", length = 500)
     private String mapImageUrl;
 
-    @Column(name = "map_starting_url", length = 500)
-    private String magImageStartingLocation;
-
-    @Column(name = "map_ending_url", length = 500)
-    private String magImageEndingLocation;
 
     @Column(name = "route_coordinates", columnDefinition = "TEXT")
     private String routeCoordinates;
@@ -105,7 +100,6 @@ public class Rides {
                  Point endingLocation, String ridesName, String description,
                  Rider username, RiderType riderType, Integer distance, LocalDateTime date,
                  String mapImageUrl,
-                 String magImageStartingLocation, String magImageEndingLocation,
                  String routeCoordinates, Boolean active) {
         this.generatedRidesId = generatedRidesId;
         this.locationName = locationName;
@@ -121,8 +115,7 @@ public class Rides {
         this.startingPointName = startingPointName;
         this.endingPointName = endingPointName;
         this.mapImageUrl = mapImageUrl;
-        this.magImageStartingLocation = magImageStartingLocation;
-        this.magImageEndingLocation = magImageEndingLocation;
+
         this.routeCoordinates = routeCoordinates;
         this.active = active;
     }
@@ -152,21 +145,6 @@ public class Rides {
         this.stopPoints = stopPoints;
     }
 
-    public String getMagImageStartingLocation() {
-        return magImageStartingLocation;
-    }
-
-    public void setMagImageStartingLocation(String magImageStartingLocation) {
-        this.magImageStartingLocation = magImageStartingLocation;
-    }
-
-    public String getMagImageEndingLocation() {
-        return magImageEndingLocation;
-    }
-
-    public void setMagImageEndingLocation(String magImageEndingLocation) {
-        this.magImageEndingLocation = magImageEndingLocation;
-    }
 
     public String getGeneratedRidesId() {
         return generatedRidesId;

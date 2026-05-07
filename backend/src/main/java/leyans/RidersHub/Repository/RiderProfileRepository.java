@@ -14,13 +14,13 @@ public interface RiderProfileRepository extends JpaRepository<RiderProfile, Inte
 
 
     @Query("""
-            SELECT rp FROM RiderProfile rp
-            JOIN FETCH rp.rider r
-            LEFT JOIN FETCH r.riderType
-            LEFT JOIN FETCH rp.riderTypes
-            WHERE r.username = :username
-            """)
+    SELECT rp FROM RiderProfile rp
+    JOIN FETCH rp.rider r
+    LEFT JOIN FETCH rp.riderTypes
+    WHERE r.username = :username
+    """)
     Optional<RiderProfile> findByRiderUsernameWithTypes(@Param("username") String username);
+
 
     boolean existsByRiderUsername(String username);
 }

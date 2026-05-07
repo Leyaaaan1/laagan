@@ -7,6 +7,7 @@ import {
   reverseGeocodeLandmark,
   reverseGeocode,
   getLocationImage,
+  getAllRiderTypes,
 } from '../../services/rideService';
 import {
   validateCoordinates,
@@ -20,12 +21,13 @@ import {
 import {SUCCESS_MESSAGES} from '../../utilities/validator/successMessages';
 import {DEFAULT_COORDS} from '../../utilities/route/map/appDefaults';
 import {useUserLocation} from '../../hooks/useUserLocation';
+import {handleWebViewMessage} from '../../utilities/mapUtils';
 
 // ─── Default coordinates (Davao City) ────────────────────────────────────────
 const DEFAULT_LAT = '7.0731';
 const DEFAULT_LNG = '125.6128';
 
-const useCreateRide = ({token, username}) => {
+const useCreateRide = ({}) => {
   const webViewRef = useRef(null);
   const pendingRideIdRef = useRef(null);
 
@@ -76,6 +78,10 @@ const useCreateRide = ({token, username}) => {
   // ── Map ───────────────────────────────────────────────────────────────────
   const [mapMode, setMapMode] = useState('starting');
 
+  const [riderTypeOptions, setRiderTypeOptions] = useState([]);
+  const [riderTypeLoading, setRiderTypeLoading] = useState(false);
+
+
   // ── Step-based map mode sync ──────────────────────────────────────────────
   useEffect(() => {
     if (currentStep === 2) {
@@ -93,56 +99,44 @@ const useCreateRide = ({token, username}) => {
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
 
   // ─── Map tap / drag ───────────────────────────────────────────────────────
-  const handleMessage = event => {
-    try {
-      const data = JSON.parse(event.nativeEvent.data);
-      if (data.type !== 'mapClick' && data.type !== 'markerDrag') {
-        return;
-      }
-
-      const {lat, lng} = data;
-
-      if (mapMode === 'location') {
-        setLatitude(lat.toString());
-        setLongitude(lng.toString());
-        reverseGeocodeLandmark(lat, lng)
-          .then(name => {
-            if (name) {
-              setLocationName(name);
-            }
-          })
-          .catch(err => console.warn('Reverse geocode error:', err));
-      } else if (mapMode === 'starting') {
-        setStartingLatitude(lat.toString());
-        setStartingLongitude(lng.toString());
-        reverseGeocode(lat, lng)
-          .then(name => {
-            if (name) {
-              setStartingPoint(name);
-            }
-          })
-          .catch(err => console.warn('Reverse geocode error:', err));
-      } else if (mapMode === 'ending') {
-        setEndingLatitude(lat.toString());
-        setEndingLongitude(lng.toString());
-        reverseGeocode( lat, lng)
-          .then(name => {
-            if (name) {
-              setEndingPoint(name);
-            }
-          })
-          .catch(err => console.warn('Reverse geocode error:', err));
-      }
-    } catch (err) {
-      console.error('handleMessage parse error:', err);
-    }
-  };
-
-  // ─── Search input (debounced by the child component, raw value here) ──────
+  const handleMessage = event =>
+    handleWebViewMessage(event, {
+      mapMode,
+      setLatitude,
+      setLongitude,
+      setStartingLatitude,
+      setStartingLongitude,
+      setEndingLatitude,
+      setEndingLongitude,
+      setLocationName,
+      setStartingPoint,
+      setEndingPoint,
+    });
   const handleSearchInputChange = value => {
     setLocationSelected(false);
     setSearchQuery(value);
   };
+
+
+  useEffect(() => {
+    const fetchRiderTypes = async () => {
+      setRiderTypeLoading(true);
+      try {
+        const types = await getAllRiderTypes();
+        setRiderTypeOptions(types);
+        if (types.length > 0) {
+          setRiderType(types[0].riderType);
+        }
+      } catch (error) {
+        console.error('Failed to load rider types:', error);
+        setRiderType('ADV 160');
+      } finally {
+        setRiderTypeLoading(false);
+      }
+    };
+
+    fetchRiderTypes();
+  }, []);
 
   // ─── Trigger actual search after debounce settles ─────────────────────────
   useEffect(() => {
@@ -151,6 +145,7 @@ const useCreateRide = ({token, username}) => {
       setSearchResults([]);
       return;
     }
+
 
     setIsSearching(true);
     const searchFn =
@@ -287,10 +282,21 @@ const useCreateRide = ({token, username}) => {
     const locLatParsed = parseFloat(latitude);
     const locLngParsed = parseFloat(longitude);
 
+    const mapRiderTypeToDatabase = type => {
+      const typeMap = {
+        CAR: 'ADV 160',
+        MOTORCYCLE: 'ADV 160',
+        BIKE: 'ADV 160',
+        SCOOTER: 'PCX 160',
+        default: 'ADV 160',
+      };
+      return typeMap[type] || typeMap['default'];
+    };
+
     const rideData = {
       ridesName: rideName.trim(),
       locationName: locationName.trim(),
-      riderType: riderType || 'CAR',
+      riderType: mapRiderTypeToDatabase(riderType),
       date: date.toISOString(),
       description: description.trim(),
       latitude: locLatParsed || parseFloat(DEFAULT_LAT),
@@ -438,6 +444,8 @@ const useCreateRide = ({token, username}) => {
     setEndingPoint,
     endingLatitude,
     endingLongitude,
+    setEndingLatitude,
+    setEndingLongitude,
     stopPoints,
     setStopPoints,
     searchQuery,

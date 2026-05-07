@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, StatusBar,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StatusBar,
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import DatePicker from 'react-native-date-picker';
@@ -10,87 +15,68 @@ import inputs from '../../styles/base/inputs';
 import buttons from '../../styles/base/buttons';
 import cards from '../../styles/base/cards';
 import text from '../../styles/base/text';
-import rideCreation from '../../styles/screens/rideCreation';
-import {RIDE_TYPE_OPTIONS, splitDateTime} from './utilities/RideStepUtils';
+import spacing from '../../styles/tokens/spacing';
+import {splitDateTime} from './utilities/RideStepUtils';
+import RideTypeSelector from '../../commons/RideTypeSelector';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 /** Shows the currently selected date/time or a placeholder prompt. */
-const DateDisplay = ({ date }) => {
+const DateDisplay = ({date}) => {
   if (!date) {
     return (
-      <View style={{
-        backgroundColor: '#f8fafc', borderRadius: 12, padding: 14,
-        alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0',
-        flexDirection: 'row', justifyContent: 'center', gap: 8,
-      }}>
+      <View
+        style={[inputs.searchRow, {justifyContent: 'center', gap: spacing.sm}]}>
         <FontAwesome name="calendar" size={16} color="#94a3b8" />
-        <Text style={{ color: '#94a3b8', fontSize: 14 }}>Tap to select date &amp; time</Text>
+        <Text style={[text.labelLight, {marginBottom: 0}]}>
+          Tap to select date &amp; time
+        </Text>
       </View>
     );
   }
 
-  const { dateStr, timeStr } = splitDateTime(date);
+  const {dateStr, timeStr} = splitDateTime(date);
   return (
-    <View style={{
-      backgroundColor: '#f8fafc', borderRadius: 12, padding: 14,
-      alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0',
-    }}>
-      <Text style={{ color: '#1e293b', fontSize: 15, fontWeight: '600' }}>{dateStr}</Text>
-      <Text style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>{timeStr}</Text>
+    <View
+      style={[
+        inputs.searchRow,
+        {
+          justifyContent: 'center',
+          flexDirection: 'column',
+          height: 'auto',
+          paddingVertical: 12,
+        },
+      ]}>
+      <Text style={[text.bodyMd, {fontWeight: '600'}]}>{dateStr}</Text>
+      <Text style={text.caption}>{timeStr}</Text>
     </View>
   );
 };
 
-/** Horizontal scrollable ride-type selector. */
-const RideTypeSelector = ({ riderType, setRiderType }) => (
-  <ScrollView
-    horizontal
-    showsHorizontalScrollIndicator={false}
-    contentContainerStyle={{ paddingBottom: 4 }}
-  >
-    {RIDE_TYPE_OPTIONS.map(({ type, icon, label }) => (
-      <TouchableOpacity
-        key={type}
-        style={[
-          rideCreation.rideTypeOption,
-          riderType === type && rideCreation.rideTypeSelected,
-        ]}
-        onPress={() => setRiderType(type)}
-        activeOpacity={0.8}
-      >
-        <FontAwesome
-          name={icon}
-          size={24}
-          color={riderType === type ? '#fff' : '#64748b'}
-        />
-        <Text style={{
-          marginTop: 8,
-          color: riderType === type ? '#fff' : '#64748b',
-          fontSize: 12, fontWeight: '500', textAlign: 'center',
-        }}>
-          {label}
-        </Text>
-      </TouchableOpacity>
-    ))}
-  </ScrollView>
-);
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 const RideStep1 = ({
-                     error, rideName, setRideName, riderType, setRiderType,
-                     participants, setParticipants, description, setDescription,
-                     date, setDate, nextStep,
-                   }) => {
+  error,
+  rideName,
+  setRideName,
+  riderType,
+  setRiderType,
+  participants,
+  setParticipants,
+  description,
+  setDescription,
+  date,
+  setDate,
+  nextStep,
+}) => {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
-  const [dateError,      setDateError]      = useState('');
-  const [focusedInput,   setFocusedInput]   = useState(null);
+  const [dateError, setDateError] = useState('');
+  const [focusedInput, setFocusedInput] = useState(null);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const handleDateConfirm = (selectedDate) => {
+  const handleDateConfirm = selectedDate => {
     if (selectedDate < today) {
       setDateError('Please select a future date');
       return;
@@ -111,34 +97,52 @@ const RideStep1 = ({
           <Text style={header.subtitle}>Step 1 of 3 — Details</Text>
         </View>
         <TouchableOpacity
-          style={[buttons.row, { paddingVertical: 8 }]}
+          style={[buttons.row, {paddingVertical: 8}]}
           onPress={nextStep}
-          activeOpacity={0.8}
-        >
+          activeOpacity={0.8}>
           <Text style={buttons.textSm}>Next</Text>
-          <FontAwesome name="arrow-right" size={14} color="#fff" style={{ marginLeft: 6 }} />
+          <FontAwesome
+            name="arrow-right"
+            size={14}
+            color="#fff"
+            style={{marginLeft: spacing.sm}}
+          />
         </TouchableOpacity>
       </View>
 
       <ScrollView
         style={layout.flex1}
-        contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+        contentContainerStyle={{padding: spacing.md, paddingBottom: 40}}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
+        keyboardShouldPersistTaps="handled">
         {/* ── Error banner ── */}
         {!!error && (
-          <View style={[cards.base, { backgroundColor: '#fef2f2', borderColor: '#fecaca', marginBottom: 16 }]}>
+          <View
+            style={[
+              cards.base,
+              {
+                backgroundColor: '#fef2f2',
+                borderColor: '#fecaca',
+                marginBottom: spacing.md,
+              },
+            ]}>
             <Text style={text.errorText}>{error}</Text>
           </View>
         )}
 
         {/* ── Ride name ── */}
-        <View style={[cards.elevated, { marginBottom: 16 }]}>
-          <Text style={[text.sectionTitle, { marginBottom: 4 }]}>Name Your Ride</Text>
-          <Text style={[text.labelLight, { marginBottom: 12 }]}>Give your adventure a memorable name</Text>
+        <View style={[cards.elevated, {marginBottom: spacing.md}]}>
+          <Text style={[text.sectionTitle, {marginBottom: 4}]}>
+            Name Your Ride
+          </Text>
+          <Text style={[text.labelLight, {marginBottom: spacing.md}]}>
+            Give your adventure a memorable name
+          </Text>
           <TextInput
-            style={[inputs.light, focusedInput === 'rideName' && inputs.lightFocused]}
+            style={[
+              inputs.light,
+              focusedInput === 'rideName' && inputs.lightFocused,
+            ]}
             value={rideName}
             onChangeText={setRideName}
             onFocus={() => setFocusedInput('rideName')}
@@ -149,29 +153,51 @@ const RideStep1 = ({
         </View>
 
         {/* ── Date & ride type ── */}
-        <View style={[cards.elevated, { marginBottom: 16 }]}>
-          <Text style={[text.sectionTitle, { marginBottom: 4 }]}>When &amp; How</Text>
+        <View style={[cards.elevated, {marginBottom: spacing.md}]}>
+          <Text style={[text.sectionTitle, {marginBottom: 4}]}>
+            When &amp; How
+          </Text>
 
-          <Text style={[text.labelLight, { marginBottom: 8 }]}>Select Date &amp; Time</Text>
-          <TouchableOpacity onPress={() => setDatePickerOpen(true)} activeOpacity={0.7}>
+          <Text style={[text.labelLight, {marginBottom: spacing.sm}]}>
+            Select Date &amp; Time
+          </Text>
+          <TouchableOpacity
+            onPress={() => setDatePickerOpen(true)}
+            activeOpacity={0.7}>
             <DateDisplay date={date} />
           </TouchableOpacity>
           {!!dateError && (
-            <Text style={[inputs.errorText, { marginTop: 6 }]}>{dateError}</Text>
+            <Text style={[inputs.errorText, {marginTop: spacing.sm}]}>
+              {dateError}
+            </Text>
           )}
 
-          <Text style={[text.labelLight, { marginTop: 20, marginBottom: 8 }]}>Choose Ride Type</Text>
-          <RideTypeSelector riderType={riderType} setRiderType={setRiderType} />
+          <Text
+            style={[
+              text.labelLight,
+              {marginTop: spacing.lg, marginBottom: spacing.sm},
+            ]}>
+            Choose Your Bike
+          </Text>
+          <RideTypeSelector
+            selectedType={riderType}
+            onSelectType={setRiderType}
+          />
         </View>
 
         {/* ── Description ── */}
-        <View style={[cards.elevated, { marginBottom: 16 }]}>
-          <Text style={[text.sectionTitle, { marginBottom: 4 }]}>Describe Your Route</Text>
-          <Text style={[text.labelLight, { marginBottom: 12 }]}>
+        <View style={[cards.elevated, {marginBottom: spacing.md}]}>
+          <Text style={[text.sectionTitle, {marginBottom: 4}]}>
+            Describe Your Route
+          </Text>
+          <Text style={[text.labelLight, {marginBottom: spacing.md}]}>
             Share details about terrain, highlights, or special stops
           </Text>
           <TextInput
-            style={[inputs.multiline, focusedInput === 'description' && inputs.lightFocused]}
+            style={[
+              inputs.multiline,
+              focusedInput === 'description' && inputs.lightFocused,
+            ]}
             value={description}
             onChangeText={setDescription}
             onFocus={() => setFocusedInput('description')}
@@ -185,8 +211,16 @@ const RideStep1 = ({
         </View>
 
         {/* ── Next CTA ── */}
-        <TouchableOpacity style={buttons.primary} onPress={nextStep} activeOpacity={0.85}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <TouchableOpacity
+          style={buttons.primary}
+          onPress={nextStep}
+          activeOpacity={0.85}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.sm,
+            }}>
             <Text style={buttons.textPrimary}>Continue to Location</Text>
             <FontAwesome name="arrow-right" size={16} color="#fff" />
           </View>

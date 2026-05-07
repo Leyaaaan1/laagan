@@ -7,7 +7,6 @@ import RideStep4 from '../components/ride/RideStep4';
 import StartedRide from '../pages/StartedRide';
 import RideRoutesPage from '../components/ride/utilities/RideRoutesPage';
 import RiderProfile from '../pages/RiderProfile';
-import ProfileEdit from '../pages/ProfileEdit';
 
 const Stack = createNativeStackNavigator();
 
@@ -22,7 +21,6 @@ const MainNavigator = () => {
       <Stack.Screen name="StartedRide" component={StartedRide} />
       <Stack.Screen name="RideRoutesPage" component={RideRoutesPage} />
       <Stack.Screen name="RiderProfile" component={RiderProfile} />
-      <Stack.Screen name="RiderProfileEdit" component={ProfileEdit} />
 
     </Stack.Navigator>
   );

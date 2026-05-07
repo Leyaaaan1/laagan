@@ -1,6 +1,14 @@
+
 -- ════════════════════════════════════════════════════════════════════════════════════════
 -- RidersHub - Phase 2: Rider Profile & Authentication
 -- ════════════════════════════════════════════════════════════════════════════════════════
+
+-- RIDER RIDER TYPES (Many-to-many junction table)
+CREATE TABLE public.rider_rider_types (
+                                          rider_id INTEGER NOT NULL REFERENCES public.rider(id) ON DELETE CASCADE,
+                                          rider_type_id INTEGER NOT NULL REFERENCES public.rider_type(rider_type_id) ON DELETE CASCADE,
+                                          PRIMARY KEY (rider_id, rider_type_id)
+);
 
 -- RIDER PROFILE (1-to-1 with rider)
 CREATE TABLE public.rider_profile (
@@ -34,3 +42,4 @@ CREATE INDEX idx_profile_username ON public.rider_profile(username);
 CREATE INDEX idx_profile_created_at ON public.rider_profile(created_at);
 CREATE INDEX idx_facebook_username ON public.facebook_account(username);
 CREATE INDEX idx_facebook_rider_id ON public.facebook_account(rider_id);
+CREATE INDEX idx_rider_types ON public.rider_rider_types(rider_id);

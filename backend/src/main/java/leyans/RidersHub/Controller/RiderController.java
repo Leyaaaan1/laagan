@@ -48,12 +48,12 @@ public class RiderController {
         return ResponseEntity.ok(riderType);
     }
 
-    @GetMapping("/current-rider-type")
-    public ResponseEntity<RiderType> getCurrentUserRiderType() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        RiderType riderType = riderService.getCurrentUserRiderType(username);
-        return ResponseEntity.ok(riderType);
-    }
+//    @GetMapping("/current-rider-type")
+//    public ResponseEntity<RiderType> getCurrentUserRiderType() {
+//        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+//        RiderType riderType = riderService.getCurrentUserRiderType(username);
+//        return ResponseEntity.ok(riderType);
+//    }
 
     @PostMapping("/create")
     @PreAuthorize("isAuthenticated()")
@@ -171,5 +171,18 @@ public class RiderController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+
+    @GetMapping("/all")
+    public ResponseEntity<List<RiderType>> getAllRiderTypes() {
+        List<RiderType> riderTypes = ridesUtil.getAllRiderTypes();
+        return ResponseEntity.ok(riderTypes);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<RiderType> getRiderTypeById(@PathVariable Integer id) {
+        RiderType riderType = ridesUtil.getRiderTypeById(id);
+        return ResponseEntity.ok(riderType);
     }
 }

@@ -1,13 +1,14 @@
 import routeMapStyles from './RouteMapStyles.js.jsx';
+import leafletCSS from '../assets/leaflet/leafletCSS.js';
+import leaflet from '../assets/leaflet/leaflet.js';
 import {createMapScript} from '../map/RouteMapScript';
 
 export const createMapHTML = () => {
-  return `
-    <!DOCTYPE html>
+  return `    <!DOCTYPE html>
     <html>
     <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <style>${leafletCSS}</style>
         <style>${routeMapStyles}</style>
     </head>
     <body>
@@ -18,7 +19,7 @@ export const createMapHTML = () => {
             </button>
             <span id="compass-label">N</span>
         </div>
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <script>${leaflet}</script>
         <script>${createMapScript()}</script>
     </body>
     </html>

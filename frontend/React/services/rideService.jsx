@@ -10,7 +10,7 @@ export const searchLocation = async (query) => {
   return response.json();
 };
 
-export const searchCityOrLandmark = async (query, token = null) => {
+export const searchCityOrLandmark = async (query) => {
   const response = await api.get(
     `/location/search-landmark?query=${encodeURIComponent(query)}`,
 
@@ -19,6 +19,8 @@ export const searchCityOrLandmark = async (query, token = null) => {
     throw new Error(`Failed to fetch landmarks: ${response.status}`);
   return response.json();
 };
+
+
 
 export const reverseGeocode = async (lat, lon = null) => {
   try {
@@ -43,7 +45,7 @@ export const reverseGeocodeLandmark = async (lat, lon = null) => {
     return null;
   }
 };
-export const getLocationImage = async (rideName, token = null) => {
+export const getLocationImage = async (rideName) => {
   const response = await api.get(
     `/wikimedia/location?locationName=${encodeURIComponent(rideName)}`,
   );
@@ -106,4 +108,18 @@ export const fetchMyRides = async ( page = 0, size = 10) => {
   if (!response.ok)
     throw new Error(`Failed to fetch my rides: ${response.status}`);
   return response.json();
+};
+
+
+export const getAllRiderTypes = async () => {
+  try {
+    const response = await api.get('/riders/all');
+    if (!response.ok) {
+      throw new Error(`Failed to fetch rider types: ${response.status}`);
+    }
+    return response.json();
+  } catch (err) {
+    console.error('Error fetching rider types:', err);
+    throw err;
+  }
 };

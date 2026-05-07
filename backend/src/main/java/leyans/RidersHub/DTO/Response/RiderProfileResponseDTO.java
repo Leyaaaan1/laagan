@@ -26,20 +26,20 @@ public class RiderProfileResponseDTO {
         this.createdAt         = profile.getCreatedAt();
         this.updatedAt         = profile.getUpdatedAt();
 
-        // ── riderTypes: prefer profile list, fall back to Rider.riderType ──
-        // Profiles created before the seeding fix have an empty list.
-        // The fallback ensures the frontend always gets a value.
+        // ── riderTypes: prefer profile list, fall back to Rider.riderTypes ──
         List<RiderType> profileTypes = profile.getRiderTypes();
         if (profileTypes != null && !profileTypes.isEmpty()) {
             this.riderTypes = profileTypes.stream()
                     .map(RiderType::getRiderType)
                     .collect(Collectors.toList());
         } else {
-            // fallback: use the type stored on the Rider entity itself
-            RiderType fallback = profile.getRider().getRiderType();
+            // fallback: use the types stored on the Rider entity itself
+            List<RiderType> riderTypes = profile.getRider().getRiderTypes();
             this.riderTypes = new ArrayList<>();
-            if (fallback != null) {
-                this.riderTypes.add(fallback.getRiderType());
+            if (riderTypes != null && !riderTypes.isEmpty()) {
+                this.riderTypes = riderTypes.stream()
+                        .map(RiderType::getRiderType)
+                        .collect(Collectors.toList());
             }
         }
     }

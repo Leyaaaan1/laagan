@@ -10,7 +10,6 @@ import spacing from '../tokens/spacing';
 import { fontSize, fontWeight } from '../tokens/typography';
 
 const modal = StyleSheet.create({
-
   // ── Overlay ──────────────────────────────────
   overlay: {
     flex: 1,
@@ -28,6 +27,16 @@ const modal = StyleSheet.create({
     maxHeight: '85%',
     borderWidth: 1,
     borderColor: colors.border,
+  },
+
+  smallContainer: {
+      backgroundColor: colors.borderLight,
+      borderRadius: 24,
+      width: '30%',
+      maxHeight: '15%',
+      borderWidth: 1,
+      borderColor: colors.border,
+
   },
 
   // ── Header ───────────────────────────────────
@@ -186,9 +195,27 @@ const modal = StyleSheet.create({
   },
 
   // ── Request status text ───────────────────────
-  statusPending:  { color: colors.warning, fontSize: fontSize.xs, fontWeight: fontWeight.semi, textTransform: 'uppercase', marginTop: spacing.xs },
-  statusApproved: { color: colors.success, fontSize: fontSize.xs, fontWeight: fontWeight.semi, textTransform: 'uppercase', marginTop: spacing.xs },
-  statusRejected: { color: colors.error,   fontSize: fontSize.xs, fontWeight: fontWeight.semi, textTransform: 'uppercase', marginTop: spacing.xs },
+  statusPending: {
+    color: colors.warning,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semi,
+    textTransform: 'uppercase',
+    marginTop: spacing.xs,
+  },
+  statusApproved: {
+    color: colors.success,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semi,
+    textTransform: 'uppercase',
+    marginTop: spacing.xs,
+  },
+  statusRejected: {
+    color: colors.error,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semi,
+    textTransform: 'uppercase',
+    marginTop: spacing.xs,
+  },
 
   // ── Action buttons in request card ───────────
   requestActions: {
@@ -202,8 +229,8 @@ const modal = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  approveButton: { backgroundColor: colors.success },
-  rejectButton:  { backgroundColor: colors.error },
+  approveButton: {backgroundColor: colors.success},
+  rejectButton: {backgroundColor: colors.error},
 
   // ── QR code section ──────────────────────────
   qrSection: {

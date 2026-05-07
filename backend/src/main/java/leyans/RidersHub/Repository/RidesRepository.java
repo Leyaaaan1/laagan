@@ -1,3 +1,4 @@
+
 package leyans.RidersHub.Repository;
 
 import jakarta.transaction.Transactional;
@@ -24,8 +25,6 @@ public interface RidesRepository extends JpaRepository<Rides, Integer> {
 
     Page<Rides> findAll(Pageable pageable);
 
-
-
     @Query("SELECT r FROM Rides r " +
             "LEFT JOIN FETCH r.username " +
             "LEFT JOIN FETCH r.riderType " +
@@ -39,8 +38,6 @@ public interface RidesRepository extends JpaRepository<Rides, Integer> {
             "ORDER BY r.generatedRidesId DESC")
     Page<Rides> findAllActiveSummary(Pageable pageable);
 
-
-
     @EntityGraph(attributePaths = {
             "username",
             "riderType",
@@ -49,10 +46,4 @@ public interface RidesRepository extends JpaRepository<Rides, Integer> {
     })
     @Query("SELECT r FROM Rides r WHERE r.generatedRidesId = :generatedRidesId")
     Optional<Rides> findByGeneratedRidesIdWithDetails(@Param("generatedRidesId") String generatedRidesId);
-
-
-
-
-
-
 }
