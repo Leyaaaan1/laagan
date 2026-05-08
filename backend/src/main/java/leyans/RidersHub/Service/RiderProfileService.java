@@ -60,6 +60,16 @@ public class RiderProfileService {
     }
 
 
+    public RiderProfileResponseDTO getPublicProfile(String username) {
+        return riderProfileRepository
+                .findByRiderUsernameWithTypes(username)
+                .map(RiderProfileResponseDTO::new)
+                .orElseThrow(() -> {
+                    AppLogger.warn(this.getClass(), "Public profile not found for user", "username", username);
+                    return new IllegalArgumentException("Profile not found for user: " + username);
+                });
+    }
+
     public RiderProfileResponseDTO updateProfile(String username, RiderProfileRequestDTO request) {
         RiderProfile profile = fetchProfileOrThrow(username);
         applyRequestToProfile(profile, request);

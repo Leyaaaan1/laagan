@@ -41,6 +41,7 @@ export const getProfileByUsername = async (username) => {
   }
 };
 
+
 export const updateMyProfile = async (updates) => {
   try {
     const response = await api.put('/profiles/edit', updates);

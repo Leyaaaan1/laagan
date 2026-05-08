@@ -45,28 +45,23 @@ const ProfileAvatar = ({profile, avatarStyle}) => {
   return <FontAwesome name="user" size={20} color="#fff" />;
 };
 
-const RiderPage = ({navigation}) => {
-  const {username, ready} = useAuth();
+const RiderPage = ({navigation, route}) => {
+  const {username: usernameState, getUsername, ready} = useAuth();
+  console.log('🔍 RiderPage loaded with username:', username);
+  console.log('🔍 RiderPage ready:', ready);
+  // navigation.reset() remounts AuthProvider, wiping all refs/state before
+  // initializeAuth() can reload from storage. Using route.params.username
+  // guarantees we always have the correct value immediately on mount.
+  // Fall back to context for navigations that don't pass params (e.g. tab switch).
+  const username = route?.params?.username ?? getUsername() ?? usernameState;
 
+  console.log('🔍 RiderPage loaded with username:', username);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
   const [activeRide, setActiveRide] = useState(null);
   const [activeRideLoading, setActiveRideLoading] = useState(false);
   const [profileRefreshing, setProfileRefreshing] = useState(false);
   const ridesListRefRef = useRef(null);
-
-  // Wait for auth to be ready before rendering
-  if (!ready) {
-    return (
-      <View
-        style={[
-          layout.screen,
-          {alignItems: 'center', justifyContent: 'center'},
-        ]}>
-        <ActivityIndicator color="#fff" size="large" />
-      </View>
-    );
-  }
 
   // ── Fetch active ride ─────────────────────────────────────────────────────
   const fetchActiveRide = useCallback(async () => {
@@ -101,26 +96,38 @@ const RiderPage = ({navigation}) => {
   const handleRefreshAll = useCallback(async () => {
     setProfileRefreshing(true);
     await Promise.all([fetchActiveRide(), fetchProfile()]);
-    // Also refresh the rides list if available
     if (ridesListRefRef.current?.refreshRides) {
       ridesListRefRef.current.refreshRides();
     }
   }, [fetchActiveRide, fetchProfile]);
 
-  // ── Load data on mount ────────────────────────────────────────────────────
+  // ── Load data on mount — only once auth is ready ──────────────────────────
   useEffect(() => {
+    if (!ready) return;
     fetchActiveRide();
     fetchProfile();
-  }, [fetchActiveRide, fetchProfile]);
+  }, [ready, fetchActiveRide, fetchProfile]);
 
-  // ── Refresh when screen comes into focus ──────────────────────────────────
-  // This is the KEY fix: useFocusEffect runs when the screen is focused
+  // ── Refresh when screen comes into focus — only when auth is ready ─────────
   useFocusEffect(
     useCallback(() => {
-      // Refresh active ride and profile data when screen comes into focus
+      if (!ready) return;
       handleRefreshAll();
-    }, [handleRefreshAll]),
+    }, [ready, handleRefreshAll]),
   );
+
+  // ── Early return AFTER all hooks ──────────────────────────────────────────
+  if (!ready) {
+    return (
+      <View
+        style={[
+          layout.screen,
+          {alignItems: 'center', justifyContent: 'center'},
+        ]}>
+        <ActivityIndicator color="#fff" size="large" />
+      </View>
+    );
+  }
 
   const handleRideSelect = ride => {
     const params = buildRideStep4Params(ride, username);

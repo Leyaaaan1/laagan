@@ -26,6 +26,7 @@ const ParticipantList = ({
   generatedRidesId,
   username,
   currentUsername,
+  navigation,
 }) => {
   const [state, setState] = useState({
     rides: [],
@@ -201,6 +202,7 @@ const ParticipantList = ({
     }
   };
 
+
   const renderRequestItem = ({item}) => {
     const isPending = item.status === 'PENDING';
     return (
@@ -210,15 +212,27 @@ const ParticipantList = ({
             <View style={modal.requestAvatar}>
               <FontAwesome name="user" size={16} color="#666" />
             </View>
-            <View style={{flex: 1}}>
-              <Text style={modal.requestUsername}>{item.username}</Text>
+            {/* ✅ Make username clickable */}
+            <TouchableOpacity
+              onPress={() => {
+                navigation.navigate('RiderProfile', {username: item.username});
+                onClose();
+              }}
+              style={{flex: 1}}>
+              <Text
+                style={[
+                  modal.requestUsername,
+                  {textDecorationLine: 'underline'}, // Show it's clickable
+                ]}>
+                {item.username}
+              </Text>
               <Text style={getStatusStyle(item.status)}>{item.status}</Text>
               {item.requestedAt && (
                 <Text style={modal.requestDate}>
                   {formatDate(item.requestedAt)}
                 </Text>
               )}
-            </View>
+            </TouchableOpacity>
           </View>
           {/* CHANGED: Only show approve/reject buttons if isOwner AND status is PENDING */}
           {isPending && isOwner && (
@@ -240,16 +254,30 @@ const ParticipantList = ({
     );
   };
 
+
   const renderParticipantItem = ({item, index}) => {
     const participantName = typeof item === 'object' ? item.username : item;
     const isRideOwner = participantName === username;
+
     return (
-      <View style={modal.participantCard}>
+      <TouchableOpacity
+        onPress={() => {
+          navigation.navigate('RiderProfile', {username: participantName});
+          onClose();
+        }}
+        style={modal.participantCard}
+        activeOpacity={0.7}>
         <View style={modal.participantNumber}>
           <Text style={modal.participantNumberText}>{index + 1}</Text>
         </View>
         <View style={modal.participantInfo}>
-          <Text style={modal.participantName}>{participantName}</Text>
+          <Text
+            style={[
+              modal.participantName,
+              {textDecorationLine: 'underline'}, // ✅ Show it's clickable
+            ]}>
+            {participantName}
+          </Text>
           {isRideOwner && (
             <View style={badges.owner}>
               <FontAwesome name="star" size={10} color="#fbbf24" />
@@ -258,7 +286,7 @@ const ParticipantList = ({
           )}
         </View>
         <FontAwesome name="motorcycle" size={16} color="#666" />
-      </View>
+      </TouchableOpacity>
     );
   };
 

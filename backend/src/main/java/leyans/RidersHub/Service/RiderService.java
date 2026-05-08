@@ -57,6 +57,7 @@ public class RiderService {
     }
 
 
+    // RiderService.java
     public String registerRider(String username, String password) {
         if (riderRepository.findByUsername(username).isPresent()) {
             throw new RuntimeException("Username already exists");
@@ -66,8 +67,8 @@ public class RiderService {
         newRider.setUsername(username);
         newRider.setPassword(encodedPassword);
         newRider.setEnabled(true);
-        newRider.setRiderTypes(new ArrayList<>()); // empty — not required
-        riderRepository.save(newRider);
+        newRider.setRiderTypes(new ArrayList<>());
+        riderRepository.saveAndFlush(newRider); // ← saveAndFlush, not save
         return username;
     }
 

@@ -12,10 +12,10 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional
 public class LoginService {
 
     private static final Logger log = LoggerFactory.getLogger(LoginService.class);
@@ -83,6 +83,8 @@ public class LoginService {
     /**
      * Register new user and generate tokens
      */
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public RegisterResponse register(RegisterRequest registerRequest, String clientIp) {
         String username = registerRequest.getUsername();
         String password = registerRequest.getPassword();

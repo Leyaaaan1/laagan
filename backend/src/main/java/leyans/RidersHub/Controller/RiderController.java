@@ -111,7 +111,7 @@ public class RiderController {
         }
     }
 
-    @GetMapping("/{generatedRidesId}")
+    @GetMapping("/details/{generatedRidesId}")
     public ResponseEntity<?> getRideDetailsByGeneratedId(@PathVariable String generatedRidesId) {
         try {
             RideDetailDTO ride = ridesUtil.findRideByGeneratedId(generatedRidesId);  // ← RideDetailDTO

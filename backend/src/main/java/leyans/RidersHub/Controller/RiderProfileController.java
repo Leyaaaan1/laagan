@@ -34,6 +34,12 @@ public class RiderProfileController {
         }
     }
 
+    @GetMapping("/rider/{username}")
+    public ResponseEntity<RiderProfileResponseDTO> getPublicProfile(@PathVariable String username) {
+        RiderProfileResponseDTO profile = riderProfileService.getPublicProfile(username);
+        return ResponseEntity.ok(profile);
+    }
+
 
     @GetMapping("/{username}")
     public ResponseEntity<RiderProfileResponseDTO> getProfile(

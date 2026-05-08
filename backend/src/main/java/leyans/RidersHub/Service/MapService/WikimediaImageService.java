@@ -16,19 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Wikimedia Commons image service — optimised for Mindanao landmarks.
- *
- * Improvements over the original:
- *  1. isMindanaoCity uses a Set<String> → O(1) lookup vs O(n) array loop.
- *  2. pithumbsize=400 on all image-info requests → ~60 % smaller URLs,
- *     avoids accidentally downloading full-resolution originals.
- *  3. New searchImagesByCoordinates() method — uses generator=geosearch
- *     to find Wikimedia images near a GPS point (great for live rider view).
- *  4. UriComponentsBuilder used everywhere — no manual string concat.
- *  5. Resilience4j @RateLimiter (1 req/sec) + @Cacheable to minimise calls.
- *  6. Thread-safe: all fields are either final or injected Spring singletons.
- */
+
 @Service
 public class WikimediaImageService {
 
@@ -62,48 +50,54 @@ public class WikimediaImageService {
      * Cached by location name (lowercased, trimmed) — Wikimedia content rarely
      * changes, so a cache hit avoids two HTTP round-trips entirely.
      */
+
     @Cacheable(value = "locationImages", key = "#locationName.toLowerCase().trim()")
     @RateLimiter(name = "wikimedia", fallbackMethod = "imagesFallback")
     public List<LocationImageDto> getLocationImage(String locationName) {
-        System.out.println("Wikimedia fetch for: " + locationName);
-
-        String searchTerm = apiHelper.buildMindanaoSearchTerm(locationName);
-
-        // Step 1 — search for matching file titles in namespace 6 (File:)
-        String searchUrl = UriComponentsBuilder.fromHttpUrl(WIKIMEDIA_API)
-                .queryParam("action",      "query")
-                .queryParam("format",      "json")
-                .queryParam("list",        "search")
-                .queryParam("srsearch",    searchTerm)
-                .queryParam("srnamespace", 6)   // File namespace only
-                .queryParam("srlimit",     10)
-                .build(false)
-                .toUriString();
-
         try {
-            ResponseEntity<String> searchResp = restTemplate.exchange(
-                    searchUrl, HttpMethod.GET, apiHelper.buildEntity(), String.class);
+            System.out.println("Wikimedia fetch for: " + locationName);
 
-            String body = searchResp.getBody();
-            if (body == null) return new ArrayList<>();
+            String searchTerm = apiHelper.buildMindanaoSearchTerm(locationName);
 
-            JsonNode searchResults = objectMapper.readTree(body)
-                    .path("query").path("search");
+            // Step 1 — search for matching file titles in namespace 6 (File:)
+            String searchUrl = UriComponentsBuilder.fromHttpUrl(WIKIMEDIA_API)
+                    .queryParam("action",      "query")
+                    .queryParam("format",      "json")
+                    .queryParam("list",        "search")
+                    .queryParam("srsearch",    searchTerm)
+                    .queryParam("srnamespace", 6)   // File namespace only
+                    .queryParam("srlimit",     10)
+                    .build(false)
+                    .toUriString();
 
-            if (!searchResults.isArray() || searchResults.isEmpty()) return new ArrayList<>();
+            try {
+                ResponseEntity<String> searchResp = restTemplate.exchange(
+                        searchUrl, HttpMethod.GET, apiHelper.buildEntity(), String.class);
 
-            List<String> fileTitles = apiHelper.pickBestTitles(searchResults, 4);
-            if (fileTitles.isEmpty()) return new ArrayList<>();
+                String body = searchResp.getBody();
+                if (body == null) return new ArrayList<>();
 
-            // Step 2 — resolve each title → thumbnail URL + metadata
-            return resolveImageInfo(fileTitles);
+                JsonNode searchResults = objectMapper.readTree(body)
+                        .path("query").path("search");
 
+                if (!searchResults.isArray() || searchResults.isEmpty()) return new ArrayList<>();
+
+                List<String> fileTitles = apiHelper.pickBestTitles(searchResults, 4);
+                if (fileTitles.isEmpty()) return new ArrayList<>();
+
+                // Step 2 — resolve each title → thumbnail URL + metadata
+                return resolveImageInfo(fileTitles);
+
+            } catch (Exception e) {
+                System.err.println("Wikimedia fetch error for '" + locationName + "': " + e.getMessage());
+                return new ArrayList<>();
+            }
         } catch (Exception e) {
-            System.err.println("Wikimedia fetch error for '" + locationName + "': " + e.getMessage());
+            System.err.println("Redis cache error in getLocationImage: " + e.getMessage());
+            // ⚠️ GRACEFUL DEGRADATION: Return empty list instead of crashing
             return new ArrayList<>();
         }
     }
-
     /**
      * NEW — Geosearch: find Wikimedia images near a GPS coordinate.
      *
@@ -114,57 +108,64 @@ public class WikimediaImageService {
      * Example usage:
      *   List<LocationImageDto> nearby = service.searchImagesByCoordinates(7.0736, 125.6120, 1000);
      */
+
     @Cacheable(value = "locationImages", key = "'geo:' + #lat + ',' + #lon + ':' + #radiusMeters")
     @RateLimiter(name = "wikimedia", fallbackMethod = "imagesByCoordsFallback")
     public List<LocationImageDto> searchImagesByCoordinates(double lat, double lon, int radiusMeters) {
-        System.out.println("Wikimedia geosearch at " + lat + "," + lon);
-
-        // generator=geosearch returns pages (files) near the given point
-        String url = UriComponentsBuilder.fromHttpUrl(WIKIMEDIA_API)
-                .queryParam("action",      "query")
-                .queryParam("format",      "json")
-                .queryParam("generator",   "geosearch")
-                .queryParam("ggsprimary", "all")        // match any coordinate tag
-                .queryParam("ggscoord",    lat + "|" + lon)
-                .queryParam("ggsradius",   Math.min(radiusMeters, 10000)) // Wikimedia max = 10 000 m
-                .queryParam("ggslimit",    10)
-                .queryParam("ggsnamespace", 6)          // File namespace
-                .queryParam("prop",        "imageinfo")
-                .queryParam("iiprop",      "url|user|extmetadata")
-                .queryParam("iiurlwidth",  THUMB_SIZE)  // 400 px thumbnail
-                .build(false)
-                .toUriString();
-
         try {
-            ResponseEntity<String> response = restTemplate.exchange(
-                    url, HttpMethod.GET, apiHelper.buildEntity(), String.class);
+            System.out.println("Wikimedia geosearch at " + lat + "," + lon);
 
-            String body = response.getBody();
-            if (body == null) return new ArrayList<>();
+            // generator=geosearch returns pages (files) near the given point
+            String url = UriComponentsBuilder.fromHttpUrl(WIKIMEDIA_API)
+                    .queryParam("action",      "query")
+                    .queryParam("format",      "json")
+                    .queryParam("generator",   "geosearch")
+                    .queryParam("ggsprimary", "all")        // match any coordinate tag
+                    .queryParam("ggscoord",    lat + "|" + lon)
+                    .queryParam("ggsradius",   Math.min(radiusMeters, 10000)) // Wikimedia max = 10 000 m
+                    .queryParam("ggslimit",    10)
+                    .queryParam("ggsnamespace", 6)          // File namespace
+                    .queryParam("prop",        "imageinfo")
+                    .queryParam("iiprop",      "url|thumburl|user|extmetadata")
+                    .queryParam("iiurlwidth",  THUMB_SIZE)  // 400 px thumbnail
+                    .build(false)
+                    .toUriString();
 
-            JsonNode pages = objectMapper.readTree(body)
-                    .path("query").path("pages");
+            try {
+                ResponseEntity<String> response = restTemplate.exchange(
+                        url, HttpMethod.GET, apiHelper.buildEntity(), String.class);
 
-            List<LocationImageDto> images = new ArrayList<>();
-            pages.forEach(page -> {
-                JsonNode imageInfo = page.path("imageinfo");
-                if (!imageInfo.isArray() || imageInfo.isEmpty()) return;
+                String body = response.getBody();
+                if (body == null) return new ArrayList<>();
 
-                JsonNode info = imageInfo.get(0);
-                String imageUrl = apiHelper.resolveThumbUrl(info);
-                if (imageUrl.isEmpty()) return;
+                JsonNode pages = objectMapper.readTree(body)
+                        .path("query").path("pages");
 
-                images.add(new LocationImageDto(
-                        imageUrl,
-                        info.path("user").asText("Unknown"),
-                        apiHelper.extractLicense(info)
-                ));
-            });
+                List<LocationImageDto> images = new ArrayList<>();
+                pages.forEach(page -> {
+                    JsonNode imageInfo = page.path("imageinfo");
+                    if (!imageInfo.isArray() || imageInfo.isEmpty()) return;
 
-            return images;
+                    JsonNode info = imageInfo.get(0);
+                    String imageUrl = apiHelper.resolveThumbUrl(info);
+                    if (imageUrl.isEmpty()) return;
 
+                    images.add(new LocationImageDto(
+                            imageUrl,
+                            info.path("user").asText("Unknown"),
+                            apiHelper.extractLicense(info)
+                    ));
+                });
+
+                return images;
+
+            } catch (Exception e) {
+                System.err.println("Wikimedia geosearch error: " + e.getMessage());
+                return new ArrayList<>();
+            }
         } catch (Exception e) {
-            System.err.println("Wikimedia geosearch error: " + e.getMessage());
+            System.err.println("Redis cache error in searchImagesByCoordinates: " + e.getMessage());
+            // ⚠️ GRACEFUL DEGRADATION: Return empty list instead of crashing
             return new ArrayList<>();
         }
     }
@@ -179,7 +180,7 @@ public class WikimediaImageService {
                         .queryParam("format",   "json")
                         .queryParam("titles",   fileName)
                         .queryParam("prop",     "imageinfo")
-                        .queryParam("iiprop",   "url|user|extmetadata")
+                        .queryParam("iiprop",   "url|thumburl|user|extmetadata")
                         .queryParam("iiurlwidth", THUMB_SIZE) // ← 400 px, not full-res
                         .build(false)
                         .toUriString();

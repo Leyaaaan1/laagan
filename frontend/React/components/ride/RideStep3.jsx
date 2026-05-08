@@ -1,79 +1,136 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView,
-  StatusBar, ActivityIndicator,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StatusBar,
+  ActivityIndicator,
+  Animated,
 } from 'react-native';
-import { WebView } from 'react-native-webview';
+import {WebView} from 'react-native-webview';
 import getMapHTML from '../../utilities/mapHTML';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import { reverseGeocodeLandmark } from '../../services/rideService';
-import { createRouteData, getRoutePreview } from '../../services/RouteService';
-
+import {reverseGeocodeLandmark} from '../../services/rideService';
+import {createRouteData, getRoutePreview} from '../../services/RouteService';
+import text from '../../styles/base/text';
 import buttons from '../../styles/base/buttons';
-import layout from '../../styles/base/layout';
 import rideCreation from '../../styles/screens/rideCreation';
 import feedback from '../../styles/base/feedback';
 import inputs from '../../styles/base/inputs';
-import badges from '../../styles/base/badges';
 import {
   buildCenterMapScript,
   buildDrawRouteScript,
   buildSearchHandlers,
 } from './utilities/RideStepUtils';
 import LocationSuggestionModal from './utilities/LocationSuggestionModal';
+import ridestep3style from '../../styles/components/ridestep3style';
+import spacing from '../../styles/tokens/spacing';
 
 
 
-const MODE_LABELS = { starting: 'Set Start', ending: 'Set Destination', stop: 'Add Stops' };
-const MODE_COLORS = { starting: '#22c55e', ending: '#8c2323', stop: '#f59e0b' };
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-/** Start / End location card used inside the details panel. */
-const RouteEndpointCard = ({ label, dotColor, point, isActive, onChangePress }) => (
-  <View style={[rideCreation.floatingCard, rideCreation.halfWidthCard]}>
-    <View style={rideCreation.cardHeader}>
-      <View style={[badges.dot, { backgroundColor: dotColor, marginRight: 6 }]} />
-      <Text style={rideCreation.cardTitle}>{label}</Text>
-      <TouchableOpacity
-        style={[rideCreation.cardChangeButton, { marginLeft: 'auto' }]}
-        onPress={onChangePress}
-      >
-        <Text style={[rideCreation.cardChangeButtonText, isActive && { color: dotColor, fontWeight: '700' }]}>
-          {isActive ? '● Active' : 'Change'}
-        </Text>
-      </TouchableOpacity>
-    </View>
-    <Text style={rideCreation.cardLocationText} numberOfLines={2}>
-      {point || 'Not set'}
-    </Text>
-  </View>
-);
-
-/** Row of stop-point chips in the details panel. */
-const StopPointsList = ({ stopPoints, onRemove }) => {
-  if (!stopPoints.length) { return null; }
-  return (
-    <View style={[rideCreation.floatingCard, rideCreation.fullWidthCard, { marginTop: 6 }]}>
-      <View style={[rideCreation.cardHeader, { marginBottom: 6 }]}>
-        <Text style={rideCreation.cardTitle}>Stop Points</Text>
-        <View style={rideCreation.stopCounter}>
-          <Text style={rideCreation.stopCounterText}>{stopPoints.length}</Text>
-        </View>
-      </View>
-      <ScrollView style={rideCreation.stopScrollView} showsVerticalScrollIndicator={false}>
-        {stopPoints.map((stop, index) => (
-          <View key={index} style={rideCreation.stopItem}>
-            <View style={rideCreation.stopNumber}>
-              <Text style={rideCreation.stopNumberText}>{index + 1}</Text>
-            </View>
-            <Text style={rideCreation.stopName} numberOfLines={1}>{stop.name}</Text>
-            <TouchableOpacity style={{ marginLeft: 8, padding: 6 }} onPress={() => onRemove(index)}>
-              <FontAwesome name="times" size={12} color="#bbb" />
-            </TouchableOpacity>
+/**
+ * RouteTimeline: Google Maps-style vertical timeline with nodes, connectors, and editable rows
+ */
+const RouteTimeline = ({
+                         startingPoint,
+                         endingPoint,
+                         stopPoints,
+                         onChangeStart,
+                         onChangeEnd,
+                         onRemoveStop,
+                       }) => {
+  const renderNode = (type, index) => {
+    switch (type) {
+      case 'start':
+        return <View style={ridestep3style.nodeStart} />;
+      case 'end':
+        return <View style={ridestep3style.nodeEnd} />;
+      case 'stop':
+        return (
+          <View style={ridestep3style.nodeStop}>
+            <Text style={ridestep3style.nodeLabel}>{index + 1}</Text>
           </View>
-        ))}
-      </ScrollView>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <View style={ridestep3style.timelineWrapper}>
+      {/* Vertical timeline line (background) */}
+      <View style={ridestep3style.timelineLine} />
+
+      {/* START NODE */}
+      <View style={ridestep3style.routeRow}>
+        <View style={ridestep3style.timelineLeft}>
+          {renderNode('start', 0)}
+        </View>
+        <View style={ridestep3style.routeRowContentWrapper}>
+          <Text style={ridestep3style.rowLabel}>Start</Text>
+          <Text style={ridestep3style.rowLocationName} numberOfLines={2}>
+            {startingPoint || 'Not set'}
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={ridestep3style.rowChangeBtn}
+          onPress={onChangeStart}>
+          <Text style={ridestep3style.rowChangeBtnText}>
+            {startingPoint ? 'Change' : 'Set'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* STOP NODES */}
+      {stopPoints.length > 0 && (
+        <>
+
+          {stopPoints.map((stop, index) => (
+            <View key={`stop-${index}`} style={ridestep3style.routeRow}>
+              <View style={ridestep3style.timelineLeft}>
+                {renderNode('stop', index)}
+              </View>
+              <View style={ridestep3style.routeRowContentWrapper}>
+                <Text style={ridestep3style.rowLabel}>Stop {index + 1}</Text>
+                <Text style={ridestep3style.rowLocationName} numberOfLines={2}>
+                  {stop.name}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={ridestep3style.rowRemoveBtn}
+                onPress={() => onRemoveStop(index)}>
+                <FontAwesome name="times" size={16} color="#8c2323" />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </>
+      )}
+
+      {/* END NODE */}
+      <View style={ridestep3style.routeRow}>
+        <View style={ridestep3style.timelineLeft}>{renderNode('end', 0)}</View>
+        <View style={ridestep3style.routeRowContentWrapper}>
+          <Text style={ridestep3style.rowLabel}>End</Text>
+          <Text style={ridestep3style.rowLocationName} numberOfLines={2}>
+            {endingPoint || 'Not set'}
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={ridestep3style.rowChangeBtn}
+          onPress={onChangeEnd}>
+          <Text style={ridestep3style.rowChangeBtnText}>
+            {endingPoint ? 'Change' : 'Set'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* ADD STOP BUTTON (only show in stop mode) */}
+      <TouchableOpacity style={ridestep3style.addStopBtn}>
+        <FontAwesome name="plus" size={14} color="#8c2323" />
+        <Text style={ridestep3style.addStopBtnText}>Add Stop</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -81,45 +138,49 @@ const StopPointsList = ({ stopPoints, onRemove }) => {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 const RideStep3 = ({
-  mapMode,
-  setMapMode,
-  isSearching,
-  searchResults,
-  handleLocationSelect,
-  webViewRef,
-  startingLatitude,
-  startingLongitude,
-  endingLatitude,
-  endingLongitude,
-  handleMessage,
-  startingPoint,
-  setStartingPoint,
-  endingPoint,
-  setEndingPoint,
-  prevStep,
-  loading,
-                     setEndingLatitude, setEndingLongitude,
-  step2LocationName,
-  step2Latitude,
-  step2Longitude,
-  handleCreateRide,
-  handleSearchInputChange,
-  searchQuery,
-  stopPoints,
-  setStopPoints,
-  token,
-}) => {
+                     mapMode,
+                     setMapMode,
+                     isSearching,
+                     searchResults,
+                     handleLocationSelect,
+                     webViewRef,
+                     startingLatitude,
+                     startingLongitude,
+                     endingLatitude,
+                     endingLongitude,
+                     handleMessage,
+                     startingPoint,
+                     setStartingPoint,
+                     endingPoint,
+                     setEndingPoint,
+                     prevStep,
+                     loading,
+                     setEndingLatitude,
+                     setEndingLongitude,
+                     step2LocationName,
+                     step2Latitude,
+                     step2Longitude,
+                     handleCreateRide,
+                     handleSearchInputChange,
+                     searchQuery,
+                     stopPoints,
+                     setStopPoints,
+                     token,
+                   }) => {
   const [currentStop, setCurrentStop] = useState(null);
   const [isAddingStop, setIsAddingStop] = useState(false);
   const [addingStopLoading, setAddingStopLoading] = useState(false);
-  const [showDetails, setShowDetails] = useState(true);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [routeLoading, setRouteLoading] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(true);
+
+  // Bottom sheet animation
+  const [bottomSheetCollapsed, setBottomSheetCollapsed] = useState(false);
+  const bottomSheetAnimValue = useRef(new Animated.Value(0)).current;
 
   // ── Local search buffer with shared debounce helper ───────────────────────
   const [localQuery, setLocalQuery] = useState(searchQuery || '');
   const debounceRef = useRef(null);
-  const [showLocationModal, setShowLocationModal] = useState(true); // Show on mount
 
   const {handleLocalChange, handleClearSearch} = buildSearchHandlers({
     debounceRef,
@@ -135,30 +196,29 @@ const RideStep3 = ({
 
   // ── Freeze initial map HTML ───────────────────────────────────────────────
   const mapHtml = useMemo(() => {
-    const initLat = parseFloat(startingLatitude) || 12.8797; // fallback if not provided
-    const initLng = parseFloat(startingLongitude) || 121.774; // fallback if not provided
+    const initLat = parseFloat(startingLatitude) || 12.8797;
+    const initLng = parseFloat(startingLongitude) || 121.774;
     return getMapHTML(initLat, initLng, false);
-  }, [startingLatitude, startingLongitude]); // Add these as dependencies // eslint-disable-line react-hooks/exhaustive-deps
-
+  }, [startingLatitude, startingLongitude]);
 
   const handleUseStep2Location = () => {
     if (step2LocationName && step2Latitude && step2Longitude) {
       setEndingPoint(step2LocationName);
-      // ADD THESE TWO LINES:
       setEndingLatitude(step2Latitude);
       setEndingLongitude(step2Longitude);
 
-        webViewRef.current?.injectJavaScript(
-          buildCenterMapScript(
-            parseFloat(step2Latitude),
-            parseFloat(step2Longitude),
-          ),
-        );
+      webViewRef.current?.injectJavaScript(
+        buildCenterMapScript(
+          parseFloat(step2Latitude),
+          parseFloat(step2Longitude),
+        ),
+      );
       setMapMode('stop');
       setTimeout(() => drawRoadRoute(), 500);
     }
     setShowLocationModal(false);
   };
+
   // ── Route drawing ─────────────────────────────────────────────────────────
   const drawRoadRoute = useCallback(async () => {
     const sLat = parseFloat(startingLatitude);
@@ -166,12 +226,10 @@ const RideStep3 = ({
     const eLat = parseFloat(endingLatitude);
     const eLng = parseFloat(endingLongitude);
 
-    // Don't call the API if any coordinate is missing/zero
     if (!sLat || !sLng || !eLat || !eLng) {
       return;
     }
 
-    // Don't call if start and end are the same point
     const isSame =
       Math.abs(sLat - eLat) < 0.0001 && Math.abs(sLng - eLng) < 0.0001;
     if (isSame) {
@@ -288,9 +346,11 @@ const RideStep3 = ({
   const finalizePointSelection = () => {
     if (mapMode === 'starting' && startingPoint) {
       setMapMode('ending');
+      setLocalQuery('');
     }
     if (mapMode === 'ending' && endingPoint) {
       setMapMode('stop');
+      setLocalQuery('');
       setTimeout(() => drawRoadRoute(), 300);
     }
   };
@@ -362,6 +422,21 @@ const RideStep3 = ({
     }
   };
 
+  // ── Bottom sheet collapse/expand animation ──────────────────────────────
+  const toggleBottomSheet = () => {
+    setBottomSheetCollapsed(prev => !prev);
+    Animated.timing(bottomSheetAnimValue, {
+      toValue: bottomSheetCollapsed ? 0 : 1,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const bottomSheetHeight = bottomSheetAnimValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['35%', '10%'],
+  });
+
   const searchPlaceholder =
     {
       starting: 'Search starting point',
@@ -371,15 +446,21 @@ const RideStep3 = ({
   const canCreate = !!startingPoint && !!endingPoint && !loading;
 
   return (
-    <View style={[layout.screen, {backgroundColor: 'transparent'}]}>
+    <View style={ridestep3style.container}>
       <StatusBar
         translucent
         backgroundColor="transparent"
-        barStyle="dark-content"
+        barStyle="light-content"
       />
 
-      {/* ── Full-screen map — rendered once, never remounted ── */}
-      <View style={rideCreation.mapFill}>
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/* MAP SECTION (top 50%) */}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/* MAP SECTION (top 50%) */}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      <View style={ridestep3style.mapContainer}>
         <WebView
           ref={webViewRef}
           source={{html: mapHtml}}
@@ -390,367 +471,290 @@ const RideStep3 = ({
           startInLoadingState
           mixedContentMode="compatibility"
         />
-      </View>
 
-      {/* ── Floating navbar ── */}
-      <View
-        style={[
-          rideCreation.floatingNav,
-          {backgroundColor: 'transparent', top: 16},
-        ]}>
-        <TouchableOpacity
-          style={buttons.back}
-          onPress={prevStep}
-          activeOpacity={0.8}>
-          <FontAwesome
-            name="arrow-left"
-            size={14}
-            color="#8c2323"
-            style={{marginRight: 6}}
-          />
-          <Text style={[buttons.textDark, {fontSize: 14}]}>Back</Text>
-        </TouchableOpacity>
-
-        {/* Active mode pill */}
-        <View
-          style={[
-            badges.outlinePrimary,
-            {borderColor: MODE_COLORS[mapMode] || '#8c2323'},
-          ]}>
-          <View
-            style={[
-              badges.dot,
-              {
-                backgroundColor: MODE_COLORS[mapMode] || '#8c2323',
-              },
-            ]}
-          />
-          <Text
-            style={[
-              badges.outlinePrimaryText,
-              {
-                color: MODE_COLORS[mapMode] || '#8c2323',
-                marginLeft: 6,
-              },
-            ]}>
-            {MODE_LABELS[mapMode] || 'Route'}
+        {/* ── Floating navbar ── */}
+        <View style={[rideCreation.floatingNav, { backgroundColor: 'rgba(255,255,255,0.95)', top: 16 }]}>
+          <TouchableOpacity style={buttons.back} onPress={prevStep} activeOpacity={0.8}>
+            <FontAwesome name="arrow-left" size={14} color="#8c2323" style={{ marginRight: 6 }} />
+            <Text style={[buttons.textDark, { fontSize: 14 }]}>Back</Text>
+          </TouchableOpacity>
+          <Text style={[text.label, { color: '#1a1a1a' }]}>
+            {mapMode === 'starting' ? 'START POINT' : mapMode === 'ending' ? 'END POINT' : 'STOPS'}
           </Text>
+          <TouchableOpacity
+            style={[buttons.row, { paddingVertical: 8, paddingHorizontal: 12 }, !canCreate && buttons.disabled]}
+            onPress={handleCreateRide}
+            disabled={!canCreate}
+            activeOpacity={0.8}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Text style={buttons.textSm}>Create</Text>
+                <FontAwesome name="check" size={14} color="#fff" style={{ marginLeft: 6 }} />
+              </>
+            )}
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={[
-            buttons.row,
-            {paddingVertical: 8, paddingHorizontal: 12},
-            !canCreate && buttons.disabled,
-          ]}
-          onPress={handleCreateRide}
-          disabled={!canCreate}
-          activeOpacity={0.85}>
-          {loading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <>
-              <Text style={buttons.textSm}>Create</Text>
-              <FontAwesome
-                name="check"
-                size={13}
-                color="#fff"
-                style={{marginLeft: 6}}
-              />
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* ── Search bar ── */}
-      <View style={rideCreation.searchContainer}>
-        <View style={[isSearchFocused && inputs.searchRowFocused]}>
-          <FontAwesome
-            name="search"
-            size={16}
-            color="#5f6368"
-            style={{marginRight: 12}}
-          />
-          <TextInput
-            style={inputs.location}
-            value={localQuery}
-            onChangeText={handleLocalChange}
-            placeholder={searchPlaceholder}
-            placeholderTextColor="#9aa0a6"
-            returnKeyType="search"
-            onFocus={() => setIsSearchFocused(true)}
-            onBlur={() => setIsSearchFocused(false)}
-            onSubmitEditing={() => {
-              clearTimeout(debounceRef.current);
-              handleSearchInputChange(localQuery);
-            }}
-            editable={!(mapMode === 'stop' && isAddingStop)}
-            autoCorrect={false}
-            autoCapitalize="none"
-          />
-          {localQuery.length > 0 && (
-            <TouchableOpacity
-              onPress={handleClearSearch}
-              style={{padding: 4, marginRight: 8}}>
-              <FontAwesome name="times-circle" size={16} color="#9aa0a6" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {isSearching && (
-          <View style={[feedback.loadingRow, {marginTop: 12}]}>
-            <ActivityIndicator size="small" color="#8c2323" />
-            <Text style={feedback.loadingText}>Finding locations…</Text>
-          </View>
-        )}
-
-        {routeLoading && (
-          <View style={[feedback.loadingRow, {marginTop: 8}]}>
-            <ActivityIndicator size="small" color="#1e40af" />
-            <Text style={[feedback.loadingText, {color: '#1e40af'}]}>
-              Drawing route…
-            </Text>
-          </View>
-        )}
-
-        {searchResults?.length > 0 && (
-          <ScrollView
-            style={[inputs.resultsList, {maxHeight: 200}]}
-            nestedScrollEnabled
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled">
-            {searchResults.map((item, index) => (
+        {/* ── Search card ── */}
+        <View style={rideCreation.searchContainer}>
+          <View style={[inputs.searchRow, isSearchFocused && inputs.searchRowFocused]}>
+            <FontAwesome name="search" size={16} color="#5f6368" style={{ marginRight: 12 }} />
+            <TextInput
+              style={inputs.location}
+              value={localQuery}
+              onChangeText={handleLocalChange}
+              placeholder={searchPlaceholder}
+              placeholderTextColor="#9aa0a6"
+              returnKeyType="search"
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
+              onSubmitEditing={() => {
+                clearTimeout(debounceRef.current);
+                handleSearchInputChange(localQuery);
+              }}
+              editable={!(mapMode === 'stop' && isAddingStop)}
+              autoCorrect={false}
+              autoCapitalize="none"
+            />
+            {localQuery.length > 0 && (
               <TouchableOpacity
-                key={item.place_id.toString()}
-                style={[
-                  inputs.resultItem,
-                  index === searchResults.length - 1 && inputs.resultItemLast,
-                ]}
-                onPress={() => handleSelectLocationAndUpdateMap(item)}
-                disabled={mapMode === 'stop' && isAddingStop}>
-                <View
-                  style={{
-                    width: 20,
-                    height: 36,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}>
-                  <FontAwesome name="map-marker" size={16} color="#8c2323" />
-                </View>
-                <View style={{flex: 1}}>
-                  <Text style={inputs.resultName}>
-                    {item.display_name.split(',')[0]}
-                  </Text>
-                  <Text style={inputs.resultAddress} numberOfLines={1}>
-                    {item.display_name}
-                  </Text>
-                </View>
-                <FontAwesome name="chevron-right" size={14} color="#dadce0" />
+                onPress={handleClearSearch}
+                style={{ padding: 4, marginRight: 8 }}>
+                <FontAwesome name="times-circle" size={16} color="#9aa0a6" />
               </TouchableOpacity>
-            ))}
+            )}
+          </View>
+
+          {isSearching && (
+            <View style={[feedback.loadingRow, { marginTop: 12 }]}>
+              <ActivityIndicator size="small" color="#8c2323" />
+              <Text style={feedback.loadingText}>Finding locations…</Text>
+            </View>
+          )}
+
+          {routeLoading && (
+            <View style={[feedback.loadingRow, { marginTop: 8 }]}>
+              <ActivityIndicator size="small" color="#1e40af" />
+              <Text style={[feedback.loadingText, { color: '#1e40af' }]}>
+                Drawing route…
+              </Text>
+            </View>
+          )}
+
+          {searchResults?.length > 0 && (
+            <ScrollView
+              style={[inputs.resultsList, { maxHeight: 220 }]}
+              nestedScrollEnabled
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled">
+              {searchResults.map((item, index) => (
+                <TouchableOpacity
+                  key={item.place_id.toString()}
+                  style={[
+                    inputs.resultItem,
+                    index === searchResults.length - 1 && inputs.resultItemLast,
+                  ]}
+                  onPress={() => handleSelectLocationAndUpdateMap(item)}
+                  disabled={mapMode === 'stop' && isAddingStop}>
+                  <View style={{ width: 20, height: 36, justifyContent: 'center', alignItems: 'center' }}>
+                    <FontAwesome name="map-marker" size={16} color="#8c2323" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={inputs.resultName}>
+                      {item.display_name.split(',')[0]}
+                    </Text>
+                    <Text style={inputs.resultAddress} numberOfLines={1}>
+                      {item.display_name}
+                    </Text>
+                  </View>
+                  <FontAwesome name="chevron-right" size={14} color="#dadce0" />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+      </View>
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/* BOTTOM SHEET PANEL (bottom 50%, collapsible) */}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      <Animated.View
+        style={[ridestep3style.bottomSheet, {height: bottomSheetHeight}]}>
+        {/* Drag handle */}
+        <TouchableOpacity
+          style={{alignItems: 'center', paddingVertical: 8}}
+          onPress={toggleBottomSheet}>
+          <View style={ridestep3style.dragHandle} />
+        </TouchableOpacity>
+
+        {/* Collapse chevron button */}
+        <TouchableOpacity
+          style={ridestep3style.collapseButton}
+          onPress={toggleBottomSheet}>
+          <FontAwesome
+            name={bottomSheetCollapsed ? 'chevron-down' : 'chevron-up'}
+            size={16}
+            color="#8c2323"
+          />
+        </TouchableOpacity>
+
+        {/* Timeline content (scrollable) */}
+        {!bottomSheetCollapsed && (
+          <ScrollView
+            style={{flex: 1}}
+            showsVerticalScrollIndicator={false}
+            nestedScrollEnabled>
+            <RouteTimeline
+              startingPoint={startingPoint}
+              endingPoint={endingPoint}
+              stopPoints={stopPoints}
+              onChangeStart={() => { setMapMode('starting'); setLocalQuery(''); }}
+              onChangeEnd={() => { setMapMode('ending'); setLocalQuery(''); }}
+              onRemoveStop={removeStopPoint}
+            />
+
+
+            {/* Bottom action buttons - 3 column layout */}
+            <View
+              style={{
+                paddingHorizontal: spacing.sm,
+                paddingVertical: spacing.md,
+                flexDirection: 'row',
+                gap: spacing.xs,
+              }}>
+              {/* Add Stop Button */}
+              {mapMode === 'stop' && !isAddingStop && (
+                <TouchableOpacity
+                  style={[ridestep3style.addStopBtn, {flex: 1}]}
+                  onPress={startAddStopPoint}>
+                  <FontAwesome name="plus" size={12} color="#8c2323" />
+                  <Text style={[ridestep3style.addStopBtnText, {fontSize: 10}]}>
+                    Add Stop
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Confirm Stop Button (while adding) */}
+              {mapMode === 'stop' && isAddingStop && currentStop && (
+                <TouchableOpacity
+                  style={[
+                    ridestep3style.createBtn,
+                    {
+                      flex: 1,
+                      backgroundColor: '#10b981',
+                      paddingVertical: 10,
+                    },
+                    (addingStopLoading || !currentStop) && {opacity: 0.5},
+                  ]}
+                  onPress={confirmStopPoint}
+                  disabled={addingStopLoading || !currentStop}>
+                  {addingStopLoading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <FontAwesome name="check" size={12} color="#fff" />
+                      <Text
+                        style={[ridestep3style.createBtnText, {fontSize: 10}]}>
+                        Confirm
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
+
+              {/* Finalize Start/End Buttons */}
+              {((mapMode === 'starting' && startingPoint) ||
+                (mapMode === 'ending' && endingPoint)) && (
+                <TouchableOpacity
+                  style={[
+                    ridestep3style.createBtn,
+                    {flex: 1, paddingVertical: 10},
+                  ]}
+                  onPress={finalizePointSelection}>
+                  <FontAwesome name="arrow-right" size={12} color="#fff" />
+                  <Text
+                    style={[ridestep3style.createBtnText, {fontSize: 10}]}>
+                    {mapMode === 'starting' ? 'Set End' : 'Continue'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Main Create Ride Button */}
+              {startingPoint && endingPoint && !isAddingStop && (
+                <TouchableOpacity
+                  style={[
+                    ridestep3style.createBtn,
+                    {flex: 1, paddingVertical: 10},
+                    !canCreate && {opacity: 0.5},
+                  ]}
+                  onPress={handleCreateRide}
+                  disabled={!canCreate}>
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <Text
+                        style={[ridestep3style.createBtnText, {fontSize: 12}]}>
+                        🏁 Create
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
           </ScrollView>
         )}
-      </View>
-
-      {/* ── Show/Hide toggle ── */}
-      <TouchableOpacity
-        style={{
-          position: 'absolute',
-          top: 90,
-          right: 12,
-          zIndex: 30,
-          backgroundColor: 'transparent',
-          borderRadius: 16,
-          paddingVertical: 6,
-          paddingHorizontal: 12,
-          flexDirection: 'row',
-          alignItems: 'center',
-          shadowColor: '#000',
-          shadowOpacity: 0.1,
-          shadowRadius: 6,
-          elevation: 4,
-        }}
-        onPress={() => setShowDetails(prev => !prev)}>
-        <FontAwesome
-          name={showDetails ? 'eye-slash' : 'eye'}
-          size={14}
-          color="#5f6368"
-          style={{marginRight: 6}}
-        />
-        <Text style={{color: '#5f6368', fontSize: 12}}>
-          {showDetails ? 'Hide' : 'Show'} Details
-        </Text>
-      </TouchableOpacity>
-
-      {/* ── Route details panel ── */}
-      {showDetails && (
-        <View
-          style={{
-            position: 'absolute',
-            bottom: 110,
-            left: 12,
-            right: 12,
-            zIndex: 40,
-          }}>
-          <View
-            style={{
-              backgroundColor: 'rgba(255,255,255,0.85)',
-              borderRadius: 20,
-              padding: 12,
-            }}>
-            <View style={rideCreation.topRowContainer}>
-              <RouteEndpointCard
-                label="Start"
-                dotColor="#22c55e"
-                point={startingPoint}
-                isActive={mapMode === 'starting'}
-                onChangePress={() => setMapMode('starting')}
-              />
-              <RouteEndpointCard
-                label="End"
-                dotColor="#8c2323"
-                point={endingPoint}
-                isActive={mapMode === 'ending'}
-                onChangePress={() => setMapMode('ending')}
-              />
-            </View>
-            <StopPointsList
-              stopPoints={stopPoints}
-              onRemove={removeStopPoint}
-            />
-          </View>
-        </View>
-      )}
-
-      {/* ── Bottom action bar ── */}
-      <View
-        style={{
-          position: 'absolute',
-          bottom: 24,
-          left: 12,
-          right: 12,
-          zIndex: 40,
-          flexDirection: 'row',
-          gap: 10,
-          paddingVertical: 12,
-        }}>
-        {/* Finalize start or end point */}
-        {((mapMode === 'starting' && startingPoint) ||
-          (mapMode === 'ending' && endingPoint)) && (
-          <TouchableOpacity
-            style={[buttons.primary, {flex: 1}]}
-            onPress={finalizePointSelection}>
-            <Text style={buttons.textPrimary}>
-              {mapMode === 'starting'
-                ? 'Set Destination →'
-                : 'Continue to Stops →'}
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        {/* Stop-mode controls */}
-        {mapMode === 'stop' && (
-          <>
-            {!isAddingStop ? (
-              <TouchableOpacity
-                style={[
-                  buttons.outline,
-                  {flex: 1, flexDirection: 'row', gap: 8},
-                ]}
-                onPress={startAddStopPoint}
-                activeOpacity={0.8}>
-                <FontAwesome name="plus" size={14} color="#8c2323" />
-                <Text style={buttons.textDark}>Add Stop</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={[
-                  buttons.success,
-                  {flex: 1, flexDirection: 'row', gap: 8},
-                  (addingStopLoading || !currentStop) && buttons.disabled,
-                ]}
-                onPress={confirmStopPoint}
-                disabled={addingStopLoading || !currentStop}
-                activeOpacity={0.85}>
-                {addingStopLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
-                    <FontAwesome name="check" size={14} color="#fff" />
-                    <Text style={buttons.textPrimary}>Confirm Stop</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            )}
-
-            {startingPoint && endingPoint && (
-              <TouchableOpacity
-                style={[
-                  buttons.primary,
-                  {flex: 1, flexDirection: 'row', gap: 8},
-                  !canCreate && buttons.disabled,
-                ]}
-                onPress={handleCreateRide}
-                disabled={!canCreate}
-                activeOpacity={0.85}>
-                {loading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
-                    <FontAwesome name="flag-checkered" size={14} color="#fff" />
-                    <Text style={buttons.textPrimary}>Create Ride</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            )}
-          </>
-        )}
-      </View>
-
-      {/* ── Instruction pill while placing a stop ── */}
+      </Animated.View>
 
       {/* ── Instruction pill while placing a stop ── */}
       {mapMode === 'stop' && isAddingStop && (
-        <View    style={{
-          position: 'absolute',
-          bottom: 100,
-          left: 12,
-          right: 12,
-          zIndex: 45,
-          backgroundColor: 'rgba(0,0,0,0.72)',
-          borderRadius: 20,
-          paddingVertical: 10,
-          paddingHorizontal: 12,
-        }}>
+        <View
+          style={{
+            position: 'absolute',
+            bottom: '55%',
+            left: 12,
+            right: 12,
+            zIndex: 45,
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            borderRadius: 20,
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+          }}>
           {currentStop ? (
-            <View        style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 8,
-            }}>
+            <View style={{flexDirection: 'row', alignItems: 'center', gap: 8}}>
               {addingStopLoading ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <FontAwesome name="map-pin" size={14} color="#fff" />
+                <FontAwesome name="map-pin" size={14} color="#10b981" />
               )}
-              <Text style={rideCreation.instructionText} numberOfLines={1}>
+              <Text
+                style={{
+                  color: '#fff',
+                  fontSize: 14,
+                  fontWeight: '600',
+                  flex: 1,
+                }}
+                numberOfLines={1}>
                 {currentStop.name}
               </Text>
             </View>
           ) : (
-            <Text style={rideCreation.instructionText}>
-              📍 Tap anywhere on the map to place a stop
+            <Text style={{color: '#fff', fontSize: 14, fontWeight: '600'}}>
+              📍 Tap on the map to place a stop
             </Text>
           )}
         </View>
       )}
 
-      {/* ── Location Suggestion Modal (ALWAYS rendered, controlled by visible prop) ── */}
+      {/* ── Location Suggestion Modal ── */}
       <LocationSuggestionModal
         visible={showLocationModal && !!step2LocationName && !endingPoint}
         locationName={step2LocationName}
         onUseAsEnd={handleUseStep2Location}
-        onDismiss={() => setShowLocationModal(false)}/>
+        onDismiss={() => setShowLocationModal(false)}
+      />
     </View>
   );
 };

@@ -69,4 +69,11 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.badRequest().body(response);
     }
+
+
+    @ExceptionHandler(RedisUnavailableException.class)
+    public ResponseEntity<?> handleRedisUnavailable(RedisUnavailableException ex) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(buildErrorBody("Redis service temporarily unavailable. Please try again.", HttpStatus.SERVICE_UNAVAILABLE));
+    }
 }
