@@ -202,7 +202,6 @@ const ParticipantList = ({
     }
   };
 
-
   const renderRequestItem = ({item}) => {
     const isPending = item.status === 'PENDING';
     return (
@@ -212,27 +211,15 @@ const ParticipantList = ({
             <View style={modal.requestAvatar}>
               <FontAwesome name="user" size={16} color="#666" />
             </View>
-            {/* ✅ Make username clickable */}
-            <TouchableOpacity
-              onPress={() => {
-                navigation.navigate('RiderProfile', {username: item.username});
-                onClose();
-              }}
-              style={{flex: 1}}>
-              <Text
-                style={[
-                  modal.requestUsername,
-                  {textDecorationLine: 'underline'}, // Show it's clickable
-                ]}>
-                {item.username}
-              </Text>
+            <View style={{flex: 1}}>
+              <Text style={modal.requestUsername}>{item.username}</Text>
               <Text style={getStatusStyle(item.status)}>{item.status}</Text>
               {item.requestedAt && (
                 <Text style={modal.requestDate}>
                   {formatDate(item.requestedAt)}
                 </Text>
               )}
-            </TouchableOpacity>
+            </View>
           </View>
           {/* CHANGED: Only show approve/reject buttons if isOwner AND status is PENDING */}
           {isPending && isOwner && (

@@ -11,7 +11,6 @@ import { fetchRides, fetchMyRides } from '../../../services/rideService';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import colors from '../../../styles/tokens/colors';
 import RideCard from './RideCard';
-import {useAuth} from '../../../context/AuthContext';
 
 const RidesList = ({onRideSelect, mode = 'all', pageSize = 10}) => {
   const [rides, setRides] = useState([]);

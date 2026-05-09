@@ -227,7 +227,7 @@ const AuthForm = ({
 // ─────────────────────────────────────────────
 // AuthScreen
 // ─────────────────────────────────────────────
-const AuthScreen = ({navigation}) => {
+const AuthScreen = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -256,13 +256,31 @@ const AuthScreen = ({navigation}) => {
         : await registerUser(username.trim(), password);
 
       if (result.success) {
-        const {accessToken, refreshToken} = result.data;
+        const accessToken = result.data?.accessToken;
+        const refreshToken = result.data?.refreshToken;
 
         if (accessToken && refreshToken) {
+          // saveAuth sets auth.token → AppContent re-renders → AppStack mounts.
+          // No manual navigation.navigate() needed — AuthScreen lives inside
+          // AuthStack which has no RiderPage screen.
           await saveAuth(accessToken, refreshToken, username.trim());
+        } else if (!isLogin) {
+          // Registration succeeded but server didn't issue tokens (no auto-login).
+          // Switch to login mode with the username pre-filled so the user
+          // doesn't have to retype it.
+          setIsLogin(true);
+          setPassword('');
+          setConfirmPassword('');
+          setTouched({
+            username: false,
+            password: false,
+            confirmPassword: false,
+          });
+          Alert.alert(
+            'Account Created',
+            'You can now log in with your new account.',
+          );
         }
-
-        navigation.navigate('RiderPage', {username: username.trim()});
       } else {
         const errorMessage =
           result.error ||
@@ -286,6 +304,7 @@ const AuthScreen = ({navigation}) => {
     setConfirmPassword('');
     setTouched({username: false, password: false, confirmPassword: false});
   };
+
   return (
     <View
       style={[layout.screen, {alignItems: 'center', justifyContent: 'center'}]}>
