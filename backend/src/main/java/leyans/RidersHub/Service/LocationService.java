@@ -54,46 +54,56 @@ public class LocationService {
 
 
 
+
     @Cacheable(value = "landmarks", key = "'barangay_' + #lat + '_' + #lon")
     public String resolveBarangayName(String fallback, double lat, double lon) {
         AppLogger.info(this.getClass(), "resolveBarangayName called", "fallback", fallback, "lat", lat, "lon", lon);
 
-        String nominatimBarangay = nominatimService.getBarangayNameFromCoordinates(lat, lon);
+        try {
+            String nominatimBarangay = nominatimService.getBarangayNameFromCoordinates(lat, lon);
 
-        if (nominatimBarangay == null) {
-            AppLogger.warn(this.getClass(), "No barangay found from Nominatim, using fallback", "fallback", fallback);
+            if (nominatimBarangay == null) {
+                AppLogger.warn(this.getClass(), "No barangay found from Nominatim, using fallback", "fallback", fallback);
+                return fallback != null ? fallback : formatCoordinates(lat, lon);
+            }
+
+            try {
+                String result = psgcDataRepository.findByNameIgnoreCase(nominatimBarangay)
+                        .stream()
+                        .findFirst()
+                        .map(PsgcData::getName)
+                        .orElse(nominatimBarangay);
+                AppLogger.info(this.getClass(), "Barangay resolved successfully", "result", result);
+                return result;
+            } catch (Exception e) {
+                AppLogger.error(this.getClass(), "Failed to resolve barangay name", e);
+                return nominatimBarangay;
+            }
+        } catch (Exception e) {
+            AppLogger.error(this.getClass(), "Redis cache or Nominatim error in resolveBarangayName", e);
+            // ⚠️ GRACEFUL DEGRADATION: Return fallback coordinates when cache/service fails
             return fallback != null ? fallback : formatCoordinates(lat, lon);
         }
-
-        try {
-            String result = psgcDataRepository.findByNameIgnoreCase(nominatimBarangay)
-                    .stream()
-                    .findFirst()
-                    .map(PsgcData::getName)
-                    .orElse(nominatimBarangay);
-            AppLogger.info(this.getClass(), "Barangay resolved successfully", "result", result);
-            return result;
-        } catch (Exception e) {
-            AppLogger.error(this.getClass(), "Failed to resolve barangay name", e);
-            return nominatimBarangay;
-        }
     }
+
 
     @Cacheable(value = "landmarks", key = "'landmark_' + #lat + '_' + #lon")
     public String resolveLandMark(String fallback, double lat, double lon) {
-
-        return nominatimService.getCityOrLandmarkFromCoordinates(lat, lon)
-
-                .map(addr -> {
-                    if (!addr.isLandmark()) {
-                        return fallback != null ? fallback : formatCoordinates(lat, lon);
-                    }
-                    return addr.landmark();
-                })
-                .orElse(fallback != null ? fallback : formatCoordinates(lat, lon));
-
+        try {
+            return nominatimService.getCityOrLandmarkFromCoordinates(lat, lon)
+                    .map(addr -> {
+                        if (!addr.isLandmark()) {
+                            return fallback != null ? fallback : formatCoordinates(lat, lon);
+                        }
+                        return addr.landmark();
+                    })
+                    .orElse(fallback != null ? fallback : formatCoordinates(lat, lon));
+        } catch (Exception e) {
+            AppLogger.warn(this.getClass(), "Redis cache or Nominatim error in resolveLandMark", e);
+            // ⚠️ GRACEFUL DEGRADATION: Return fallback coordinates
+            return fallback != null ? fallback : formatCoordinates(lat, lon);
+        }
     }
-
 
 
     public int calculateDistance(Point startPoint, Point endPoint) {

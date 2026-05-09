@@ -7,77 +7,135 @@ import React, {
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Keychain from 'react-native-keychain';
-import {API_BASE_URL} from '../services/Apiclient';
+import {API_BASE_URL, setAuthContextRef} from '../services/Apiclient';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({children}) => {
-  const [token, setToken] = useState(null); // Access token (in memory only)
+  const [token, setToken] = useState(null);
   const [username, setUsername] = useState(null);
   const [ready, setReady] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
   const tokenRef = useRef(null);
   const refreshTokenRef = useRef(null);
+  const usernameRef = useRef(null);
+  const refreshAccessTokenRef = useRef(null);
 
-  // Initialize on app start
-  useEffect(() => {
-    initializeAuth();
-  }, []);
+  const syncApiclientRef = () => {
+    setAuthContextRef({
+      getToken: () => tokenRef.current,
+      refreshAccessToken: (...args) => refreshAccessTokenRef.current?.(...args),
+    });
+  };
 
   const initializeAuth = async () => {
     try {
-      // Load refresh token from Keychain
-      const credentials = await Keychain.getGenericPassword({
-        service: 'com.ridershub.auth', // ✅ IMPORTANT: Specify service to match where it was stored
-      });
-      if (credentials && credentials.password) {
-        refreshTokenRef.current = credentials.password;
-        console.log('✅ Refresh token loaded from Keychain');
-      }
-
-      // Load username from AsyncStorage (not sensitive)
+      // 1. Load stored username
       const storedUsername = await AsyncStorage.getItem('username');
       if (storedUsername) {
+        usernameRef.current = storedUsername;
         setUsername(storedUsername);
         console.log('✅ Username loaded:', storedUsername);
       }
 
-      setReady(true);
-      console.log('✅ Auth initialization complete');
+      // 2. Load refresh token from Keychain
+      const credentials = await Keychain.getGenericPassword({
+        service: 'com.ridershub.auth',
+      });
+
+      if (credentials?.password) {
+        refreshTokenRef.current = credentials.password;
+        console.log('✅ Refresh token found — attempting session restore');
+
+        // 3. Exchange stored refresh token for a fresh access token.
+        syncApiclientRef(); // needed before calling refresh
+        const restored = await restoreSession(credentials.password);
+        if (!restored) {
+          // Token was invalid/expired (e.g. user logged out on another device,
+          // or server restarted and revoked tokens). This is expected — silently
+          // drop to login screen. Storage was already cleared inside restoreSession.
+          console.log('ℹ️ Session restore failed — showing login screen');
+        }
+      } else {
+        console.log('ℹ️ No stored session — showing login screen');
+      }
     } catch (err) {
       console.error('Failed to initialize auth:', err);
+    } finally {
+      syncApiclientRef();
       setReady(true);
+      console.log('✅ Auth initialization complete');
     }
   };
 
-  /**
-   * Save auth tokens after login
-   * - Access token: in memory only (tokenRef + setToken)
-   * - Refresh token: in Keychain (encrypted)
-   * - Username: in AsyncStorage (not sensitive)
-   */
-  const saveAuth = async (newAccessToken, newRefreshToken, newUsername) => {
+  // Silently exchange the stored refresh token for a new access token.
+  // Returns true on success, false on failure (token invalid/expired).
+  const restoreSession = async refreshToken => {
     try {
-      console.log('💾 Saving auth tokens...');
-
-      // 1. Store refresh token in Keychain (encrypted)
-      await Keychain.setGenericPassword('userToken', newRefreshToken, {
-        accessibilityLevel: Keychain.ACCESSIBLE_WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-        service: 'com.ridershub.auth', // ✅ MUST match initializeAuth
+      const response = await fetch(`${API_BASE_URL}/riders/refresh`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({refreshToken}),
       });
 
-      // 2. Store username in AsyncStorage (not sensitive)
-      await AsyncStorage.setItem('username', newUsername);
+      if (!response.ok) {
+        // 401 here is expected when the user previously logged out — the server
+        // already invalidated the token. Clear stale Keychain/storage silently.
+        console.log(
+          `ℹ️ Session restore: server rejected token (${response.status}) — clearing stale credentials`,
+        );
+        await _clearStorage();
+        return false;
+      }
 
-      // 3. Keep access token in memory only
+      const data = await response.json();
+      tokenRef.current = data.accessToken;
+      refreshTokenRef.current = data.refreshToken;
+      syncApiclientRef();
+      setToken(data.accessToken);
+
+      // Persist the rotated refresh token
+      await Keychain.setGenericPassword('userToken', data.refreshToken, {
+        accessibilityLevel: Keychain.ACCESSIBLE_WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+        service: 'com.ridershub.auth',
+      });
+
+      console.log('✅ Session restored successfully');
+      return true;
+    } catch (err) {
+      console.error('❌ Session restore network error:', err);
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    initializeAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const saveAuth = async (newAccessToken, newRefreshToken, newUsername) => {
+    try {
+      console.log('💾 Saving auth tokens for user:', newUsername);
+
       tokenRef.current = newAccessToken;
+      refreshTokenRef.current = newRefreshToken;
+      usernameRef.current = newUsername;
+
+      syncApiclientRef();
       setToken(newAccessToken);
       setUsername(newUsername);
-      refreshTokenRef.current = newRefreshToken;
 
-      console.log('✅ Auth tokens saved successfully');
-      console.log('🔐 Access token available:', !!newAccessToken);
+      await _clearStorage();
 
+      await Keychain.setGenericPassword('userToken', newRefreshToken, {
+        accessibilityLevel: Keychain.ACCESSIBLE_WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+        service: 'com.ridershub.auth',
+      });
+
+      await AsyncStorage.setItem('username', newUsername);
+
+      console.log('✅ Auth saved for:', newUsername);
       return newAccessToken;
     } catch (error) {
       console.error('Failed to save auth:', error);
@@ -85,21 +143,15 @@ export const AuthProvider = ({children}) => {
     }
   };
 
-  /**
-   * Refresh access token using refresh token
-   * Called automatically on 401 response
-   */
   const refreshAccessToken = async () => {
     if (isRefreshing || !refreshTokenRef.current) {
-      console.warn(
-        '⚠️  Cannot refresh: already refreshing or no refresh token',
-      );
+      console.warn('⚠️ Cannot refresh: already refreshing or no refresh token');
       return null;
     }
 
     setIsRefreshing(true);
     try {
-      console.log('🔄 Attempting to refresh access token...');
+      console.log('🔄 Refreshing access token...');
 
       const response = await fetch(`${API_BASE_URL}/riders/refresh`, {
         method: 'POST',
@@ -109,101 +161,105 @@ export const AuthProvider = ({children}) => {
 
       if (!response.ok) {
         console.error('❌ Token refresh failed:', response.status);
-        // Refresh failed — logout
         await clearAuth();
         return null;
       }
 
       const data = await response.json();
       tokenRef.current = data.accessToken;
-      setToken(data.accessToken);
       refreshTokenRef.current = data.refreshToken;
+      syncApiclientRef();
+      setToken(data.accessToken);
 
-      // Save new refresh token to Keychain
       await Keychain.setGenericPassword('userToken', data.refreshToken, {
         accessibilityLevel: Keychain.ACCESSIBLE_WHEN_UNLOCKED_THIS_DEVICE_ONLY,
         service: 'com.ridershub.auth',
       });
 
-      console.log('✅ [Auth] Access token refreshed successfully');
+      console.log('✅ Access token refreshed');
       return data.accessToken;
     } catch (error) {
-      console.error('❌ [Auth] Token refresh failed:', error);
+      console.error('❌ Token refresh error:', error);
       await clearAuth();
       return null;
     } finally {
       setIsRefreshing(false);
     }
   };
+  refreshAccessTokenRef.current = refreshAccessToken;
 
-  /**
-   * Clear all tokens on logout
-   */
-  const clearAuth = async () => {
+  // ─── Internal helper: wipe persisted credentials only (no state reset) ───
+  const _clearStorage = async () => {
     try {
-      // Remove refresh token from Keychain
       await Keychain.resetGenericPassword({service: 'com.ridershub.auth'});
-      // Remove username from AsyncStorage
-      await AsyncStorage.removeItem('username');
-      console.log('✅ Auth cleared');
-    } catch (error) {
-      console.error('Failed to clear auth:', error);
+    } catch (err) {
+      console.warn('⚠️ Keychain reset warning:', err.message);
     }
+    try {
+      await AsyncStorage.removeItem('username');
+    } catch (err) {
+      console.warn('⚠️ AsyncStorage remove warning:', err.message);
+    }
+  };
 
+  // ─── Public: reset all auth state + persisted storage ───
+  const clearAuth = async () => {
     tokenRef.current = null;
+    refreshTokenRef.current = null;
+    usernameRef.current = null;
+    syncApiclientRef();
     setToken(null);
     setUsername(null);
-    refreshTokenRef.current = null;
+    await _clearStorage();
+    console.log('✅ Auth cleared');
   };
 
-  /**
-   * Logout: Notify backend to revoke tokens
-   */
   const logout = async () => {
-    try {
-      if (tokenRef.current) {
-        // Notify backend to blacklist token and revoke refresh tokens
-        await fetch(`${API_BASE_URL}/riders/logout`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${tokenRef.current}`,
-            'Content-Type': 'application/json',
-          },
-        });
-      }
-    } catch (error) {
-      console.error('Error notifying backend of logout:', error);
-    } finally {
-      // Clear tokens locally regardless
-      await clearAuth();
+    // Clear storage FIRST so that even if the server call fails or the app
+    // is killed mid-flight, stale tokens are never reused on next cold start.
+    const currentToken = tokenRef.current;
+    await clearAuth();
+
+    // Best-effort server notification — fire and forget
+    if (currentToken) {
+      fetch(`${API_BASE_URL}/riders/logout`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${currentToken}`,
+          'Content-Type': 'application/json',
+        },
+      }).catch(err => {
+        console.warn(
+          '⚠️ Logout notification to server failed (non-fatal):',
+          err.message,
+        );
+      });
     }
   };
 
-  // Read token from ref (always returns latest token)
-  const getToken = () => {
-    const currentToken = tokenRef.current;
-    console.log(
-      '🔐 getToken() called, returning:',
-      currentToken ? '✅ Available' : '❌ null',
-    );
-    return currentToken;
+  const getToken = () => tokenRef.current;
+  const getUsername = () => usernameRef.current;
+
+  useEffect(() => {
+    syncApiclientRef();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, ready]);
+
+  const contextValue = {
+    token,
+    username,
+    getUsername,
+    ready,
+    saveAuth,
+    clearAuth,
+    logout,
+    getToken,
+    refreshAccessToken,
+    isRefreshing,
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        token,
-        username,
-        ready,
-        saveAuth,
-        clearAuth,
-        logout,
-        getToken,
-        refreshAccessToken,
-        isRefreshing,
-      }}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 };
 

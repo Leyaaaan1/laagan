@@ -26,6 +26,7 @@ const ParticipantList = ({
   generatedRidesId,
   username,
   currentUsername,
+  navigation,
 }) => {
   const [state, setState] = useState({
     rides: [],
@@ -240,16 +241,30 @@ const ParticipantList = ({
     );
   };
 
+
   const renderParticipantItem = ({item, index}) => {
     const participantName = typeof item === 'object' ? item.username : item;
     const isRideOwner = participantName === username;
+
     return (
-      <View style={modal.participantCard}>
+      <TouchableOpacity
+        onPress={() => {
+          navigation.navigate('RiderProfile', {username: participantName});
+          onClose();
+        }}
+        style={modal.participantCard}
+        activeOpacity={0.7}>
         <View style={modal.participantNumber}>
           <Text style={modal.participantNumberText}>{index + 1}</Text>
         </View>
         <View style={modal.participantInfo}>
-          <Text style={modal.participantName}>{participantName}</Text>
+          <Text
+            style={[
+              modal.participantName,
+              {textDecorationLine: 'underline'}, // ✅ Show it's clickable
+            ]}>
+            {participantName}
+          </Text>
           {isRideOwner && (
             <View style={badges.owner}>
               <FontAwesome name="star" size={10} color="#fbbf24" />
@@ -258,7 +273,7 @@ const ParticipantList = ({
           )}
         </View>
         <FontAwesome name="motorcycle" size={16} color="#666" />
-      </View>
+      </TouchableOpacity>
     );
   };
 

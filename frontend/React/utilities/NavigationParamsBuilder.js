@@ -31,6 +31,7 @@ export const buildRideStep4Params = (rideData, currentUsername) => {
     endingPointName: rideData.endingPointName,
     stopPoints: rideData.stopPoints || [],
 
+
     // Participants
     participants: rideData.participants || [],
 

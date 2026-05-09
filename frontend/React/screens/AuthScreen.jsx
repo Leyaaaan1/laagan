@@ -8,6 +8,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import {loginUser, registerUser} from '../services/authService';
 import inputs from '../styles/base/inputs';
@@ -25,7 +26,6 @@ import {
   PASSWORD_RULES,
   USERNAME_RULES,
 } from '../utilities/validator/Authvalidation';
-
 
 const ValidationChecklist = ({rules, value, touched, isLogin}) => {
   if (isLogin || !touched || value.length === 0) return null;
@@ -58,19 +58,12 @@ const ValidationChecklist = ({rules, value, touched, isLogin}) => {
   );
 };
 
-// ─────────────────────────────────────────────
-// getInputBorderStyle
-// Returns border override based on validation state.
-// ─────────────────────────────────────────────
 const getInputBorderStyle = (rules, value, touched, isLogin) => {
   if (isLogin || !touched || value.length === 0) return null;
   const {allPassed} = evaluateRules(rules, value);
   return allPassed ? authStyle.inputSuccess : authStyle.inputError;
 };
 
-// ─────────────────────────────────────────────
-// AuthForm
-// ─────────────────────────────────────────────
 const AuthForm = ({
   isLogin,
   username,
@@ -83,6 +76,7 @@ const AuthForm = ({
   toggleMode,
   touched,
   setTouched,
+  loading,
 }) => (
   <KeyboardAvoidingView
     style={layout.center}
@@ -114,11 +108,12 @@ const AuthForm = ({
             username,
             touched.username,
             isLogin,
-          ), //
+          ),
         ]}
         autoCapitalize="none"
         autoCorrect={false}
         maxLength={50}
+        editable={!loading}
       />
       <ValidationChecklist
         rules={USERNAME_RULES}
@@ -143,11 +138,12 @@ const AuthForm = ({
             password,
             touched.password,
             isLogin,
-          ), //
+          ),
         ]}
         secureTextEntry
         autoCorrect={false}
         maxLength={128}
+        editable={!loading}
       />
       <ValidationChecklist
         rules={PASSWORD_RULES}
@@ -177,6 +173,7 @@ const AuthForm = ({
           secureTextEntry
           autoCorrect={false}
           maxLength={128}
+          editable={!loading}
         />
         <ValidationChecklist
           rules={CONFIRM_RULES(password)}
@@ -188,11 +185,19 @@ const AuthForm = ({
 
     {/* ── Submit ── */}
     <TouchableOpacity
-      style={[buttons.pill, {width: 280, marginBottom: spacing.sm}]}
-      onPress={handleAuth}>
-      <Text style={[text.white, {fontSize: 16}]}>
-        {isLogin ? 'Login' : 'Register'}
-      </Text>
+      style={[
+        buttons.pill,
+        {width: 280, marginBottom: spacing.sm, opacity: loading ? 0.7 : 1},
+      ]}
+      onPress={handleAuth}
+      disabled={loading}>
+      {loading ? (
+        <ActivityIndicator color="#fff" size="small" />
+      ) : (
+        <Text style={[text.white, {fontSize: 16}]}>
+          {isLogin ? 'Login' : 'Register'}
+        </Text>
+      )}
     </TouchableOpacity>
 
     {isLogin && (
@@ -200,14 +205,16 @@ const AuthForm = ({
         style={[
           buttons.pill,
           {width: 280, marginBottom: spacing.sm, backgroundColor: '#1877F2'},
-        ]}>
+        ]}
+        disabled={loading}>
         <Text style={[text.white, {fontSize: 16}]}>Continue with Facebook</Text>
       </TouchableOpacity>
     )}
 
     <TouchableOpacity
       style={[buttons.ghost, {marginTop: spacing.xs}]}
-      onPress={toggleMode}>
+      onPress={toggleMode}
+      disabled={loading}>
       <Text style={text.muted}>
         {isLogin
           ? "Don't have an account? Register"
@@ -220,14 +227,13 @@ const AuthForm = ({
 // ─────────────────────────────────────────────
 // AuthScreen
 // ─────────────────────────────────────────────
-const AuthScreen = ({navigation}) => {
+const AuthScreen = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // touched tracks whether user has interacted with each field
-  // validation checklist only appears after first focus
   const [touched, setTouched] = useState({
     username: false,
     password: false,
@@ -237,47 +243,57 @@ const AuthScreen = ({navigation}) => {
   const {saveAuth} = useAuth();
 
   const handleAuth = async () => {
-    // Mark all fields as touched so errors show on submit attempt
     setTouched({username: true, password: true, confirmPassword: true});
 
     if (!isFormValid(username, password, confirmPassword, isLogin)) {
-      return; // checklist already shows the issues inline
+      return;
     }
 
+    setLoading(true);
     try {
       const result = isLogin
         ? await loginUser(username.trim(), password)
         : await registerUser(username.trim(), password);
-      // ✅ riderType removed — set via profile edit after registration
 
       if (result.success) {
-        const {accessToken, refreshToken} = result.data;
+        const accessToken = result.data?.accessToken;
+        const refreshToken = result.data?.refreshToken;
 
         if (accessToken && refreshToken) {
+          // saveAuth sets auth.token → AppContent re-renders → AppStack mounts.
+          // No manual navigation.navigate() needed — AuthScreen lives inside
+          // AuthStack which has no RiderPage screen.
           await saveAuth(accessToken, refreshToken, username.trim());
+        } else if (!isLogin) {
+          // Registration succeeded but server didn't issue tokens (no auto-login).
+          // Switch to login mode with the username pre-filled so the user
+          // doesn't have to retype it.
+          setIsLogin(true);
+          setPassword('');
+          setConfirmPassword('');
+          setTouched({
+            username: false,
+            password: false,
+            confirmPassword: false,
+          });
+          Alert.alert(
+            'Account Created',
+            'You can now log in with your new account.',
+          );
         }
-
-        if (isLogin) {
-          Alert.alert('Welcome back!');
-        }
-
-        // ✅ small delay to ensure token is stored before RiderPage fetches
-        setTimeout(() => {
-          if (navigation) {
-            navigation.navigate('RiderPage');
-          }
-        }, 300);
       } else {
-        Alert.alert(
-          'Error',
-          isLogin
+        const errorMessage =
+          result.error ||
+          (isLogin
             ? 'Invalid username or password.'
-            : 'Registration failed. The username may already be taken.',
-        );
+            : 'Registration failed. The username may already be taken.');
+        Alert.alert('Error', errorMessage);
       }
     } catch (error) {
       console.error('Auth error:', error);
-      Alert.alert('Error', 'Please try again later.');
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -305,6 +321,7 @@ const AuthScreen = ({navigation}) => {
         toggleMode={toggleMode}
         touched={touched}
         setTouched={setTouched}
+        loading={loading}
       />
     </View>
   );

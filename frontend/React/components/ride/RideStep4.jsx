@@ -36,6 +36,7 @@ import {
 } from './utilities/RideStepUtils';
 import useJoinRide from './utilities/RideHandler';
 import {useAuth} from '../../context/AuthContext';
+import spacing from '../../styles/tokens/spacing';
 const RideActionButton = ({
   isOwner,
   onJoin,
@@ -128,84 +129,112 @@ const RideActionButton = ({
 // ─────────────────────────────────────────────────────────────────────────────
 // RideHeroCard
 // ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RideHeroCard (Updated)
+// ─────────────────────────────────────────────────────────────────────────────
 const RideHeroCard = ({
-  rideName,
-  date,
-  username,
-  riderType,
-  distance,
-  description,
-  rideDetailsWithCoords,
-  startingPointName,
-  endingPointName,
-}) => (
-  <View style={cards.hero}>
-    <View style={cards.heroHeader}>
-      <View style={{flex: 1}}>
-        <Text style={cards.heroTitle}>{rideName}</Text>
-        <Text style={cards.infoValue} numberOfLines={2}>
-          {formatDate(date)}
-        </Text>
-        <View style={cards.heroMeta}>
-          <FontAwesome name="user-circle" size={14} color="#8c2323" />
-          <Text style={cards.heroMetaText}>
+                        rideName,
+                        date,
+                        username,
+                        riderType,
+                        distance,
+                        description,
+                        rideDetailsWithCoords,
+                        startingPointName,
+                        endingPointName,
+                      }) => {
+  const displayDistance = distance || rideDetailsWithCoords?.distance || '--';
+  const displayStarting =
+    rideDetailsWithCoords?.startingPointName || startingPointName;
+  const displayEnding =
+    rideDetailsWithCoords?.endingPointName || endingPointName;
+
+  return (
+    <View style={cards.heroGlass}>
+      {/* ── Distance Badge (Top Right) ────────────────────────────────────── */}
+      <View style={cards.heroDistanceBadge}>
+        <FontAwesome name="motorcycle" size={14} color="#8c2323" />
+        <Text style={cards.heroDistanceText}>{displayDistance} km</Text>
+      </View>
+
+      {/* ── Title ──────────────────────────────────────────────────────────── */}
+      <Text style={cards.heroTitle}>{rideName}</Text>
+
+      {/* ── Date & Username Chips Row ──────────────────────────────────────── */}
+      <View style={cards.heroChipsRow}>
+        <View style={cards.heroChip}>
+          <FontAwesome name="calendar" size={12} color="#8888" />
+          <Text style={cards.heroChipText}>{formatDate(date)}</Text>
+        </View>
+        <View style={cards.heroChip}>
+          <FontAwesome name="user-circle" size={12} color="#888888" />
+          <Text style={cards.heroChipText}>
             {(username || '').toUpperCase()}
           </Text>
         </View>
       </View>
-      <View style={badges.rideType}>
-        <FontAwesome name={getRideTypeIcon(riderType)} size={20} color="#fff" />
-        <Text style={cards.infoValue}>{distance} km</Text>
+
+      {/* ── Route Indicator ────────────────────────────────────────────────── */}
+      <View style={cards.routeContainer}>
+        {/* Starting Point */}
+        <View style={cards.routePoint}>
+          <View style={cards.routePointStart}>
+            <FontAwesome name="circle" size={14} color="#10b981" />
+          </View>
+          <View style={{flex: 1, marginLeft: spacing.md}}>
+            <Text style={cards.routePointLabel}>From</Text>
+            <Text
+              style={cards.routePointTextLarge}
+              numberOfLines={2}
+              ellipsizeMode="tail">
+              {getLocationDisplayName(displayStarting)}
+            </Text>
+          </View>
+        </View>
+
+        {/* Dotted Connector Line */}
+        <View style={cards.routeDottedConnector}>
+          <View style={cards.routeDot} />
+          <View style={cards.routeDot} />
+          <View style={cards.routeDot} />
+          <View style={cards.routeDot} />
+          <View style={cards.routeDot} />
+        </View>
+
+        {/* Ending Point */}
+        <View style={cards.routePoint}>
+          <View style={cards.routePointEnd}>
+            <FontAwesome name="circle" size={14} color="#ef4444" />
+          </View>
+          <View style={{flex: 1, marginLeft: spacing.md}}>
+            <Text style={cards.routePointLabel}>To</Text>
+            <Text
+              style={cards.routePointTextLarge}
+              numberOfLines={2}
+              ellipsizeMode="tail">
+              {getLocationDisplayName(displayEnding)}
+            </Text>
+          </View>
+        </View>
       </View>
+
+      {/* ── Description Section ────────────────────────────────────────────── */}
+      {description && (
+        <View style={cards.descriptionContainer}>
+          <Text style={cards.descriptionLabel}>Details</Text>
+          <ScrollView
+            scrollEnabled={true}
+            showsVerticalScrollIndicator={true}
+            nestedScrollEnabled={true}
+            style={cards.descriptionBox}>
+            <Text style={cards.descriptionText}>{description}</Text>
+          </ScrollView>
+        </View>
+      )}
     </View>
-
-    {description && (
-      <View style={cards.description}>
-        <Text style={[mapStyles.routePointLabel, {marginLeft: 8}]}>
-          Details
-        </Text>
-        <ScrollView
-          scrollEnabled={true}
-          showsVerticalScrollIndicator={true}
-          nestedScrollEnabled={true}
-          style={{flex: 1}}>
-          <Text style={cards.descriptionText}>{description}</Text>
-        </ScrollView>
-      </View>
-    )}
-
-    <View
-      style={{
-        flexDirection: 'column',
-        width: '100%',
-        alignItems: 'flex-start',
-      }}>
-      <View style={[cards.info, {width: '100%', marginBottom: 8}]}>
-        <Text
-          style={[mapStyles.routePointLabel, {marginLeft: 8, marginBottom: 6}]}>
-          From
-        </Text>
-        <Text style={mapStyles.routePointText}>
-          {getLocationDisplayName(
-            rideDetailsWithCoords?.startingPointName || startingPointName,
-          )}
-        </Text>
-      </View>
-      <View style={[cards.info, {width: '100%'}]}>
-        <Text
-          style={[mapStyles.routePointLabel, {marginLeft: 8, marginBottom: 6}]}>
-          To
-        </Text>
-        <Text style={mapStyles.routePointText}>
-          {getLocationDisplayName(
-            rideDetailsWithCoords?.endingPointName || endingPointName,
-          )}
-        </Text>
-      </View>
-    </View>
-  </View>
-);
-
+  );
+};
 // ─────────────────────────────────────────────────────────────────────────────
 // RideStep4
 // ─────────────────────────────────────────────────────────────────────────────
@@ -592,36 +621,25 @@ const RideStep4 = props => {
               <FontAwesome name="users" size={18} color="#fff" />
               <Text style={buttons.textNav}>Riders</Text>
             </TouchableOpacity>
-
             <View style={header.bottomNavDivider} />
-
-            {isRideStarted && (
-              <>
-                <View style={header.bottomNavDivider} />
-                <TouchableOpacity
-                  style={[
-                    buttons.bottomNav,
-                    {backgroundColor: 'rgba(140, 35, 35, 0.15)'},
-                  ]}
-                  onPress={handleSwipeToMap}>
-                  <FontAwesome name="map" size={18} color="#8c2323" />
-                  <Text style={[buttons.textNav, {color: '#8c2323'}]}>
-                    Map View
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
-
             <TouchableOpacity
               style={buttons.bottomNav}
-              onPress={() =>
+              onPress={() => {
+                console.log(
+                  'Stop Point Navigation - startingPoint:',
+                  startingPoint,
+                  'endingPoint:',
+                  endingPoint,
+                  'stopPoints:',
+                  stopPoints,
+                );
                 navigation.navigate('RideRoutesPage', {
-                  startingPoint: getLocationDisplayName(startingPoint),
-                  endingPoint: getLocationDisplayName(endingPoint),
+                  startingPoint: getLocationDisplayName(startingPointName),
+                  endingPoint: getLocationDisplayName(endingPointName),
                   generatedRidesId,
                   stopPoints,
-                })
-              }>
+                });
+              }}>
               <FontAwesome name="map-marker" size={18} color="#fff" />
               <Text style={buttons.textNav}>Stop Point</Text>
             </TouchableOpacity>
@@ -636,6 +654,7 @@ const RideStep4 = props => {
         generatedRidesId={generatedRidesId}
         username={username}
         currentUsername={resolvedCurrentUsername}
+        navigation={navigation}
       />
     </View>
   );

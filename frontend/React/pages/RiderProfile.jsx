@@ -1,4 +1,3 @@
-
 import React, {useEffect, useState, useCallback} from 'react';
 import {
   View,
@@ -13,8 +12,12 @@ import {
   Modal,
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import {getMyProfile} from '../services/profileService';
-import {updateProfile, addRiderType, removeRiderType} from '../services/profileService';
+import {getMyProfile, getProfileByUsername} from '../services/profileService';
+import {
+  updateProfile,
+  addRiderType,
+  removeRiderType,
+} from '../services/profileService';
 import {authService} from '../services/authService';
 import {buildRideStep4Params} from '../utilities/NavigationParamsBuilder';
 import profileStyles from '../styles/screens/Profilestyles';
@@ -35,13 +38,16 @@ function Avatar({profilePictureUrl, displayName}) {
   const initial = displayName ? String(displayName)[0].toUpperCase() : '?';
   if (profilePictureUrl) {
     return (
-      <Image        source={{uri: String(profilePictureUrl)}}        style={profileStyles.avatarImage}      />
+      <Image
+        source={{uri: String(profilePictureUrl)}}
+        style={profileStyles.avatarImage}
+      />
     );
   }
   return <Text style={profileStyles.avatarInitial}>{initial}</Text>;
 }
 
-function RiderTypeBadges({riderTypes, onRemove}) {
+function RiderTypeBadges({riderTypes, onRemove, isEditable}) {
   if (!Array.isArray(riderTypes) || riderTypes.length === 0) return null;
   return (
     <View style={profileStyles.badgeRow}>
@@ -49,8 +55,10 @@ function RiderTypeBadges({riderTypes, onRemove}) {
         <View key={String(type) + idx} style={profileStyles.badge}>
           <View style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
             <Text style={profileStyles.badgeText}>{s(type, 'Unknown')}</Text>
-            {onRemove && (
-              <TouchableOpacity                onPress={() => onRemove(type)}                style={{padding: 2}}>
+            {isEditable && onRemove && (
+              <TouchableOpacity
+                onPress={() => onRemove(type)}
+                style={{padding: 2}}>
                 <FontAwesome name="times" size={10} color={colors.white} />
               </TouchableOpacity>
             )}
@@ -64,14 +72,13 @@ function RiderTypeBadges({riderTypes, onRemove}) {
 function SectionCard({title, children, right}) {
   return (
     <View style={profileStyles.sectionCard}>
-      <View        style={[
-        profileStyles.sectionHeader,
-        {justifyContent: 'space-between'},
-      ]}>
+      <View
+        style={[
+          profileStyles.sectionHeader,
+          {justifyContent: 'space-between'},
+        ]}>
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
-          <View            style={[
-            profileStyles.sectionIndicator,
-          ]}          />
+          <View style={[profileStyles.sectionIndicator]} />
           <Text style={profileStyles.sectionTitle}>{s(title)}</Text>
         </View>
         {right || null}
@@ -83,6 +90,10 @@ function SectionCard({title, children, right}) {
 
 export default function RiderProfile({route, navigation}) {
   const {username: authUsername, token, logout} = useAuth();
+
+  // ✅ Get the username from route params OR use your own
+  const viewingUsername = route?.params?.username ?? authUsername;
+  const isOwnProfile = viewingUsername === authUsername;
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -105,7 +116,15 @@ export default function RiderProfile({route, navigation}) {
   const loadProfile = useCallback(async () => {
     try {
       setError(null);
-      const result = await getMyProfile();
+
+      // ✅ Use different functions based on whose profile is being viewed
+      let result;
+      if (isOwnProfile) {
+        result = await getMyProfile();
+      } else {
+        result = await getProfileByUsername(viewingUsername);
+      }
+
       if (result?.success) {
         setProfile(result.data ?? null);
         setEditValues({
@@ -123,7 +142,7 @@ export default function RiderProfile({route, navigation}) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [isOwnProfile, viewingUsername]);
 
   useEffect(() => {
     loadProfile();
@@ -179,8 +198,8 @@ export default function RiderProfile({route, navigation}) {
 
       if (result?.success) {
         setProfile(result.data);
-        setEditValues({...editValues, riderTypes: ''});
-        Alert.alert('Success', `${typeName} added to your bikes!`);
+        closeEditModal();
+        Alert.alert('Success', 'Bike type added successfully!');
       } else {
         Alert.alert('Error', result?.message || 'Failed to add bike type');
       }
@@ -191,41 +210,22 @@ export default function RiderProfile({route, navigation}) {
     }
   };
 
-  const handleRemoveRiderType = async typeName => {
-    Alert.alert('Remove Bike', `Remove ${typeName} from your bikes?`, [
-      {text: 'Cancel', style: 'cancel'},
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: async () => {
-          setIsRemovingType(true);
-          try {
-            const result = await removeRiderType(typeName);
+  const handleRemoveRiderType = async type => {
+    setIsRemovingType(true);
+    try {
+      const result = await removeRiderType(type);
 
-            if (result?.success) {
-              setProfile(result.data);
-              Alert.alert('Success', `${typeName} removed from your bikes!`);
-            } else {
-              Alert.alert(
-                'Error',
-                result?.message || 'Failed to remove bike type',
-              );
-            }
-          } catch (err) {
-            Alert.alert('Error', err.message || 'Failed to remove bike type');
-          } finally {
-            setIsRemovingType(false);
-          }
-        },
-      },
-    ]);
-  };
-
-  const handleRideSelect = ride => {
-    if (!ride) return;
-    const loggedInUsername = s(profile?.username, s(authUsername));
-    const params = buildRideStep4Params(ride, loggedInUsername);
-    navigation.navigate('RideStep4', params);
+      if (result?.success) {
+        setProfile(result.data);
+        Alert.alert('Success', 'Bike type removed successfully!');
+      } else {
+        Alert.alert('Error', result?.message || 'Failed to remove bike type');
+      }
+    } catch (err) {
+      Alert.alert('Error', err.message || 'Failed to remove bike type');
+    } finally {
+      setIsRemovingType(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -233,17 +233,16 @@ export default function RiderProfile({route, navigation}) {
       {text: 'Cancel', style: 'cancel'},
       {
         text: 'Logout',
-        style: 'destructive',
         onPress: async () => {
           setLoggingOut(true);
           try {
-            if (token) {
-              await authService.logout(token);
-            }
             await logout();
-            navigation.navigate('AuthScreen');
+            navigation.reset({
+              index: 0,
+              routes: [{name: 'AuthScreen'}],
+            });
           } catch (err) {
-            Alert.alert('Error', 'Logout failed');
+            Alert.alert('Error', 'Failed to logout');
             setLoggingOut(false);
           }
         },
@@ -253,7 +252,11 @@ export default function RiderProfile({route, navigation}) {
 
   if (loading) {
     return (
-      <View style={profileStyles.loadingContainer}>
+      <View
+        style={[
+          profileStyles.screen,
+          {justifyContent: 'center', alignItems: 'center'},
+        ]}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
@@ -261,13 +264,16 @@ export default function RiderProfile({route, navigation}) {
 
   if (error) {
     return (
-      <View style={profileStyles.errorContainer}>
-        <FontAwesome          name="exclamation-circle"          size={40}          color={colors.error}          style={{marginBottom: spacing.md}}        />
-        <Text style={profileStyles.errorText}>
-          {s(error, 'Something went wrong.')}
-        </Text>
-        <TouchableOpacity          onPress={loadProfile}          style={[buttons.primary, {marginTop: spacing.md}]}>
-          <Text style={buttons.textPrimary}>Retry</Text>
+      <View
+        style={[
+          profileStyles.screen,
+          {justifyContent: 'center', alignItems: 'center', padding: spacing.lg},
+        ]}>
+        <Text style={{color: colors.white, textAlign: 'center'}}>{error}</Text>
+        <TouchableOpacity
+          onPress={onRefresh}
+          style={[buttons.pill, {marginTop: spacing.lg}]}>
+          <Text style={{color: colors.white}}>Retry</Text>
         </TouchableOpacity>
       </View>
     );
@@ -278,213 +284,270 @@ export default function RiderProfile({route, navigation}) {
   const bioStr = s(profile?.bio, '');
   const memberSince = profile?.createdAt
     ? new Date(profile.createdAt).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
     : null;
 
   return (
     <View style={profileStyles.screen}>
-      <ScrollView        contentContainerStyle={profileStyles.scrollContent}        refreshControl={
-        <RefreshControl            refreshing={refreshing}            onRefresh={onRefresh}            tintColor={colors.primary}          />
-      }>
+      <ScrollView
+        contentContainerStyle={profileStyles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }>
         <View style={profileStyles.heroBanner} />
 
         <View style={profileStyles.avatarWrapper}>
           <View style={profileStyles.avatarCircle}>
-            <Avatar              profilePictureUrl={profile?.profilePictureUrl ?? null}              displayName={displayName}            />
+            <Avatar
+              profilePictureUrl={profile?.profilePictureUrl ?? null}
+              displayName={displayName}
+            />
           </View>
         </View>
 
         <View style={profileStyles.profileHeaderCard}>
-          <View            style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: spacing.sm,
-          }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: spacing.sm,
+            }}>
             <Text style={profileStyles.displayName} numberOfLines={1}>
               {displayName}
             </Text>
-            <TouchableOpacity              onPress={() => openEditModal('displayName')}              style={[buttons.ghost, {marginLeft: spacing.sm}]}>
-              <FontAwesome name="edit" size={16} color={colors.white} />
-            </TouchableOpacity>
+            {/* ✅ Only show edit button for own profile */}
+            {isOwnProfile && (
+              <TouchableOpacity
+                onPress={() => openEditModal('displayName')}
+                style={[buttons.ghost, {marginLeft: spacing.sm}]}>
+                <FontAwesome name="edit" size={16} color={colors.white} />
+              </TouchableOpacity>
+            )}
           </View>
           {usernameStr.length > 0 && (
             <Text style={profileStyles.username}>{'@' + usernameStr}</Text>
           )}
         </View>
 
-        <SectionCard title="About">
-          <View            style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            paddingHorizontal: spacing.md,
-            paddingVertical: spacing.sm,
-          }}>
-            <Text              style={{
-              flex: 1,
-              ...(bioStr ? profileStyles.bioText : profileStyles.bioEmpty),
-            }}>
-              {bioStr || 'No bio yet.'}
-            </Text>
-            <TouchableOpacity              onPress={() => openEditModal('bio')}              style={[buttons.ghost, {marginLeft: spacing.md}]}>
-              <FontAwesome name="edit" size={16} color={colors.white} />
-            </TouchableOpacity>
-          </View>
-        </SectionCard>
-
-        {/* ── Bike Types Section ── */}
-        <SectionCard          title="My Bikes"          right={
-          <TouchableOpacity              onPress={() => openEditModal('riderTypes')}              style={[buttons.ghost, {marginLeft: spacing.sm}]}>
-            <FontAwesome name="plus" size={16} color={colors.primary} />
-          </TouchableOpacity>
-        }>
-          <View style={{paddingHorizontal: spacing.md, paddingVertical: spacing.sm}}>
-            {profile?.riderTypes && profile.riderTypes.length > 0 ? (
-              <RiderTypeBadges                riderTypes={profile.riderTypes}                onRemove={handleRemoveRiderType}              />
-            ) : (
-              <Text style={profileStyles.bioEmpty}>No bikes added yet.</Text>
-            )}
-          </View>
-        </SectionCard>
-
-        {memberSince !== null && (
-          <Text style={profileStyles.timestamp}>
-            {'Member since ' + memberSince}
-          </Text>
+        {/* ✅ Only show About section and edit for own profile */}
+        {isOwnProfile && (
+          <SectionCard
+            title="About"
+            right={
+              <TouchableOpacity
+                onPress={() => openEditModal('bio')}
+                style={[buttons.ghost, {marginLeft: spacing.sm}]}>
+                <FontAwesome name="edit" size={14} color={colors.white} />
+              </TouchableOpacity>
+            }>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                paddingHorizontal: spacing.md,
+                paddingVertical: spacing.sm,
+              }}>
+              <Text
+                style={{
+                  flex: 1,
+                  color: colors.white,
+                  fontSize: fontSize.body,
+                  lineHeight: 20,
+                }}>
+                {bioStr || 'No bio yet'}
+              </Text>
+            </View>
+          </SectionCard>
         )}
 
-        <SectionCard          title="My Rides"          right={
-          <SearchHeader username={usernameStr} navigation={navigation} />
-        }>
-          <ProfileList            currentUsername={usernameStr}            onRideSelect={handleRideSelect}            pageSize={5}          />
+        {/* ✅ Show About readonly for other profiles */}
+        {!isOwnProfile && bioStr && (
+          <SectionCard title="About">
+            <View
+              style={{
+                paddingHorizontal: spacing.md,
+                paddingVertical: spacing.sm,
+              }}>
+              <Text style={{color: colors.white, fontSize: fontSize.body}}>
+                {bioStr}
+              </Text>
+            </View>
+          </SectionCard>
+        )}
+
+        <SectionCard title="Bike Types">
+          <View
+            style={{
+              paddingHorizontal: spacing.md,
+              paddingVertical: spacing.sm,
+            }}>
+            <RiderTypeBadges
+              riderTypes={profile?.riderTypes ?? []}
+              onRemove={isOwnProfile ? handleRemoveRiderType : null}
+              isEditable={isOwnProfile}
+            />
+            {/* ✅ Only show add button for own profile */}
+            {isOwnProfile && (
+              <TouchableOpacity
+                onPress={() => openEditModal('riderTypes')}
+                style={[
+                  buttons.ghost,
+                  {marginTop: spacing.md, alignSelf: 'flex-start'},
+                ]}>
+                <FontAwesome
+                  name="plus"
+                  size={14}
+                  color={colors.primary}
+                  style={{marginRight: 4}}
+                />
+                <Text style={{color: colors.primary}}>Add Bike Type</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </SectionCard>
 
-        <TouchableOpacity          onPress={handleLogout}          disabled={loggingOut}          style={[
-          buttons.primary,
-          {
-            marginHorizontal: spacing.md,
-            marginVertical: spacing.md,
-            backgroundColor: colors.error,
-            opacity: loggingOut ? 0.6 : 1,
-          },
-        ]}>
-          {loggingOut ? (
-            <ActivityIndicator color={colors.white} size="small" />
-          ) : (
-            <View              style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: spacing.sm,
-            }}>
-              <FontAwesome name="sign-out" size={16} color={colors.white} />
-              <Text style={buttons.textPrimary}>Logout</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        <View style={{height: spacing.lg * 2}} />
+        {/* ✅ Only show member info and logout for own profile */}
+        {isOwnProfile && (
+          <>
+            <SectionCard title="Account">
+              <View
+                style={{
+                  paddingHorizontal: spacing.md,
+                  paddingVertical: spacing.sm,
+                }}>
+                {memberSince && (
+                  <Text style={{color: colors.white, fontSize: fontSize.body}}>
+                    Member since {memberSince}
+                  </Text>
+                )}
+                <TouchableOpacity
+                  onPress={handleLogout}
+                  disabled={loggingOut}
+                  style={[
+                    buttons.pill,
+                    {
+                      marginTop: spacing.lg,
+                      backgroundColor: '#dc2626',
+                      opacity: loggingOut ? 0.6 : 1,
+                    },
+                  ]}>
+                  {loggingOut ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={{color: colors.white}}>Logout</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </SectionCard>
+          </>
+        )}
       </ScrollView>
 
-      {/* ─────────────────────────────────────────────────────────────────
-          EDIT MODAL
-          ───────────────────────────────────────────────────────────────── */}
-      <Modal        visible={editModal.visible}        transparent        animationType="slide"        onRequestClose={closeEditModal}>
-        <View          style={{
-          flex: 1,
-          backgroundColor: colors.overlay,
-          justifyContent: 'flex-end',
-        }}>
-          <View            style={{
-            backgroundColor: colors.surface,
-            borderTopLeftRadius: 16,
-            borderTopRightRadius: 16,
-            paddingHorizontal: spacing.md,
-            paddingVertical: spacing.lg,
-            paddingBottom: spacing.xl,
-            borderTopWidth: 1,
-            borderTopColor: colors.border,
-          }}>
-            <View              style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: spacing.lg,
-            }}>
-              <Text                style={{
-                fontSize: fontSize.lg,
-                fontWeight: fontWeight.bold,
-                color: colors.textPrimary,
-              }}>
-                Edit {editModal.field}
-              </Text>
-              <TouchableOpacity onPress={closeEditModal}>
-                <FontAwesome                  name="close"                  size={20}                  color={colors.textPrimary}                />
-              </TouchableOpacity>
-            </View>
-
-            {editModal.field === 'bio' ? (
-              <TextInput                style={[inputs.multiline, {marginBottom: spacing.lg}]}                placeholder={`Enter your ${editModal.field}...`}                placeholderTextColor={colors.textMuted}                multiline                value={editValues[editModal.field]}                onChangeText={text => {
-                setEditValues({...editValues, [editModal.field]: text});
-              }}              />
-            ) : editModal.field === 'riderTypes' ? (
-              <View style={{marginBottom: spacing.lg}}>
-                <RideTypeSelector                  selectedType={editValues.riderTypes}                  onSelectType={type => {
-                  setEditValues({...editValues, riderTypes: type});
-                }}                />
-              </View>
-            ) : (
-              <TextInput                style={[inputs.light, {marginBottom: spacing.lg}]}                placeholder={`Enter your ${editModal.field}...`}                placeholderTextColor={colors.textMuted}                value={editValues[editModal.field]}                onChangeText={text => {
-                setEditValues({...editValues, [editModal.field]: text});
-              }}              />
-            )}
-
-            <View style={{flexDirection: 'row', gap: spacing.md}}>
-              <TouchableOpacity                onPress={closeEditModal}                style={[buttons.outline, {flex: 1}]}>
-                <Text style={[buttons.textPrimary, {color: colors.primary}]}>
-                  Cancel
+      {/* Edit Modal - only shown for own profile */}
+      {isOwnProfile && (
+        <Modal
+          visible={editModal.visible}
+          transparent
+          animationType="slide"
+          onRequestClose={closeEditModal}>
+          <View style={profileStyles.modalOverlay}>
+            <View style={profileStyles.modalContent}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: spacing.lg,
+                }}>
+                <Text
+                  style={{
+                    color: colors.white,
+                    fontSize: 18,
+                    fontWeight: '600',
+                  }}>
+                  Edit {editModal.field}
                 </Text>
-              </TouchableOpacity>
+                <TouchableOpacity onPress={closeEditModal}>
+                  <FontAwesome name="times" size={20} color={colors.white} />
+                </TouchableOpacity>
+              </View>
 
-              <TouchableOpacity                onPress={
-                editModal.field === 'riderTypes'
-                  ? handleAddRiderType
-                  : handleSaveEdit
-              }                disabled={
-                editModal.field === 'riderTypes' ? isAddingType : isSaving
-              }                style={[
-                buttons.primary,
-                {
-                  flex: 1,
-                  opacity:
-                    editModal.field === 'riderTypes'
-                      ? isAddingType
-                        ? 0.6
-                        : 1
-                      : isSaving
-                        ? 0.6
-                        : 1,
-                },
-              ]}>
+              {editModal.field === 'riderTypes' ? (
+                <RideTypeSelector
+                  selectedTypes={profile?.riderTypes ?? []}
+                  onSelectType={type => {
+                    setEditValues({...editValues, riderTypes: type});
+                  }}
+                />
+              ) : (
+                <TextInput
+                  style={inputs.auth}
+                  placeholder={`Enter ${editModal.field}`}
+                  placeholderTextColor="#999"
+                  value={editValues[editModal.field]}
+                  onChangeText={val =>
+                    setEditValues({...editValues, [editModal.field]: val})
+                  }
+                  multiline={editModal.field === 'bio'}
+                  numberOfLines={editModal.field === 'bio' ? 4 : 1}
+                />
+              )}
+
+              <View
+                style={{
+                  flexDirection: 'row',
+                  gap: spacing.md,
+                  marginTop: spacing.lg,
+                }}>
+                <TouchableOpacity
+                  onPress={closeEditModal}
+                  style={[buttons.ghost, {flex: 1}]}>
+                  <Text style={{color: colors.white}}>Cancel</Text>
+                </TouchableOpacity>
+
                 {editModal.field === 'riderTypes' ? (
-                  isAddingType ? (
-                    <ActivityIndicator color={colors.white} size="small" />
-                  ) : (
-                    <Text style={buttons.textPrimary}>Add Bike</Text>
-                  )
-                ) : isSaving ? (
-                  <ActivityIndicator color={colors.white} size="small" />
+                  <TouchableOpacity
+                    onPress={handleAddRiderType}
+                    disabled={isAddingType}
+                    style={[
+                      buttons.pill,
+                      {flex: 1, opacity: isAddingType ? 0.6 : 1},
+                    ]}>
+                    {isAddingType ? (
+                      <ActivityIndicator color="#fff" size="small" />
+                    ) : (
+                      <Text style={{color: colors.white}}>Add Type</Text>
+                    )}
+                  </TouchableOpacity>
                 ) : (
-                  <Text style={buttons.textPrimary}>Save</Text>
+                  <TouchableOpacity
+                    onPress={handleSaveEdit}
+                    disabled={isSaving}
+                    style={[
+                      buttons.pill,
+                      {flex: 1, opacity: isSaving ? 0.6 : 1},
+                    ]}>
+                    {isSaving ? (
+                      <ActivityIndicator color="#fff" size="small" />
+                    ) : (
+                      <Text style={{color: colors.white}}>Save</Text>
+                    )}
+                  </TouchableOpacity>
                 )}
-              </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      )}
     </View>
   );
 }

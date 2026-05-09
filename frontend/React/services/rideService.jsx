@@ -77,7 +77,7 @@ export const fetchRideMapImage = async (generatedRidesId ) => {
 };
 
 export const getRideDetails = async (generatedRidesId, ) => {
-  const response = await api.get(`/riders/${generatedRidesId}`);
+  const response = await api.get(`/riders/details/${generatedRidesId}`);
   if (!response.ok) {
     if (response.status === 404) throw new Error('No ride found');
     throw new Error(`Failed to fetch ride details: ${response.status}`);
