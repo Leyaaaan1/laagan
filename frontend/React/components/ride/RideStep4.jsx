@@ -243,7 +243,7 @@ const RideStep4 = props => {
   const {username: authUsername} = useAuth();
 
   const routeParams = props.route?.params || {};
-  const merged = {...routeParams, ...props};
+  const merged = {...props, ...routeParams};
   const {
     generatedRidesId,
     rideName,

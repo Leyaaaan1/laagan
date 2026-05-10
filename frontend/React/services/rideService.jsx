@@ -1,5 +1,6 @@
 import {api} from './Apiclient';
 import {routeCache} from './cache/routeCache';
+import {ridesListCache} from './cache/ridesListcache';
 
 export const searchLocation = async (query) => {
     const response = await api.get(
@@ -92,22 +93,40 @@ export const getRideDetails = async (generatedRidesId, ) => {
   }
 };
 
-export const fetchRides = async ( page = 0, size = 10) => {
-  const response = await api.get(
-    `/riders/rides?page=${page}&size=${size}`
-  );
+export const fetchRides = async (page = 0, size = 10) => {
+  const cached = await ridesListCache.get(page, size, 'all');
+  if (cached) {
+    console.log(`[fetchRides] Cache hit — page ${page}`);
+    return cached;
+  }
+
+  const response = await api.get(`/riders/rides?page=${page}&size=${size}`);
   if (!response.ok)
     throw new Error(`Failed to fetch rides: ${response.status}`);
-  return response.json();
+
+  const data = await response.json();
+  console.log('[fetchRides] data:', JSON.stringify(data, null, 2));
+
+  await ridesListCache.save(page, size, 'all', data);
+  return data;
 };
 
-export const fetchMyRides = async ( page = 0, size = 10) => {
-  const response = await api.get(
-    `/riders/my-rides?page=${page}&size=${size}`
-  );
+export const fetchMyRides = async (page = 0, size = 10) => {
+  // My-rides are user-specific so cached separately under mode 'my'
+  const cached = await ridesListCache.get(page, size, 'my');
+  if (cached) {
+    console.log(`[fetchMyRides] Cache hit — page ${page}`);
+    return cached;
+  }
+
+  const response = await api.get(`/riders/my-rides?page=${page}&size=${size}`);
   if (!response.ok)
     throw new Error(`Failed to fetch my rides: ${response.status}`);
-  return response.json();
+
+  const data = await response.json();
+  await ridesListCache.save(page, size, 'my', data);
+
+  return data;
 };
 
 

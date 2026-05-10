@@ -15,7 +15,7 @@ import HomeScreen from './React/pages/HomeScreen';
 
 // Describes what useAuth() returns. Defined here because AuthContext is a
 // .js file and TypeScript cannot infer its return type automatically.
-interface AuthContextValue {
+interface AuthContextValue {  
   token: string | null;
   ready: boolean;
 }

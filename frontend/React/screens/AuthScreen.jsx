@@ -10,7 +10,11 @@ import {
   View,
   ActivityIndicator,
 } from 'react-native';
-import {loginUser, registerUser} from '../services/authService';
+import {
+  loginUser,
+  loginWithFacebook,
+  registerUser,
+} from '../services/authService';
 import inputs from '../styles/base/inputs';
 import buttons from '../styles/base/buttons';
 import text from '../styles/base/text';
@@ -77,6 +81,7 @@ const AuthForm = ({
   touched,
   setTouched,
   loading,
+  handleFacebookLogin,
 }) => (
   <KeyboardAvoidingView
     style={layout.center}
@@ -206,6 +211,7 @@ const AuthForm = ({
           buttons.pill,
           {width: 280, marginBottom: spacing.sm, backgroundColor: '#1877F2'},
         ]}
+        onPress={handleFacebookLogin} // ← was missing onPress
         disabled={loading}>
         <Text style={[text.white, {fontSize: 16}]}>Continue with Facebook</Text>
       </TouchableOpacity>
@@ -241,6 +247,8 @@ const AuthScreen = () => {
   });
 
   const {saveAuth} = useAuth();
+
+
 
   const handleAuth = async () => {
     setTouched({username: true, password: true, confirmPassword: true});
@@ -297,6 +305,29 @@ const AuthScreen = () => {
     }
   };
 
+
+  const handleFacebookLogin = async () => {
+    setLoading(true);
+    try {
+      const result = await loginWithFacebook();
+      if (result.success) {
+        const {accessToken, refreshToken, username: fbUsername} = result.data;
+        // ✅ Use the real username returned from the server, not a hardcoded string
+        await saveAuth(
+          accessToken,
+          refreshToken,
+          fbUsername ?? 'facebook_user',
+        );
+      } else {
+        Alert.alert('Error', result.error);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Facebook login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const toggleMode = () => {
     setIsLogin(prev => !prev);
     setUsername('');
@@ -322,6 +353,7 @@ const AuthScreen = () => {
         touched={touched}
         setTouched={setTouched}
         loading={loading}
+        handleFacebookLogin={handleFacebookLogin}
       />
     </View>
   );

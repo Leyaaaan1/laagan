@@ -152,7 +152,7 @@ public class RiderController {
                 return authResponse;
             }
 
-            Page<RideSummaryDTO> rides = ridesUtil.getPaginatedRides(page, size);  // ← RideSummaryDTO
+            Page<RideSummaryDTO> rides = ridesUtil.getPaginatedRides(page, size); // ← Page is fine
             return ResponseEntity.ok(rides);
         } catch (Exception e) {
             e.printStackTrace();
