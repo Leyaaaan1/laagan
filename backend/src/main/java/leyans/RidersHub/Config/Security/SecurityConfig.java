@@ -2,7 +2,6 @@ package leyans.RidersHub.Config.Security;
 
 import leyans.RidersHub.Config.JWT.JwtFilter;
 import leyans.RidersHub.Service.UserDetailsManager;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,15 +19,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-// ─────────────────────────────────────────────────────────────────────────────
-// ADDED: @EnableMethodSecurity enables @PreAuthorize / @PostAuthorize on
-//        individual controller methods. Without this, @PreAuthorize annotations
-//        are silently ignored even if you add them.
-// ─────────────────────────────────────────────────────────────────────────────
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Autowired
     private final JwtFilter jwtFilter;
 
     public SecurityConfig(JwtFilter jwtFilter) {
@@ -39,16 +32,16 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
                 .authorizeHttpRequests(auth -> auth
-
-                        // Public endpoints — no token required
-                        .requestMatchers("/riders/login", "/riders/register", "/riders/refresh")
-                        .permitAll()
-
-                        // All authenticated riders can access all app endpoints.
-                        // Role-based restrictions can be added later via
-                        // @PreAuthorize on individual controller methods.
+                        .requestMatchers(
+                                "/riders/login",
+                                "/riders/register",
+                                "/riders/refresh",
+                                "/riders/facebook-login"  // ← new SDK endpoint, no OAuth2 flow
+                        ).permitAll()
                         .requestMatchers(
                                 "/rides/*/start",
                                 "/riders/rider-type",
@@ -73,12 +66,14 @@ public class SecurityConfig {
                                 "/invite-request/**",
                                 "/profiles/**",
                                 "/update"
-                        )
-                        .authenticated()
-
-                        .anyRequest().authenticated())
+                        ).authenticated()
+                        .anyRequest().authenticated()
+                )
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
+                // ✅ oauth2Login removed — no longer needed.
+                // The Facebook SDK sends a token directly to /riders/facebook-login.
+                // Spring verifies it via Facebook Graph API — no browser redirect flow.
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

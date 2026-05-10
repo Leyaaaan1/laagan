@@ -41,11 +41,12 @@ public class JwtFilter extends OncePerRequestFilter {
         if (path.equals("/riders/login")
                 || path.equals("/riders/register")
                 || path.equals("/riders/refresh")
-                || path.startsWith("/facebook/login")) {
+                || path.startsWith("/facebook/login")
+                || path.startsWith("/oauth2/")
+                || path.startsWith("/login/oauth2/")) {   // ← make sure this is here
             filterChain.doFilter(request, response);
             return;
         }
-
         String header = request.getHeader("Authorization");
 
         if (header == null || header.trim().isEmpty()) {
