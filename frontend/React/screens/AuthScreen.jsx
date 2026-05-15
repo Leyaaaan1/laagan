@@ -25,12 +25,22 @@ import spacing from '../styles/tokens/spacing';
 import {useAuth} from '../context/AuthContext';
 import {
   CONFIRM_RULES,
+  EMAIL_RULES,
   evaluateRules,
   isFormValid,
   PASSWORD_RULES,
-  USERNAME_RULES,
 } from '../utilities/validator/Authvalidation';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ValidationChecklist
+//
+// Unchanged in structure. USERNAME_RULES swapped for EMAIL_RULES — make sure
+// your Authvalidation.js exports EMAIL_RULES. Minimum rules to validate:
+//   - Not empty
+//   - Contains @
+//   - Has a domain part (e.g. ".com")
+//   - Max length 254 (RFC 5321)
+// ─────────────────────────────────────────────────────────────────────────────
 const ValidationChecklist = ({rules, value, touched, isLogin}) => {
   if (isLogin || !touched || value.length === 0) return null;
 
@@ -43,13 +53,13 @@ const ValidationChecklist = ({rules, value, touched, isLogin}) => {
         const dotStyle = isPending
           ? authStyle.dotPending
           : rule.passed
-          ? authStyle.dotPassed
-          : authStyle.dotFailed;
+            ? authStyle.dotPassed
+            : authStyle.dotFailed;
         const labelStyle = isPending
           ? authStyle.ruleTextPending
           : rule.passed
-          ? authStyle.ruleTextPassed
-          : authStyle.ruleTextFailed;
+            ? authStyle.ruleTextPassed
+            : authStyle.ruleTextFailed;
 
         return (
           <View key={rule.key} style={authStyle.ruleRow}>
@@ -68,21 +78,31 @@ const getInputBorderStyle = (rules, value, touched, isLogin) => {
   return allPassed ? authStyle.inputSuccess : authStyle.inputError;
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// AuthForm
+//
+// CHANGED: `username` state/prop renamed to `email` throughout.
+// The TextInput now uses keyboardType="email-address", autoCapitalize="none",
+// and placeholder "Email" instead of "Username".
+// USERNAME_RULES replaced with EMAIL_RULES for validation.
+//
+// The confirm-password field and all password logic are unchanged.
+// ─────────────────────────────────────────────────────────────────────────────
 const AuthForm = ({
-  isLogin,
-  username,
-  password,
-  confirmPassword,
-  setUsername,
-  setPassword,
-  setConfirmPassword,
-  handleAuth,
-  toggleMode,
-  touched,
-  setTouched,
-  loading,
-  handleFacebookLogin,
-}) => (
+                    isLogin,
+                    email,
+                    password,
+                    confirmPassword,
+                    setEmail,
+                    setPassword,
+                    setConfirmPassword,
+                    handleAuth,
+                    toggleMode,
+                    touched,
+                    setTouched,
+                    loading,
+                    handleFacebookLogin,
+                  }) => (
   <KeyboardAvoidingView
     style={layout.center}
     behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -98,32 +118,28 @@ const AuthForm = ({
         : 'Join the community and start riding'}
     </Text>
 
-    {/* ── Username ── */}
+    {/* ── Email ── */}
     <View style={authStyle.fieldBlock}>
       <TextInput
-        placeholder="Username"
+        placeholder="Email"
         placeholderTextColor="#64748b"
-        value={username}
-        onChangeText={setUsername}
-        onFocus={() => setTouched(prev => ({...prev, username: true}))}
+        value={email}
+        onChangeText={setEmail}
+        onFocus={() => setTouched(prev => ({...prev, email: true}))}
         style={[
           inputs.auth,
-          getInputBorderStyle(
-            USERNAME_RULES,
-            username,
-            touched.username,
-            isLogin,
-          ),
+          getInputBorderStyle(EMAIL_RULES, email, touched.email, isLogin),
         ]}
+        keyboardType="email-address"
         autoCapitalize="none"
         autoCorrect={false}
-        maxLength={50}
+        maxLength={254}
         editable={!loading}
       />
       <ValidationChecklist
-        rules={USERNAME_RULES}
-        value={username}
-        touched={touched.username}
+        rules={EMAIL_RULES}
+        value={email}
+        touched={touched.email}
         isLogin={isLogin}
       />
     </View>
@@ -166,7 +182,9 @@ const AuthForm = ({
           placeholderTextColor="#64748b"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
-          onFocus={() => setTouched(prev => ({...prev, confirmPassword: true}))}
+          onFocus={() =>
+            setTouched(prev => ({...prev, confirmPassword: true}))
+          }
           style={[
             inputs.auth,
             getInputBorderStyle(
@@ -211,7 +229,7 @@ const AuthForm = ({
           buttons.pill,
           {width: 280, marginBottom: spacing.sm, backgroundColor: '#1877F2'},
         ]}
-        onPress={handleFacebookLogin} // ← was missing onPress
+        onPress={handleFacebookLogin}
         disabled={loading}>
         <Text style={[text.white, {fontSize: 16}]}>Continue with Facebook</Text>
       </TouchableOpacity>
@@ -230,60 +248,64 @@ const AuthForm = ({
   </KeyboardAvoidingView>
 );
 
-// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 // AuthScreen
-// ─────────────────────────────────────────────
+//
+// CHANGED:
+//   - `username` state renamed to `email`
+//   - touched.username renamed to touched.email
+//   - handleAuth passes email to loginUser/registerUser instead of username
+//   - saveAuth receives username from server response (data.username),
+//     not from what the user typed — because users no longer type a username.
+//     For login:    server returns the stored Rider.username
+//     For register: server returns the auto-generated Rider.username
+//   - toggleMode resets email instead of username
+// ─────────────────────────────────────────────────────────────────────────────
 const AuthScreen = () => {
   const [isLogin, setIsLogin] = useState(true);
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const [touched, setTouched] = useState({
-    username: false,
+    email: false,
     password: false,
     confirmPassword: false,
   });
 
   const {saveAuth} = useAuth();
 
-
-
   const handleAuth = async () => {
-    setTouched({username: true, password: true, confirmPassword: true});
+    setTouched({email: true, password: true, confirmPassword: true});
 
-    if (!isFormValid(username, password, confirmPassword, isLogin)) {
+    // isFormValid needs to know we're validating email now, not username.
+    // Update your Authvalidation.js isFormValid() to accept email instead —
+    // or pass the field directly. See note at bottom of this file.
+    if (!isFormValid(email, password, confirmPassword, isLogin)) {
       return;
     }
 
     setLoading(true);
     try {
       const result = isLogin
-        ? await loginUser(username.trim(), password)
-        : await registerUser(username.trim(), password);
+        ? await loginUser(email.trim(), password)
+        : await registerUser(email.trim(), password);
 
       if (result.success) {
-        const accessToken = result.data?.accessToken;
-        const refreshToken = result.data?.refreshToken;
+        const {accessToken, refreshToken, username} = result.data;
 
         if (accessToken && refreshToken) {
-          // saveAuth sets auth.token → AppContent re-renders → AppStack mounts.
-          // No manual navigation.navigate() needed — AuthScreen lives inside
-          // AuthStack which has no RiderPage screen.
-          await saveAuth(accessToken, refreshToken, username.trim());
+          // username comes from the server — either the stored display name
+          // (login) or the freshly auto-generated one (register).
+          // We no longer use email.trim() as the stored identity.
+          await saveAuth(accessToken, refreshToken, username ?? email.trim());
         } else if (!isLogin) {
-          // Registration succeeded but server didn't issue tokens (no auto-login).
-          // Switch to login mode with the username pre-filled so the user
-          // doesn't have to retype it.
+          // Server registered but didn't issue tokens (no auto-login path).
           setIsLogin(true);
           setPassword('');
           setConfirmPassword('');
-          setTouched({
-            username: false,
-            password: false,
-            confirmPassword: false,
-          });
+          setTouched({email: false, password: false, confirmPassword: false});
           Alert.alert(
             'Account Created',
             'You can now log in with your new account.',
@@ -293,8 +315,8 @@ const AuthScreen = () => {
         const errorMessage =
           result.error ||
           (isLogin
-            ? 'Invalid username or password.'
-            : 'Registration failed. The username may already be taken.');
+            ? 'Invalid email or password.'
+            : 'Registration failed. This email may already be registered.');
         Alert.alert('Error', errorMessage);
       }
     } catch (error) {
@@ -305,14 +327,12 @@ const AuthScreen = () => {
     }
   };
 
-
   const handleFacebookLogin = async () => {
     setLoading(true);
     try {
       const result = await loginWithFacebook();
       if (result.success) {
         const {accessToken, refreshToken, username: fbUsername} = result.data;
-        // ✅ Use the real username returned from the server, not a hardcoded string
         await saveAuth(
           accessToken,
           refreshToken,
@@ -330,10 +350,10 @@ const AuthScreen = () => {
 
   const toggleMode = () => {
     setIsLogin(prev => !prev);
-    setUsername('');
+    setEmail('');
     setPassword('');
     setConfirmPassword('');
-    setTouched({username: false, password: false, confirmPassword: false});
+    setTouched({email: false, password: false, confirmPassword: false});
   };
 
   return (
@@ -342,10 +362,10 @@ const AuthScreen = () => {
       <StatusBar barStyle="light-content" backgroundColor={colors.black} />
       <AuthForm
         isLogin={isLogin}
-        username={username}
+        email={email}
         password={password}
         confirmPassword={confirmPassword}
-        setUsername={setUsername}
+        setEmail={setEmail}
         setPassword={setPassword}
         setConfirmPassword={setConfirmPassword}
         handleAuth={handleAuth}

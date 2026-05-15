@@ -15,6 +15,9 @@ public class Rider {
     @Column(name = "id")
     private Integer id;
 
+    @Column(name = "auth_email", nullable = true, unique = true)
+    private String authEmail;
+
     @NaturalId
     @Column(name = "username", nullable = false)
     private String username;
@@ -24,6 +27,7 @@ public class Rider {
 
     @Column(name = "enabled", nullable = false)
     private Boolean enabled;
+
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -36,13 +40,22 @@ public class Rider {
     @Column(name = "about", length = 500, nullable = true)
     private String about;
 
-    public Rider(Integer id, String username, String password, Boolean enabled, List<RiderType> riderTypes, String about) {
+    public Rider(Integer id, String authEmail, String username, String password, Boolean enabled, List<RiderType> riderTypes, String about) {
         this.id = id;
+        this.authEmail = authEmail;
         this.username = username;
         this.password = password;
         this.enabled = enabled;
         this.riderTypes = riderTypes;
         this.about = about;
+    }
+
+    public String getAuthEmail() {
+        return authEmail;
+    }
+
+    public void setAuthEmail(String authEmail) {
+        this.authEmail = authEmail;
     }
 
     public Rider() {

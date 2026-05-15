@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useState, useEffect, useCallback, useContext} from 'react';
 import {
   View,
   Text,
@@ -17,12 +17,12 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import modal from '../../../styles/components/modal';
 import feedback from '../../../styles/base/feedback';
 import badges from '../../../styles/base/badges';
+import {RideContext} from '../../../context/RideContext';
 
 // token prop removed — all services auto-read from AsyncStorage via ApiClient
 const ParticipantList = ({
   visible,
   onClose,
-  participants,
   generatedRidesId,
   username,
   currentUsername,
@@ -39,6 +39,9 @@ const ParticipantList = ({
     inviteLink: '',
     loadingQr: false,
   });
+
+  const {activeRide, updateRideParticipants} = useContext(RideContext);
+  const participants = activeRide?.participants || [];
 
   const isOwner = username === currentUsername;
 
@@ -103,36 +106,20 @@ const ParticipantList = ({
     try {
       await joinService.approveJoinRequest(joinId);
       Alert.alert('Success', 'Request has been approved');
-      loadJoinRequests();
+
+      const approvedUser = state.joinRequests.find(r => r.joinId === joinId);
+      if (approvedUser) {
+        const updatedParticipants = [...participants, approvedUser.username];
+        updateRideParticipants(updatedParticipants);
+      }
+
+      setState(prev => ({
+        ...prev,
+        joinRequests: prev.joinRequests.filter(r => r.joinId !== joinId),
+      }));
     } catch (err) {
       Alert.alert('Error', err.message || 'Failed to approve join request');
     }
-  };
-
-  const handleRejectRequest = async joinId => {
-    Alert.alert(
-      'Reject Request',
-      'Are you sure you want to reject this request?',
-      [
-        {text: 'Cancel', style: 'cancel'},
-        {
-          text: 'Reject',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await joinService.rejectJoinRequest(joinId);
-              Alert.alert('Success', 'Request has been rejected');
-              loadJoinRequests();
-            } catch (err) {
-              Alert.alert(
-                'Error',
-                err.message || 'Failed to reject join request',
-              );
-            }
-          },
-        },
-      ],
-    );
   };
 
   const handleApproveAll = async () => {
@@ -151,7 +138,22 @@ const ParticipantList = ({
                 pending.map(r => joinService.approveJoinRequest(r.joinId)),
               );
               Alert.alert('Success', 'All requests approved');
-              await loadJoinRequests();
+
+              // ✅ Update Context with approved users
+              const approvedUsernames = pending.map(r => r.username);
+              const updatedParticipants = [
+                ...participants,
+                ...approvedUsernames,
+              ];
+              updateRideParticipants(updatedParticipants);
+
+              // ✅ Remove approved requests from local state
+              setState(prev => ({
+                ...prev,
+                joinRequests: prev.joinRequests.filter(
+                  r => !pending.some(p => p.joinId === r.joinId),
+                ),
+              }));
             } catch (err) {
               Alert.alert(
                 'Error',
@@ -164,6 +166,38 @@ const ParticipantList = ({
     );
   };
 
+  const handleRejectRequest = async joinId => {
+    Alert.alert(
+      'Reject Request',
+      'Are you sure you want to reject this request?',
+      [
+        {text: 'Cancel', style: 'cancel'},
+        {
+          text: 'Reject',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await joinService.rejectJoinRequest(joinId);
+              Alert.alert('Success', 'Request has been rejected');
+
+              // ✅ Just remove from local state - no API call
+              setState(prev => ({
+                ...prev,
+                joinRequests: prev.joinRequests.filter(
+                  r => r.joinId !== joinId,
+                ),
+              }));
+            } catch (err) {
+              Alert.alert(
+                'Error',
+                err.message || 'Failed to reject join request',
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
   useEffect(() => {
     if (!visible) return;
     if (state.activeTab === 'rides') loadMyRides();
@@ -240,7 +274,6 @@ const ParticipantList = ({
       </View>
     );
   };
-
 
   const renderParticipantItem = ({item, index}) => {
     const participantName = typeof item === 'object' ? item.username : item;

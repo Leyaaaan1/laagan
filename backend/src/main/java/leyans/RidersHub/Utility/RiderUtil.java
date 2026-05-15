@@ -12,6 +12,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class RiderUtil {
@@ -38,6 +39,10 @@ public class RiderUtil {
         // ✅ Use orElseThrow with Optional
         return riderRepository.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("Rider not found with username: " + username));
+    }
+
+    public Optional<Rider> findByAuthEmail(String authEmail) {
+        return riderRepository.findByAuthEmail(authEmail);
     }
 
 

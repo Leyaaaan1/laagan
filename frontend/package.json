@@ -28,6 +28,7 @@
     "react": "19.0.0",
     "react-native": "0.79.2",
     "react-native-date-picker": "^5.0.12",
+    "react-native-fbsdk-next": "^13.4.3",
     "react-native-geolocation-service": "^5.3.1",
     "react-native-gesture-handler": "^2.25.0",
     "react-native-inappbrowser-reborn": "^3.7.1",

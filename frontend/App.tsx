@@ -1,7 +1,9 @@
+
 import React from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {AuthProvider, useAuth} from './React/context/AuthContext';
+import {RideProvider} from './React/context/RideContext';
 import {setAuthContextRef} from './React/services/Apiclient';
 
 import AuthScreen from './React/screens/AuthScreen';
@@ -13,9 +15,7 @@ import RideRoutesPage from './React/components/ride/utilities/RideRoutesPage';
 import RiderProfile from './React/pages/RiderProfile';
 import HomeScreen from './React/pages/HomeScreen';
 
-// Describes what useAuth() returns. Defined here because AuthContext is a
-// .js file and TypeScript cannot infer its return type automatically.
-interface AuthContextValue {  
+interface AuthContextValue {
   token: string | null;
   ready: boolean;
 }
@@ -42,13 +42,8 @@ const AppStack = () => (
 
 const AppContent = () => {
   const auth = useAuth() as unknown as AuthContextValue;
-
-  // Keep Apiclient in sync with the latest auth context on every render.
   setAuthContextRef(auth);
 
-  // Block rendering until initializeAuth() finishes reading Keychain +
-  // AsyncStorage. By the time ready flips to true, token is already set
-  // (or left null if there was no stored session / restore failed).
   if (!auth.ready) {
     return null;
   }
@@ -63,7 +58,9 @@ const AppContent = () => {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <RideProvider>
+        <AppContent />
+      </RideProvider>
     </AuthProvider>
   );
 }

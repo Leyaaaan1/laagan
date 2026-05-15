@@ -1,11 +1,12 @@
-import InAppBrowser from 'react-native-inappbrowser-reborn';
-import {API_BASE_URL } from './Apiclient';
-import {FACEBOOK_REDIRECT_URL} from '@env';
+import {API_BASE_URL} from './Apiclient';
+import {AccessToken, LoginManager} from 'react-native-fbsdk-next';
 
-
-// ✅ Default import — NOT destructured. The old code used:
-//    const {InAppBrowser} = await import('react-native-inappbrowser-reborn')
-//    which destructures a *named* export that doesn't exist → null → crash.
+// ─────────────────────────────────────────────────────────────────────────────
+// safeJson
+//
+// Safely parses a fetch Response body as JSON without throwing.
+// Returns null if the body is empty or malformed.
+// ─────────────────────────────────────────────────────────────────────────────
 const safeJson = async response => {
   try {
     const text = await response.text();
@@ -16,12 +17,25 @@ const safeJson = async response => {
 };
 
 export const authService = {
-  login: async (username, password) => {
+  // ───────────────────────────────────────────────────────────────────────────
+  // login
+  //
+  // CHANGED: sends `email` instead of `username` in the request body.
+  // The backend LoginRequest now expects an `email` field.
+  //
+  // CHANGED: response now includes `username` (the in-app display name
+  // auto-generated or set during registration). We return it so AuthContext
+  // can store it — the user never typed it, so we can't derive it locally.
+  //
+  // Was:  { username, password }  →  { accessToken, refreshToken }
+  // Now:  { email, password }     →  { accessToken, refreshToken, username }
+  // ───────────────────────────────────────────────────────────────────────────
+  login: async (email, password) => {
     try {
       const response = await fetch(`${API_BASE_URL}/riders/login`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({username, password}),
+        body: JSON.stringify({email, password}),
       });
       const data = await safeJson(response);
       if (!response.ok) {
@@ -31,7 +45,11 @@ export const authService = {
       }
       return {
         success: true,
-        data: {accessToken: data.accessToken, refreshToken: data.refreshToken},
+        data: {
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+          username: data.username, // in-app display name returned by server
+        },
       };
     } catch (err) {
       console.error('❌ Login network error:', err);
@@ -39,12 +57,25 @@ export const authService = {
     }
   },
 
-  register: async (username, password) => {
+  // ───────────────────────────────────────────────────────────────────────────
+  // register
+  //
+  // CHANGED: sends `email` + `password` only. No `username` in the body.
+  // The backend auto-generates a username from the email local-part and stores
+  // it on the Rider. The generated username is returned in the response.
+  //
+  // Example: email "juandelacruz@gmail.com" → username "juandelacruz"
+  //          (with a numeric suffix if taken: "juandelacruz_2")
+  //
+  // Was:  { username, password }  →  { accessToken, refreshToken }
+  // Now:  { email, password }     →  { accessToken, refreshToken, username }
+  // ───────────────────────────────────────────────────────────────────────────
+  register: async (email, password) => {
     try {
       const response = await fetch(`${API_BASE_URL}/riders/register`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({username, password}),
+        body: JSON.stringify({email, password}),
       });
       const data = await safeJson(response);
       if (!response.ok) {
@@ -54,7 +85,11 @@ export const authService = {
       }
       return {
         success: true,
-        data: {accessToken: data.accessToken, refreshToken: data.refreshToken},
+        data: {
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+          username: data.username, // auto-generated display name from server
+        },
       };
     } catch (err) {
       console.error('❌ Register network error:', err);
@@ -62,6 +97,11 @@ export const authService = {
     }
   },
 
+  // ───────────────────────────────────────────────────────────────────────────
+  // logout
+  //
+  // Unchanged — logout is token-based, not tied to email or username.
+  // ───────────────────────────────────────────────────────────────────────────
   logout: async token => {
     try {
       await fetch(`${API_BASE_URL}/riders/logout`, {
@@ -79,9 +119,16 @@ export const authService = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// loginWithFacebook
+//
+// Unchanged in logic — the backend already returns `username` (display name)
+// from FacebookLoginController, and AuthScreen already reads it from
+// result.data.username. No changes needed here.
+// ─────────────────────────────────────────────────────────────────────────────
 export const loginWithFacebook = async () => {
   try {
-    // 1. Open native Facebook login dialog (no browser, no HTTPS needed)
+    // 1. Open native Facebook login dialog
     const loginResult = await LoginManager.logInWithPermissions([
       'public_profile',
       'email',
@@ -97,9 +144,9 @@ export const loginWithFacebook = async () => {
       return {success: false, error: 'Failed to get Facebook token'};
     }
 
-    // 3. Send Facebook token to your Spring backend.
-    //    Spring verifies it directly with Facebook Graph API
-    //    and returns your own JWT tokens.
+    // 3. Send Facebook token to the Spring backend.
+    //    Backend verifies with Facebook Graph API and returns our own JWT tokens
+    //    plus the rider's display username.
     const response = await fetch(`${API_BASE_URL}/riders/facebook-login`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -118,7 +165,7 @@ export const loginWithFacebook = async () => {
       data: {
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
-        username: data.username,
+        username: data.username, // display name derived from FB name
       },
     };
   } catch (err) {
@@ -127,7 +174,5 @@ export const loginWithFacebook = async () => {
   }
 };
 
-
-
-export const loginUser    = authService.login;
+export const loginUser = authService.login;
 export const registerUser = authService.register;

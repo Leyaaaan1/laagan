@@ -6,6 +6,8 @@ import leyans.RidersHub.DTO.Request.RegisterRequest;
 import leyans.RidersHub.DTO.Response.LoginResponse;
 import leyans.RidersHub.DTO.Response.RegisterResponse;
 import leyans.RidersHub.Service.RiderService;
+import leyans.RidersHub.Utility.RiderUtil;
+import leyans.RidersHub.model.Rider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,56 +29,59 @@ public class LoginService {
     private final RiderService riderService;
     private final RefreshTokenService refreshTokenService;
     private final AccountLockoutService accountLockoutService;
+    private final RiderUtil riderUtil;
 
     public LoginService(
             AuthenticationManager authenticationManager,
             JwtUtil jwtUtil,
             RiderService riderService,
             RefreshTokenService refreshTokenService,
-            AccountLockoutService accountLockoutService) {
+            AccountLockoutService accountLockoutService, RiderUtil riderUtil) {
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.riderService = riderService;
         this.refreshTokenService = refreshTokenService;
         this.accountLockoutService = accountLockoutService;
+        this.riderUtil = riderUtil;
     }
 
     /**
      * Authenticate user and generate tokens
      */
     public LoginResponse login(LoginRequest loginRequest) throws BadCredentialsException {
-        String username = loginRequest.getUsername();
-        log.info("🔐 Login attempt for user: {}", username);
+        String email = loginRequest.getEmail();
+        log.info("🔐 Login attempt for email: {}", email);
 
-        // Check if account is locked
-        if (accountLockoutService.isAccountLocked(username)) {
-            log.warn("🔒 Account locked for user: {}", username);
+        if (accountLockoutService.isAccountLocked(email)) {
+            log.warn("🔒 Account locked for: {}", email);
             throw new IllegalStateException("Account temporarily locked. Please try again in 15 minutes.");
         }
 
         try {
-            // Authenticate using AuthenticationManager
+            // Spring Security calls loadUserByUsername(email) →
+            // UserDetailsManager tries findByUsername first (misses),
+            // then falls through to findByAuthEmail (hits).
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(username, loginRequest.getPassword())
+                    new UsernamePasswordAuthenticationToken(email, loginRequest.getPassword())
             );
 
-            // Generate tokens
-            String accessToken = jwtUtil.generateToken(username);
-            String refreshToken = refreshTokenService.createRefreshToken(username);
+            // Load rider to get the real in-app username for the JWT subject + response
+            Rider rider = riderUtil.findByAuthEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Rider not found for: " + email));
 
-            // Reset failed attempts on successful login
-            accountLockoutService.resetFailedAttempts(username);
+            String accessToken  = jwtUtil.generateToken(rider.getUsername());
+            String refreshToken = refreshTokenService.createRefreshToken(rider.getUsername());
 
-            log.info("✅ Login successful for user: {}", username);
-            return new LoginResponse(accessToken, refreshToken);
+            accountLockoutService.resetFailedAttempts(email);
+
+            log.info("✅ Login successful: {} ({})", rider.getUsername(), email);
+            return new LoginResponse(accessToken, refreshToken, rider.getUsername());
 
         } catch (BadCredentialsException e) {
-            // Record failed attempt
-            accountLockoutService.recordFailedLoginAttempt(username);
-            int remaining = accountLockoutService.getRemainingAttempts(username);
-
-            log.warn("❌ Login failed for user: {} | {} attempts remaining", username, remaining);
-            throw new BadCredentialsException("Invalid username or password. " + remaining + " attempts remaining.");
+            accountLockoutService.recordFailedLoginAttempt(email);
+            int remaining = accountLockoutService.getRemainingAttempts(email);
+            log.warn("❌ Login failed for: {} | {} attempts remaining", email, remaining);
+            throw new BadCredentialsException("Invalid email or password. " + remaining + " attempts remaining.");
         }
     }
 
@@ -84,41 +89,61 @@ public class LoginService {
      * Register new user and generate tokens
      */
 
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public RegisterResponse register(RegisterRequest registerRequest, String clientIp) {
-        String username = registerRequest.getUsername();
+        String email    = registerRequest.getEmail();
         String password = registerRequest.getPassword();
 
-        log.info("📝 Register attempt from IP: {} for user: {}", clientIp, username);
+        log.info("📝 Register attempt from IP: {} for email: {}", clientIp, email);
 
         try {
-            // Validate registration rate limit
             int attempts = accountLockoutService.getRegisterAttempts(clientIp);
             if (attempts >= 3) {
-                log.warn("⚠️  Registration limit exceeded for IP: {}", clientIp);
+                log.warn("⚠️ Registration limit exceeded for IP: {}", clientIp);
                 throw new RuntimeException("Registration limit exceeded. Please try again later.");
             }
 
-            // Register rider
+            // Derive display username from email local-part
+            // "juandelacruz@gmail.com" → "juandelacruz"
+            String localPart = email.contains("@")
+                    ? email.substring(0, email.indexOf('@'))
+                      .toLowerCase()
+                      .replaceAll("[^a-z0-9_]", "_")
+                    : email.toLowerCase();
+            String displayUsername = ensureUniqueUsername(localPart);
+
+            // ✅ Pass parameters in correct order: displayUsername, email, password, clientIp, lockoutService
             String registeredUsername = riderService.registerRiderWithValidation(
-                    username,
+                    displayUsername,
+                    email,
                     password,
                     clientIp,
                     accountLockoutService
             );
 
-            // Generate tokens
-            String accessToken = jwtUtil.generateToken(registeredUsername);
+            String accessToken  = jwtUtil.generateToken(registeredUsername);
             String refreshToken = refreshTokenService.createRefreshToken(registeredUsername);
 
-            log.info("✅ New user registered: {} from IP: {}", registeredUsername, clientIp);
-            return new RegisterResponse(accessToken, refreshToken);
+            log.info("✅ Registered: {} (email: {}) from IP: {}", registeredUsername, email, clientIp);
+            return new RegisterResponse(accessToken, refreshToken, registeredUsername);
 
         } catch (RuntimeException e) {
             accountLockoutService.recordFailedRegisterAttempt(clientIp);
-            log.warn("❌ Registration failed from IP: {} | Error: {}", clientIp, e.getMessage());
+            log.warn("❌ Registration failed from IP: {} | {}", clientIp, e.getMessage());
             throw e;
         }
+    }
+
+    // ADD this private helper at the bottom of the class (same logic as FacebookTokenVerifier)
+// Later: extract both copies into a shared UsernameGenerator utility
+    private String ensureUniqueUsername(String base) {
+        String candidate = base;
+        int suffix = 2;
+        while (riderService.usernameExists(candidate)) {
+            candidate = base + "_" + suffix++;
+        }
+        return candidate;
     }
 
     /**

@@ -94,12 +94,6 @@ export const getRideDetails = async (generatedRidesId, ) => {
 };
 
 export const fetchRides = async (page = 0, size = 10) => {
-  const cached = await ridesListCache.get(page, size, 'all');
-  if (cached) {
-    console.log(`[fetchRides] Cache hit — page ${page}`);
-    return cached;
-  }
-
   const response = await api.get(`/riders/rides?page=${page}&size=${size}`);
   if (!response.ok)
     throw new Error(`Failed to fetch rides: ${response.status}`);
@@ -107,7 +101,6 @@ export const fetchRides = async (page = 0, size = 10) => {
   const data = await response.json();
   console.log('[fetchRides] data:', JSON.stringify(data, null, 2));
 
-  await ridesListCache.save(page, size, 'all', data);
   return data;
 };
 

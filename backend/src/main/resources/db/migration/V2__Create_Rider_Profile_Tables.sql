@@ -30,16 +30,18 @@ CREATE TABLE public.rider_profile_types (
 
 -- FACEBOOK ACCOUNT (Social login)
 CREATE TABLE public.facebook_account (
-                                         id SERIAL PRIMARY KEY,
-                                         username VARCHAR(255) NOT NULL UNIQUE,
-                                         password VARCHAR(255) NOT NULL,
+                                         id                  SERIAL PRIMARY KEY,
+                                         facebook_id         VARCHAR(255) UNIQUE,      -- stable FB user ID, primary lookup key
+                                         email               VARCHAR(255),             -- stored for reference only, not used for auth
                                          profile_picture_url VARCHAR(500),
-                                         rider_id INTEGER UNIQUE REFERENCES public.rider(id) ON DELETE CASCADE
+                                         rider_id            INTEGER UNIQUE REFERENCES public.rider(id) ON DELETE CASCADE
 );
 
 -- Create indexes
-CREATE INDEX idx_profile_username ON public.rider_profile(username);
-CREATE INDEX idx_profile_created_at ON public.rider_profile(created_at);
-CREATE INDEX idx_facebook_username ON public.facebook_account(username);
-CREATE INDEX idx_facebook_rider_id ON public.facebook_account(rider_id);
-CREATE INDEX idx_rider_types ON public.rider_rider_types(rider_id);
+-- ── 3. Recreate indexes cleanly ──────────────────────────────────────────────────────
+CREATE INDEX IF NOT EXISTS idx_profile_created_at  ON public.rider_profile(created_at);
+
+CREATE INDEX IF NOT EXISTS idx_facebook_facebook_id ON public.facebook_account(facebook_id);
+CREATE INDEX IF NOT EXISTS idx_facebook_rider_id    ON public.facebook_account(rider_id);
+
+CREATE INDEX IF NOT EXISTS idx_rider_types          ON public.rider_rider_types(rider_id);
