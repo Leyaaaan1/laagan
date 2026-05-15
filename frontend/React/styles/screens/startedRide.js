@@ -16,7 +16,6 @@ import spacing from '../tokens/spacing';
 import { fontSize, fontWeight } from '../tokens/typography';
 
 const startedRide = StyleSheet.create({
-
   // ── Screen root ──────────────────────────────
   container: {
     flex: 1,
@@ -146,9 +145,9 @@ const startedRide = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  startMarker:  { backgroundColor: '#16a34a' },
-  stopMarker:   { backgroundColor: '#d97706' },
-  endMarker:    { backgroundColor: '#dc2626' },
+  startMarker: {backgroundColor: '#16a34a'},
+  stopMarker: {backgroundColor: '#d97706'},
+  endMarker: {backgroundColor: '#dc2626'},
   routeMarkerNumber: {
     color: colors.white,
     fontSize: fontSize.sm,
@@ -166,6 +165,93 @@ const startedRide = StyleSheet.create({
     marginLeft: 38,
     marginTop: 2,
     lineHeight: 20,
+  },
+
+  // Add to startedRide.js (after participantsContainer section, before actionButtonsContainer)
+
+  routePointContainer: {
+    marginBottom: spacing.lg,
+  },
+
+  participantInfo: {
+    flex: 1,
+  },
+
+  pollingStatusPill: {
+    position: 'absolute',
+    top: 60,
+    right: 16,
+    backgroundColor: 'rgba(20, 20, 20, 0.85)',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+  },
+
+  pollingStatusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+
+  pollingStatusText: {
+    color: '#fff',
+    fontSize: fontSize.xs,
+  },
+
+  offlineBanner: {
+    position: 'absolute',
+    bottom: 120,
+    left: 16,
+    right: 16,
+    backgroundColor: 'rgba(30,30,30,0.9)',
+    borderRadius: 8,
+    padding: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+
+  offlineBannerText: {
+    color: '#fff',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semi,
+  },
+
+  mapHeaderSpacer: {
+    paddingVertical: 10,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(255,255,255,0.03)',
+    marginBottom: 6,
+  },
+
+  participantLocationText: {
+    color: '#4CAF50',
+    fontSize: fontSize.xs,
+    marginTop: 2,
+  },
+
+  participantWaitingText: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: fontSize.xs,
+    marginTop: 2,
+  },
+
+  pollingErrorAlert: {
+    backgroundColor: 'rgba(244,67,54,0.1)',
+    borderRadius: 6,
+    padding: 10,
+    marginTop: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#f44336',
+  },
+
+  pollingErrorText: {
+    color: '#f44336',
+    fontSize: fontSize.xs,
   },
 
   // ── Participants section ───────────────────────
@@ -232,7 +318,7 @@ const startedRide = StyleSheet.create({
   participantStatusActive: {
     backgroundColor: colors.success,
     shadowColor: colors.success,
-    shadowOffset: { width: 0, height: 0 },
+    shadowOffset: {width: 0, height: 0},
     shadowOpacity: 0.5,
     shadowRadius: 4,
   },

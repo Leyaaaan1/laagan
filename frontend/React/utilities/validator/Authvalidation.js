@@ -4,26 +4,16 @@
 // Returns { valid: bool, rules: [...] } per field.
 // ─────────────────────────────────────────────
 
-export const USERNAME_RULES = [
+export const EMAIL_RULES = [
   {
     key: 'required',
-    label: 'Username is required',
+    label: 'Email is required',
     test: v => v.trim().length > 0,
   },
   {
-    key: 'minLength',
-    label: 'At least 5 characters',
-    test: v => v.trim().length >= 5,
-  },
-  {
-    key: 'maxLength',
-    label: 'Under 50 characters',
-    test: v => v.trim().length <= 50,
-  },
-  {
     key: 'format',
-    label: 'Only letters, numbers, _ . -',
-    test: v => /^[a-zA-Z0-9_.\-]*$/.test(v.trim()),
+    label: 'Invalid email format',
+    test: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()),
   },
 ];
 
@@ -88,7 +78,7 @@ export const evaluateRules = (rules, value) => {
  * Full form validation — returns true only if all fields pass.
  */
 export const isFormValid = (username, password, confirmPassword, isLogin) => {
-  const uValid = evaluateRules(USERNAME_RULES, username).allPassed;
+  const uValid = evaluateRules(EMAIL_RULES, username).allPassed;
   const pValid = evaluateRules(PASSWORD_RULES, password).allPassed;
   if (isLogin) return uValid && pValid;
   const cValid = evaluateRules(

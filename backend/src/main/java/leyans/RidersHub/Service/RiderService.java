@@ -46,19 +46,20 @@ public class RiderService {
 
 
 
-    public String registerRiderWithValidation(String username, String password,
-                                              String clientIp,
+
+    public String registerRiderWithValidation(String displayUsername, String email,
+                                              String password, String clientIp,
                                               AccountLockoutService lockoutService) {
         int attempts = lockoutService.getRegisterAttempts(clientIp);
         if (attempts >= 3) {
             throw new RuntimeException("Registration limit exceeded for this IP");
         }
-        return registerRider(username, password);
+        return registerRider(displayUsername, password, email);
     }
 
 
     // RiderService.java
-    public String registerRider(String username, String password) {
+    public String registerRider(String username, String password, String email) {
         if (riderRepository.findByUsername(username).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
@@ -66,6 +67,7 @@ public class RiderService {
         Rider newRider = new Rider();
         newRider.setUsername(username);
         newRider.setPassword(encodedPassword);
+        newRider.setAuthEmail(email);
         newRider.setEnabled(true);
         newRider.setRiderTypes(new ArrayList<>());
         riderRepository.saveAndFlush(newRider); // ← saveAndFlush, not save
@@ -95,6 +97,10 @@ public class RiderService {
             throw new IllegalArgumentException("RiderType not found: " + typeName);
         }
         return type;
+    }
+
+    public boolean usernameExists(String username) {
+        return riderRepository.findByUsername(username).isPresent();
     }
 
 

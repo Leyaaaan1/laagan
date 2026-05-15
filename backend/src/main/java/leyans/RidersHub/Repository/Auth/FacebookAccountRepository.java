@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 
 public interface FacebookAccountRepository  extends JpaRepository<FacebookAccount, Integer> {
-    FacebookAccount findByUsername(String username);
 
-    FacebookAccount findByRiderId(Integer riderId);
+    FacebookAccount findByFacebookId(String facebookId);
+
 }

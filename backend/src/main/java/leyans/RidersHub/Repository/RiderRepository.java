@@ -15,6 +15,7 @@ public interface RiderRepository extends JpaRepository<Rider, Integer> {
 
     Optional<Rider> findByUsername(String username);
 
+    Optional<Rider> findByAuthEmail(String authEmail);
 
 
 }

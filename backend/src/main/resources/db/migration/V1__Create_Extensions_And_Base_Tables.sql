@@ -19,6 +19,7 @@ CREATE TABLE public.rider_type (
 CREATE TABLE public.rider (
                               id         SERIAL PRIMARY KEY,
                               username   VARCHAR(255) NOT NULL UNIQUE,
+                              auth_email VARCHAR(255) UNIQUE,
                               password   VARCHAR(255) NOT NULL,
                               enabled    BOOLEAN NOT NULL DEFAULT true,
                               about      VARCHAR(500),
@@ -113,3 +114,4 @@ INSERT INTO public.rider_type (rider_type_id, rider_type) VALUES
 -- Create indexes
 CREATE INDEX idx_rider_username ON public.rider(username);
 CREATE INDEX idx_rider_enabled  ON public.rider(enabled);
+CREATE INDEX idx_rider_auth_email ON public.rider(auth_email) WHERE auth_email IS NOT NULL;

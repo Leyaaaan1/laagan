@@ -22,19 +22,16 @@ public class UserDetailsManager implements org.springframework.security.core.use
 
     @Override
     @Transactional
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
 
-        // ✅ Use orElseThrow with proper Spring Security exception
-        Rider rider = riderRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Rider not found: " + username));
-
-        String role = "ROLE_RIDER";
-
+        Rider rider = riderRepository.findByUsername(identifier)
+                .or(() -> riderRepository.findByAuthEmail(identifier))
+                .orElseThrow(() -> new UsernameNotFoundException("Rider not found: " + identifier));
 
         return User.builder()
-                .username(rider.getUsername())
+                .username(rider.getUsername())   // always the display name, never the email
                 .password(rider.getPassword())
-                .authorities(role)
+                .authorities("ROLE_RIDER")
                 .disabled(!rider.getEnabled())
                 .build();
     }

@@ -12,14 +12,15 @@ public class FacebookAccount {
     @Column(name = "id")
     private Integer id;
 
-    @Column(name = "username", nullable = false, unique = true)
-    private String username;
-
-    @Column(name = "password", nullable = false)
-    private String password;
 
     @Column(name = "profile_picture_url")
     private String profilePictureUrl;
+
+    @Column(name = "facebook_id", nullable = false, unique = true)
+    private String facebookId;
+
+    @Column(name = "email", nullable = true)
+    private String email;
 
     @OneToOne
     @JoinColumn(name = "rider_id", referencedColumnName = "id")
@@ -28,12 +29,29 @@ public class FacebookAccount {
     public FacebookAccount() {
     }
 
-    public FacebookAccount(Integer id, String username, String password, String profilePictureUrl, Rider rider) {
+
+    public FacebookAccount(Integer id, String profilePictureUrl, String facebookId, String email, Rider rider) {
         this.id = id;
-        this.username = username;
-        this.password = password;
         this.profilePictureUrl = profilePictureUrl;
+        this.facebookId = facebookId;
+        this.email = email;
         this.rider = rider;
+    }
+
+    public String getFacebookId() {
+        return facebookId;
+    }
+
+    public void setFacebookId(String facebookId) {
+        this.facebookId = facebookId;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public Integer getId() {
@@ -44,21 +62,6 @@ public class FacebookAccount {
         this.id = id;
     }
 
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
 
     public String getProfilePictureUrl() {
         return profilePictureUrl;
