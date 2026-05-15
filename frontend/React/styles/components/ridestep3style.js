@@ -124,6 +124,12 @@ const ridestep3style = StyleSheet.create({
     marginBottom: spacing.sm,
   },
 
+  // Drag handle touchable wrapper
+  dragHandleTouchable: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+
   // Collapse/expand chevron button
   collapseButton: {
     position: 'absolute',
@@ -321,7 +327,6 @@ const ridestep3style = StyleSheet.create({
     marginVertical: spacing.sm,
     marginHorizontal: spacing.xs,
     paddingHorizontal: spacing.sm,
-
     backgroundColor: colors.primaryAlpha10,
   },
 
@@ -393,6 +398,284 @@ const ridestep3style = StyleSheet.create({
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
     marginTop: spacing.xs,
+  },
+
+  // ─── BOTTOM ACTIONS ROW ─────────────────────────────────
+
+  bottomActionsRow: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.md,
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+
+  // Flex-1 compact variant for action buttons inside the bottom actions row
+  actionBtnFlex: {
+    flex: 1,
+    paddingVertical: 10,
+  },
+
+  // Confirm stop button (green)
+  confirmStopBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+    marginHorizontal: spacing.xs,
+    paddingVertical: 10,
+    paddingHorizontal: spacing.sm,
+    borderRadius: 10,
+    backgroundColor: '#10b981',
+    shadowColor: '#10b981',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+
+  confirmStopBtnDisabled: {
+    opacity: 0.5,
+  },
+
+  // ─── INSTRUCTION PILL (stop placement overlay) ───────────
+
+  instructionPill: {
+    position: 'absolute',
+    bottom: '55%',
+    left: 12,
+    right: 12,
+    zIndex: 45,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    borderRadius: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+
+  instructionPillRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+
+  instructionPillText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+  },
+
+  instructionPillPrompt: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  // ─── FLOATING NAV ────────────────────────────────────────
+
+  floatingNavModeLabel: {
+    color: '#1a1a1a',
+  },
+
+  floatingNavBackText: {
+    fontSize: 14,
+  },
+
+  floatingNavCreateBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+
+  // ─── SEARCH CARD ─────────────────────────────────────────
+
+  searchClearBtn: {
+    padding: 4,
+    marginRight: 8,
+  },
+
+  searchLoadingRow: {
+    marginTop: 12,
+  },
+
+  routeLoadingRow: {
+    marginTop: 8,
+  },
+
+  routeLoadingText: {
+    color: '#1e40af',
+  },
+
+  searchResultsList: {
+    maxHeight: 220,
+  },
+
+  searchResultIconWrapper: {
+    width: 20,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // ─── WEBVIEW ─────────────────────────────────────────────
+
+  webView: {
+    flex: 1,
+  },
+
+  // ─── BOTTOM SHEET SCROLLVIEW ─────────────────────────────
+
+  bottomSheetScrollView: {
+    flex: 1,
+  },
+
+  // ─── LOCATION SUGGESTION MODAL — STARTING POINT CHOOSER ──
+
+  // Full-screen overlay for the starting point suggestion flow
+  suggestionOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 200,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+
+  suggestionSheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
+  },
+
+  suggestionSheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.textDisabled,
+    alignSelf: 'center',
+    marginBottom: spacing.md,
+  },
+
+  suggestionTitle: {
+    color: colors.textPrimary,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    marginBottom: spacing.xs,
+  },
+
+  suggestionSubtitle: {
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    marginBottom: spacing.md,
+  },
+
+  // Each starting point option card
+  startingOptionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceDark,
+    marginBottom: spacing.sm,
+  },
+
+  // Selected state: highlight border with primary color
+  startingOptionCardSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryAlpha10,
+  },
+
+  startingOptionIconWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primaryAlpha10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  startingOptionIconWrapperSelected: {
+    backgroundColor: colors.primary,
+  },
+
+  startingOptionTextWrapper: {
+    flex: 1,
+  },
+
+  startingOptionLabel: {
+    color: colors.textSecondary,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semi,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+
+  startingOptionName: {
+    color: colors.textPrimary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    marginTop: 2,
+  },
+
+  startingOptionCheckWrapper: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  startingOptionCheckWrapperSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+
+  suggestionConfirmBtn: {
+    marginTop: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+
+  suggestionConfirmBtnDisabled: {
+    opacity: 0.45,
+  },
+
+  suggestionConfirmBtnText: {
+    color: colors.white,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+  },
+
+  suggestionDismissBtn: {
+    marginTop: spacing.sm,
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+  },
+
+  suggestionDismissBtnText: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
   },
 });
 

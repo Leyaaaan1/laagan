@@ -1,10 +1,10 @@
 // ─────────────────────────────────────────────
-// screens/startedRide.js
+// screens/startedRideStyles.js
 // ONLY styles unique to the StartedRide screen.
 // Everything reusable lives in base/ or components/.
 //
 // Usage in StartedRide.jsx:
-//   import startedRideStyles from '../styles/screens/startedRide';
+//   import startedRideStyles from '../styles/screens/startedRideStyles';
 //   import cards from '../styles/base/cards';
 //   import text from '../styles/base/text';
 //   import layout from '../styles/base/layout';
@@ -15,7 +15,7 @@ import colors from '../tokens/colors';
 import spacing from '../tokens/spacing';
 import { fontSize, fontWeight } from '../tokens/typography';
 
-const startedRide = StyleSheet.create({
+const startedRideStyles = StyleSheet.create({
   // ── Screen root ──────────────────────────────
   container: {
     flex: 1,
@@ -167,7 +167,7 @@ const startedRide = StyleSheet.create({
     lineHeight: 20,
   },
 
-  // Add to startedRide.js (after participantsContainer section, before actionButtonsContainer)
+  // Add to startedRideStyles.js (after participantsContainer section, before actionButtonsContainer)
 
   routePointContainer: {
     marginBottom: spacing.lg,
@@ -338,33 +338,46 @@ const startedRide = StyleSheet.create({
     bottom: spacing.md,
     left: 0,
     right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
-    gap: 12,
   },
-  actionButton: {
-    backgroundColor: colors.surface,
-    borderWidth: 2,
-    borderColor: colors.borderLight,
-    borderRadius: 12,
-    padding: 12,
-    minWidth: 90,
+  actionPill: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.black,
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
+    backgroundColor: 'rgba(28, 28, 30, 0.92)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 99,
+    paddingVertical: 8,
+    paddingLeft: 16,
+    paddingRight: 8,
+    gap: 8,
   },
-  actionButtonText: {
-    color: colors.white,
-    fontSize: fontSize.xs,
+  actionPillDivider: {
+    width: 0.5,
+    height: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    marginHorizontal: 4,
+  },
+  actionDetailsLabel: {
+    fontSize: fontSize.sm,
+    color: 'rgba(255,255,255,0.7)',
     fontWeight: fontWeight.semi,
-    marginTop: spacing.xs,
-    letterSpacing: 0.5,
+  },
+  actionStopButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#c0392b',
+    borderRadius: 99,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    gap: 6,
+  },
+  actionStopLabel: {
+    fontSize: fontSize.sm,
+    color: colors.white,
+    fontWeight: fontWeight.semi,
   },
 });
 
-export default startedRide;
+export default startedRideStyles;
