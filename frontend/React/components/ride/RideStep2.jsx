@@ -17,6 +17,7 @@ import text from '../../styles/base/text';
 import spacing from '../../styles/tokens/spacing';
 import {buildSearchHandlers} from './utilities/RideStepUtils';
 import {DEFAULT_COORDS} from '../../utilities/route/map/appDefaults';
+import {createMemoCompare} from '../../utilities/propsComparison';
 
 // Philippines centre — safe default when no coords are available yet
 const DEFAULT_LAT = parseFloat(DEFAULT_COORDS.latitude);
@@ -262,4 +263,16 @@ const RideStep2 = ({
   );
 };
 
-export default RideStep2;
+
+export default React.memo(
+  RideStep2,
+  createMemoCompare([
+    'setSearchQuery',
+    'handleLocationSelect',
+    'webViewRef',
+    'handleMessage',
+    'handleSearchInputChange',
+    'nextStep',
+    'prevStep',
+  ])
+);

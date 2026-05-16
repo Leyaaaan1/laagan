@@ -1,5 +1,10 @@
 package leyans.RidersHub.DTO.Request.RidesDTO;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -7,16 +12,24 @@ public class RideRequestDTO {
 
     private String generatedRidesId;
     private String username;
-    private String ridesName;
+    @NotBlank
+    @Size(min = 2, max = 100, message = "Ride name must be 2-100 characters")
+    String ridesName;
+
+
     private String locationName;
     private String riderType;
     private Integer distance;
 
     private LocalDateTime date;
-    private double latitude;
-    private double longitude;
+    @Min(-90) @Max(90)
+    double latitude;
+
+    @Min(-180) @Max(180)
+    double longitude;
     private List<String> participants;
-    private String description;
+    @Size(max = 1000)
+    String description;
     String startingPointName;
     double startLat;
     double startLng;

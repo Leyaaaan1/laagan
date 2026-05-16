@@ -24,6 +24,26 @@ public class AppLogger {
         }
     }
 
+    public static class TokenMaskingUtil {
+
+        /**     * Mask JWT token for safe logging.     * Shows first 10 and last 10 characters.     */
+        public static String maskToken(String token) {
+            if (token == null || token.length() < 20) {
+                return "***";
+            }
+            return token.substring(0, 10) + "..." + token.substring(token.length() - 10);
+        }
+
+        /**     * Remove Bearer prefix and mask     */
+        public static String maskAuthHeader(String authHeader) {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return "***";
+            }
+            String token = authHeader.substring(7);
+            return maskToken(token);
+        }
+    }
+
     /**     * Log warning message (unusual situation, could be problematic)     * 
      * @param clazz The calling class     * @param message The log message     * @param args Optional key-value pairs     */
     public static void warn(Class<?> clazz, String message, Object... args) {

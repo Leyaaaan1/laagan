@@ -15,7 +15,6 @@ public class UploadImageService {
     private final Cloudinary cloudinary;
     private final RestTemplate restTemplate;
 
-    @Autowired
     public UploadImageService(Cloudinary cloudinary) {
         this.cloudinary = cloudinary;
         this.restTemplate = new RestTemplate();

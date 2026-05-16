@@ -18,10 +18,13 @@ public class JwtUtil {
 
     private static final Logger log = LoggerFactory.getLogger(JwtUtil.class);
 
-    @Autowired
-    private JwtConfig jwtConfig;
+    private final JwtConfig jwtConfig;
 
     private static final SecureRandom secureRandom = new SecureRandom();
+
+    public JwtUtil(JwtConfig jwtConfig) {
+        this.jwtConfig = jwtConfig;
+    }
 
     private Key getSigningKey() {
         byte[] keyBytes = jwtConfig.getSecret().getBytes();

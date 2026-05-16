@@ -662,4 +662,34 @@ const RideStep4 = props => {
   );
 };
 
-export default RideStep4;
+export default React.memo(
+  RideStep4,
+  (prevProps, nextProps) => {
+    // For RideStep4, only compare significant data props, not callbacks/functions
+    const significantKeys = [
+      'generatedRidesId',
+      'rideName',
+      'locationName',
+      'riderType',
+      'date',
+      'startingPointName',
+      'endingPointName',
+      'participants',
+      'description',
+      'distance',
+      'username',
+      'stopPoints',
+    ];
+
+    for (const key of significantKeys) {
+      const prevVal = prevProps[key] ?? prevProps?.route?.params?.[key];
+      const nextVal = nextProps[key] ?? nextProps?.route?.params?.[key];
+
+      if (prevVal !== nextVal) {
+        return false; // Re-render if significant prop changed
+      }
+    }
+
+    return true; // Skip re-render
+  }
+);

@@ -19,7 +19,6 @@ public class LocationController {
     private final NominatimService nominatimService;
     private final LocationService locationService;
 
-    @Autowired
     public LocationController(NominatimService nomService, LocationService locationService) {
         this.nominatimService = nomService;
         this.locationService = locationService;

@@ -34,7 +34,6 @@ public class RiderController {
 
     private final RideActionUtil rideActionUtil;
 
-    @Autowired
     public RiderController(RiderService riderService, RidesService ridesService, RidesUtil ridesUtil, RideActionUtil rideActionUtil) {
         this.riderService = riderService;
         this.ridesService = ridesService;

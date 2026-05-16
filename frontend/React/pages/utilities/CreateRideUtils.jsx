@@ -1,4 +1,4 @@
-import {useState, useEffect, useRef} from 'react';
+import {useState, useEffect, useRef, useCallback} from 'react';
 import {Alert} from 'react-native';
 import {
   searchLocation,
@@ -81,7 +81,6 @@ const useCreateRide = ({}) => {
   const [riderTypeOptions, setRiderTypeOptions] = useState([]);
   const [riderTypeLoading, setRiderTypeLoading] = useState(false);
 
-
   // ── Step-based map mode sync ──────────────────────────────────────────────
   useEffect(() => {
     if (currentStep === 2) {
@@ -95,28 +94,35 @@ const useCreateRide = ({}) => {
   const [generatedRidesId, setGeneratedRidesId] = useState(null);
 
   // ─── Step navigation ──────────────────────────────────────────────────────
-  const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 4));
-  const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
+  const nextStep = useCallback(() => {
+    setCurrentStep(prev => Math.min(prev + 1, 4));
+  }, []);
+
+  const prevStep = useCallback(() => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  }, []);
 
   // ─── Map tap / drag ───────────────────────────────────────────────────────
-  const handleMessage = event =>
-    handleWebViewMessage(event, {
-      mapMode,
-      setLatitude,
-      setLongitude,
-      setStartingLatitude,
-      setStartingLongitude,
-      setEndingLatitude,
-      setEndingLongitude,
-      setLocationName,
-      setStartingPoint,
-      setEndingPoint,
-    });
-  const handleSearchInputChange = value => {
+  const handleMessage = useCallback(
+    event =>
+      handleWebViewMessage(event, {
+        mapMode,
+        setLatitude,
+        setLongitude,
+        setStartingLatitude,
+        setStartingLongitude,
+        setEndingLatitude,
+        setEndingLongitude,
+        setLocationName,
+        setStartingPoint,
+        setEndingPoint,
+      }),
+    [mapMode], // Include mapMode as dependency
+  );
+  const handleSearchInputChange = useCallback(value => {
     setLocationSelected(false);
     setSearchQuery(value);
-  };
-
+  }, []);
 
   useEffect(() => {
     const fetchRiderTypes = async () => {
@@ -146,13 +152,12 @@ const useCreateRide = ({}) => {
       return;
     }
 
-
     setIsSearching(true);
     const searchFn =
       mapMode === 'location' ? searchCityOrLandmark : searchLocation;
 
     const timer = setTimeout(() => {
-      searchFn( searchQuery)
+      searchFn(searchQuery)
         .then(data => setSearchResults(data))
         .catch(() =>
           Alert.alert('Error', ERROR_MESSAGES.LOCATION.SEARCH_FAILED),
@@ -164,38 +169,42 @@ const useCreateRide = ({}) => {
   }, [searchQuery, locationSelected, mapMode]);
 
   // ─── Location selection (from search result) ──────────────────────────────
-  const handleLocationSelect = async location => {
-    const lat = parseFloat(location.lat);
-    const lon = parseFloat(location.lon);
-    setLocationSelected(true);
 
-    const selectedName = location.display_name
-      ? location.display_name.split(',')[0].trim()
-      : `${lat}, ${lon}`;
+  const handleLocationSelect = useCallback(
+    async location => {
+      const lat = parseFloat(location.lat);
+      const lon = parseFloat(location.lon);
+      setLocationSelected(true);
 
-    if (mapMode === 'location') {
-      setLatitude(lat.toString());
-      setLongitude(lon.toString());
-      setLocationName(selectedName);
-      getLocationImage(selectedName)
-        .then(imgs => setRideNameImage(imgs))
-        .catch(() => setRideNameImage([]));
-    } else if (mapMode === 'starting') {
-      setStartingLatitude(lat.toString());
-      setStartingLongitude(lon.toString());
-      setStartingPoint(selectedName);
-      setMapMode('ending');
-    } else if (mapMode === 'ending') {
-      setEndingLatitude(lat.toString());
-      setEndingLongitude(lon.toString());
-      setEndingPoint(selectedName);
-    }
+      const selectedName = location.display_name
+        ? location.display_name.split(',')[0].trim()
+        : `${lat}, ${lon}`;
 
-    setSearchQuery(selectedName);
-    setSearchResults([]);
+      if (mapMode === 'location') {
+        setLatitude(lat.toString());
+        setLongitude(lon.toString());
+        setLocationName(selectedName);
+        getLocationImage(selectedName)
+          .then(imgs => setRideNameImage(imgs))
+          .catch(() => setRideNameImage([]));
+      } else if (mapMode === 'starting') {
+        setStartingLatitude(lat.toString());
+        setStartingLongitude(lon.toString());
+        setStartingPoint(selectedName);
+        setMapMode('ending');
+      } else if (mapMode === 'ending') {
+        setEndingLatitude(lat.toString());
+        setEndingLongitude(lon.toString());
+        setEndingPoint(selectedName);
+      }
 
-    return selectedName;
-  };
+      setSearchQuery(selectedName);
+      setSearchResults([]);
+
+      return selectedName;
+    },
+    [mapMode], // Include mapMode as dependency
+  );
 
   // ─── Build stop-points payload for the API ────────────────────────────────
   const buildStopPointsPayload = () =>
@@ -217,7 +226,7 @@ const useCreateRide = ({}) => {
   };
 
   // ✅ ─── ENHANCED: Ride creation with full validation ──────────────────────
-  const handleCreateRide = async () => {
+  const handleCreateRide = useCallback(async () => {
     // ────────────────────────────────────────────────────────────────────────────
     // STEP 1: INPUT VALIDATION
     // ────────────────────────────────────────────────────────────────────────────
@@ -325,7 +334,6 @@ const useCreateRide = ({}) => {
 
       const result = await createRide(rideData);
 
-
       // ────────────────────────────────────────────────────────────────────────
       // STEP 4: EXTRACT AND VALIDATE RIDE ID
       // ────────────────────────────────────────────────────────────────────────
@@ -404,13 +412,26 @@ const useCreateRide = ({}) => {
         },
       ]);
     } finally {
-      // ────────────────────────────────────────────────────────────────────────
-      // CLEANUP
-      // ────────────────────────────────────────────────────────────────────────
-
       setLoading(false);
     }
-  };
+  }, [
+    rideName,
+    date,
+    startingPoint,
+    endingPoint,
+    startingLatitude,
+    startingLongitude,
+    endingLatitude,
+    endingLongitude,
+    locationName,
+    description,
+    latitude,
+    longitude,
+    riderType,
+    participants,
+    stopPoints,
+  ]);
+
 
   return {
     webViewRef,
@@ -418,8 +439,8 @@ const useCreateRide = ({}) => {
     loading,
     error,
     currentStep,
-    nextStep,
-    prevStep,
+    nextStep, // ✅ Now wrapped
+    prevStep, // ✅ Now wrapped
     rideName,
     setRideName,
     riderType,
@@ -452,14 +473,13 @@ const useCreateRide = ({}) => {
     setSearchQuery,
     searchResults,
     isSearching,
-    handleSearchInputChange,
-    handleLocationSelect,
+    handleSearchInputChange, //
+    handleLocationSelect, //
     mapMode,
     setMapMode,
-    handleMessage,
+    handleMessage, //
     generatedRidesId,
-    handleCreateRide,
-  };
-};
+    handleCreateRide, // 
+  };};
 
 export default useCreateRide;

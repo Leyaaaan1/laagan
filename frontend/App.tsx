@@ -47,14 +47,7 @@ const AppContent = () => {
   const auth = useAuth() as unknown as AuthContextValue;
   setAuthContextRef(auth);
 
-  // ← ADD THESE DEBUG LOGS
-  console.log('🔍 [DEBUG] GOOGLE_CLIENT_ID value:', googleclientid);
-  console.log('🔍 [DEBUG] GOOGLE_CLIENT_ID type:', typeof googleclientid);
-  console.log('🔍 [DEBUG] GOOGLE_CLIENT_ID length:', googleclientid?.length);
 
-  if (!googleclientid || googleclientid === 'undefined') {
-    console.error('❌ [ERROR] GOOGLE_CLIENT_ID is not loaded from .env!');
-  }
 
   GoogleSignin.configure({
     webClientId: googleclientid,

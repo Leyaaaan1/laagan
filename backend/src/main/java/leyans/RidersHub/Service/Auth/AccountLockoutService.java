@@ -25,15 +25,18 @@ public class AccountLockoutService {
     private static final String IP_LOGIN_ATTEMPTS_PREFIX = "login:ip:";
     private static final int MAX_IP_LOGIN_ATTEMPTS = 20;   // 20 attempts per IP per window
 
-    @Autowired
     @Qualifier("redisTemplateInteger")
-    private RedisTemplate<String, Integer> redisTemplate;
+    private final RedisTemplate<String, Integer> redisTemplate;
 
     @Value("${security.lockout.max-failed-attempts:5}")
     private int maxFailedAttempts;
 
     @Value("${security.lockout.lockout-duration-minutes:15}")
     private int lockoutDurationMinutes;
+
+    public AccountLockoutService(RedisTemplate<String, Integer> redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
 
     /**     * Record a failed login attempt for a username.     * If max attempts exceeded, lock the account.     *
      * ⚠️ PROTECTED: If Redis is down, log warning but don't block login flow     */

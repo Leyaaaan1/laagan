@@ -15,6 +15,7 @@ import feedback from '../../styles/base/feedback';
 import inputs from '../../styles/base/inputs';
 import RouteTimeline from './utilities/RouteTimeline';
 import ridestep3style from '../../styles/screens/ridestep3style';
+import {createMemoCompare} from '../../utilities/propsComparison';
 
 
 const RideStep3 = ({
@@ -447,4 +448,19 @@ const RideStep3 = ({
   );
 };
 
-export default RideStep3;
+export default React.memo(
+  RideStep3,
+  createMemoCompare([
+    // List all the setter/callback props that are always new references
+    'setMapMode',
+    'handleLocationSelect',
+    'setStartingPoint',
+    'setEndingPoint',
+    'setEndingLatitude',
+    'setEndingLongitude',
+    'handleCreateRide',
+    'handleSearchInputChange',
+    'setStopPoints',
+    'handleMessage',
+  ]),
+);
