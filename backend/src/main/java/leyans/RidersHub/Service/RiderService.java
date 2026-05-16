@@ -13,10 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import leyans.RidersHub.Repository.RiderRepository;
-
 import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
+
 
 @Service
 @Transactional
@@ -74,6 +72,19 @@ public class RiderService {
         return username;
     }
 
+    public void createGoogleRider(String username, String email) {
+        if (usernameExists(username)) {
+            throw new RuntimeException("Username already taken: " + username);
+        }
+
+        Rider rider = new Rider();
+        rider.setUsername(username);
+        rider.setAuthEmail(email);
+        rider.setPassword(null);
+        rider.setEnabled(true); // Google-only — no password
+        riderRepository.save(rider);
+
+    }
 
 
     public Rider getRiderByUsername(String username) {

@@ -1,6 +1,6 @@
 import {API_BASE_URL} from './Apiclient';
 import {AccessToken, LoginManager} from 'react-native-fbsdk-next';
-
+import {GoogleSignin} from '@react-native-google-signin/google-signin';
 // ─────────────────────────────────────────────────────────────────────────────
 // safeJson
 //
@@ -174,5 +174,48 @@ export const loginWithFacebook = async () => {
   }
 };
 
+
+
+
+
+
+export const loginWithGoogle = async () => {
+  try {
+    console.log('📱 [GoogleSignIn] Starting...');
+
+    const hasPlayServices = await GoogleSignin.hasPlayServices();
+    console.log('📱 [GoogleSignIn] Play Services:', hasPlayServices);
+
+    console.log('📱 [GoogleSignIn] Calling signIn()...');
+    const userInfo = await GoogleSignin.signIn();
+    console.log('📱 [GoogleSignIn] Success:', userInfo);
+    const idToken = userInfo.data?.idToken;
+    if (!idToken) {
+      console.log('❌ [GoogleSignIn] No ID token received');
+      return {success: false, error: 'No ID token from Google'};
+    }
+
+    const response = await fetch(`${API_BASE_URL}/riders/google-login`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({idToken}),
+    });
+
+    const data = await safeJson(response);
+    if (!response.ok) {
+      return {success: false, error: data?.message || 'Google login failed'};
+    }
+
+    return {
+      success: true,
+      data: {accessToken: data.accessToken, refreshToken: data.refreshToken, username: data.username},
+    };
+  } catch (err) {
+    console.error('❌ [GoogleSignIn] Error:', err.message);
+    console.error('❌ [GoogleSignIn] Code:', err.code);
+    console.error('❌ [GoogleSignIn] Full error:', JSON.stringify(err));
+    return {success: false, error: err.message || 'Google login failed'};
+  }
+};
 export const loginUser = authService.login;
 export const registerUser = authService.register;

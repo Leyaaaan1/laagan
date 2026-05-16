@@ -3,7 +3,7 @@ package leyans.RidersHub.Controller.Auth;
 
 import leyans.RidersHub.Config.JWT.JwtUtil;
 import leyans.RidersHub.Service.Auth.RefreshTokenService;
-import leyans.RidersHub.Utility.FacebookTokenVerifier;
+import leyans.RidersHub.Utility.Verifier.FacebookTokenVerifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

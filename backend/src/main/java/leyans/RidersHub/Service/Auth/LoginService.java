@@ -48,31 +48,33 @@ public class LoginService {
     /**
      * Authenticate user and generate tokens
      */
-    public LoginResponse login(LoginRequest loginRequest) throws BadCredentialsException {
+    public LoginResponse login(LoginRequest loginRequest, String clientIp) {
         String email = loginRequest.getEmail();
-        log.info("🔐 Login attempt for email: {}", email);
+        log.info("🔐 Login attempt from IP: {} for email: {}", clientIp, email);
 
+        // 1. IP-level check first (broad gate) — throws RateLimitExceededException
+        accountLockoutService.checkIpLoginRate(clientIp);
+
+        // 2. Account-level lockout check (per-user gate)
         if (accountLockoutService.isAccountLocked(email)) {
             log.warn("🔒 Account locked for: {}", email);
-            throw new IllegalStateException("Account temporarily locked. Please try again in 15 minutes.");
+            throw new IllegalStateException(
+                    "Account temporarily locked. Try again in 15 minutes.");
         }
 
         try {
-            // Spring Security calls loadUserByUsername(email) →
-            // UserDetailsManager tries findByUsername first (misses),
-            // then falls through to findByAuthEmail (hits).
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(email, loginRequest.getPassword())
-            );
+                    new UsernamePasswordAuthenticationToken(email, loginRequest.getPassword()));
 
-            // Load rider to get the real in-app username for the JWT subject + response
             Rider rider = riderUtil.findByAuthEmail(email)
                     .orElseThrow(() -> new RuntimeException("Rider not found for: " + email));
 
             String accessToken  = jwtUtil.generateToken(rider.getUsername());
             String refreshToken = refreshTokenService.createRefreshToken(rider.getUsername());
 
+            // Reset both counters on success
             accountLockoutService.resetFailedAttempts(email);
+            accountLockoutService.resetIpLoginAttempts(clientIp);
 
             log.info("✅ Login successful: {} ({})", rider.getUsername(), email);
             return new LoginResponse(accessToken, refreshToken, rider.getUsername());
@@ -81,7 +83,8 @@ public class LoginService {
             accountLockoutService.recordFailedLoginAttempt(email);
             int remaining = accountLockoutService.getRemainingAttempts(email);
             log.warn("❌ Login failed for: {} | {} attempts remaining", email, remaining);
-            throw new BadCredentialsException("Invalid email or password. " + remaining + " attempts remaining.");
+            throw new BadCredentialsException(
+                    "Invalid email or password. " + remaining + " attempts remaining.");
         }
     }
 

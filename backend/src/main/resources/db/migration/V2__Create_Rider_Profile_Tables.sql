@@ -37,6 +37,14 @@ CREATE TABLE public.facebook_account (
                                          rider_id            INTEGER UNIQUE REFERENCES public.rider(id) ON DELETE CASCADE
 );
 
+CREATE TABLE public.google_account (
+                                       id                  SERIAL PRIMARY KEY,
+                                       google_id           VARCHAR(255) NOT NULL UNIQUE,
+                                       email               VARCHAR(255),
+                                       profile_picture_url VARCHAR(500),
+                                       rider_id            INTEGER UNIQUE REFERENCES public.rider(id) ON DELETE CASCADE
+);
+
 -- Create indexes
 -- ── 3. Recreate indexes cleanly ──────────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_profile_created_at  ON public.rider_profile(created_at);
@@ -45,3 +53,5 @@ CREATE INDEX IF NOT EXISTS idx_facebook_facebook_id ON public.facebook_account(f
 CREATE INDEX IF NOT EXISTS idx_facebook_rider_id    ON public.facebook_account(rider_id);
 
 CREATE INDEX IF NOT EXISTS idx_rider_types          ON public.rider_rider_types(rider_id);
+CREATE INDEX IF NOT EXISTS idx_google_google_id ON public.google_account(google_id);
+CREATE INDEX IF NOT EXISTS idx_google_rider_id  ON public.google_account(rider_id);

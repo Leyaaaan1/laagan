@@ -40,6 +40,11 @@ const StartedRide = ({route, navigation}) => {
   const {activeRide: initialActiveRide} = route?.params || {};
 
   useEffect(() => {
+    console.log('🔍 activeRide:', activeRide);
+    console.log('🔍 generatedRidesId:', activeRide?.generatedRidesId);
+  }, [activeRide]);
+
+  useEffect(() => {
     if (initialActiveRide && !activeRide) {
       setActiveRide(initialActiveRide);
     }

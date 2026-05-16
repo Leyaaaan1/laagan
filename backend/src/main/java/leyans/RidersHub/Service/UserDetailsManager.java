@@ -28,9 +28,15 @@ public class UserDetailsManager implements org.springframework.security.core.use
                 .or(() -> riderRepository.findByAuthEmail(identifier))
                 .orElseThrow(() -> new UsernameNotFoundException("Rider not found: " + identifier));
 
+        // Social login riders (Google, Facebook) have no password.
+        // Spring Security requires a non-null value — use empty string.
+        // Authentication for these riders goes through token verification,
+        // not password comparison, so this value is never actually checked.
+        String password = rider.getPassword() != null ? rider.getPassword() : "";
+
         return User.builder()
-                .username(rider.getUsername())   // always the display name, never the email
-                .password(rider.getPassword())
+                .username(rider.getUsername())
+                .password(password)             // ← never null
                 .authorities("ROLE_RIDER")
                 .disabled(!rider.getEnabled())
                 .build();

@@ -42,6 +42,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 || path.equals("/riders/register")
                 || path.equals("/riders/refresh")
                 || path.startsWith("/facebook/login")
+                || path.equals("/riders/google-login")
                 || path.startsWith("/oauth2/")
                 || path.startsWith("/login/oauth2/")) {   // ← make sure this is here
             filterChain.doFilter(request, response);

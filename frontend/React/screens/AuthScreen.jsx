@@ -13,6 +13,7 @@ import {
 import {
   loginUser,
   loginWithFacebook,
+  loginWithGoogle,
   registerUser,
 } from '../services/authService';
 import inputs from '../styles/base/inputs';
@@ -89,20 +90,21 @@ const getInputBorderStyle = (rules, value, touched, isLogin) => {
 // The confirm-password field and all password logic are unchanged.
 // ─────────────────────────────────────────────────────────────────────────────
 const AuthForm = ({
-                    isLogin,
-                    email,
-                    password,
-                    confirmPassword,
-                    setEmail,
-                    setPassword,
-                    setConfirmPassword,
-                    handleAuth,
-                    toggleMode,
-                    touched,
-                    setTouched,
-                    loading,
-                    handleFacebookLogin,
-                  }) => (
+  isLogin,
+  email,
+  password,
+  confirmPassword,
+  setEmail,
+  setPassword,
+  setConfirmPassword,
+  handleAuth,
+  toggleMode,
+  touched,
+  setTouched,
+  loading,
+  handleFacebookLogin,
+  handleGoogleLogin,
+}) => (
   <KeyboardAvoidingView
     style={layout.center}
     behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -182,9 +184,7 @@ const AuthForm = ({
           placeholderTextColor="#64748b"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
-          onFocus={() =>
-            setTouched(prev => ({...prev, confirmPassword: true}))
-          }
+          onFocus={() => setTouched(prev => ({...prev, confirmPassword: true}))}
           style={[
             inputs.auth,
             getInputBorderStyle(
@@ -232,6 +232,17 @@ const AuthForm = ({
         onPress={handleFacebookLogin}
         disabled={loading}>
         <Text style={[text.white, {fontSize: 16}]}>Continue with Facebook</Text>
+      </TouchableOpacity>
+    )}
+    {isLogin && (
+      <TouchableOpacity
+        style={[
+          buttons.pill,
+          {width: 280, marginBottom: spacing.sm, backgroundColor: '#4285F4'},
+        ]}
+        onPress={handleGoogleLogin}
+        disabled={loading}>
+        <Text style={[text.white, {fontSize: 16}]}>Continue with Google</Text>
       </TouchableOpacity>
     )}
 
@@ -327,6 +338,25 @@ const AuthScreen = () => {
     }
   };
 
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      const result = await loginWithGoogle();
+      if (result.success) {
+        const {accessToken, refreshToken, username} = result.data;
+        await saveAuth(accessToken, refreshToken, username ?? 'google_user');
+      } else {
+        Alert.alert('Error', result.error);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Google login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   const handleFacebookLogin = async () => {
     setLoading(true);
     try {
@@ -374,6 +404,7 @@ const AuthScreen = () => {
         setTouched={setTouched}
         loading={loading}
         handleFacebookLogin={handleFacebookLogin}
+        handleGoogleLogin={handleGoogleLogin}
       />
     </View>
   );

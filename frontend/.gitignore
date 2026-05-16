@@ -10,7 +10,8 @@ node_modules/
 # logs
 logs
 *.log
-
+google-services.json
+android/app/google-services.json
 
 # build output
 build/

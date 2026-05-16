@@ -7,12 +7,15 @@ export const RideProvider = ({children}) => {
   const [activeRide, setActiveRide] = useState(null);
 
   const updateRideParticipants = useCallback(newParticipants => {
-    setActiveRide(prev => ({
-      ...prev,
-      participants: newParticipants,
-    }));
+    setActiveRide(prev => {
+      // Safety: only update if activeRide exists
+      if (!prev) return null;
+      return {
+        ...prev,
+        participants: newParticipants,
+      };
+    });
   }, []);
-
   return (
     <RideContext.Provider
       value={{activeRide, setActiveRide, updateRideParticipants}}>
