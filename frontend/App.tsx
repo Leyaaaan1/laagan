@@ -14,13 +14,15 @@ import StartedRide from './React/pages/StartedRide';
 import RideRoutesPage from './React/components/ride/utilities/RideRoutesPage';
 import RiderProfile from './React/pages/RiderProfile';
 import HomeScreen from './React/pages/HomeScreen';
-
+import {GoogleSignin} from '@react-native-google-signin/google-signin';
+import {GOOGLE_CLIENT_ID} from '@env';
 interface AuthContextValue {
   token: string | null;
   ready: boolean;
 }
 
 const Stack = createNativeStackNavigator();
+export const googleclientid = GOOGLE_CLIENT_ID;
 
 const AuthStack = () => (
   <Stack.Navigator screenOptions={{headerShown: false}}>
@@ -40,9 +42,24 @@ const AppStack = () => (
   </Stack.Navigator>
 );
 
+
 const AppContent = () => {
   const auth = useAuth() as unknown as AuthContextValue;
   setAuthContextRef(auth);
+
+  // ← ADD THESE DEBUG LOGS
+  console.log('🔍 [DEBUG] GOOGLE_CLIENT_ID value:', googleclientid);
+  console.log('🔍 [DEBUG] GOOGLE_CLIENT_ID type:', typeof googleclientid);
+  console.log('🔍 [DEBUG] GOOGLE_CLIENT_ID length:', googleclientid?.length);
+
+  if (!googleclientid || googleclientid === 'undefined') {
+    console.error('❌ [ERROR] GOOGLE_CLIENT_ID is not loaded from .env!');
+  }
+
+  GoogleSignin.configure({
+    webClientId: googleclientid,
+    offlineAccess: true,
+  });
 
   if (!auth.ready) {
     return null;
@@ -54,7 +71,6 @@ const AppContent = () => {
     </NavigationContainer>
   );
 };
-
 export default function App() {
   return (
     <AuthProvider>

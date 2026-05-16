@@ -18,16 +18,12 @@ import {
   addRiderType,
   removeRiderType,
 } from '../services/profileService';
-import {authService} from '../services/authService';
-import {buildRideStep4Params} from '../utilities/NavigationParamsBuilder';
 import profileStyles from '../styles/screens/Profilestyles';
 import buttons from '../styles/base/buttons';
 import inputs from '../styles/base/inputs';
 import colors from '../styles/tokens/colors';
 import spacing from '../styles/tokens/spacing';
-import {fontSize, fontWeight} from '../styles/tokens/typography';
-import ProfileList from './utilities/ProfileList';
-import SearchHeader from '../pages/utilities/SearchHeader';
+import {fontSize} from '../styles/tokens/typography';
 import {useAuth} from '../context/AuthContext';
 import RideTypeSelector from '../commons/RideTypeSelector';
 

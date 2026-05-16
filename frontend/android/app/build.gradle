@@ -47,9 +47,9 @@ android {
     }
     signingConfigs {
         debug {
-            storeFile file('debug.keystore')
+            storeFile file('debug_new.keystore')
             storePassword 'android'
-            keyAlias 'androiddebugkey'
+            keyAlias 'newkey'
             keyPassword 'android'
         }
     }
@@ -70,6 +70,7 @@ dependencies {
     implementation 'com.google.mlkit:barcode-scanning:17.2.0'
     implementation "org.jetbrains.kotlin:kotlin-stdlib:1.8.0"
     implementation 'com.facebook.android:facebook-login:16.3.0'
+    implementation 'com.google.android.gms:play-services-auth:20.7.0'
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")

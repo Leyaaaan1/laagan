@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import {processRideCoordinates} from '../utilities/CoordinateUtils';
-import startedRide from '../styles/screens/startedRide';
+import startedRideStyles from '../styles/screens/startedRideStyles';
 import rideRoutes from '../styles/screens/rideRoutes';
 import feedback from '../styles/base/feedback';
 import RouteMapView from '../utilities/route/view/RouteMapView';
@@ -34,8 +34,15 @@ const StartedRide = ({route, navigation}) => {
   const [pillVisible, setPillVisible] = useState(true);
   const pillTimerRef = useRef(null);
 
+  const mapRef = useRef(null);
+
   const {activeRide, setActiveRide} = useContext(RideContext);
   const {activeRide: initialActiveRide} = route?.params || {};
+
+  useEffect(() => {
+    console.log('🔍 activeRide:', activeRide);
+    console.log('🔍 generatedRidesId:', activeRide?.generatedRidesId);
+  }, [activeRide]);
 
   useEffect(() => {
     if (initialActiveRide && !activeRide) {
@@ -130,6 +137,18 @@ const StartedRide = ({route, navigation}) => {
     navigation.navigate('RideStep4', params);
   };
 
+  const handleFocusOnRider = participantUsername => {
+    const liveLocation = riderMarkers[participantUsername];
+    if (!liveLocation) return; // no location yet, do nothing
+    if (!mapRef.current) return;
+
+    mapRef.current.focusOnRider(
+      liveLocation.latitude,
+      liveLocation.longitude,
+      participantUsername,
+    );
+  };
+
   const handleStopRide = () => {
     Alert.alert(
       'Stop Ride',
@@ -168,7 +187,7 @@ const StartedRide = ({route, navigation}) => {
 
 
   return (
-    <View style={startedRide.container}>
+    <View style={startedRideStyles.container}>
       <StatusBar
         translucent
         barStyle="light-content"
@@ -180,9 +199,9 @@ const StartedRide = ({route, navigation}) => {
           rideRoutes.mapSection,
           {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0},
         ]}>
-        <View style={startedRide.mapHeaderSpacer} />
-
+        <View style={startedRideStyles.mapHeaderSpacer} />
         <RouteMapView
+          ref={mapRef}
           generatedRidesId={activeRide.generatedRidesId}
           startingPoint={mapData.startingPoint}
           endingPoint={mapData.endingPoint}
@@ -192,11 +211,10 @@ const StartedRide = ({route, navigation}) => {
           riderMarkers={riderMarkers}
           currentUsername={username}
         />
-
         {pillVisible && (
           <View
             style={[
-              startedRide.pollingStatusPill,
+              startedRideStyles.pollingStatusPill,
               {
                 borderColor: isPolling
                   ? 'rgba(76,175,80,0.4)'
@@ -205,38 +223,36 @@ const StartedRide = ({route, navigation}) => {
             ]}>
             <View
               style={[
-                startedRide.pollingStatusDot,
+                startedRideStyles.pollingStatusDot,
                 {backgroundColor: isPolling ? '#4CAF50' : '#f44336'},
               ]}
             />
-            <Text style={startedRide.pollingStatusText}>
+            <Text style={startedRideStyles.pollingStatusText}>
               {isPolling ? 'Live' : pollingError ? 'Error' : 'Connecting…'}
             </Text>
           </View>
         )}
-
         {isOffline && (
-          <View style={startedRide.offlineBanner}>
+          <View style={startedRideStyles.offlineBanner}>
             <FontAwesome
               name="wifi"
               size={14}
               color="#fff"
               style={{opacity: 0.6}}
             />
-            <Text style={startedRide.offlineBannerText}>
+            <Text style={startedRideStyles.offlineBannerText}>
               No connection — location paused
             </Text>
           </View>
         )}
-
-        <View style={startedRide.routeInfoOverlay}>
+        <View style={startedRideStyles.routeInfoOverlay}>
           <TouchableOpacity
             onPress={() => setShowRouteInfo(!showRouteInfo)}
             style={[
-              startedRide.routeInfoHeader,
-              showRouteInfo && startedRide.routeInfoHeaderExpanded,
+              startedRideStyles.routeInfoHeader,
+              showRouteInfo && startedRideStyles.routeInfoHeaderExpanded,
             ]}>
-            <View style={startedRide.routeInfoHeaderContent}>
+            <View style={startedRideStyles.routeInfoHeaderContent}>
               <FontAwesome
                 name="map-marker"
                 size={18}
@@ -253,19 +269,24 @@ const StartedRide = ({route, navigation}) => {
 
           {showRouteInfo && (
             <ScrollView
-              style={startedRide.routeScrollContainer}
+              style={startedRideStyles.routeScrollContainer}
               showsVerticalScrollIndicator={true}
-              contentContainerStyle={startedRide.routeScrollContent}>
+              contentContainerStyle={startedRideStyles.routeScrollContent}>
               {/* Starting Point */}
-              <View style={startedRide.routePointContainer}>
+              <View style={startedRideStyles.routePointContainer}>
                 <View style={{flexDirection: 'row', alignItems: 'center'}}>
                   <View
-                    style={[startedRide.routeMarker, startedRide.startMarker]}>
+                    style={[
+                      startedRideStyles.routeMarker,
+                      startedRideStyles.startMarker,
+                    ]}>
                     <Text>🚀</Text>
                   </View>
-                  <Text style={startedRide.routeLabel}>STARTING POINT</Text>
+                  <Text style={startedRideStyles.routeLabel}>
+                    STARTING POINT
+                  </Text>
                 </View>
-                <Text style={startedRide.routeLocationText}>
+                <Text style={startedRideStyles.routeLocationText}>
                   {mapData.startingPoint?.name ||
                     activeRide.startingPointName ||
                     'Starting Location'}
@@ -276,23 +297,25 @@ const StartedRide = ({route, navigation}) => {
               {mapData.stopPoints?.length > 0 && (
                 <View>
                   {mapData.stopPoints.map((stop, index) => (
-                    <View key={index} style={startedRide.routePointContainer}>
+                    <View
+                      key={index}
+                      style={startedRideStyles.routePointContainer}>
                       <View
                         style={{flexDirection: 'row', alignItems: 'center'}}>
                         <View
                           style={[
-                            startedRide.routeMarker,
-                            startedRide.stopMarker,
+                            startedRideStyles.routeMarker,
+                            startedRideStyles.stopMarker,
                           ]}>
-                          <Text style={startedRide.routeMarkerNumber}>
+                          <Text style={startedRideStyles.routeMarkerNumber}>
                             {index + 1}
                           </Text>
                         </View>
-                        <Text style={startedRide.routeLabel}>
+                        <Text style={startedRideStyles.routeLabel}>
                           STOP POINT {index + 1}
                         </Text>
                       </View>
-                      <Text style={startedRide.routeLocationText}>
+                      <Text style={startedRideStyles.routeLocationText}>
                         {stop.name || `Stop ${index + 1}`}
                       </Text>
                     </View>
@@ -301,15 +324,18 @@ const StartedRide = ({route, navigation}) => {
               )}
 
               {/* Ending Point */}
-              <View style={startedRide.routePointContainer}>
+              <View style={startedRideStyles.routePointContainer}>
                 <View style={{flexDirection: 'row', alignItems: 'center'}}>
                   <View
-                    style={[startedRide.routeMarker, startedRide.endMarker]}>
+                    style={[
+                      startedRideStyles.routeMarker,
+                      startedRideStyles.endMarker,
+                    ]}>
                     <Text>🏁</Text>
                   </View>
-                  <Text style={startedRide.routeLabel}>ENDING POINT</Text>
+                  <Text style={startedRideStyles.routeLabel}>ENDING POINT</Text>
                 </View>
-                <Text style={startedRide.routeLocationText}>
+                <Text style={startedRideStyles.routeLocationText}>
                   {mapData.endingPoint?.name ||
                     activeRide.endingPointName ||
                     'Ending Location'}
@@ -317,15 +343,15 @@ const StartedRide = ({route, navigation}) => {
               </View>
 
               {/* Participants */}
-              <View style={startedRide.participantsContainer}>
-                <View style={startedRide.participantsHeader}>
+              <View style={startedRideStyles.participantsContainer}>
+                <View style={startedRideStyles.participantsHeader}>
                   <FontAwesome
                     name="users"
                     size={16}
                     color="#fff"
                     style={{marginRight: 8}}
                   />
-                  <Text style={startedRide.participantsTitle}>
+                  <Text style={startedRideStyles.participantsTitle}>
                     PARTICIPANTS ({activeRide.participants?.length ?? 0})
                   </Text>
                 </View>
@@ -339,50 +365,62 @@ const StartedRide = ({route, navigation}) => {
                     const liveLocation = riderMarkers[participantUsername];
 
                     return (
-                      <View key={index} style={startedRide.participantItem}>
-                        <View style={startedRide.participantAvatar}>
-                          <Text style={startedRide.participantInitial}>
+                      <TouchableOpacity
+                        key={index}
+                        style={[
+                          startedRideStyles.participantItem,
+                          liveLocation && {borderColor: 'rgba(76,175,80,0.3)'},
+                        ]}
+                        onPress={() => handleFocusOnRider(participantUsername)}
+                        disabled={!liveLocation}
+                        activeOpacity={0.7}>
+                        <View style={startedRideStyles.participantAvatar}>
+                          <Text style={startedRideStyles.participantInitial}>
                             {(participantUsername || 'U')[0].toUpperCase()}
                           </Text>
                         </View>
-                        <View style={startedRide.participantInfo}>
-                          <Text style={startedRide.participantName}>
+
+                        <View style={startedRideStyles.participantInfo}>
+                          <Text style={startedRideStyles.participantName}>
                             {participantUsername || 'Unknown User'}
                           </Text>
                           {liveLocation ? (
-                            <Text style={startedRide.participantLocationText}>
-                               {liveLocation.locationName} •{' '}
+                            <Text
+                              style={startedRideStyles.participantLocationText}>
+                              {liveLocation.locationName} •{' '}
                               {Math.round(liveLocation.distanceMeters)}m away
                             </Text>
                           ) : (
-                            <Text style={startedRide.participantWaitingText}>
-                               Waiting for location…
+                            <Text
+                              style={startedRideStyles.participantWaitingText}>
+                              Waiting for location…
                             </Text>
                           )}
                         </View>
+
                         <View
                           style={[
-                            startedRide.participantStatusDot,
+                            startedRideStyles.participantStatusDot,
                             liveLocation
                               ? {backgroundColor: '#4CAF50'}
-                              : startedRide.participantStatusActive,
+                              : startedRideStyles.participantStatusActive,
                           ]}
                         />
-                      </View>
+                      </TouchableOpacity>
                     );
                   })
                 ) : (
-                  <View style={startedRide.emptyParticipants}>
+                  <View style={startedRideStyles.emptyParticipants}>
                     <FontAwesome name="user-plus" size={24} color="#666" />
-                    <Text style={startedRide.emptyParticipantsText}>
+                    <Text style={startedRideStyles.emptyParticipantsText}>
                       No participants yet
                     </Text>
                   </View>
                 )}
 
                 {pollingError && (
-                  <View style={startedRide.pollingErrorAlert}>
-                    <Text style={startedRide.pollingErrorText}>
+                  <View style={startedRideStyles.pollingErrorAlert}>
+                    <Text style={startedRideStyles.pollingErrorText}>
                       ⚠️ {pollingError}
                     </Text>
                   </View>
@@ -391,29 +429,36 @@ const StartedRide = ({route, navigation}) => {
             </ScrollView>
           )}
         </View>
-
         {/* Action Buttons */}
-        <View style={startedRide.actionButtonsContainer}>
-          <TouchableOpacity
-            style={[startedRide.actionButton, {flex: 1}]}
-            onPress={handleSwipeToDetails}>
-            <FontAwesome name="info-circle" size={20} color="#fff" />
-            <Text style={startedRide.actionButtonText}>Details</Text>
-          </TouchableOpacity>
+        <View style={startedRideStyles.actionButtonsContainer}>
+          <View style={startedRideStyles.actionPill}>
+            <TouchableOpacity
+              style={{flexDirection: 'row', alignItems: 'center', gap: 6}}
+              onPress={handleSwipeToDetails}>
+              <FontAwesome
+                name="info-circle"
+                size={16}
+                color="rgba(255,255,255,0.7)"
+              />
+              <Text style={startedRideStyles.actionDetailsLabel}>Details</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[startedRide.actionButton, {flex: 1}]}
-            onPress={handleStopRide}
-            disabled={isStopping}>
-            {isStopping ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <FontAwesome name="stop-circle" size={20} color="#ff4444" />
-            )}
-            <Text style={[startedRide.actionButtonText, {color: '#ff4444'}]}>
-              {isStopping ? 'Stopping…' : 'Stop'}
-            </Text>
-          </TouchableOpacity>
+            <View style={startedRideStyles.actionPillDivider} />
+
+            <TouchableOpacity
+              style={startedRideStyles.actionStopButton}
+              onPress={handleStopRide}
+              disabled={isStopping}>
+              {isStopping ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <FontAwesome name="stop-circle" size={14} color="#fff" />
+              )}
+              <Text style={startedRideStyles.actionStopLabel}>
+                {isStopping ? 'Stopping…' : 'Stop ride'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Animated.View>
     </View>

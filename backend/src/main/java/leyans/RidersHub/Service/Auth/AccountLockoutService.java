@@ -1,6 +1,7 @@
 
 package leyans.RidersHub.Service.Auth;
 
+import leyans.RidersHub.ExceptionHandler.RateLimitExceededException;
 import leyans.RidersHub.ExceptionHandler.RedisUnavailableException;
 import leyans.RidersHub.Utility.AppLogger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,9 @@ public class AccountLockoutService {
     private static final String FAILED_ATTEMPTS_KEY_PREFIX = "login:failed:";
     private static final String LOCKOUT_KEY_PREFIX = "login:locked:";
     private static final String FAILED_ATTEMPTS_IP_PREFIX = "register:failed:";
+
+    private static final String IP_LOGIN_ATTEMPTS_PREFIX = "login:ip:";
+    private static final int MAX_IP_LOGIN_ATTEMPTS = 20;   // 20 attempts per IP per window
 
     @Autowired
     @Qualifier("redisTemplateInteger")
@@ -119,6 +123,38 @@ public class AccountLockoutService {
             log.warn("Redis connection failed while getting register attempts for: {}", ipAddress, e);
             // ⚠️ GRACEFUL DEGRADATION: Return 0 to allow registration
             return 0;
+        }
+    }
+
+    public void checkIpLoginRate(String ipAddress) {
+        String key = IP_LOGIN_ATTEMPTS_PREFIX + ipAddress;
+        try {
+            Integer attempts = redisTemplate.opsForValue().get(key);
+            if (attempts == null) attempts = 0;
+
+            if (attempts >= MAX_IP_LOGIN_ATTEMPTS) {
+                log.warn("IP login rate limit exceeded: {}", ipAddress);
+                throw new RateLimitExceededException(
+                        "Too many login attempts from this IP. Try again in 15 minutes.");
+            }
+
+            attempts++;
+            redisTemplate.opsForValue().set(key, attempts, 15, TimeUnit.MINUTES);
+        } catch (RateLimitExceededException e) {
+            throw e; // re-throw — don't swallow
+        } catch (Exception e) {
+            log.warn("Redis unavailable - skipping IP login rate check for: {}", ipAddress);
+            // graceful degradation — same pattern as your other methods
+        }
+    }
+
+    // ── New method: reset IP counter on success ───────────────────────
+    public void resetIpLoginAttempts(String ipAddress) {
+        String key = IP_LOGIN_ATTEMPTS_PREFIX + ipAddress;
+        try {
+            redisTemplate.delete(key);
+        } catch (Exception e) {
+            log.warn("Redis unavailable - could not reset IP attempts for: {}", ipAddress);
         }
     }
 

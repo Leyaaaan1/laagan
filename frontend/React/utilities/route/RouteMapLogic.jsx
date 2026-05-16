@@ -5,7 +5,7 @@ import { getRouteCoordinates } from '../../services/RouteService';
 import {useAuth} from '../../context/AuthContext';
 
 export const useRouteMapLogic = (generatedRidesId) => {
-  const {token} = useAuth();
+  const {} = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [routeData, setRouteData] = useState(null);
   const [error, setError] = useState(null);

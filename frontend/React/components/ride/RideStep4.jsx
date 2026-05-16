@@ -8,6 +8,8 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+
+
 import {useNavigation} from '@react-navigation/native';
 import {rideAction} from '../../services/rideAction';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';

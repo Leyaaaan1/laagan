@@ -20,7 +20,7 @@ CREATE TABLE public.rider (
                               id         SERIAL PRIMARY KEY,
                               username   VARCHAR(255) NOT NULL UNIQUE,
                               auth_email VARCHAR(255) UNIQUE,
-                              password   VARCHAR(255) NOT NULL,
+                              password   VARCHAR(255),
                               enabled    BOOLEAN NOT NULL DEFAULT true,
                               about      VARCHAR(500),
                               rider_type INTEGER REFERENCES public.rider_type(rider_type_id) ON DELETE SET NULL

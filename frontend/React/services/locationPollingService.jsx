@@ -1,4 +1,6 @@
-import {API_BASE_URL} from './Apiclient';
+// === locationPollingService.jsx ===
+
+import {API_BASE_URL, api} from './Apiclient';
 import Geolocation from '@react-native-community/geolocation';
 import {Platform, PermissionsAndroid} from 'react-native';
 
@@ -31,15 +33,15 @@ export const getCurrentPosition = async () => {
           err => reject(new Error(`GPS Error (${err.code}): ${err.message}`)),
           {
             enableHighAccuracy: false,
-            timeout: 5000, // ← REDUCED from 10000
+            timeout: 10000, // ← INCREASED from 5000
             maximumAge: 60000,
           },
         );
       },
       {
         enableHighAccuracy: true,
-        timeout: 8000, // ← REDUCED from 45000
-        maximumAge: 5000, // ← REDUCED from 10000
+        timeout: 15000, // ← INCREASED from 8000
+        maximumAge: 5000,
         forceRequestLocation: true,
         showLocationDialog: true,
       },
@@ -47,40 +49,46 @@ export const getCurrentPosition = async () => {
   });
 };
 
-
+// ✅ NEW: Use centralized API client with automatic token refresh
 export const shareLocationAndFetchAll = async (
   rideId,
   latitude,
   longitude,
-  authToken,
+  authToken, // ← Keep this for backward compatibility but may not need it
 ) => {
   if (!rideId) throw new Error('Missing rideId');
-  if (!authToken) throw new Error('AUTH_MISSING - No access token available');
 
   console.log('🌍 Sharing location:', {rideId, latitude, longitude});
 
-  const response = await fetch(
-    `${API_BASE_URL}/location/${rideId}/share?latitude=${latitude}&longitude=${longitude}`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-        'Content-Type': 'application/json',
-      },
-    },
-  );
-
-  if (response.status === 401 || response.status === 403) {
-    throw new Error(
-      response.status === 401
-        ? 'Session expired. Please log in again.'
-        : 'Unauthorized to share location.',
+  try {
+    // Use centralized api client which:
+    // 1. Automatically handles 401 with token refresh
+    // 2. Has retry logic built-in
+    // 3. Accesses AuthContext for fresh tokens
+    const response = await api.post(
+      `/location/${rideId}/share?latitude=${latitude}&longitude=${longitude}`,
+      {}, // Empty body
+      authToken, // Pass token if provided, otherwise api client will fetch from context
     );
-  }
-  if (!response.ok)
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 
-  return response.json();
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    // Map API client errors to meaningful messages
+    if (error.message === 'AUTH_EXPIRED') {
+      throw new Error('Session expired. Please log in again.');
+    }
+    if (error.message === 'AUTH_FORBIDDEN') {
+      throw new Error('Unauthorized to share location.');
+    }
+    if (error.message === 'AUTH_MISSING') {
+      throw new Error('AUTH_MISSING - No access token available');
+    }
+    throw error;
+  }
 };
 
 export const calculateBackoffDelay = retryCount =>
@@ -92,7 +100,9 @@ export const isAuthError = err =>
   err.message.includes('Session expired') ||
   err.message.includes('Unauthorized') ||
   err.message.includes('401') ||
-  err.message.includes('403');
+  err.message.includes('403') ||
+  err.message.includes('AUTH_EXPIRED') ||
+  err.message.includes('AUTH_MISSING');
 
 export const createIntervalManager = () => {
   let intervalId = null;
