@@ -59,7 +59,7 @@ const cards = StyleSheet.create({
   },
 
   heroDistanceText: {
-    color: '#8c2323',
+    color: '#ffffff',
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semi,
     letterSpacing: 0.2,

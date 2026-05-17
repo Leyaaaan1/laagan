@@ -373,15 +373,7 @@ const useCreateRide = ({}) => {
       setGeneratedRidesId(generatedId);
       pendingRideIdRef.current = generatedId;
 
-      const successMsg = SUCCESS_MESSAGES.RIDE_OPERATIONS.RIDE_CREATED;
-      Alert.alert('Success', successMsg, [
-        {
-          text: 'View Ride',
-          onPress: () => {
-            setCurrentStep(4);
-          },
-        },
-      ]);
+      setCurrentStep(4);
     } catch (err) {
       // ────────────────────────────────────────────────────────────────────────
       // STEP 6: ERROR HANDLING
@@ -479,7 +471,7 @@ const useCreateRide = ({}) => {
     setMapMode,
     handleMessage, //
     generatedRidesId,
-    handleCreateRide, // 
+    handleCreateRide, //
   };};
 
 export default useCreateRide;

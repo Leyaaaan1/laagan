@@ -38,6 +38,7 @@ const RideStep3 = ({
     setLocalQuery,
     handleSearchInputChange,
   });
+  const [locationMode, setLocationMode] = useState(null);
 
   useEffect(() => {
     if (!searchQuery) {
@@ -47,10 +48,12 @@ const RideStep3 = ({
 
   // ── Frozen map HTML ───────────────────────────────────────────────────────
   const mapHtml = useMemo(() => {
-    const {lat, lng} = getInitialMapCoords(startingLatitude, startingLongitude);
+    const lat =
+      parseFloat(step2Latitude) || parseFloat(startingLatitude) || 7.0731;
+    const lng =
+      parseFloat(step2Longitude) || parseFloat(startingLongitude) || 125.6128;
     return getMapHTML(lat, lng, false);
-  }, [startingLatitude, startingLongitude]);
-
+  }, []);
   // ── Route draw callback ───────────────────────────────────────────────────
   const triggerDrawRoute = useCallback(() => {
     drawRoadRoute({
@@ -58,17 +61,28 @@ const RideStep3 = ({
       sLng: parseFloat(startingLongitude),
       eLat: parseFloat(endingLatitude),
       eLng: parseFloat(endingLongitude),
-      stopPoints, token, webViewRef, setRouteLoading,
+      stopPoints,
+      token,
+      webViewRef,
+      setRouteLoading,
     });
   }, [
-    startingLatitude, startingLongitude, endingLatitude, endingLongitude, stopPoints, token, webViewRef,
+    startingLatitude,
+    startingLongitude,
+    endingLatitude,
+    endingLongitude,
+    stopPoints,
+    token,
+    webViewRef,
   ]);
 
   // Auto-draw when endpoints / stops change (debounced)
   useEffect(() => {
     const bothSet =
-      startingLatitude && startingLongitude &&
-      endingLatitude && endingLongitude;
+      startingLatitude &&
+      startingLongitude &&
+      endingLatitude &&
+      endingLongitude;
     const notPicking = mapMode !== 'starting' && mapMode !== 'ending';
     if (!bothSet || !notPicking) {
       return;
@@ -76,21 +90,32 @@ const RideStep3 = ({
     const timer = setTimeout(triggerDrawRoute, 1000);
     return () => clearTimeout(timer);
   }, [
-    startingLatitude, startingLongitude, endingLatitude, endingLongitude, stopPoints, mapMode,
+    startingLatitude,
+    startingLongitude,
+    endingLatitude,
+    endingLongitude,
+    stopPoints,
+    mapMode,
   ]);
 
   // ── Step-2 location shortcut ──────────────────────────────────────────────
+  // REPLACE the existing handleUseStep2Location function:
   const handleUseStep2Location = () => {
     if (step2LocationName && step2Latitude && step2Longitude) {
       setEndingPoint(step2LocationName);
       setEndingLatitude(step2Latitude);
       setEndingLongitude(step2Longitude);
-      setMapMode('stop');
-      setTimeout(triggerDrawRoute, 500);
+      setMapMode('starting');
+      // Pan map to the suggested location
+      webViewRef.current?.injectJavaScript(
+        `map.setView([${parseFloat(step2Latitude)}, ${parseFloat(
+          step2Longitude,
+        )}], 14); true;`,
+      );
     }
+    setLocationMode('suggested');
     setShowLocationModal(false);
   };
-
   // ── Stop handlers ─────────────────────────────────────────────────────────
   const startAddStopPoint = () => {
     setMapMode('stop');
@@ -100,32 +125,67 @@ const RideStep3 = ({
 
   const handleConfirmStop = () =>
     confirmStopPoint({
-      currentStop, setStopPoints, setIsAddingStop, setCurrentStop,
-      setMapMode, onRouteReady: triggerDrawRoute,
+      currentStop,
+      setStopPoints,
+      setIsAddingStop,
+      setCurrentStop,
+      setMapMode,
+      onRouteReady: triggerDrawRoute,
     });
 
   const handleRemoveStop = index =>
     removeStopPoint(index, setStopPoints, triggerDrawRoute);
 
   // ── Finalize start / end selection ───────────────────────────────────────
-  const handleFinalizePoint = () =>
-    finalizePointSelection({
-      mapMode, startingPoint, endingPoint, setMapMode, setLocalQuery,
-      onRouteReady: triggerDrawRoute,
-    });
-
+  // REPLACE the existing handleFinalizePoint function:
+  const handleFinalizePoint = () => {
+    if (mapMode === 'starting' && startingPoint) {
+      // If ending is already set (suggested location flow), skip to stop mode
+      if (endingPoint) {
+        setMapMode('stop');
+        setLocalQuery('');
+        setTimeout(triggerDrawRoute, 500);
+      } else {
+        setMapMode('ending');
+        setLocalQuery('');
+      }
+    } else if (mapMode === 'ending' && endingPoint) {
+      setMapMode('stop');
+      setLocalQuery('');
+      setTimeout(triggerDrawRoute, 500);
+    }
+  };
   // ── Location select from search ───────────────────────────────────────────
   const handleSearchResultSelect = item =>
     handleSelectLocationAndUpdateMap({
-      item, mapMode, handleLocationSelect, setStartingPoint, setEndingPoint, setLocalQuery, webViewRef, startingLatitude,
-      startingLongitude, endingLatitude, endingLongitude, onRouteReady: triggerDrawRoute,
+      item,
+      mapMode,
+      handleLocationSelect,
+      setStartingPoint,
+      setEndingPoint,
+      setLocalQuery,
+      webViewRef,
+      startingLatitude,
+      startingLongitude,
+      endingLatitude,
+      endingLongitude,
+      onRouteReady: triggerDrawRoute,
     });
 
   // ── WebView message router ────────────────────────────────────────────────
   const onWebViewMessage = event =>
     routeWebViewMessage({
-      event, mapMode, isAddingStop, startingLatitude, startingLongitude,
-      endingLatitude, endingLongitude, onRouteReady: triggerDrawRoute, handleMessage, setCurrentStop, setAddingStopLoading,
+      event,
+      mapMode,
+      isAddingStop,
+      startingLatitude,
+      startingLongitude,
+      endingLatitude,
+      endingLongitude,
+      onRouteReady: triggerDrawRoute,
+      handleMessage,
+      setCurrentStop,
+      setAddingStopLoading,
     });
 
   // ── Bottom sheet ──────────────────────────────────────────────────────────
@@ -174,6 +234,7 @@ const RideStep3 = ({
         />
 
         {/* ── Floating navbar ── */}
+
         <View style={rideCreation.floatingNav}>
           <TouchableOpacity
             style={buttons.back}
@@ -209,6 +270,7 @@ const RideStep3 = ({
             )}
           </TouchableOpacity>
         </View>
+
 
         {/* ── Search card ── */}
         <View style={rideCreation.searchContainer}>
@@ -338,11 +400,12 @@ const RideStep3 = ({
                 setLocalQuery('');
               }}
               onRemoveStop={handleRemoveStop}
+              mapMode={mapMode}
             />
 
-            {/* Bottom action buttons */}
+             Bottom action buttons
             <View style={ridestep3style.bottomActionsRow}>
-              {/* Add Stop */}
+               Add Stop
               {mapMode === 'stop' && !isAddingStop && (
                 <TouchableOpacity
                   style={[
@@ -355,7 +418,7 @@ const RideStep3 = ({
                 </TouchableOpacity>
               )}
 
-              {/* Confirm Stop */}
+               Confirm Stop
               {mapMode === 'stop' && isAddingStop && currentStop && (
                 <TouchableOpacity
                   style={[
@@ -376,7 +439,7 @@ const RideStep3 = ({
                 </TouchableOpacity>
               )}
 
-              {/* Finalize start / end */}
+               Finalize start / end
               {showFinalizeBtn && (
                 <TouchableOpacity
                   style={[
@@ -391,7 +454,7 @@ const RideStep3 = ({
                 </TouchableOpacity>
               )}
 
-              {/* Create Ride */}
+               Create Ride
               {startingPoint && endingPoint && !isAddingStop && (
                 <TouchableOpacity
                   style={[
@@ -442,7 +505,10 @@ const RideStep3 = ({
         visible={showLocationModal && !!step2LocationName && !endingPoint}
         locationName={step2LocationName}
         onUseAsEnd={handleUseStep2Location}
-        onDismiss={() => setShowLocationModal(false)}
+        onDismiss={() => {
+          setLocationMode('manual');
+          setShowLocationModal(false);
+        }}
       />
     </View>
   );

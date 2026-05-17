@@ -442,6 +442,26 @@ export default function RiderProfile({route, navigation}) {
                     <Text style={{color: colors.white}}>Logout</Text>
                   )}
                 </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('LegalScreen')}
+                  style={{paddingVertical: spacing.md}}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}>
+                    <Text
+                      style={{color: colors.primary}}>
+                      Privacy Policy
+                    </Text>
+                    <FontAwesome
+                      name="chevron-right"
+                      size={14}
+                      color={colors.primary}
+                    />
+                  </View>
+                </TouchableOpacity>
               </View>
             </SectionCard>
           </>

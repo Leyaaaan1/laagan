@@ -12,9 +12,11 @@ logs
 *.log
 google-services.json
 android/app/google-services.json
+build/
+*.keystore
+
 
 # build output
-build/
 dist/
 
 # cache
