@@ -8,7 +8,11 @@ import React, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Keychain from 'react-native-keychain';
 import {API_BASE_URL, setAuthContextRef} from '../services/Apiclient';
-
+import {
+  saveTokenExpiry,
+  clearTokenExpiry,
+  getTimeUntilExpiry,
+} from '../services/cache/tokenMetadata';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({children}) => {
@@ -17,18 +21,21 @@ export const AuthProvider = ({children}) => {
   const [ready, setReady] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const tokenRef = useRef(null);
+  const [showStayLoggedInDialog, setShowStayLoggedInDialog] = useState(false);
+  const [userPreferAutoLogin, setUserPreferAutoLogin] = useState(true);
+
   const refreshTokenRef = useRef(null);
   const usernameRef = useRef(null);
   const refreshAccessTokenRef = useRef(null);
-
+  const tokenRef = useRef(null);
   const syncApiclientRef = () => {
     setAuthContextRef({
-      getToken: () => tokenRef.current,
+      getToken: () => token, // Use `token` state instead of ref
       refreshAccessToken: (...args) => refreshAccessTokenRef.current?.(...args),
     });
   };
 
+  // REPLACE the initializeAuth function (lines 32-70):
   const initializeAuth = async () => {
     try {
       // 1. Load stored username
@@ -39,24 +46,29 @@ export const AuthProvider = ({children}) => {
         console.log('✅ Username loaded:', storedUsername);
       }
 
-      // 2. Load refresh token from Keychain
+      // 2. Check if user previously opted out of auto-login
+      const autoLoginPref = await AsyncStorage.getItem('autoLoginPreference');
+      if (autoLoginPref !== null) {
+        setUserPreferAutoLogin(autoLoginPref === 'true');
+      }
+
+      // 3. Load refresh token from Keychain
       const credentials = await Keychain.getGenericPassword({
         service: 'com.ridershub.auth',
       });
 
-      if (credentials?.password) {
+      if (credentials?.password && userPreferAutoLogin) {
         refreshTokenRef.current = credentials.password;
         console.log('✅ Refresh token found — attempting session restore');
 
-        // 3. Exchange stored refresh token for a fresh access token.
-        syncApiclientRef(); // needed before calling refresh
+        // 4. Exchange stored refresh token for a fresh access token
+        syncApiclientRef();
         const restored = await restoreSession(credentials.password);
         if (!restored) {
-          // Token was invalid/expired (e.g. user logged out on another device,
-          // or server restarted and revoked tokens). This is expected — silently
-          // drop to login screen. Storage was already cleared inside restoreSession.
           console.log('ℹ️ Session restore failed — showing login screen');
         }
+      } else if (credentials?.password && !userPreferAutoLogin) {
+        console.log('ℹ️ User chose not to auto-login — showing login screen');
       } else {
         console.log('ℹ️ No stored session — showing login screen');
       }
@@ -110,11 +122,23 @@ export const AuthProvider = ({children}) => {
   };
 
   useEffect(() => {
+    // Keep tokenRef in sync with state for backwards compatibility with Apiclient
+    tokenRef.current = token;
+    syncApiclientRef();
+  }, [token]);
+
+  useEffect(() => {
     initializeAuth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const saveAuth = async (newAccessToken, newRefreshToken, newUsername) => {
+  // REPLACE saveAuth function (lines 117-144):
+  const saveAuth = async (
+    newAccessToken,
+    newRefreshToken,
+    newUsername,
+    expiresIn = 3600,
+  ) => {
     try {
       console.log('💾 Saving auth tokens for user:', newUsername);
 
@@ -125,6 +149,9 @@ export const AuthProvider = ({children}) => {
       syncApiclientRef();
       setToken(newAccessToken);
       setUsername(newUsername);
+
+      // Save token expiry metadata
+      await saveTokenExpiry(expiresIn);
 
       await _clearStorage();
 
@@ -143,6 +170,7 @@ export const AuthProvider = ({children}) => {
     }
   };
 
+  // REPLACE refreshAccessToken function (lines 146-188):
   const refreshAccessToken = async () => {
     if (isRefreshing || !refreshTokenRef.current) {
       console.warn('⚠️ Cannot refresh: already refreshing or no refresh token');
@@ -161,6 +189,14 @@ export const AuthProvider = ({children}) => {
 
       if (!response.ok) {
         console.error('❌ Token refresh failed:', response.status);
+
+        // NEW: Handle token refresh failure
+        if (response.status === 401 || response.status === 403) {
+          await onTokenRefreshFailed(
+            'Your session has expired. Please login again.',
+          );
+        }
+
         await clearAuth();
         return null;
       }
@@ -171,6 +207,10 @@ export const AuthProvider = ({children}) => {
       syncApiclientRef();
       setToken(data.accessToken);
 
+      // NEW: Save token expiry
+      const expiresIn = data.expiresIn || 3600;
+      await saveTokenExpiry(expiresIn);
+
       await Keychain.setGenericPassword('userToken', data.refreshToken, {
         accessibilityLevel: Keychain.ACCESSIBLE_WHEN_UNLOCKED_THIS_DEVICE_ONLY,
         service: 'com.ridershub.auth',
@@ -180,6 +220,9 @@ export const AuthProvider = ({children}) => {
       return data.accessToken;
     } catch (error) {
       console.error('❌ Token refresh error:', error);
+      await onTokenRefreshFailed(
+        'Network error while refreshing session. Please try again.',
+      );
       await clearAuth();
       return null;
     } finally {
@@ -188,7 +231,42 @@ export const AuthProvider = ({children}) => {
   };
   refreshAccessTokenRef.current = refreshAccessToken;
 
+  const onTokenRefreshFailed = async message => {
+    try {
+      console.error('❌ Token refresh failed:', message);
+
+      // Clear token metadata
+      await clearTokenExpiry();
+
+      // In a real app, show this notification to the user:
+      // This function will be called from screens that have access to navigation/alerts
+      // For now, we just log it and clear state
+
+      // Re-export this in context so screens can call it
+      return {shouldRedirectToAuth: true, message};
+    } catch (err) {
+      console.error('Failed to handle token refresh failure:', err);
+    }
+  };
+  useEffect(() => {
+    if (!token) return;
+
+    const checkTokenExpiry = async () => {
+      const timeUntilExpiry = await getTimeUntilExpiry();
+      if (timeUntilExpiry !== null && timeUntilExpiry < 5 * 60 * 1000) {
+        // Token expiring in less than 5 minutes
+        console.warn('⚠️ Token expiring soon, auto-refreshing...');
+        await refreshAccessToken();
+      }
+    };
+
+    const interval = setInterval(checkTokenExpiry, 60 * 1000); // Check every minute
+    return () => clearInterval(interval);
+  }, [token, isRefreshing]);
+
   // ─── Internal helper: wipe persisted credentials only (no state reset) ───
+
+  // REPLACE _clearStorage function (lines 192-203):
   const _clearStorage = async () => {
     try {
       await Keychain.resetGenericPassword({service: 'com.ridershub.auth'});
@@ -199,6 +277,12 @@ export const AuthProvider = ({children}) => {
       await AsyncStorage.removeItem('username');
     } catch (err) {
       console.warn('⚠️ AsyncStorage remove warning:', err.message);
+    }
+    // NEW: Clear token expiry
+    try {
+      await clearTokenExpiry();
+    } catch (err) {
+      console.warn('⚠️ Token expiry clear warning:', err.message);
     }
   };
 
@@ -212,6 +296,18 @@ export const AuthProvider = ({children}) => {
     setUsername(null);
     await _clearStorage();
     console.log('✅ Auth cleared');
+  };
+  const setAutoLoginPreference = async prefer => {
+    setUserPreferAutoLogin(prefer);
+    try {
+      await AsyncStorage.setItem(
+        'autoLoginPreference',
+        prefer ? 'true' : 'false',
+      );
+      console.log(`✅ Auto-login preference set to: ${prefer}`);
+    } catch (err) {
+      console.error('Failed to save auto-login preference:', err);
+    }
   };
 
   const logout = async () => {
@@ -237,6 +333,26 @@ export const AuthProvider = ({children}) => {
     }
   };
 
+  const deleteAccount = async () => {
+    const currentToken = tokenRef.current;
+    await clearAuth();
+
+    if (currentToken) {
+      fetch(`${API_BASE_URL}/riders/account`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${currentToken}`,
+          'Content-Type': 'application/json',
+        },
+      }).catch(err => {
+        console.warn(
+          '⚠️ Delete account server call failed (non-fatal):',
+          err.message,
+        );
+      });
+    }
+  };
+
   const getToken = () => tokenRef.current;
   const getUsername = () => usernameRef.current;
 
@@ -253,11 +369,15 @@ export const AuthProvider = ({children}) => {
     saveAuth,
     clearAuth,
     logout,
+    deleteAccount,
     getToken,
     refreshAccessToken,
     isRefreshing,
+    userPreferAutoLogin,
+    setAutoLoginPreference,
+    getTimeUntilExpiry, // NEW
+    onTokenRefreshFailed, // NEW
   };
-
   return (
     <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );

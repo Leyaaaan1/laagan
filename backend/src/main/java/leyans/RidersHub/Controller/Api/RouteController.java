@@ -13,8 +13,11 @@ import leyans.RidersHub.DTO.Request.RidesDTO.RouteRequestDTO;
 @RequestMapping("/routes")
 public class RouteController {
 
-    @Autowired
-    private RouteService routeService; // Use your existing service
+    private final RouteService routeService; // Use your existing service
+
+    public RouteController(RouteService routeService) {
+        this.routeService = routeService;
+    }
 
     /**
      * Get route directions between points using existing DirectionsService

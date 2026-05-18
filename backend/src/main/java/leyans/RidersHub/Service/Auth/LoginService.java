@@ -5,11 +5,13 @@ import leyans.RidersHub.DTO.Request.LoginRequest;
 import leyans.RidersHub.DTO.Request.RegisterRequest;
 import leyans.RidersHub.DTO.Response.LoginResponse;
 import leyans.RidersHub.DTO.Response.RegisterResponse;
+import leyans.RidersHub.Repository.RiderRepository;
 import leyans.RidersHub.Service.RiderService;
 import leyans.RidersHub.Utility.RiderUtil;
 import leyans.RidersHub.model.Rider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,25 +26,31 @@ public class LoginService {
     private static final int MAX_FAILED_ATTEMPTS = 5;
     private static final long LOCKOUT_DURATION_MINUTES = 15;
 
+    @Value("${app.registration.max-users:50}")
+    private int maxUsers;
+
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final RiderService riderService;
     private final RefreshTokenService refreshTokenService;
     private final AccountLockoutService accountLockoutService;
     private final RiderUtil riderUtil;
+    private final RiderRepository riderRepository;
+
 
     public LoginService(
             AuthenticationManager authenticationManager,
             JwtUtil jwtUtil,
             RiderService riderService,
             RefreshTokenService refreshTokenService,
-            AccountLockoutService accountLockoutService, RiderUtil riderUtil) {
+            AccountLockoutService accountLockoutService, RiderUtil riderUtil, RiderRepository riderRepository) {
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.riderService = riderService;
         this.refreshTokenService = refreshTokenService;
         this.accountLockoutService = accountLockoutService;
         this.riderUtil = riderUtil;
+        this.riderRepository = riderRepository;
     }
 
     /**
@@ -93,12 +101,26 @@ public class LoginService {
      */
 
 
+    //Register was limited to 50, but it is subject to change
+
+    //command for RLS
+    //ALTER TABLE rider ENABLE ROW LEVEL SECURITY;
+    //
+    //CREATE POLICY "Only enabled rider can access data"
+    //ON rider
+    //FOR SELECT
+    //USING (enabled = true);
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public RegisterResponse register(RegisterRequest registerRequest, String clientIp) {
         String email    = registerRequest.getEmail();
         String password = registerRequest.getPassword();
 
         log.info("📝 Register attempt from IP: {} for email: {}", clientIp, email);
+
+        long totalUsers = riderRepository.count();
+        if (totalUsers >= maxUsers) {
+            throw new RuntimeException("Registration closed. Limit reached.");
+        }
 
         try {
             int attempts = accountLockoutService.getRegisterAttempts(clientIp);

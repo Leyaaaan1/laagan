@@ -12,8 +12,11 @@ import java.util.List;
 @RequestMapping("/wikimedia")
 public class WikimediaImageController {
 
-    @Autowired
-    private WikimediaImageService wikimediaImageService;
+    private final WikimediaImageService wikimediaImageService;
+
+    public WikimediaImageController(WikimediaImageService wikimediaImageService) {
+        this.wikimediaImageService = wikimediaImageService;
+    }
 
     @GetMapping("/location")
     public ResponseEntity<List<LocationImageDto>> getLocationImages(@RequestParam String locationName) {

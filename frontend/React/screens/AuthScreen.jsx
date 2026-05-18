@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -31,6 +31,7 @@ import {
   isFormValid,
   PASSWORD_RULES,
 } from '../utilities/validator/Authvalidation';
+import {createMemoCompare} from '../utilities/propsComparison';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ValidationChecklist
@@ -42,7 +43,9 @@ import {
 //   - Has a domain part (e.g. ".com")
 //   - Max length 254 (RFC 5321)
 // ─────────────────────────────────────────────────────────────────────────────
-const ValidationChecklist = ({rules, value, touched, isLogin}) => {
+
+// ✅ WRAP THIS TOO
+const ValidationChecklist = React.memo(({rules, value, touched, isLogin}) => {
   if (isLogin || !touched || value.length === 0) return null;
 
   const {rules: evaluated} = evaluateRules(rules, value);
@@ -71,7 +74,7 @@ const ValidationChecklist = ({rules, value, touched, isLogin}) => {
       })}
     </View>
   );
-};
+});
 
 const getInputBorderStyle = (rules, value, touched, isLogin) => {
   if (isLogin || !touched || value.length === 0) return null;
@@ -89,108 +92,85 @@ const getInputBorderStyle = (rules, value, touched, isLogin) => {
 //
 // The confirm-password field and all password logic are unchanged.
 // ─────────────────────────────────────────────────────────────────────────────
-const AuthForm = ({
-  isLogin,
-  email,
-  password,
-  confirmPassword,
-  setEmail,
-  setPassword,
-  setConfirmPassword,
-  handleAuth,
-  toggleMode,
-  touched,
-  setTouched,
-  loading,
-  handleFacebookLogin,
-  handleGoogleLogin,
-}) => (
-  <KeyboardAvoidingView
-    style={layout.center}
-    behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-    <Text
-      style={[text.titleCenter, {marginBottom: spacing.lg, letterSpacing: 1}]}>
-      {isLogin ? 'WELCOME BACK' : 'CREATE ACCOUNT'}
-    </Text>
-
-    <Text
-      style={[text.bodyMuted, {textAlign: 'center', marginBottom: spacing.lg}]}>
-      {isLogin
-        ? 'Sign in to continue laags'
-        : 'Join the community and start riding'}
-    </Text>
-
-    {/* ── Email ── */}
-    <View style={authStyle.fieldBlock}>
-      <TextInput
-        placeholder="Email"
-        placeholderTextColor="#64748b"
-        value={email}
-        onChangeText={setEmail}
-        onFocus={() => setTouched(prev => ({...prev, email: true}))}
+const AuthForm = React.memo(
+  ({
+    isLogin,
+    email,
+    password,
+    confirmPassword,
+    setEmail,
+    setPassword,
+    setConfirmPassword,
+    handleAuth,
+    toggleMode,
+    touched,
+    setTouched,
+    loading,
+    handleFacebookLogin,
+    handleGoogleLogin,
+  }) => (
+    <KeyboardAvoidingView
+      style={layout.center}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <Text
         style={[
-          inputs.auth,
-          getInputBorderStyle(EMAIL_RULES, email, touched.email, isLogin),
-        ]}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        autoCorrect={false}
-        maxLength={254}
-        editable={!loading}
-      />
-      <ValidationChecklist
-        rules={EMAIL_RULES}
-        value={email}
-        touched={touched.email}
-        isLogin={isLogin}
-      />
-    </View>
+          text.titleCenter,
+          {marginBottom: spacing.lg, letterSpacing: 1},
+        ]}>
+        {isLogin ? 'WELCOME BACK' : 'CREATE ACCOUNT'}
+      </Text>
 
-    {/* ── Password ── */}
-    <View style={authStyle.fieldBlock}>
-      <TextInput
-        placeholder="Password"
-        placeholderTextColor="#64748b"
-        value={password}
-        onChangeText={setPassword}
-        onFocus={() => setTouched(prev => ({...prev, password: true}))}
+      <Text
         style={[
-          inputs.auth,
-          getInputBorderStyle(
-            PASSWORD_RULES,
-            password,
-            touched.password,
-            isLogin,
-          ),
-        ]}
-        secureTextEntry
-        autoCorrect={false}
-        maxLength={128}
-        editable={!loading}
-      />
-      <ValidationChecklist
-        rules={PASSWORD_RULES}
-        value={password}
-        touched={touched.password}
-        isLogin={isLogin}
-      />
-    </View>
+          text.bodyMuted,
+          {textAlign: 'center', marginBottom: spacing.lg},
+        ]}>
+        {isLogin
+          ? 'Sign in to continue laags'
+          : 'Join the community and start riding'}
+      </Text>
 
-    {/* ── Confirm Password (register only) ── */}
-    {!isLogin && (
+      {/* ── Email ── */}
       <View style={authStyle.fieldBlock}>
         <TextInput
-          placeholder="Confirm Password"
+          placeholder="Email"
           placeholderTextColor="#64748b"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          onFocus={() => setTouched(prev => ({...prev, confirmPassword: true}))}
+          value={email}
+          onChangeText={setEmail}
+          onFocus={() => setTouched(prev => ({...prev, email: true}))}
+          style={[
+            inputs.auth,
+            getInputBorderStyle(EMAIL_RULES, email, touched.email, isLogin),
+          ]}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          maxLength={254}
+          editable={!loading}
+        />
+        <ValidationChecklist
+          rules={EMAIL_RULES}
+          value={email}
+          touched={touched.email}
+          isLogin={isLogin}
+        />
+      </View>
+
+      {/* ── Password ── */}
+      <View style={authStyle.fieldBlock}>
+        <TextInput
+          placeholder="Password"
+          placeholderTextColor="#64748b"
+          value={password}
+          onChangeText={setPassword}
+          onFocus={() => setTouched(prev => ({...prev, password: true}))}
           style={[
             inputs.auth,
             getInputBorderStyle(
-              CONFIRM_RULES(password),
-              confirmPassword,
-              touched.confirmPassword,
+              PASSWORD_RULES,
+              password,
+              touched.password,
+              isLogin,
             ),
           ]}
           secureTextEntry
@@ -199,64 +179,112 @@ const AuthForm = ({
           editable={!loading}
         />
         <ValidationChecklist
-          rules={CONFIRM_RULES(password)}
-          value={confirmPassword}
-          touched={touched.confirmPassword}
+          rules={PASSWORD_RULES}
+          value={password}
+          touched={touched.password}
+          isLogin={isLogin}
         />
       </View>
-    )}
 
-    {/* ── Submit ── */}
-    <TouchableOpacity
-      style={[
-        buttons.pill,
-        {width: 280, marginBottom: spacing.sm, opacity: loading ? 0.7 : 1},
-      ]}
-      onPress={handleAuth}
-      disabled={loading}>
-      {loading ? (
-        <ActivityIndicator color="#fff" size="small" />
-      ) : (
-        <Text style={[text.white, {fontSize: 16}]}>
-          {isLogin ? 'Login' : 'Register'}
-        </Text>
+      {/* ── Confirm Password (register only) ── */}
+      {!isLogin && (
+        <View style={authStyle.fieldBlock}>
+          <TextInput
+            placeholder="Confirm Password"
+            placeholderTextColor="#64748b"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            onFocus={() =>
+              setTouched(prev => ({...prev, confirmPassword: true}))
+            }
+            style={[
+              inputs.auth,
+              getInputBorderStyle(
+                CONFIRM_RULES(password),
+                confirmPassword,
+                touched.confirmPassword,
+              ),
+            ]}
+            secureTextEntry
+            autoCorrect={false}
+            maxLength={128}
+            editable={!loading}
+          />
+          <ValidationChecklist
+            rules={CONFIRM_RULES(password)}
+            value={confirmPassword}
+            touched={touched.confirmPassword}
+          />
+        </View>
       )}
-    </TouchableOpacity>
 
-    {isLogin && (
+      {/* ── Submit ── */}
       <TouchableOpacity
         style={[
           buttons.pill,
-          {width: 280, marginBottom: spacing.sm, backgroundColor: '#1877F2'},
+          {width: 280, marginBottom: spacing.sm, opacity: loading ? 0.7 : 1},
         ]}
-        onPress={handleFacebookLogin}
+        onPress={handleAuth}
         disabled={loading}>
-        <Text style={[text.white, {fontSize: 16}]}>Continue with Facebook</Text>
+        {loading ? (
+          <ActivityIndicator color="#fff" size="small" />
+        ) : (
+          <Text style={[text.white, {fontSize: 16}]}>
+            {isLogin ? 'Login' : 'Register'}
+          </Text>
+        )}
       </TouchableOpacity>
-    )}
-    {isLogin && (
-      <TouchableOpacity
-        style={[
-          buttons.pill,
-          {width: 280, marginBottom: spacing.sm, backgroundColor: '#4285F4'},
-        ]}
-        onPress={handleGoogleLogin}
-        disabled={loading}>
-        <Text style={[text.white, {fontSize: 16}]}>Continue with Google</Text>
-      </TouchableOpacity>
-    )}
 
-    <TouchableOpacity
-      style={[buttons.ghost, {marginTop: spacing.xs}]}
-      onPress={toggleMode}
-      disabled={loading}>
-      <Text style={text.muted}>
-        {isLogin
-          ? "Don't have an account? Register"
-          : 'Already have an account? Login'}
-      </Text>
-    </TouchableOpacity>
-  </KeyboardAvoidingView>
+      {isLogin && (
+        <TouchableOpacity
+          style={[
+            buttons.pill,
+            {width: 280, marginBottom: spacing.sm, backgroundColor: '#1877F2'},
+          ]}
+          onPress={handleFacebookLogin}
+          disabled={loading}>
+          <Text style={[text.white, {fontSize: 16}]}>
+            Continue with Facebook
+          </Text>
+        </TouchableOpacity>
+      )}
+      {isLogin && (
+        <TouchableOpacity
+          style={[
+            buttons.pill,
+            {width: 280, marginBottom: spacing.sm, backgroundColor: '#4285F4'},
+          ]}
+          onPress={handleGoogleLogin}
+          disabled={loading}>
+          <Text style={[text.white, {fontSize: 16}]}>Continue with Google</Text>
+        </TouchableOpacity>
+      )}
+
+      <TouchableOpacity
+        style={[buttons.ghost, {marginTop: spacing.xs}]}
+        onPress={toggleMode}
+        disabled={loading}>
+        <Text style={text.muted}>
+          {isLogin
+            ? "Don't have an account? Register"
+            : 'Already have an account? Login'}
+        </Text>
+      </TouchableOpacity>
+    </KeyboardAvoidingView>
+  ),
+  // Custom comparison function
+  // Ignore React function references (they're always new objects)
+  // But DO compare data like email, password, loading
+  createMemoCompare([
+    'setEmail',
+    'setPassword',
+    'setConfirmPassword',
+    'setTouched',
+    'handleAuth',
+    'toggleMode',
+    'handleFacebookLogin',
+    'handleGoogleLogin',
+  ]),
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -287,7 +315,7 @@ const AuthScreen = () => {
 
   const {saveAuth} = useAuth();
 
-  const handleAuth = async () => {
+  const handleAuth = useCallback(async () => {
     setTouched({email: true, password: true, confirmPassword: true});
 
     // isFormValid needs to know we're validating email now, not username.
@@ -336,10 +364,10 @@ const AuthScreen = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [email, password, confirmPassword, isLogin]);
 
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = useCallback(async () => {
     setLoading(true);
     try {
       const result = await loginWithGoogle();
@@ -354,10 +382,10 @@ const AuthScreen = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
 
-  const handleFacebookLogin = async () => {
+  const handleFacebookLogin = useCallback(async () => {
     setLoading(true);
     try {
       const result = await loginWithFacebook();
@@ -376,15 +404,15 @@ const AuthScreen = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const toggleMode = () => {
+  const toggleMode = useCallback(() => {
     setIsLogin(prev => !prev);
     setEmail('');
     setPassword('');
     setConfirmPassword('');
     setTouched({email: false, password: false, confirmPassword: false});
-  };
+  }, []);
 
   return (
     <View

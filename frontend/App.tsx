@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
@@ -16,6 +15,9 @@ import RiderProfile from './React/pages/RiderProfile';
 import HomeScreen from './React/pages/HomeScreen';
 import {GoogleSignin} from '@react-native-google-signin/google-signin';
 import {GOOGLE_CLIENT_ID} from '@env';
+import LoadingScreen from '../frontend/React/commons/LoadingScreen';
+import LegalScreen from '../frontend/React/screens/LegalScreen';
+
 interface AuthContextValue {
   token: string | null;
   ready: boolean;
@@ -39,22 +41,13 @@ const AppStack = () => (
     <Stack.Screen name="StartedRide" component={StartedRide} />
     <Stack.Screen name="RideRoutesPage" component={RideRoutesPage} />
     <Stack.Screen name="RiderProfile" component={RiderProfile} />
+    <Stack.Screen name="LegalScreen" component={LegalScreen} />
   </Stack.Navigator>
 );
-
 
 const AppContent = () => {
   const auth = useAuth() as unknown as AuthContextValue;
   setAuthContextRef(auth);
-
-  // ← ADD THESE DEBUG LOGS
-  console.log('🔍 [DEBUG] GOOGLE_CLIENT_ID value:', googleclientid);
-  console.log('🔍 [DEBUG] GOOGLE_CLIENT_ID type:', typeof googleclientid);
-  console.log('🔍 [DEBUG] GOOGLE_CLIENT_ID length:', googleclientid?.length);
-
-  if (!googleclientid || googleclientid === 'undefined') {
-    console.error('❌ [ERROR] GOOGLE_CLIENT_ID is not loaded from .env!');
-  }
 
   GoogleSignin.configure({
     webClientId: googleclientid,
@@ -62,7 +55,7 @@ const AppContent = () => {
   });
 
   if (!auth.ready) {
-    return null;
+    return <LoadingScreen />;
   }
 
   return (

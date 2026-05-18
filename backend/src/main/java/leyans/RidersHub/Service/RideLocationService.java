@@ -26,22 +26,19 @@ public class RideLocationService {
     private final PsgcDataRepository psgcDataRepository;
     private final LocationService locationService;
 
-    private final StartedRideRepository startedRideRepository;
     private final RiderUtil riderUtil;
     private final ParticipantLocationRepository participantLocationRepository;
 
 
 
 
-    @Autowired
     public RideLocationService(RiderLocationRepository locationRepo,
                                PsgcDataRepository psgcDataRepository,
-                               LocationService locationService, StartedRideRepository startedRideRepository,
+                               LocationService locationService,
                                RiderUtil riderUtil, ParticipantLocationRepository participantLocationRepository) {
         this.locationRepo = locationRepo;
         this.psgcDataRepository = psgcDataRepository;
         this.locationService = locationService;
-        this.startedRideRepository = startedRideRepository;
         this.riderUtil = riderUtil;
         this.participantLocationRepository = participantLocationRepository;
     }

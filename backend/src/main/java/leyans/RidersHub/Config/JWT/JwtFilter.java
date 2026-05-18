@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import leyans.RidersHub.Service.Auth.TokenBlacklistService;
 import leyans.RidersHub.Service.UserDetailsManager;
+import leyans.RidersHub.Utility.AppLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,14 +23,17 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtFilter.class);
 
-    @Autowired
-    private JwtUtil jwtUtil;
+    private final JwtUtil jwtUtil;
 
-    @Autowired
-    private UserDetailsManager userDetailsManager;
+    private final UserDetailsManager userDetailsManager;
 
-    @Autowired
-    private TokenBlacklistService tokenBlacklistService;
+    private final TokenBlacklistService tokenBlacklistService;
+
+    public JwtFilter(JwtUtil jwtUtil, UserDetailsManager userDetailsManager, TokenBlacklistService tokenBlacklistService) {
+        this.jwtUtil = jwtUtil;
+        this.userDetailsManager = userDetailsManager;
+        this.tokenBlacklistService = tokenBlacklistService;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -65,8 +69,9 @@ public class JwtFilter extends OncePerRequestFilter {
         String token = header.substring(7);
 
         if (!isValidTokenFormat(token)) {
-            logger.warn("Invalid token format — must be 3 JWT parts (header.payload.signature)");
-            sendUnauthorized(response, "Invalid token format");
+            logger.debug("Token validation failed — expired or invalid signature | Token: {}",
+                    AppLogger.TokenMaskingUtil.maskToken(token));
+            sendUnauthorized(response, "Token is expired or invalid");
             return;
         }
 

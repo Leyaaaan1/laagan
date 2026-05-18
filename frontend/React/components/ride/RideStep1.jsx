@@ -18,6 +18,7 @@ import text from '../../styles/base/text';
 import spacing from '../../styles/tokens/spacing';
 import {splitDateTime} from './utilities/RideStepUtils';
 import RideTypeSelector from '../../commons/RideTypeSelector';
+import {createMemoCompare} from '../../utilities/propsComparison';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -240,4 +241,14 @@ const RideStep1 = ({
   );
 };
 
-export default RideStep1;
+export default React.memo(
+  RideStep1,
+  createMemoCompare([
+    'setRideName',
+    'setRiderType',
+    'setParticipants',
+    'setDescription',
+    'setDate',
+    'nextStep',
+  ])
+);

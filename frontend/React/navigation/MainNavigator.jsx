@@ -1,7 +1,6 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect} from 'react';
 import {BackHandler} from 'react-native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {useNavigationContainerRef} from '@react-navigation/native';
 import HomeScreen from '../pages/HomeScreen';
 import AuthScreen from '../screens/AuthScreen';
 import RiderPage from '../pages/RiderPage';
@@ -11,6 +10,7 @@ import StartedRide from '../pages/StartedRide';
 import RideRoutesPage from '../components/ride/utilities/RideRoutesPage';
 import RiderProfile from '../pages/RiderProfile';
 import {useAuth} from '../context/AuthContext';
+import LegalScreen from '../screens/LegalScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -53,6 +53,7 @@ const MainNavigator = ({navigationRef}) => {
       <Stack.Screen name="StartedRide" component={StartedRide} />
       <Stack.Screen name="RideRoutesPage" component={RideRoutesPage} />
       <Stack.Screen name="RiderProfile" component={RiderProfile} />
+      <Stack.Screen name="LegalScreen" component={LegalScreen} />
     </Stack.Navigator>
   );
 };

@@ -16,6 +16,7 @@ const RouteTimeline = ({
   onChangeStart,
   onChangeEnd,
   onRemoveStop,
+  mapMode,
 }) => {
   const renderNode = (type, index) => {
     switch (type) {
@@ -40,7 +41,15 @@ const RouteTimeline = ({
       <View style={ridestep3style.timelineLine} />
 
       {/* START ROW */}
-      <View style={ridestep3style.routeRow}>
+      <View
+        style={[
+          ridestep3style.routeRow,
+          mapMode === 'starting' && {
+            borderWidth: 1.5,
+            borderColor: '#8c2323',
+            borderRadius: 10,
+          },
+        ]}>
         <View style={ridestep3style.timelineLeft}>
           {renderNode('start', 0)}
         </View>
@@ -81,7 +90,15 @@ const RouteTimeline = ({
         ))}
 
       {/* END ROW */}
-      <View style={ridestep3style.routeRow}>
+      <View
+        style={[
+          ridestep3style.routeRow,
+          mapMode === 'ending' && {
+            borderWidth: 1.5,
+            borderColor: '#8c2323',
+            borderRadius: 10,
+          },
+        ]}>
         <View style={ridestep3style.timelineLeft}>{renderNode('end', 0)}</View>
         <View style={ridestep3style.routeRowContentWrapper}>
           <Text style={ridestep3style.rowLabel}>End</Text>

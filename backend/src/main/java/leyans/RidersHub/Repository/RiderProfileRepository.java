@@ -1,6 +1,7 @@
 package leyans.RidersHub.Repository;
 
 
+import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.RiderProfile;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -23,4 +24,7 @@ public interface RiderProfileRepository extends JpaRepository<RiderProfile, Inte
 
 
     boolean existsByRiderUsername(String username);
+
+    Optional<RiderProfile> findByRider(Rider rider);
+
 }

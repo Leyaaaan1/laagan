@@ -7,12 +7,15 @@ import RideStep4 from '../components/ride/RideStep4';
 import createRideUtils from './utilities/CreateRideUtils';
 import {parseCoordinateSafely} from '../utilities/validator/CoordinateValidator';
 import {useAuth} from '../context/AuthContext';
+import LoadingScreen from '../commons/LoadingScreen';
 
 const CreateRide = ({}) => {
   const {token, username} = useAuth();
 
   const ride = createRideUtils({token, username});
-
+  if (ride.loading) {
+    return <LoadingScreen context="creating_ride" />;
+  }
 
   return (
     <View style={{flex: 1}}>

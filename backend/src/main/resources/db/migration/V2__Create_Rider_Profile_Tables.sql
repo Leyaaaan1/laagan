@@ -1,6 +1,6 @@
 
 -- ════════════════════════════════════════════════════════════════════════════════════════
--- RidersHub - Phase 2: Rider Profile & Authentication
+-- RidersHub - Phase 2: Rider Profile, Authentication & Social Accounts
 -- ════════════════════════════════════════════════════════════════════════════════════════
 
 -- RIDER RIDER TYPES (Many-to-many junction table)
@@ -28,30 +28,49 @@ CREATE TABLE public.rider_profile_types (
                                             PRIMARY KEY (profile_id, rider_type_id)
 );
 
--- FACEBOOK ACCOUNT (Social login)
-CREATE TABLE public.facebook_account (
-                                         id                  SERIAL PRIMARY KEY,
-                                         facebook_id         VARCHAR(255) UNIQUE,      -- stable FB user ID, primary lookup key
-                                         email               VARCHAR(255),             -- stored for reference only, not used for auth
-                                         profile_picture_url VARCHAR(500),
-                                         rider_id            INTEGER UNIQUE REFERENCES public.rider(id) ON DELETE CASCADE
+-- ─────────────────────────────────────────────────────────────────────────────────────────
+-- REFRESH TOKENS (JWT token rotation - stateless auth stored)
+-- ─────────────────────────────────────────────────────────────────────────────────────────
+
+CREATE TABLE public.refresh_tokens (
+                                       id BIGSERIAL PRIMARY KEY,
+                                       token_hash VARCHAR(255) NOT NULL UNIQUE,
+                                       username VARCHAR(255) NOT NULL REFERENCES public.rider(username) ON DELETE CASCADE,
+                                       expires_at TIMESTAMP NOT NULL,
+                                       revoked BOOLEAN NOT NULL DEFAULT false,
+                                       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ─────────────────────────────────────────────────────────────────────────────────────────
+-- FACEBOOK ACCOUNT (Social login - CASCADE DELETE on rider deletion)
+-- ─────────────────────────────────────────────────────────────────────────────────────────
+
+CREATE TABLE public.facebook_account (
+                                         id SERIAL PRIMARY KEY,
+                                         facebook_id VARCHAR(255) NOT NULL UNIQUE,
+                                         email VARCHAR(255),
+                                         profile_picture_url VARCHAR(500),
+                                         rider_id INTEGER NOT NULL UNIQUE REFERENCES public.rider(id) ON DELETE CASCADE
+);
+
+-- ─────────────────────────────────────────────────────────────────────────────────────────
+-- GOOGLE ACCOUNT (Social login - CASCADE DELETE on rider deletion)
+-- ─────────────────────────────────────────────────────────────────────────────────────────
+
 CREATE TABLE public.google_account (
-                                       id                  SERIAL PRIMARY KEY,
-                                       google_id           VARCHAR(255) NOT NULL UNIQUE,
-                                       email               VARCHAR(255),
+                                       id SERIAL PRIMARY KEY,
+                                       google_id VARCHAR(255) NOT NULL UNIQUE,
+                                       email VARCHAR(255),
                                        profile_picture_url VARCHAR(500),
-                                       rider_id            INTEGER UNIQUE REFERENCES public.rider(id) ON DELETE CASCADE
+                                       rider_id INTEGER NOT NULL UNIQUE REFERENCES public.rider(id) ON DELETE CASCADE
 );
 
 -- Create indexes
--- ── 3. Recreate indexes cleanly ──────────────────────────────────────────────────────
-CREATE INDEX IF NOT EXISTS idx_profile_created_at  ON public.rider_profile(created_at);
-
+CREATE INDEX IF NOT EXISTS idx_profile_created_at ON public.rider_profile(created_at);
 CREATE INDEX IF NOT EXISTS idx_facebook_facebook_id ON public.facebook_account(facebook_id);
-CREATE INDEX IF NOT EXISTS idx_facebook_rider_id    ON public.facebook_account(rider_id);
-
-CREATE INDEX IF NOT EXISTS idx_rider_types          ON public.rider_rider_types(rider_id);
+CREATE INDEX IF NOT EXISTS idx_facebook_rider_id ON public.facebook_account(rider_id);
+CREATE INDEX IF NOT EXISTS idx_rider_types ON public.rider_rider_types(rider_id);
 CREATE INDEX IF NOT EXISTS idx_google_google_id ON public.google_account(google_id);
-CREATE INDEX IF NOT EXISTS idx_google_rider_id  ON public.google_account(rider_id);
+CREATE INDEX IF NOT EXISTS idx_google_rider_id ON public.google_account(rider_id);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_username ON public.refresh_tokens(username);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires_at ON public.refresh_tokens(expires_at);

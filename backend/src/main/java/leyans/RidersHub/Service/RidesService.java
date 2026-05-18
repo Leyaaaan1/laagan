@@ -30,7 +30,6 @@ public class RidesService {
 
 
 
-    @Autowired
     private final LocationService locationService;
     private final RiderService riderService;
     private final MapboxService mapboxService;
@@ -42,7 +41,6 @@ public class RidesService {
     @Qualifier("externalApiExecutor")
     private final Executor externalApiExecutor;
 
-    @Autowired
     public RidesService(LocationService locationService, RiderService riderService, MapboxService mapboxService,
                         RideParticipantService rideParticipantService, RouteService routeService, RidesUtil ridesUtil, Executor externalApiExecutor) {
 

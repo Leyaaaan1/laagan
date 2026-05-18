@@ -26,6 +26,7 @@ import spacing from '../styles/tokens/spacing';
 import {fontSize} from '../styles/tokens/typography';
 import {useAuth} from '../context/AuthContext';
 import RideTypeSelector from '../commons/RideTypeSelector';
+import {authService} from '../services/authService';
 
 const s = (val, fallback = '') =>
   val !== null && val !== undefined ? String(val) : fallback;
@@ -85,7 +86,7 @@ function SectionCard({title, children, right}) {
 }
 
 export default function RiderProfile({route, navigation}) {
-  const {username: authUsername, token, logout} = useAuth();
+  const {username: authUsername, logout, deleteAccount} = useAuth();
 
   // ✅ Get the username from route params OR use your own
   const viewingUsername = route?.params?.username ?? authUsername;
@@ -96,6 +97,8 @@ export default function RiderProfile({route, navigation}) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [loggingOut, setLoggingOut] = useState(false);
+
+
 
   // Edit modal states
   const [editModal, setEditModal] = useState({visible: false, field: null});
@@ -156,6 +159,28 @@ export default function RiderProfile({route, navigation}) {
   const closeEditModal = () => {
     setEditModal({visible: false, field: null});
     setEditValues({...editValues, riderTypes: ''});
+  };
+
+  const handleDeleteAccount = async () => {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account. Your rides will remain visible to other participants. This action cannot be undone.',
+      [
+        {text: 'Cancel', style: 'cancel'},
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteAccount();
+              navigation.reset({index: 0, routes: [{name: 'AuthScreen'}]});
+            } catch (err) {
+              Alert.alert('Error', 'Failed to delete account');
+            }
+          },
+        },
+      ],
+    );
   };
 
   const handleSaveEdit = async () => {
@@ -441,6 +466,42 @@ export default function RiderProfile({route, navigation}) {
                   ) : (
                     <Text style={{color: colors.white}}>Logout</Text>
                   )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={handleDeleteAccount}
+                  style={{paddingVertical: spacing.md}}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}>
+                    <Text style={{color: '#dc2626'}}>Delete Account</Text>
+                    <FontAwesome
+                      name="chevron-right"
+                      size={14}
+                      color="#dc2626"
+                    />
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('LegalScreen')}
+                  style={{paddingVertical: spacing.md}}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}>
+                    <Text style={{color: colors.primary}}>Privacy Policy</Text>
+                    <FontAwesome
+                      name="chevron-right"
+                      size={14}
+                      color={colors.primary}
+                    />
+                  </View>
                 </TouchableOpacity>
               </View>
             </SectionCard>

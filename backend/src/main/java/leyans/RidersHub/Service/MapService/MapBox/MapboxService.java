@@ -16,7 +16,6 @@ public class MapboxService {
 
     private final UploadImageService uploadImageService;
 
-    @Autowired
     public MapboxService(UploadImageService uploadImageService) {
         this.uploadImageService = uploadImageService;
     }

@@ -34,9 +34,6 @@ public class RouteService {
 
     private static final String GH_BASE_URL = "https://graphhopper.com/api/1/route";
 
-    // Mindanao bounding box used for future geo-validation if needed
-    private static final double MIN_LAT = 5.4,  MAX_LAT = 10.5;
-    private static final double MIN_LON = 119.0, MAX_LON = 127.0;
 
     @Value("${GRASS_HOPPER}")
     private String grassApiKey;
@@ -45,31 +42,19 @@ public class RouteService {
     private String userAgent;
 
     private final ApiHelper apiHelper;
-
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final RidesRepository ridesRepository;
 
-    /**
-     * Pool settings tuned for a single-node ride-sharing backend:
-     *   maxTotal=20   — no more than 20 concurrent GraphHopper connections
-     *   defaultMaxPerRoute=10 — up to 10 to the same host (graphhopper.com)
-     *   connectTimeout=3s, responseTimeout=10s
-     */
-    @Autowired
-    public RouteService(ApiHelper apiHelper, RidesRepository ridesRepository,
-                        ObjectMapper objectMapper, RestTemplate restTemplate) {
+    public RouteService(ApiHelper apiHelper,
+                        RestTemplate restTemplate,
+                        ObjectMapper objectMapper,
+                        RidesRepository ridesRepository) {
         this.apiHelper = apiHelper;
+        this.restTemplate = restTemplate;
+        this.objectMapper = objectMapper;
         this.ridesRepository = ridesRepository;
-        this.objectMapper    = objectMapper;
-        this.restTemplate = restTemplate;;
     }
-
-    public RouteService(ApiHelper apiHelper, RidesRepository ridesRepository,
-                        ObjectMapper objectMapper) {
-        this(apiHelper, ridesRepository, objectMapper, buildDefaultRestTemplate());
-    }
-
     @RateLimiter(name = "graphhopper", fallbackMethod = "routeFallback")
     public String getRouteDirections(double startLng, double startLat,
                                      double endLng,   double endLat,

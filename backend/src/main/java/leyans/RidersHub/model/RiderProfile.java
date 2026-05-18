@@ -20,7 +20,11 @@ public class RiderProfile {
     private Integer profileId;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "username", referencedColumnName = "username", nullable = false, unique = true)
+    @JoinColumn(
+            name = "username",
+            referencedColumnName = "username",
+            nullable = false  // ← CHANGE THIS
+    )
     private Rider rider;
 
     @Column(name = "display_name", length = 100)

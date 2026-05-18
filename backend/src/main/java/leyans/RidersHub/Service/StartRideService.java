@@ -32,7 +32,6 @@ public class StartRideService {
     private final StartedUtil startedUtil;
     private final RidesUtil ridesUtil;
 
-    @Autowired
     public StartRideService(StartedRideRepository startedRideRepository, RidesRepository ridesRepository,
                             StartedUtil startedUtil, RidesUtil ridesUtil) {
         this.startedRideRepository = startedRideRepository;

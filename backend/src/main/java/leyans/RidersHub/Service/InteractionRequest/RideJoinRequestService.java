@@ -33,7 +33,6 @@ public class RideJoinRequestService {
 
     private final ParticipantLocationRepository participantLocationRepository;
 
-    @Autowired
     public RideJoinRequestService(
             RideJoinRequestRepository rideJoinRequestRepository,
             RidesRepository ridesRepository,

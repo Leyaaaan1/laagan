@@ -19,10 +19,8 @@ public class RideParticipantService {
 
     private final RidesRepository ridesRepository;
     private final StartedRideRepository startedRideRepository;
-    @Autowired
     private final RiderUtil riderUtil;
 
-    @Autowired
     public RideParticipantService(RidesRepository ridesRepository,
                                   StartedRideRepository startedRideRepository,
                                   RiderUtil riderUtil) {

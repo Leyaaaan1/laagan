@@ -22,7 +22,12 @@ public class GoogleAccount {
     private String profilePictureUrl;
 
     @OneToOne
-    @JoinColumn(name = "rider_id", referencedColumnName = "id")
+    @JoinColumn(
+            name = "rider_id",
+            referencedColumnName = "id",
+            nullable = true  // Allow NULL after rider deletion
+    )
+    @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
     private Rider rider;
 
     public GoogleAccount() {}
