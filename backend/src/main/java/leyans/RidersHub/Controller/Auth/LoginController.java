@@ -9,18 +9,18 @@ import leyans.RidersHub.DTO.Response.RegisterResponse;
 import leyans.RidersHub.ExceptionHandler.RateLimitExceededException;
 import leyans.RidersHub.Service.Auth.LoginService;
 import leyans.RidersHub.Service.Auth.TokenBlacklistService;
-import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import leyans.RidersHub.Service.UserDetailsManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
 
-import java.util.HashMap;
 import java.util.Map;
+
 
 @RestController
 @RequestMapping("/riders")
@@ -30,12 +30,15 @@ public class LoginController {
     private final TokenBlacklistService tokenBlacklistService;
     private final ClientIpResolver clientIpResolver;
 
+    private final UserDetailsManager userDetailsManager;
+
     public LoginController(LoginService loginService,
                            TokenBlacklistService tokenBlacklistService,
-                           ClientIpResolver clientIpResolver) {
+                           ClientIpResolver clientIpResolver, UserDetailsManager userDetailsManager) {
         this.loginService = loginService;
         this.tokenBlacklistService = tokenBlacklistService;
         this.clientIpResolver = clientIpResolver;
+        this.userDetailsManager = userDetailsManager;
     }
 
     @PostMapping("/login")
@@ -95,5 +98,23 @@ public class LoginController {
 
     private Map<String, Object> createResponse(int status, String error, String message) {
         return Map.of("status", status, "error", error, "message", message);
+    }
+
+
+    @DeleteMapping("/account")
+    public ResponseEntity<?> deleteAccount(
+            @AuthenticationPrincipal UserDetails userDetails,
+            HttpServletRequest request) {
+        try {
+            String rawToken = request.getHeader("Authorization").substring(7);
+            userDetailsManager.deleteAccount(userDetails.getUsername(), rawToken);
+            return ResponseEntity.ok(Map.of("status", 200, "message", "Account successfully deleted."));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("status", 400, "error", "Delete failed", "message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("status", 500, "error", "Server error", "message", "An unexpected error occurred."));
+        }
     }
 }

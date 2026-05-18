@@ -36,7 +36,11 @@ public class Rides {
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "username", referencedColumnName = "username", nullable = false)
+    @JoinColumn(
+            name = "username",
+            referencedColumnName = "username",
+            nullable = true
+    )
     private Rider username;
 
     @ManyToOne(fetch = FetchType.LAZY)

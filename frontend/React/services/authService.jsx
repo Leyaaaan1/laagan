@@ -97,6 +97,30 @@ export const authService = {
     }
   },
 
+
+  deleteAccount: async token => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/riders/account`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await safeJson(response);
+      if (!response.ok) {
+        const message = data?.message || 'Failed to delete account';
+        console.error('❌ Delete account failed:', response.status, message);
+        return {success: false, error: message};
+      }
+      return {success: true};
+    } catch (err) {
+      console.error('❌ Delete account network error:', err);
+      return {success: false, error: err.message || 'Network error'};
+    }
+  },
+
+
   // ───────────────────────────────────────────────────────────────────────────
   // logout
   //

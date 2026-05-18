@@ -264,7 +264,6 @@ export const AuthProvider = ({children}) => {
     return () => clearInterval(interval);
   }, [token, isRefreshing]);
 
-
   // ─── Internal helper: wipe persisted credentials only (no state reset) ───
 
   // REPLACE _clearStorage function (lines 192-203):
@@ -334,6 +333,26 @@ export const AuthProvider = ({children}) => {
     }
   };
 
+  const deleteAccount = async () => {
+    const currentToken = tokenRef.current;
+    await clearAuth();
+
+    if (currentToken) {
+      fetch(`${API_BASE_URL}/riders/account`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${currentToken}`,
+          'Content-Type': 'application/json',
+        },
+      }).catch(err => {
+        console.warn(
+          '⚠️ Delete account server call failed (non-fatal):',
+          err.message,
+        );
+      });
+    }
+  };
+
   const getToken = () => tokenRef.current;
   const getUsername = () => usernameRef.current;
 
@@ -350,6 +369,7 @@ export const AuthProvider = ({children}) => {
     saveAuth,
     clearAuth,
     logout,
+    deleteAccount,
     getToken,
     refreshAccessToken,
     isRefreshing,

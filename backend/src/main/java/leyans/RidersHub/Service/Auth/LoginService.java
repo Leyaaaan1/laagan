@@ -102,6 +102,14 @@ public class LoginService {
 
 
     //Register was limited to 50, but it is subject to change
+
+    //command for RLS
+    //ALTER TABLE rider ENABLE ROW LEVEL SECURITY;
+    //
+    //CREATE POLICY "Only enabled rider can access data"
+    //ON rider
+    //FOR SELECT
+    //USING (enabled = true);
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public RegisterResponse register(RegisterRequest registerRequest, String clientIp) {
         String email    = registerRequest.getEmail();
