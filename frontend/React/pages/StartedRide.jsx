@@ -20,6 +20,7 @@ import {useRideLocationPolling} from '../hooks/useRideLocationPolling';
 import {buildRideStep4Params} from '../utilities/NavigationParamsBuilder';
 import {useAuth} from '../context/AuthContext';
 import {RideContext} from '../context/RideContext';
+import CheckpointArrivalsModal from './utilities/CheckpointArrivalsModal';
 
 const StartedRide = ({route, navigation}) => {
   const {username: routeUsername} = route?.params || {};
@@ -38,6 +39,8 @@ const StartedRide = ({route, navigation}) => {
 
   const {activeRide, setActiveRide} = useContext(RideContext);
   const {activeRide: initialActiveRide} = route?.params || {};
+
+  const [showCheckpointModal, setShowCheckpointModal] = useState(false);
 
   useEffect(() => {
     console.log('🔍 activeRide:', activeRide);
@@ -445,6 +448,22 @@ const StartedRide = ({route, navigation}) => {
 
             <View style={startedRideStyles.actionPillDivider} />
 
+            {/* ✨ NEW: Checkpoint Button in Center */}
+            <TouchableOpacity
+              style={{flexDirection: 'row', alignItems: 'center', gap: 6}}
+              onPress={() => setShowCheckpointModal(true)}>
+              <FontAwesome
+                name="flag-checkered"
+                size={16}
+                color="rgba(255,255,255,0.7)"
+              />
+              <Text style={startedRideStyles.actionDetailsLabel}>
+                Checkpoints
+              </Text>
+            </TouchableOpacity>
+
+            <View style={startedRideStyles.actionPillDivider} />
+
             <TouchableOpacity
               style={startedRideStyles.actionStopButton}
               onPress={handleStopRide}
@@ -461,6 +480,16 @@ const StartedRide = ({route, navigation}) => {
           </View>
         </View>
       </Animated.View>
+
+      <CheckpointArrivalsModal
+        visible={showCheckpointModal}
+        onClose={() => setShowCheckpointModal(false)}
+        generatedRidesId={activeRide.generatedRidesId}
+        stopPoints={mapData.stopPoints}
+        endingPointName={
+          mapData.endingPoint?.name || activeRide.endingPointName
+        }
+      />
     </View>
   );
 };

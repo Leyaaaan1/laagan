@@ -20,4 +20,10 @@ public interface ParticipantLocationRepository extends JpaRepository<Participant
             @Param("startedRide") StartedRide startedRide,
             @Param("rider") Rider rider);
 
+    @Query("SELECT pl FROM ParticipantLocation pl " +
+            "WHERE pl.startedRide = :startedRide " +
+            "ORDER BY pl.lastUpdate DESC")
+    List<ParticipantLocation> findByStartedRide(
+            @Param("startedRide") StartedRide startedRide);
+
 }

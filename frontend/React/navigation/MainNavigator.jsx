@@ -1,7 +1,7 @@
 import React, {useEffect} from 'react';
 import {BackHandler} from 'react-native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import HomeScreen from '../pages/HomeScreen';
+import HomeScreen from '../screens/HomeScreen';
 import AuthScreen from '../screens/AuthScreen';
 import RiderPage from '../pages/RiderPage';
 import CreateRide from '../pages/CreateRide';

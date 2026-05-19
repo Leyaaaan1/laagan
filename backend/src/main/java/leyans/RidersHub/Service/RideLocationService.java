@@ -4,6 +4,7 @@ import leyans.RidersHub.DTO.Request.LocationDTO.LocationUpdateRequestDTO;
 import leyans.RidersHub.ExceptionHandler.UnauthorizedAccessException;
 import leyans.RidersHub.Repository.*;
 import leyans.RidersHub.Utility.AppLogger;
+import leyans.RidersHub.Utility.CheckPointUtility;
 import leyans.RidersHub.Utility.RiderUtil;
 import leyans.RidersHub.model.*;
 import leyans.RidersHub.model.participant.ParticipantLocation;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+
 @Service
 public class RideLocationService {
 
@@ -29,18 +31,27 @@ public class RideLocationService {
     private final RiderUtil riderUtil;
     private final ParticipantLocationRepository participantLocationRepository;
 
+    private final RideCheckpointArrivalRepository rideCheckpointArrivalRepository;
+
+    private final CheckPointUtility checkPointUtility;
+
+    private final FinishedRideService finishedRideService;
+
 
 
 
     public RideLocationService(RiderLocationRepository locationRepo,
                                PsgcDataRepository psgcDataRepository,
                                LocationService locationService,
-                               RiderUtil riderUtil, ParticipantLocationRepository participantLocationRepository) {
+                               RiderUtil riderUtil, ParticipantLocationRepository participantLocationRepository, RideCheckpointArrivalRepository rideCheckpointArrivalRepository, CheckPointUtility checkPointUtility, FinishedRideService finishedRideService) {
         this.locationRepo = locationRepo;
         this.psgcDataRepository = psgcDataRepository;
         this.locationService = locationService;
         this.riderUtil = riderUtil;
         this.participantLocationRepository = participantLocationRepository;
+        this.rideCheckpointArrivalRepository = rideCheckpointArrivalRepository;
+        this.checkPointUtility = checkPointUtility;
+        this.finishedRideService = finishedRideService;
     }
     @Transactional(readOnly = true)
     public List<LocationUpdateRequestDTO> getAllRiderLocations(Integer startedRideId) {
@@ -117,6 +128,9 @@ public class RideLocationService {
 
         loc = locationRepo.save(loc);
         locationRepo.deleteOldDuplicates(started, rider, loc.getId());
+
+        finishedRideService.autoMarkCheckpoints(started, rider, userPoint);
+
         AppLogger.info(this.getClass(), "Location updated successfully", "username", username, "distance", distanceMeters);
         return new LocationUpdateRequestDTO(
                 startedRideId,
@@ -244,5 +258,6 @@ public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer star
             );
         }).collect(Collectors.toList());
     }
+
 
 }

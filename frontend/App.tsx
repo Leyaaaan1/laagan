@@ -12,7 +12,7 @@ import RideStep4 from './React/components/ride/RideStep4';
 import StartedRide from './React/pages/StartedRide';
 import RideRoutesPage from './React/components/ride/utilities/RideRoutesPage';
 import RiderProfile from './React/pages/RiderProfile';
-import HomeScreen from './React/pages/HomeScreen';
+import HomeScreen from './React/screens/HomeScreen';
 import {GoogleSignin} from '@react-native-google-signin/google-signin';
 import {GOOGLE_CLIENT_ID} from '@env';
 import LoadingScreen from '../frontend/React/commons/LoadingScreen';

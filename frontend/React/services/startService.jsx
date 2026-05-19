@@ -35,6 +35,24 @@ export const startService = {
     }
     return true;
   },
+
+};
+
+export const getCheckpointArrivals = async generatedRidesId => {
+  const response = await api.get(
+    `/ride/${generatedRidesId}/checkpoint-arrivals`,
+  );
+  if (!response.ok) {
+    const messages = {
+      404: 'Ride not found.',
+      401: 'Unauthorized. Please log in again.',
+    };
+    throw new Error(
+      messages[response.status] ||
+        'Failed to fetch checkpoint arrivals. Please try again.',
+    );
+  }
+  return response.json();
 };
 
 export const getActiveRide = async () => {
@@ -49,10 +67,8 @@ export const getActiveRide = async () => {
   return response.json();
 };
 
-export const getStopPointsByRideId = async (generatedRidesId) => {
-  const response = await api.get(
-    `/riders/${generatedRidesId}/stop-points`,
-  );
+export const getStopPointsByRideId = async generatedRidesId => {
+  const response = await api.get(`/riders/${generatedRidesId}/stop-points`);
   if (!response.ok) {
     const messages = {
       404: 'Ride not found.',
@@ -66,3 +82,4 @@ export const getStopPointsByRideId = async (generatedRidesId) => {
   }
   return response.json();
 };
+

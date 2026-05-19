@@ -31,6 +31,8 @@ CREATE TABLE public.psgc_data (
                                   geographic_level VARCHAR(255)
 );
 
+
+
 -- Create indexes
 CREATE INDEX idx_rider_username ON public.rider(username);
 CREATE INDEX idx_rider_enabled ON public.rider(enabled);

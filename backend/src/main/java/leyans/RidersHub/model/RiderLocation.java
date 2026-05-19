@@ -17,9 +17,8 @@ public class RiderLocation {
     private Rider username;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "started_ride_id", referencedColumnName = "id", nullable = false)
+    @JoinColumn(name = "started_ride_id", referencedColumnName = "rides_id", nullable = false)
     private StartedRide startedRide;
-
     @Column(name = "location_name", nullable = false)
     private String locationName;
 
