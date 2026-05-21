@@ -1,4 +1,10 @@
-import React, {useEffect, useState, useCallback, useRef} from 'react';
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  useContext,
+} from 'react';
 import {
   View,
   Text,
@@ -6,8 +12,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StatusBar,
-  RefreshControl,
-  ScrollView,
 } from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
@@ -23,6 +27,7 @@ import colors from '../styles/tokens/colors';
 import {getRideTypeIcon} from '../utilities/rideTypes';
 import {buildRideStep4Params} from '../utilities/NavigationParamsBuilder';
 import {useAuth} from '../context/AuthContext';
+import {RideContext} from '../context/RideContext';
 
 const ProfileAvatar = ({profile, avatarStyle}) => {
   if (profile?.profilePictureUrl) {
@@ -46,22 +51,19 @@ const ProfileAvatar = ({profile, avatarStyle}) => {
 };
 
 const RiderPage = ({navigation, route}) => {
-  const {username: usernameState, getUsername, ready} = useAuth();
-  console.log('🔍 RiderPage loaded with username:', username);
-  console.log('🔍 RiderPage ready:', ready);
-  // navigation.reset() remounts AuthProvider, wiping all refs/state before
-  // initializeAuth() can reload from storage. Using route.params.username
-  // guarantees we always have the correct value immediately on mount.
-  // Fall back to context for navigations that don't pass params (e.g. tab switch).
-  const username = route?.params?.username ?? getUsername() ?? usernameState;
-
-  console.log('🔍 RiderPage loaded with username:', username);
+  const {username, ready} = useAuth();
+  const {setActiveRide: clearActiveRide} = useContext(RideContext);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
   const [activeRide, setActiveRide] = useState(null);
   const [activeRideLoading, setActiveRideLoading] = useState(false);
   const [profileRefreshing, setProfileRefreshing] = useState(false);
   const ridesListRefRef = useRef(null);
+
+  useEffect(() => {
+    clearActiveRide(null); // Clear on account switch
+  }, [username, clearActiveRide]);
+
 
   // ── Fetch active ride ─────────────────────────────────────────────────────
   const fetchActiveRide = useCallback(async () => {

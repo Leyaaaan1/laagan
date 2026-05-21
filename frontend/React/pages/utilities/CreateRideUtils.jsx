@@ -4,8 +4,6 @@ import {
   searchLocation,
   searchCityOrLandmark,
   createRide,
-  reverseGeocodeLandmark,
-  reverseGeocode,
   getLocationImage,
   getAllRiderTypes,
 } from '../../services/rideService';
@@ -18,10 +16,10 @@ import {
   ERROR_MESSAGES,
   resolveErrorMessage,
 } from '../../utilities/validator/errorMessages';
-import {SUCCESS_MESSAGES} from '../../utilities/validator/successMessages';
 import {DEFAULT_COORDS} from '../../utilities/route/map/appDefaults';
 import {useUserLocation} from '../../hooks/useUserLocation';
 import {handleWebViewMessage} from '../../utilities/mapUtils';
+import {routeCache} from '../../services/cache/routeCache';
 
 // ─── Default coordinates (Davao City) ────────────────────────────────────────
 const DEFAULT_LAT = '7.0731';
@@ -226,6 +224,8 @@ const useCreateRide = ({}) => {
   };
 
   // ✅ ─── ENHANCED: Ride creation with full validation ──────────────────────
+
+  // ✅ ─── ENHANCED: Ride creation with full validation ──────────────────────
   const handleCreateRide = useCallback(async () => {
     // ────────────────────────────────────────────────────────────────────────────
     // STEP 1: INPUT VALIDATION
@@ -362,7 +362,27 @@ const useCreateRide = ({}) => {
       }
 
       // ────────────────────────────────────────────────────────────────────────
-      // STEP 5: SUCCESS — STORE ID AND ADVANCE
+      // STEP 5: CACHE THE ROUTE COORDINATES (NEW!)
+      // ────────────────────────────────────────────────────────────────────────
+
+      const routeCoordinates = {
+        startLat: startLatParsed,
+        startLng: startLngParsed,
+        endLat: endLatParsed,
+        endLng: endLngParsed,
+        stopPoints: buildStopPointsPayload(),
+        startingPointName: startingPoint,
+        endingPointName: endingPoint,
+      };
+
+      await routeCache.save(generatedId, routeCoordinates).catch(e => {
+        console.warn('[handleCreateRide] Route cache save (non-fatal):', e);
+      });
+
+      console.log('✅ Route cached for ride:', generatedId);
+
+      // ────────────────────────────────────────────────────────────────────────
+      // STEP 6: SUCCESS — STORE ID AND ADVANCE
       // ────────────────────────────────────────────────────────────────────────
 
       console.log('✨ Ride created successfully:', {
@@ -376,7 +396,7 @@ const useCreateRide = ({}) => {
       setCurrentStep(4);
     } catch (err) {
       // ────────────────────────────────────────────────────────────────────────
-      // STEP 6: ERROR HANDLING
+      // STEP 7: ERROR HANDLING
       // ────────────────────────────────────────────────────────────────────────
 
       console.error('❌ Ride creation failed:', err);
@@ -423,7 +443,6 @@ const useCreateRide = ({}) => {
     participants,
     stopPoints,
   ]);
-
 
   return {
     webViewRef,
@@ -472,6 +491,7 @@ const useCreateRide = ({}) => {
     handleMessage, //
     generatedRidesId,
     handleCreateRide, //
-  };};
+  };
+};
 
 export default useCreateRide;

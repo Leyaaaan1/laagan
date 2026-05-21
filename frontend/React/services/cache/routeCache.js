@@ -1,43 +1,62 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PREFIX = 'route_coords_';
+// 24-hour TTL — was declared before but never enforced in .get(); now it is.
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
 export const routeCache = {
-  // Call this after getRideDetails() succeeds — save routeCoordinates locally
+  // Call this after getRideDetails() succeeds — saves routeCoordinates locally.
+  // Now wraps the payload in { data, savedAt } so TTL can be enforced on read.
   save: async (generatedRidesId, routeCoordinates) => {
     try {
       if (!routeCoordinates) return;
-
-      // ✅ NEW: Stringify the object before storing
-      const serialized = JSON.stringify(routeCoordinates);
-
-      await AsyncStorage.setItem(`${PREFIX}${generatedRidesId}`, serialized);
+      const entry = {data: routeCoordinates, savedAt: Date.now()};
+      await AsyncStorage.setItem(
+        `${PREFIX}${generatedRidesId}`,
+        JSON.stringify(entry),
+      );
     } catch (e) {
       console.warn('[routeCache] save failed:', e);
     }
   },
 
-  // Call this before getRideDetails() — returns null if not cached
+  // Call this before getRideDetails() — returns null if not cached / stale.
+  // Handles both the new { data, savedAt } shape AND the old bare-object shape
+  // written by earlier versions of the app, so existing cached data is reused
+  // rather than discarded on first upgrade.
   get: async generatedRidesId => {
     try {
-      const cached = await AsyncStorage.getItem(`${PREFIX}${generatedRidesId}`);
+      const raw = await AsyncStorage.getItem(`${PREFIX}${generatedRidesId}`);
+      if (raw === null) return null;
 
-      if (cached === null) {
-        return null;
-      }
-
-      // ✅ NEW: Parse the JSON string back into an object
+      let parsed;
       try {
-        return JSON.parse(cached);
-      } catch (parseErr) {
-        // ✅ NEW: If parsing fails, the cache is corrupted — clear it
+        parsed = JSON.parse(raw);
+      } catch {
+        // Corrupted — discard silently
         console.warn(
-          '[routeCache] Corrupted data detected, clearing cache for',
+          '[routeCache] corrupted entry cleared for',
           generatedRidesId,
         );
         await routeCache.clear(generatedRidesId);
         return null;
       }
+
+      // ── New shape: { data, savedAt } ─────────────────────────────────────
+      if (parsed && typeof parsed === 'object' && 'savedAt' in parsed) {
+        const age = Date.now() - parsed.savedAt;
+        if (age > CACHE_TTL_MS) {
+          console.log('[routeCache] stale entry cleared for', generatedRidesId);
+          await routeCache.clear(generatedRidesId);
+          return null;
+        }
+        return parsed.data;
+      }
+
+      // ── Legacy shape: bare coordinate object (no savedAt) ────────────────
+      // Accept it as-is; it will be overwritten with a timestamp on the next
+      // successful getRideDetails() call.
+      return parsed;
     } catch (e) {
       console.warn('[routeCache] get failed:', e);
       return null;

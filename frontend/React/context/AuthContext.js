@@ -12,7 +12,14 @@ import {
   saveTokenExpiry,
   clearTokenExpiry,
   getTimeUntilExpiry,
+  clearCachedAccessToken,
+  saveCachedAccessToken,
 } from '../services/cache/tokenMetadata';
+import {
+  attemptOfflineRestore,
+  checkNetworkStatus,
+  getStoredCredentials,
+} from '../utilities/offlineUtils';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({children}) => {
@@ -52,20 +59,55 @@ export const AuthProvider = ({children}) => {
         setUserPreferAutoLogin(autoLoginPref === 'true');
       }
 
-      // 3. Load refresh token from Keychain
-      const credentials = await Keychain.getGenericPassword({
-        service: 'com.ridershub.auth',
-      });
+      // 3. Check network status
+      const networkStatus = await checkNetworkStatus();
+      console.log(
+        `📡 Network status: ${
+          networkStatus.isConnected ? 'ONLINE' : 'OFFLINE'
+        } (${networkStatus.type})`,
+      );
+
+      // 4. Load refresh token from Keychain
+      const credentials = await getStoredCredentials();
 
       if (credentials?.password && userPreferAutoLogin) {
         refreshTokenRef.current = credentials.password;
-        console.log('✅ Refresh token found — attempting session restore');
+        console.log('✅ Refresh token found');
 
-        // 4. Exchange stored refresh token for a fresh access token
-        syncApiclientRef();
-        const restored = await restoreSession(credentials.password);
-        if (!restored) {
-          console.log('ℹ️ Session restore failed — showing login screen');
+        // 5. ONLINE PATH: Exchange refresh token for fresh access token
+        if (networkStatus.isConnected) {
+          console.log('🌐 Online — attempting session refresh from server');
+          syncApiclientRef();
+          const restored = await restoreSession(credentials.password);
+          if (!restored) {
+            console.log('⚠️ Session restore failed — trying offline restore');
+            // Fallback: Try offline restore even though we're online (in case API is down)
+            const offlineResult = await attemptOfflineRestore();
+            if (offlineResult.success) {
+              tokenRef.current = offlineResult.token;
+              setToken(offlineResult.token);
+            }
+          }
+        } else {
+          // 6. OFFLINE PATH: Try to restore from cached token
+          console.log(
+            '📵 Offline detected — attempting offline session restore',
+          );
+          const offlineResult = await attemptOfflineRestore();
+
+          if (offlineResult.success) {
+            // Use cached token
+            tokenRef.current = offlineResult.token;
+            setToken(offlineResult.token);
+            console.log(
+              `✅ Offline session restored (${offlineResult.reason})`,
+            );
+          } else {
+            // Can't restore offline, will need to login
+            console.log(
+              `ℹ️ Offline restore failed: ${offlineResult.reason} — showing login screen`,
+            );
+          }
         }
       } else if (credentials?.password && !userPreferAutoLogin) {
         console.log('ℹ️ User chose not to auto-login — showing login screen');
@@ -80,7 +122,6 @@ export const AuthProvider = ({children}) => {
       console.log('✅ Auth initialization complete');
     }
   };
-
   // Silently exchange the stored refresh token for a new access token.
   // Returns true on success, false on failure (token invalid/expired).
   const restoreSession = async refreshToken => {
@@ -133,6 +174,8 @@ export const AuthProvider = ({children}) => {
   }, []);
 
   // REPLACE saveAuth function (lines 117-144):
+
+  // Replace lines 136-171:
   const saveAuth = async (
     newAccessToken,
     newRefreshToken,
@@ -153,6 +196,9 @@ export const AuthProvider = ({children}) => {
       // Save token expiry metadata
       await saveTokenExpiry(expiresIn);
 
+      // ✅ NEW: Cache access token for offline use
+      await saveCachedAccessToken(newAccessToken);
+
       await _clearStorage();
 
       await Keychain.setGenericPassword('userToken', newRefreshToken, {
@@ -169,7 +215,6 @@ export const AuthProvider = ({children}) => {
       throw error;
     }
   };
-
   // REPLACE refreshAccessToken function (lines 146-188):
   const refreshAccessToken = async () => {
     if (isRefreshing || !refreshTokenRef.current) {
@@ -267,6 +312,8 @@ export const AuthProvider = ({children}) => {
   // ─── Internal helper: wipe persisted credentials only (no state reset) ───
 
   // REPLACE _clearStorage function (lines 192-203):
+
+  // Replace lines 270-287:
   const _clearStorage = async () => {
     try {
       await Keychain.resetGenericPassword({service: 'com.ridershub.auth'});
@@ -278,15 +325,17 @@ export const AuthProvider = ({children}) => {
     } catch (err) {
       console.warn('⚠️ AsyncStorage remove warning:', err.message);
     }
-    // NEW: Clear token expiry
     try {
       await clearTokenExpiry();
+      // ✅ clearTokenExpiry already clears cachedAccessToken
     } catch (err) {
       console.warn('⚠️ Token expiry clear warning:', err.message);
     }
   };
-
   // ─── Public: reset all auth state + persisted storage ───
+  // Pass a callback to AuthProvider that will be called on logout
+
+  // Replace lines 291-306:
   const clearAuth = async () => {
     tokenRef.current = null;
     refreshTokenRef.current = null;
@@ -294,6 +343,14 @@ export const AuthProvider = ({children}) => {
     syncApiclientRef();
     setToken(null);
     setUsername(null);
+
+    // ✅ NEW: Clear cached token too
+    await clearCachedAccessToken();
+
+    if (contextValue?.onLogout) {
+      contextValue.onLogout();
+    }
+
     await _clearStorage();
     console.log('✅ Auth cleared');
   };

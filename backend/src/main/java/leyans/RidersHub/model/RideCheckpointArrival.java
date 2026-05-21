@@ -17,11 +17,11 @@ public class RideCheckpointArrival {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "started_ride_id", referencedColumnName = "rides_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "started_ride_id", referencedColumnName = "id", nullable = false)
     private StartedRide startedRide;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "rider_username", referencedColumnName = "username", nullable = false)
     private Rider rider;
 

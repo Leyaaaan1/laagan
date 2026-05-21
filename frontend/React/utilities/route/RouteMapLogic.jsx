@@ -1,17 +1,18 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Alert, Platform, PermissionsAndroid } from 'react-native';
+import {useState, useEffect, useCallback, useRef} from 'react';
+import {Alert, Platform, PermissionsAndroid} from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
-import { getRouteCoordinates } from '../../services/RouteService';
+import {getRouteCoordinates} from '../../services/RouteService';
 import {useAuth} from '../../context/AuthContext';
+import {checkNetworkStatus} from '../offlineUtils';
 
-export const useRouteMapLogic = (generatedRidesId) => {
+export const useRouteMapLogic = generatedRidesId => {
   const {} = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [routeData, setRouteData] = useState(null);
   const [error, setError] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [routeError, setRouteError] = useState(null);
-
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
 
   // ── getUserLocationOnce ───────────────────────────────────────────────────
   const getUserLocationOnce = useCallback(() => {
@@ -50,7 +51,7 @@ export const useRouteMapLogic = (generatedRidesId) => {
       },
       quickOptions,
     );
-  }, []); // setUserLocation is stable — no extra deps needed
+  }, []);
 
   // ── requestLocationPermission ─────────────────────────────────────────────
   const requestLocationPermission = useCallback(async () => {
@@ -82,25 +83,31 @@ export const useRouteMapLogic = (generatedRidesId) => {
   }, [getUserLocationOnce]);
 
   // ── fetchRouteData ────────────────────────────────────────────────────────
-  // Previously had two bugs:
-  //   1. `errorMessage` was used in the catch block but was never declared —
-  //      the caught value is `error` (the parameter), not `errorMessage`.
-  //   2. The function was a plain `const` inside the hook body, so ESLint
-  //      (correctly) complained it was missing from the useEffect dep array.
-  //      Wrapping in useCallback gives it a stable identity.
   const fetchRouteData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      setRouteError(null); // Clear previous route errors
+      setRouteError(null);
+
+      // ✅ FIXED: Single network check call (cached for 5 seconds)
+      const networkStatus = await checkNetworkStatus();
+      setIsOfflineMode(!networkStatus.isConnected);
+
+      if (!networkStatus.isConnected) {
+        console.log(
+          '📵 Offline mode detected — fetching route from cache only',
+        );
+      }
 
       const data = await getRouteCoordinates(generatedRidesId);
 
       if (!data) {
-        throw new Error('No route data received from server');
+        throw new Error('No route data received');
       }
 
       setRouteData(data);
+      setError(null);
+      setRouteError(null);
     } catch (err) {
       const message = err?.message || 'Failed to load route data';
 
@@ -115,24 +122,40 @@ export const useRouteMapLogic = (generatedRidesId) => {
           [{text: 'OK', style: 'default'}],
         );
       }
+      // Offline scenario - show warning but allow map to display
+      else if (
+        isOfflineMode &&
+        (message.includes('Network request failed') ||
+          message.includes('NETWORK_ERROR'))
+      ) {
+        console.warn('📵 Offline: using cached route if available');
+        setRouteError('Offline — showing cached route');
+        setError(null);
+        setIsLoading(false);
+        return;
+      }
       // Non-fatal errors: GraphHopper rate limit, network issues, etc.
-      // ✨ NEW: Allow map to display with landmarks, just no route polyline
       else if (
         message.includes('GraphHopper') ||
         message.includes('rate limit') ||
-        message.includes('API error')
+        message.includes('API error') ||
+        message.includes('Network request failed')
       ) {
         console.warn('⚠️ Route unavailable (non-fatal):', message);
-        setRouteError(message); // Show warning but DON'T block map
+        setRouteError(message);
         setRouteData(null);
-        setError(null); // Don't show error screen
-        setIsLoading(false); // Allow map to render immediately
-        Alert.alert(
-          'Route Unavailable',
-          'The route cannot be loaded right now, but landmarks will be displayed.',
-          [{text: 'OK', style: 'default'}],
-        );
-        return; // Exit early — don't show retry dialog
+        setError(null);
+        setIsLoading(false);
+
+        const alertMessage = isOfflineMode
+          ? 'No internet connection. Cached landmarks will be displayed if available.'
+          : 'The route cannot be loaded right now, but landmarks will be displayed.';
+
+        Alert.alert('Route Unavailable', alertMessage, [
+          {text: 'Retry', onPress: () => fetchRouteData()},
+          {text: 'Continue Anyway', style: 'default'},
+        ]);
+        return;
       }
       // Other errors
       else {
@@ -147,9 +170,9 @@ export const useRouteMapLogic = (generatedRidesId) => {
     } finally {
       setIsLoading(false);
     }
-  }, [generatedRidesId]);  // tokenRef is a ref — stable, does not need to be listed
+  }, [generatedRidesId, isOfflineMode]);
 
-  // ── Main effect: fetch route + request location on mount / id change ──────
+  // ── Main effect ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (generatedRidesId) {
       fetchRouteData();
@@ -161,15 +184,14 @@ export const useRouteMapLogic = (generatedRidesId) => {
 
     requestLocationPermission();
   }, [generatedRidesId, fetchRouteData, requestLocationPermission]);
-  // token is intentionally omitted — tokenRef.current gives fetchRouteData
-  // the latest token without causing the effect to re-run on every token change.
 
   // ── updateUserLocationOnMap ───────────────────────────────────────────────
   const updateUserLocationOnMap = useCallback((webViewRef, location) => {
     if (!webViewRef.current || !location) return;
 
-    const script = `
-      window.userCurrentLocation = ${JSON.stringify(location)};
+    const script = `      window.userCurrentLocation = ${JSON.stringify(
+      location,
+    )};
       if (typeof window.updateUserLocation === 'function') {
         window.updateUserLocation(${JSON.stringify(location)});
       }
@@ -189,17 +211,14 @@ export const useRouteMapLogic = (generatedRidesId) => {
       userLocation,
     ) => {
       if (!webViewRef.current) return;
-      // ✨ CHANGED: Allow routeData to be null now
 
-      const script = `
-      if (typeof window.loadRouteData === 'function') {
+      const script = `      if (typeof window.loadRouteData === 'function') {
         window.loadRouteData(
           ${JSON.stringify(routeData)},
           ${JSON.stringify(startingPoint)},
           ${JSON.stringify(endingPoint)},
           ${JSON.stringify(stopPoints)},
-          ${JSON.stringify(userLocation)}
-        );
+          ${JSON.stringify(userLocation)}        );
         console.log('loadRouteData called with routeData: ' + (${JSON.stringify(
           routeData,
         )} ? 'present' : 'null'));
@@ -214,9 +233,6 @@ export const useRouteMapLogic = (generatedRidesId) => {
   );
 
   // ── handleWebViewMessage ──────────────────────────────────────────────────
-  // routeData is read from state inside here — we use a ref so the callback
-  // stays stable without needing routeData in its deps (which would make
-  // RouteMapView re-register the onMessage handler on every fetch).
   const routeDataRef = useRef(routeData);
   useEffect(() => {
     routeDataRef.current = routeData;
@@ -231,13 +247,12 @@ export const useRouteMapLogic = (generatedRidesId) => {
             onWebViewLoad();
           }
         }
-        // 'error' and 'routeLoaded' types handled silently for now
       } catch (err) {
         console.warn('WebView message parse error:', err);
       }
     },
     [],
-  ); // stable — reads routeData via ref
+  );
 
   // ── handleWebViewError ────────────────────────────────────────────────────
   const handleWebViewError = useCallback(syntheticEvent => {
@@ -250,6 +265,7 @@ export const useRouteMapLogic = (generatedRidesId) => {
     error,
     routeError,
     userLocation,
+    isOfflineMode,
     fetchRouteData,
     handleWebViewLoad,
     handleWebViewMessage,

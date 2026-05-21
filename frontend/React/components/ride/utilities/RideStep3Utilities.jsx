@@ -8,6 +8,7 @@
 import {reverseGeocodeLandmark} from '../../../services/rideService';
 import {createRouteData, getRoutePreview} from '../../../services/RouteService';
 import {buildCenterMapScript, buildDrawRouteScript} from './RideStepUtils';
+import {routePreviewCache} from '../../../services/cache/routePreviewCache';
 
 // ─── Map init ────────────────────────────────────────────────────────────────
 
@@ -64,6 +65,32 @@ export const drawRoadRoute = async ({
 
   setRouteLoading(true);
   try {
+    // ── 1. Check cache first ────────────────────────────────────────────────
+    // Same route + stops within 7 days → inject immediately, skip GraphHopper.
+    const cached = await routePreviewCache.get(
+      sLat,
+      sLng,
+      eLat,
+      eLng,
+      stopPoints,
+    );
+
+    if (cached?.features?.length) {
+      console.log('[drawRoadRoute] cache hit — skipping GraphHopper call');
+      webViewRef.current?.injectJavaScript(
+        buildDrawRouteScript({
+          routeGeoJSON: cached,
+          startLat: sLat,
+          startLng: sLng,
+          endLat: eLat,
+          endLng: eLng,
+          stopPoints,
+        }),
+      );
+      return; // done — setRouteLoading(false) runs in finally
+    }
+
+    // ── 2. Cache miss — call GraphHopper ────────────────────────────────────
     const routeData = createRouteData(sLat, sLng, eLat, eLng, stopPoints);
     const routeGeoJSON = await getRoutePreview(routeData, token);
 
@@ -71,6 +98,13 @@ export const drawRoadRoute = async ({
       return;
     }
 
+    // ── 3. Persist so the next call is instant ──────────────────────────────
+    // Fire-and-forget — a save failure must never block the map render.
+    routePreviewCache
+      .save(sLat, sLng, eLat, eLng, stopPoints, routeGeoJSON)
+      .catch(e => console.warn('[drawRoadRoute] cache save (non-fatal):', e));
+
+    // ── 4. Inject into WebView ──────────────────────────────────────────────
     webViewRef.current?.injectJavaScript(
       buildDrawRouteScript({
         routeGeoJSON,

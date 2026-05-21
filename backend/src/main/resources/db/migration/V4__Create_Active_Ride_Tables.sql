@@ -7,7 +7,7 @@
 CREATE TABLE public.started_rides (
                                       id                 SERIAL PRIMARY KEY,
                                       initiator_username VARCHAR(255) NOT NULL REFERENCES public.rider(username) ON DELETE CASCADE,
-                                      rides_id           VARCHAR(12)  NOT NULL UNIQUE REFERENCES public.event_rides(generated_rides_id) ON DELETE CASCADE,
+                                      generated_rides_id VARCHAR(12)  NOT NULL UNIQUE REFERENCES public.event_rides(generated_rides_id) ON DELETE CASCADE,
                                       start_time         TIMESTAMP    NOT NULL,
                                       location           GEOMETRY(Point, 4326),
                                       created_at         TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
@@ -22,7 +22,7 @@ CREATE TABLE public.started_ride_participants (
 
 -- Create indexes
 CREATE INDEX idx_started_rides_initiator     ON public.started_rides(initiator_username);
-CREATE INDEX idx_started_rides_rides_id      ON public.started_rides(rides_id);
+CREATE INDEX idx_started_rides_generated_rides_id ON public.started_rides(generated_rides_id);
 CREATE INDEX idx_started_rides_start_time    ON public.started_rides(start_time DESC);
 CREATE INDEX idx_started_rides_location_gist ON public.started_rides USING GIST(location);
 CREATE INDEX idx_started_ride_participants_ride  ON public.started_ride_participants(started_ride_id);

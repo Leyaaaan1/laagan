@@ -19,10 +19,14 @@ public class FinishedRide {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @OneToOne(fetch = FetchType.LAZY)
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "started_ride_id", referencedColumnName = "id", nullable = false)
+    private StartedRide startedRide;
+
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "generated_rides_id", referencedColumnName = "generated_rides_id", nullable = false)
     private Rides ride;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "finisher_username", referencedColumnName = "username", nullable = false)
     private Rider finishedBy; // always the ride creator
@@ -49,15 +53,24 @@ public class FinishedRide {
 
     public FinishedRide() {}
 
-    public FinishedRide(Rides ride, Rider finishedBy, LocalDateTime startTime,
-                        LocalDateTime endTime, Integer durationMinutes,
-                        Set<Rider> completedParticipants) {
+
+    public FinishedRide(StartedRide startedRide, Rides ride, Rider finishedBy,
+                        LocalDateTime startTime, LocalDateTime endTime,
+                        Integer durationMinutes, Set<Rider> completedParticipants) {
+        this.startedRide = startedRide;
         this.ride = ride;
         this.finishedBy = finishedBy;
         this.startTime = startTime;
         this.endTime = endTime;
         this.durationMinutes = durationMinutes;
         this.completedParticipants = completedParticipants;
+    }
+    public StartedRide getStartedRide() {
+        return startedRide;
+    }
+
+    public void setStartedRide(StartedRide startedRide) {
+        this.startedRide = startedRide;
     }
 
     public Integer getId() { return id; }

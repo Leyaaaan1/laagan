@@ -1,4 +1,5 @@
 import {api} from './Apiclient';
+import {routeCache} from './cache/routeCache';
 
 export const startService = {
   startRide: async (generatedRidesId) => {
@@ -81,5 +82,42 @@ export const getStopPointsByRideId = async generatedRidesId => {
     );
   }
   return response.json();
+};
+
+
+
+
+// After fetching active ride details:
+const handleFetchActiveRide = async () => {
+  try {
+    const activeRide = await getActiveRide();
+
+    // ✅ NEW: Cache the route immediately when ride is active
+    if (activeRide && activeRide.generatedRidesId) {
+      const routeCoordinates = {
+        // Extract from activeRide response
+        startLat: activeRide.startLat,
+        startLng: activeRide.startLng,
+        endLat: activeRide.endLat,
+        endLng: activeRide.endLng,
+        startingPointName: activeRide.startingPointName,
+        endingPointName: activeRide.endingPointName,
+        stopPoints: activeRide.stopPoints || [],
+        routeCoordinates: activeRide.routeCoordinates, // GeoJSON if available
+      };
+
+      await routeCache
+        .save(activeRide.generatedRidesId, routeCoordinates)
+        .catch(e => {
+          console.warn('[handleFetchActiveRide] Cache save (non-fatal):', e);
+        });
+
+      console.log('✅ Active ride route cached:', activeRide.generatedRidesId);
+    }
+
+    setActiveRide(activeRide);
+  } catch (err) {
+    console.error('Failed to fetch active ride:', err);
+  }
 };
 

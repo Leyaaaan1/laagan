@@ -84,29 +84,90 @@ public class StartRideService {
     }
 
 
+
+    @Transactional
+    public void leaveRide(String generatedRidesId) {
+        AppLogger.info(this.getClass(), "leaveRide called", "generatedRidesId", generatedRidesId);
+
+        Rider rider = startedUtil.authenticateAndGetInitiator();
+
+        // Find the active started ride
+        StartedRide startedRide = startedRideRepository
+                .findByRideGeneratedRidesId(generatedRidesId)
+                .orElseThrow(() -> new IllegalArgumentException("No active ride found: " + generatedRidesId));
+
+        Rides ride = startedRide.getRide();
+
+        // The creator must stop the ride — they cannot just leave
+        boolean isCreator = ride.getUsername().getUsername().equals(rider.getUsername());
+        if (isCreator) {
+            throw new RideAuthorizationException(
+                    "The ride creator cannot leave. Use Stop Ride to end the ride for everyone.");
+        }
+
+        // Verify the caller is actually a participant
+        boolean isParticipant = startedRide.getParticipants()
+                .stream()
+                .anyMatch(p -> p.getUsername().equals(rider.getUsername()));
+        if (!isParticipant) {
+            throw new IllegalStateException(
+                    "You are not a participant of this ride: " + generatedRidesId);
+        }
+
+        // Remove the rider's location row
+        startedRideRepository.deleteRiderLocationsByStartedRideIdAndUsername(
+                generatedRidesId, rider.getUsername());
+
+        // Remove the rider's ParticipantLocation row
+        startedRideRepository.deleteParticipantLocationByStartedRideIdAndUsername(
+                generatedRidesId, rider.getUsername());
+
+        // Remove from the started_ride_participants join table
+        startedRideRepository.removeParticipantFromStartedRide(
+                generatedRidesId, rider.getUsername());
+
+        // Also remove from the rides.participants set so the ride no longer
+        // appears as "active" for this user
+        ride.getParticipants().remove(rider);
+        ridesRepository.save(ride);
+
+        AppLogger.info(this.getClass(), "Rider left ride successfully",
+                "rider", rider.getUsername(), "generatedRidesId", generatedRidesId);
+    }
+
     @Transactional
     public void deactivateRide(String generatedRidesId) {
         AppLogger.info(this.getClass(), "deactivateRide called", "generatedRidesId", generatedRidesId);
-        // 1. Find the ride — generatedRidesId is NOT the PK, so use findByGeneratedRidesId
+
+        // Authenticate the initiator to ensure they are authorized
+        Rider initiator = startedUtil.authenticateAndGetInitiator();
+
+        // Find the ride — generatedRidesId is NOT the PK, so use findByGeneratedRidesId
         Rides ride = ridesRepository.findByGeneratedRidesId(generatedRidesId)
                 .orElseThrow(() -> {
                     AppLogger.warn(this.getClass(), "Ride not found for deactivation", "rideId", generatedRidesId);
                     return new IllegalArgumentException("Ride not found: " + generatedRidesId);
                 });
 
-        // 2. Find the StartedRide and delete it first (breaks the FK constraint before touching Rides)
-        startedRideRepository.findByRideGeneratedRidesId(generatedRidesId).ifPresent(startedRide -> {
-            Integer startedRideId = startedRide.getId();
+        // Only the ride creator can stop it
+        boolean isCreator = ride.getUsername().getUsername().equals(initiator.getUsername());
+        if (!isCreator) {
+            AppLogger.warn(this.getClass(), "Unauthorized ride stop attempt",
+                    "initiator", initiator.getUsername(), "rideId", generatedRidesId);
+            throw new RideAuthorizationException("Only the ride creator can stop the ride");
+        }
 
+        // Find the StartedRide and delete it first (breaks the FK constraint before touching Rides)
+        startedRideRepository.findByRideGeneratedRidesId(generatedRidesId).ifPresent(startedRide -> {
             // CRITICAL: Delete in correct FK order
             // Step 1: Delete rider_locations rows (NEW - for location sharing feature)
-            startedRideRepository.deleteRiderLocationsByStartedRideId(startedRideId);
+            startedRideRepository.deleteRiderLocationsByStartedRideId(generatedRidesId);
 
             // Step 2: Delete participant_location rows (FK references started_rides.id)
-            startedRideRepository.deleteParticipantLocationsByStartedRideId(startedRideId);
+            startedRideRepository.deleteParticipantLocationsByStartedRideId(generatedRidesId);
 
             // Step 3: Delete started_ride_participants join table
-            startedRideRepository.deleteParticipantsByStartedRideId(startedRideId);
+            startedRideRepository.deleteParticipantsByStartedRideId(generatedRidesId);
 
             // Step 4: Delete the started_ride itself
             startedRideRepository.delete(startedRide);

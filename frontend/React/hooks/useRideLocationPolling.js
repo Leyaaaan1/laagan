@@ -1,3 +1,5 @@
+// ✅ FIXED: frontend/React/hooks/useRideLocationPolling.js
+
 import {useEffect, useRef, useState, useCallback} from 'react';
 import {AppState, Platform, PermissionsAndroid} from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
@@ -7,6 +9,8 @@ import {
   shareLocationAndFetchAll,
   calculateBackoffDelay,
   shouldRetry,
+  shouldRetryError,
+  isFatalError,
   isAuthError,
   createIntervalManager,
   createTimeoutManager,
@@ -34,7 +38,6 @@ export const useLocationPermission = () => {
           );
           setGranted(result === PermissionsAndroid.RESULTS.GRANTED);
         } else {
-          // iOS
           await Geolocation.requestAuthorization('whenInUse');
           setGranted(true);
         }
@@ -58,7 +61,7 @@ export const useRideLocationPolling = ({
   onLocationsUpdate,
   onError,
 }) => {
-  const {token} = useAuth(); // ✅ Get token from auth context
+  const {token} = useAuth();
   const [isPolling, setIsPolling] = useState(false);
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -74,7 +77,7 @@ export const useRideLocationPolling = ({
   const enabledRef = useRef(enabled);
   const isPollingRef = useRef(false);
   const isOfflineRef = useRef(false);
-  const tokenRef = useRef(token); // ✅ Keep track of token updates
+  const tokenRef = useRef(token);
 
   useEffect(() => {
     enabledRef.current = enabled;
@@ -84,7 +87,6 @@ export const useRideLocationPolling = ({
     isOfflineRef.current = isOffline;
   }, [isOffline]);
 
-  // ✅ NEW: Update tokenRef whenever token changes
   useEffect(() => {
     tokenRef.current = token;
     console.log(
@@ -98,6 +100,17 @@ export const useRideLocationPolling = ({
       retryCountRef.current += 1;
       const count = retryCountRef.current;
 
+      if (isFatalError(err)) {
+        console.error('⛔ Fatal error (no retry):', err.message);
+        setError(`Fatal: ${err.message}`);
+        setIsPolling(false);
+        isPollingRef.current = false;
+        if (onError) {
+          onError(err);
+        }
+        return;
+      }
+
       if (isAuthError(err)) {
         setIsPolling(false);
         isPollingRef.current = false;
@@ -108,7 +121,7 @@ export const useRideLocationPolling = ({
         return;
       }
 
-      if (shouldRetry(count)) {
+      if (shouldRetryError(count)) {
         const nextDelay = calculateBackoffDelay(count);
         setRetryCount(count);
         setNextRetryDelay(nextDelay);
@@ -151,8 +164,27 @@ export const useRideLocationPolling = ({
         rideId,
         latitude,
         longitude,
-        tokenRef.current, // ← PASS THE TOKEN HERE
+        tokenRef.current,
       );
+
+      // ✅ FIXED: Handle null/undefined response
+      if (!allLocations || !Array.isArray(allLocations)) {
+        console.warn(
+          '⚠️ Invalid locations response:',
+          allLocations,
+          '— using empty array',
+        );
+        const emptyLocations = [];
+        retryCountRef.current = 0;
+        setRetryCount(0);
+        setNextRetryDelay(1000);
+        setError(null);
+
+        if (onLocationsUpdate) {
+          onLocationsUpdate(emptyLocations);
+        }
+        return;
+      }
 
       console.log(
         '✅ Locations received:',
@@ -174,7 +206,7 @@ export const useRideLocationPolling = ({
     } finally {
       pollLock.current.release();
     }
-  }, [rideId, handlePollingError]);
+  }, [rideId, handlePollingError, onLocationsUpdate]);
 
   useEffect(() => {
     pollOnceRef.current = pollLocationOnce;
@@ -187,7 +219,6 @@ export const useRideLocationPolling = ({
     isPollingRef.current = false;
   }, []);
 
-  // 8 seconds + 0–2 second random jitter, 10 users spread their requests across a 2 second window instead of hitting simultaneously
   const startPolling = useCallback(() => {
     if (intervalManager.current.isRunning()) return;
 

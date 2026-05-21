@@ -16,8 +16,8 @@ public class RiderLocation {
     @JoinColumn(name = "rider_username", referencedColumnName = "username", nullable = false)
     private Rider username;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "started_ride_id", referencedColumnName = "rides_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "started_ride_id", referencedColumnName = "id", nullable = false)
     private StartedRide startedRide;
     @Column(name = "location_name", nullable = false)
     private String locationName;

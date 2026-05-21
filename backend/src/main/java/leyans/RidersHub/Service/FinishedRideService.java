@@ -50,6 +50,7 @@ public class FinishedRideService {
      * Only the ride creator can call this.
      * Saves a FinishedRide record and sets ride.active = false.
      */
+
     @Transactional
     public FinishedRide finishRide(String generatedRidesId) {
         AppLogger.info(this.getClass(), "finishRide called", "generatedRidesId", generatedRidesId);
@@ -84,7 +85,9 @@ public class FinishedRideService {
         LocalDateTime endTime = LocalDateTime.now();
         int durationMinutes = (int) ChronoUnit.MINUTES.between(startedRide.getStartTime(), endTime);
 
+        // ✅ FIXED: Pass startedRide as first parameter
         FinishedRide finishedRide = new FinishedRide(
+                startedRide,
                 ride,
                 requester,
                 startedRide.getStartTime(),
@@ -104,7 +107,6 @@ public class FinishedRideService {
 
         return saved;
     }
-
 
     public void autoMarkCheckpoints(StartedRide startedRide, Rider rider, Point riderPoint) {
         Rides ride = startedRide.getRide();
