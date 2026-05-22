@@ -133,6 +133,7 @@ export const drawRoadRoute = async ({
  * @param {Function} setAddingStopLoading
  * @returns {Promise<void>}
  */
+
 export const handleStopMapTap = async (
   event,
   setCurrentStop,
@@ -147,14 +148,15 @@ export const handleStopMapTap = async (
   setAddingStopLoading(true);
 
   const name = await reverseGeocodeLandmark(data.lat, data.lng);
+
   setCurrentStop({
     lat: data.lat,
     lng: data.lng,
     name: name || `${data.lat.toFixed(4)}, ${data.lng.toFixed(4)}`,
   });
+
   setAddingStopLoading(false);
 };
-
 /**
  * Confirms the pending stop and appends it to the stop list.
  *

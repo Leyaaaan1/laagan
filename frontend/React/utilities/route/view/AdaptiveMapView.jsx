@@ -4,6 +4,7 @@ import React, {useRef, forwardRef, useImperativeHandle} from 'react';
 import {View, StyleSheet} from 'react-native';
 import RouteMapView from './RouteMapView';
 import OfflineMapView from '../map/view/OfflineMapView';
+import {useOfflineUserLocation} from '../../../hooks/useOfflineUserLocation';
 
 const AdaptiveMapView = forwardRef(
   (
@@ -28,6 +29,10 @@ const AdaptiveMapView = forwardRef(
   ) => {
     const onlineRef = useRef(null);
     const offlineRef = useRef(null);
+
+    const {userLocation: offlineUserLocation} =
+      useOfflineUserLocation(isOffline);
+
 
     // ─── Forwarded ref ───────────────────────────────────────────────────────
     // Route the call to whichever map is currently visible.
@@ -62,6 +67,7 @@ const AdaptiveMapView = forwardRef(
             key="offline"
             ref={offlineRef}
             routeData={routeData}
+            userLocation={offlineUserLocation}
             {...sharedProps}
             style={styles.fill}
           />

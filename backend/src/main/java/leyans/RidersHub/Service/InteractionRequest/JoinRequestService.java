@@ -98,6 +98,7 @@ public class JoinRequestService {
                 savedRequest.getGeneratedRidesId().getGeneratedRidesId(),
                 savedRequest.getRequester().getUsername()
         );
+        joinRequestRepository.delete(savedRequest);
 
         return savedRequest;
     }

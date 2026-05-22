@@ -97,6 +97,7 @@ const startedRideStyles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 5,
+    zIndex: 50,
     padding: 10,
   },
   routeInfoHeader: {
@@ -367,7 +368,7 @@ const startedRideStyles = StyleSheet.create({
   actionStopButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#c0392b',
+    backgroundColor: colors.primary,
     borderRadius: 99,
     paddingVertical: 6,
     paddingHorizontal: 14,

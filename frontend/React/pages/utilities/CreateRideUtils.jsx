@@ -223,15 +223,11 @@ const useCreateRide = ({}) => {
     return [];
   };
 
-  // ✅ ─── ENHANCED: Ride creation with full validation ──────────────────────
-
-  // ✅ ─── ENHANCED: Ride creation with full validation ──────────────────────
   const handleCreateRide = useCallback(async () => {
     // ────────────────────────────────────────────────────────────────────────────
     // STEP 1: INPUT VALIDATION
     // ────────────────────────────────────────────────────────────────────────────
 
-    // ✅ Validate ride name
     const nameError = validateRideName(rideName);
     if (nameError) {
       setError(nameError);
@@ -239,7 +235,6 @@ const useCreateRide = ({}) => {
       return;
     }
 
-    // ✅ Validate ride date
     const dateError = validateRideDate(date);
     if (dateError) {
       setError(dateError);
@@ -247,7 +242,6 @@ const useCreateRide = ({}) => {
       return;
     }
 
-    // ✅ Validate starting & ending point names exist
     if (!startingPoint.trim()) {
       const msg = ERROR_MESSAGES.RIDE_CREATION.STARTING_POINT_REQUIRED;
       setError(msg);
@@ -262,7 +256,6 @@ const useCreateRide = ({}) => {
       return;
     }
 
-    // ✅ Validate coordinates (critical safety check)
     const coordErrors = validateCoordinates(
       startingLatitude,
       startingLongitude,
@@ -379,16 +372,7 @@ const useCreateRide = ({}) => {
         console.warn('[handleCreateRide] Route cache save (non-fatal):', e);
       });
 
-      console.log('✅ Route cached for ride:', generatedId);
 
-      // ────────────────────────────────────────────────────────────────────────
-      // STEP 6: SUCCESS — STORE ID AND ADVANCE
-      // ────────────────────────────────────────────────────────────────────────
-
-      console.log('✨ Ride created successfully:', {
-        rideId: generatedId,
-        name: rideData.ridesName,
-      });
 
       setGeneratedRidesId(generatedId);
       pendingRideIdRef.current = generatedId;
