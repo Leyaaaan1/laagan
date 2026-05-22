@@ -17,9 +17,10 @@ public class ParticipantLocation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private  Integer participantLocationId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "started_ride_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "started_ride_id", referencedColumnName = "id", nullable = false)
     private StartedRide startedRide;
+
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "rider_username", referencedColumnName = "username", nullable = false)

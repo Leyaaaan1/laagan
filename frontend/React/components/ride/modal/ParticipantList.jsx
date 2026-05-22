@@ -1,3 +1,4 @@
+
 import React, {useState, useEffect, useCallback, useContext} from 'react';
 import {
   View,
@@ -19,15 +20,18 @@ import feedback from '../../../styles/base/feedback';
 import badges from '../../../styles/base/badges';
 import {RideContext} from '../../../context/RideContext';
 
-// token prop removed — all services auto-read from AsyncStorage via ApiClient
+// ✅ ADDED: Import getRideDetails to fetch fresh participant data
+import {getRideDetails} from '../../../services/rideService';
+
 const ParticipantList = ({
-  visible,
-  onClose,
-  generatedRidesId,
-  username,
-  currentUsername,
-  navigation,
-}) => {
+                           visible,
+                           onClose,
+                           generatedRidesId,
+                           username,
+                           currentUsername,
+                           navigation,
+                           participants: propParticipants = [], // ✅ Accept participants as fallback
+                         }) => {
   const [state, setState] = useState({
     rides: [],
     joinRequests: [],
@@ -38,10 +42,15 @@ const ParticipantList = ({
     qrCodeBase64: '',
     inviteLink: '',
     loadingQr: false,
+    participants: [], // ✅ Local state for participants
   });
 
   const {activeRide, updateRideParticipants} = useContext(RideContext);
-  const participants = activeRide?.participants || [];
+
+  // ✅ CHANGED: Use local state participants, fallback to context, then fallback to props
+  const participants = state.participants.length > 0
+    ? state.participants
+    : (activeRide?.participants || propParticipants || []);
 
   const isOwner = username === currentUsername;
 
@@ -57,6 +66,21 @@ const ParticipantList = ({
       console.error('Error sharing:', err);
     }
   };
+
+  // ✅ NEW: Fetch fresh ride details to get updated participants list
+  const refreshParticipants = useCallback(async () => {
+    if (!generatedRidesId) return;
+    try {
+      const rideDetails = await getRideDetails(generatedRidesId);
+      const freshParticipants = rideDetails.participants || [];
+      setState(prev => ({...prev, participants: freshParticipants}));
+
+      // ✅ Also update context
+      updateRideParticipants(freshParticipants);
+    } catch (err) {
+      console.error('Error fetching fresh participants:', err);
+    }
+  }, [generatedRidesId, updateRideParticipants]);
 
   const loadQrCode = useCallback(async () => {
     setState(prev => ({...prev, loadingQr: true}));
@@ -109,8 +133,8 @@ const ParticipantList = ({
 
       const approvedUser = state.joinRequests.find(r => r.joinId === joinId);
       if (approvedUser) {
-        const updatedParticipants = [...participants, approvedUser.username];
-        updateRideParticipants(updatedParticipants);
+        // ✅ CHANGED: Refresh participants instead of manually updating
+        await refreshParticipants();
       }
 
       setState(prev => ({
@@ -139,13 +163,8 @@ const ParticipantList = ({
               );
               Alert.alert('Success', 'All requests approved');
 
-              // ✅ Update Context with approved users
-              const approvedUsernames = pending.map(r => r.username);
-              const updatedParticipants = [
-                ...participants,
-                ...approvedUsernames,
-              ];
-              updateRideParticipants(updatedParticipants);
+              // ✅ Refresh participants from backend
+              await refreshParticipants();
 
               // ✅ Remove approved requests from local state
               setState(prev => ({
@@ -180,7 +199,6 @@ const ParticipantList = ({
               await joinService.rejectJoinRequest(joinId);
               Alert.alert('Success', 'Request has been rejected');
 
-              // ✅ Just remove from local state - no API call
               setState(prev => ({
                 ...prev,
                 joinRequests: prev.joinRequests.filter(
@@ -198,22 +216,26 @@ const ParticipantList = ({
       ],
     );
   };
+
+  // ✅ NEW: Initialize participants on modal open
   useEffect(() => {
     if (!visible) return;
+
+    // Initialize participants from context, props, or fetch fresh
+    if (activeRide?.participants && activeRide.participants.length > 0) {
+      setState(prev => ({...prev, participants: activeRide.participants}));
+    } else if (propParticipants && propParticipants.length > 0) {
+      setState(prev => ({...prev, participants: propParticipants}));
+    } else {
+      // Fetch fresh if neither available
+      refreshParticipants();
+    }
+
     if (state.activeTab === 'rides') loadMyRides();
-    // CHANGED: Load join requests for all participants, not just owner
     else if (state.activeTab === 'requests' && generatedRidesId)
       loadJoinRequests();
-    // CHANGED: Load QR code for all participants, not just owner
     if (generatedRidesId) loadQrCode();
-  }, [
-    visible,
-    state.activeTab,
-    loadMyRides,
-    loadJoinRequests,
-    loadQrCode,
-    generatedRidesId,
-  ]);
+  }, [visible, state.activeTab, generatedRidesId]);
 
   const getStatusStyle = status => {
     switch (status) {
@@ -255,7 +277,6 @@ const ParticipantList = ({
               )}
             </View>
           </View>
-          {/* CHANGED: Only show approve/reject buttons if isOwner AND status is PENDING */}
           {isPending && isOwner && (
             <View style={modal.requestActions}>
               <TouchableOpacity
@@ -294,7 +315,7 @@ const ParticipantList = ({
           <Text
             style={[
               modal.participantName,
-              {textDecorationLine: 'underline'}, // ✅ Show it's clickable
+              {textDecorationLine: 'underline'},
             ]}>
             {participantName}
           </Text>
@@ -318,7 +339,6 @@ const ParticipantList = ({
     <Modal visible={visible} animationType="slide" transparent>
       <View style={modal.overlay}>
         <View style={modal.container}>
-          {/* CHANGED: Removed isOwner check - now visible to all participants */}
           <View style={modal.qrSection}>
             <TouchableOpacity onPress={onClose} style={modal.closeButton}>
               <FontAwesome name="times" size={20} color="#fff" />
@@ -346,7 +366,6 @@ const ParticipantList = ({
               </View>
             )}
             <View style={modal.qrActions}>
-              {/* CHANGED: Only show Share button if isOwner */}
               {isOwner && (
                 <TouchableOpacity
                   style={modal.qrActionButton}
@@ -356,7 +375,6 @@ const ParticipantList = ({
                   <Text style={modal.qrActionButtonText}>Share</Text>
                 </TouchableOpacity>
               )}
-              {/* CHANGED: Only show Refresh button if isOwner */}
               {isOwner && (
                 <TouchableOpacity
                   style={[modal.qrActionButton, modal.qrActionButtonSecondary]}
@@ -396,7 +414,6 @@ const ParticipantList = ({
                 </View>
               )}
             </TouchableOpacity>
-            {/* CHANGED: Removed isOwner check - now visible to all participants */}
             <TouchableOpacity
               style={[
                 modal.tab,
@@ -453,7 +470,6 @@ const ParticipantList = ({
                 )}
               </View>
             )}
-            {/* CHANGED: Removed isOwner check - now visible to all participants */}
             {state.activeTab === 'requests' && (
               <View style={{flex: 1}}>
                 {pendingCount > 0 && isOwner && (

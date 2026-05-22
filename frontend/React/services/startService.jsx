@@ -1,7 +1,7 @@
 import {api} from './Apiclient';
 
 export const startService = {
-  startRide: async (generatedRidesId) => {
+  startRide: async generatedRidesId => {
     const response = await api.post(`/start/${generatedRidesId}`, {});
     if (!response.ok) {
       const messages = {
@@ -18,11 +18,8 @@ export const startService = {
     return response.json();
   },
 
-  deactivateRide: async (generatedRidesId) => {
-    const response = await api.post(
-      `/start/update/${generatedRidesId}`,
-      {},
-    );
+  deactivateRide: async generatedRidesId => {
+    const response = await api.post(`/start/update/${generatedRidesId}`, {});
     if (!response.ok) {
       const messages = {
         404: 'Ride not found.',
@@ -35,6 +32,42 @@ export const startService = {
     }
     return true;
   },
+
+  leaveRide: async generatedRidesId => {
+    const response = await api.post(`/start/leave/${generatedRidesId}`, {});
+    if (!response.ok) {
+      const messages = {
+        403: 'Creator cannot leave ride. You must stop the ride instead.',
+        404: 'Ride not found.',
+        409: 'Ride is in a conflicting state.',
+      };
+      throw new Error(
+        messages[response.status] ||
+          'An error occurred while leaving the ride.',
+      );
+    }
+    return true;
+  },
+
+};
+
+
+
+export const getCheckpointArrivals = async generatedRidesId => {
+  const response = await api.get(
+    `/ride/${generatedRidesId}/checkpoint-arrivals`,
+  );
+  if (!response.ok) {
+    const messages = {
+      404: 'Ride not found.',
+      401: 'Unauthorized. Please log in again.',
+    };
+    throw new Error(
+      messages[response.status] ||
+        'Failed to fetch checkpoint arrivals. Please try again.',
+    );
+  }
+  return response.json();
 };
 
 export const getActiveRide = async () => {
@@ -49,10 +82,8 @@ export const getActiveRide = async () => {
   return response.json();
 };
 
-export const getStopPointsByRideId = async (generatedRidesId) => {
-  const response = await api.get(
-    `/riders/${generatedRidesId}/stop-points`,
-  );
+export const getStopPointsByRideId = async generatedRidesId => {
+  const response = await api.get(`/riders/${generatedRidesId}/stop-points`);
   if (!response.ok) {
     const messages = {
       404: 'Ride not found.',
@@ -66,3 +97,10 @@ export const getStopPointsByRideId = async (generatedRidesId) => {
   }
   return response.json();
 };
+
+
+
+
+
+
+

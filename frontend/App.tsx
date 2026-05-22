@@ -12,11 +12,13 @@ import RideStep4 from './React/components/ride/RideStep4';
 import StartedRide from './React/pages/StartedRide';
 import RideRoutesPage from './React/components/ride/utilities/RideRoutesPage';
 import RiderProfile from './React/pages/RiderProfile';
-import HomeScreen from './React/pages/HomeScreen';
+import HomeScreen from './React/screens/HomeScreen';
 import {GoogleSignin} from '@react-native-google-signin/google-signin';
 import {GOOGLE_CLIENT_ID} from '@env';
 import LoadingScreen from '../frontend/React/commons/LoadingScreen';
 import LegalScreen from '../frontend/React/screens/LegalScreen';
+import FinishedRideView from './React/pages/FinishedRideView';
+
 
 interface AuthContextValue {
   token: string | null;
@@ -42,6 +44,7 @@ const AppStack = () => (
     <Stack.Screen name="RideRoutesPage" component={RideRoutesPage} />
     <Stack.Screen name="RiderProfile" component={RiderProfile} />
     <Stack.Screen name="LegalScreen" component={LegalScreen} />
+    <Stack.Screen name="FinishedRideView" component={FinishedRideView} />
   </Stack.Navigator>
 );
 

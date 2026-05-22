@@ -5,6 +5,7 @@ import leyans.RidersHub.DTO.Response.ActiveRideDTO;
 import leyans.RidersHub.DTO.Response.RideDetailDTO;
 import leyans.RidersHub.DTO.Response.RideResponseDTO;
 import leyans.RidersHub.DTO.Response.StartRideResponseDTO;
+import leyans.RidersHub.ExceptionHandler.RideAuthorizationException;
 import leyans.RidersHub.Service.StartRideService;
 import leyans.RidersHub.Utility.StartedUtil;
 import leyans.RidersHub.model.StartedRide;
@@ -62,6 +63,23 @@ public class StartRideController {
         try {
             startRideService.deactivateRide(generatedRidesId);
             return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/leave/{generatedRidesId}")
+    public ResponseEntity<Void> leaveRide(@PathVariable String generatedRidesId) {
+        try {
+            startRideService.leaveRide(generatedRidesId);
+            return ResponseEntity.ok().build();
+        } catch (RideAuthorizationException ex) {
+            // Creator tried to leave — must stop the ride instead
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         } catch (IllegalStateException ex) {

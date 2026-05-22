@@ -1,7 +1,7 @@
 import React, {useEffect} from 'react';
 import {BackHandler} from 'react-native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import HomeScreen from '../pages/HomeScreen';
+import HomeScreen from '../screens/HomeScreen';
 import AuthScreen from '../screens/AuthScreen';
 import RiderPage from '../pages/RiderPage';
 import CreateRide from '../pages/CreateRide';
@@ -11,6 +11,7 @@ import RideRoutesPage from '../components/ride/utilities/RideRoutesPage';
 import RiderProfile from '../pages/RiderProfile';
 import {useAuth} from '../context/AuthContext';
 import LegalScreen from '../screens/LegalScreen';
+import FinishedRideView from '../pages/FinishedRideView';
 
 const Stack = createNativeStackNavigator();
 
@@ -54,6 +55,7 @@ const MainNavigator = ({navigationRef}) => {
       <Stack.Screen name="RideRoutesPage" component={RideRoutesPage} />
       <Stack.Screen name="RiderProfile" component={RiderProfile} />
       <Stack.Screen name="LegalScreen" component={LegalScreen} />
+      <Stack.Screen name="FinishedRideView" component={FinishedRideView} />
     </Stack.Navigator>
   );
 };

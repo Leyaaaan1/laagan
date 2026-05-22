@@ -403,9 +403,7 @@ const RideStep3 = ({
               mapMode={mapMode}
             />
 
-             Bottom action buttons
             <View style={ridestep3style.bottomActionsRow}>
-               Add Stop
               {mapMode === 'stop' && !isAddingStop && (
                 <TouchableOpacity
                   style={[
@@ -418,7 +416,6 @@ const RideStep3 = ({
                 </TouchableOpacity>
               )}
 
-               Confirm Stop
               {mapMode === 'stop' && isAddingStop && currentStop && (
                 <TouchableOpacity
                   style={[
@@ -439,7 +436,6 @@ const RideStep3 = ({
                 </TouchableOpacity>
               )}
 
-               Finalize start / end
               {showFinalizeBtn && (
                 <TouchableOpacity
                   style={[
@@ -454,7 +450,6 @@ const RideStep3 = ({
                 </TouchableOpacity>
               )}
 
-               Create Ride
               {startingPoint && endingPoint && !isAddingStop && (
                 <TouchableOpacity
                   style={[

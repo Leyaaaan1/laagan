@@ -1,4 +1,3 @@
-
 package leyans.RidersHub.Service;
 
 import leyans.RidersHub.DTO.Response.StartRideResponseDTO;
@@ -13,15 +12,11 @@ import leyans.RidersHub.model.Rides;
 import leyans.RidersHub.model.StartedRide;
 import leyans.RidersHub.model.participant.ParticipantLocation;
 import org.locationtech.jts.geom.Point;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Service
 public class StartRideService {
@@ -84,31 +79,101 @@ public class StartRideService {
     }
 
 
+
+
+
+    @Transactional
+    public void leaveRide(String generatedRidesId) {
+        AppLogger.info(this.getClass(), "leaveRide called", "generatedRidesId", generatedRidesId);
+
+        Rider rider = startedUtil.authenticateAndGetInitiator();
+
+        // Find the active started ride
+        StartedRide startedRide = startedRideRepository
+                .findByRideGeneratedRidesId(generatedRidesId)
+                .orElseThrow(() -> new IllegalArgumentException("No active ride found: " + generatedRidesId));
+
+        Rides ride = startedRide.getRide();
+
+        // Check if caller is actually a participant
+        boolean isParticipant = startedRide.getParticipants()
+                .stream()
+                .anyMatch(p -> p.getUsername().equals(rider.getUsername()));
+        if (!isParticipant) {
+            throw new IllegalStateException(
+                    "You are not a participant of this ride: " + generatedRidesId);
+        }
+
+        // Check if the leaving rider is the creator
+        boolean isCreator = ride.getUsername().getUsername().equals(rider.getUsername());
+
+        // Remove the rider from both participant sets
+        startedRide.getParticipants().remove(rider);
+        ride.getParticipants().remove(rider);
+
+        Set<Rider> remainingParticipants = startedRide.getParticipants();
+
+        // If no one is left (last participant, whether creator or not) — fully clean up
+        if (remainingParticipants.isEmpty()) {
+            AppLogger.info(this.getClass(), "Last participant left. Cleaning up and deactivating ride.",
+                    "generatedRidesId", generatedRidesId);
+            startedRideRepository.deleteRiderLocationsByStartedRideId(generatedRidesId);
+            startedRideRepository.deleteParticipantLocationsByStartedRideId(generatedRidesId);
+            startedRideRepository.deleteParticipantsByStartedRideId(generatedRidesId);
+            startedRideRepository.delete(startedRide);
+            startedRideRepository.flush();
+            ride.setActive(false);
+            ridesRepository.save(ride);
+            AppLogger.info(this.getClass(), "Ride cleaned up and deactivated",
+                    "generatedRidesId", generatedRidesId);
+            return;
+        }
+
+        // If creator is leaving but others remain — transfer ownership to a random participant
+        if (isCreator) {
+            Rider newCreator = remainingParticipants.stream()
+                    .skip(new Random().nextInt(remainingParticipants.size()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("Failed to select new creator"));
+
+            ride.setUsername(newCreator);
+            startedRide.setUsername(newCreator);
+
+            AppLogger.info(this.getClass(), "Creator left; transferred ownership to new creator",
+                    "previousCreator", rider.getUsername(),
+                    "newCreator", newCreator.getUsername(),
+                    "generatedRidesId", generatedRidesId);
+        }
+
+        startedRideRepository.save(startedRide);
+        ridesRepository.save(ride);
+
+        AppLogger.info(this.getClass(), "Rider left ride successfully",
+                "rider", rider.getUsername(), "generatedRidesId", generatedRidesId);
+    }
     @Transactional
     public void deactivateRide(String generatedRidesId) {
         AppLogger.info(this.getClass(), "deactivateRide called", "generatedRidesId", generatedRidesId);
-        // 1. Find the ride — generatedRidesId is NOT the PK, so use findByGeneratedRidesId
+
+        Rider initiator = startedUtil.authenticateAndGetInitiator();
+
         Rides ride = ridesRepository.findByGeneratedRidesId(generatedRidesId)
                 .orElseThrow(() -> {
                     AppLogger.warn(this.getClass(), "Ride not found for deactivation", "rideId", generatedRidesId);
                     return new IllegalArgumentException("Ride not found: " + generatedRidesId);
                 });
 
-        // 2. Find the StartedRide and delete it first (breaks the FK constraint before touching Rides)
+        boolean isCreator = ride.getUsername().getUsername().equals(initiator.getUsername());
+        if (!isCreator) {
+            AppLogger.warn(this.getClass(), "Unauthorized ride stop attempt",
+                    "initiator", initiator.getUsername(), "rideId", generatedRidesId);
+            throw new RideAuthorizationException("Only the current ride creator can stop the ride");
+        }
+
         startedRideRepository.findByRideGeneratedRidesId(generatedRidesId).ifPresent(startedRide -> {
-            Integer startedRideId = startedRide.getId();
-
-            // CRITICAL: Delete in correct FK order
-            // Step 1: Delete rider_locations rows (NEW - for location sharing feature)
-            startedRideRepository.deleteRiderLocationsByStartedRideId(startedRideId);
-
-            // Step 2: Delete participant_location rows (FK references started_rides.id)
-            startedRideRepository.deleteParticipantLocationsByStartedRideId(startedRideId);
-
-            // Step 3: Delete started_ride_participants join table
-            startedRideRepository.deleteParticipantsByStartedRideId(startedRideId);
-
-            // Step 4: Delete the started_ride itself
+            startedRideRepository.deleteRiderLocationsByStartedRideId(generatedRidesId);
+            startedRideRepository.deleteParticipantLocationsByStartedRideId(generatedRidesId);
+            startedRideRepository.deleteParticipantsByStartedRideId(generatedRidesId);
             startedRideRepository.delete(startedRide);
             startedRideRepository.flush();
         });

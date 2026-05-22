@@ -23,7 +23,7 @@ public class StartedRide {
     private Rider username;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "rides_id", referencedColumnName = "generated_rides_id", nullable = false)
+    @JoinColumn(name = "generated_rides_id", referencedColumnName = "generated_rides_id", nullable = false)
     private Rides ride;
 
     @Column(name = "start_time", nullable = false)

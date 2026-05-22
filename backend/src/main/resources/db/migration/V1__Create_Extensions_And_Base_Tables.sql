@@ -3,8 +3,8 @@
 -- RidersHub - Phase 1: Extensions & Base Tables with RLS
 -- ════════════════════════════════════════════════════════════════════════════════════════
 
+
 CREATE SCHEMA IF NOT EXISTS public;
-CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public;
 
 -- RIDER TYPE (Lookup table)
 CREATE TABLE public.rider_type (
@@ -30,6 +30,8 @@ CREATE TABLE public.psgc_data (
                                   correspondence_code VARCHAR(12),
                                   geographic_level VARCHAR(255)
 );
+
+
 
 -- Create indexes
 CREATE INDEX idx_rider_username ON public.rider(username);

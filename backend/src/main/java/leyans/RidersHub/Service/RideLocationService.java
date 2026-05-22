@@ -9,7 +9,6 @@ import leyans.RidersHub.model.*;
 import leyans.RidersHub.model.participant.ParticipantLocation;
 import org.springframework.stereotype.Service;
 import org.locationtech.jts.geom.Point;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -18,6 +17,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 
 @Service
 public class RideLocationService {
@@ -31,16 +31,21 @@ public class RideLocationService {
 
 
 
+    private final FinishedRideService finishedRideService;
+
+
+
 
     public RideLocationService(RiderLocationRepository locationRepo,
                                PsgcDataRepository psgcDataRepository,
                                LocationService locationService,
-                               RiderUtil riderUtil, ParticipantLocationRepository participantLocationRepository) {
+                               RiderUtil riderUtil, ParticipantLocationRepository participantLocationRepository, FinishedRideService finishedRideService) {
         this.locationRepo = locationRepo;
         this.psgcDataRepository = psgcDataRepository;
         this.locationService = locationService;
         this.riderUtil = riderUtil;
         this.participantLocationRepository = participantLocationRepository;
+        this.finishedRideService = finishedRideService;
     }
     @Transactional(readOnly = true)
     public List<LocationUpdateRequestDTO> getAllRiderLocations(Integer startedRideId) {
@@ -117,6 +122,9 @@ public class RideLocationService {
 
         loc = locationRepo.save(loc);
         locationRepo.deleteOldDuplicates(started, rider, loc.getId());
+
+        finishedRideService.autoMarkCheckpoints(started, rider, userPoint);
+
         AppLogger.info(this.getClass(), "Location updated successfully", "username", username, "distance", distanceMeters);
         return new LocationUpdateRequestDTO(
                 startedRideId,
@@ -244,5 +252,6 @@ public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer star
             );
         }).collect(Collectors.toList());
     }
+
 
 }

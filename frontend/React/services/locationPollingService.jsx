@@ -4,6 +4,10 @@ import {API_BASE_URL, api} from './Apiclient';
 import Geolocation from '@react-native-community/geolocation';
 import {Platform, PermissionsAndroid} from 'react-native';
 
+// ✅ NEW: Track last location time to throttle updates
+let lastLocationUpdateTime = 0;
+const LOCATION_THROTTLE_MS = 15000; // Minimum 15 seconds between location updates
+
 export const getCurrentPosition = async () => {
   return new Promise(async (resolve, reject) => {
     if (Platform.OS === 'android') {
@@ -16,6 +20,7 @@ export const getCurrentPosition = async () => {
       }
     }
 
+    // ✅ FIXED: Try coarse location first (fast, low battery drain)
     Geolocation.getCurrentPosition(
       position =>
         resolve({
@@ -23,7 +28,7 @@ export const getCurrentPosition = async () => {
           longitude: position.coords.longitude,
         }),
       () => {
-        // Fallback to quick low-accuracy location
+        // Coarse location failed — fallback to quick low-accuracy location
         Geolocation.getCurrentPosition(
           position =>
             resolve({
@@ -32,61 +37,112 @@ export const getCurrentPosition = async () => {
             }),
           err => reject(new Error(`GPS Error (${err.code}): ${err.message}`)),
           {
-            enableHighAccuracy: false,
-            timeout: 10000, // ← INCREASED from 5000
-            maximumAge: 60000,
+            enableHighAccuracy: false, // ✅ CHANGED: Don't force GPS
+            timeout: 10000,
+            maximumAge: 60000, // ✅ CHANGED: Accept cached location up to 60s
           },
         );
       },
       {
-        enableHighAccuracy: true,
-        timeout: 15000, // ← INCREASED from 8000
-        maximumAge: 5000,
-        forceRequestLocation: true,
-        showLocationDialog: true,
+        enableHighAccuracy: false, // ✅ FIXED: Use network/wifi location first
+        timeout: 8000, // ✅ REDUCED: Faster timeout
+        maximumAge: 30000, // ✅ INCREASED: Accept cached location
+        // Removed forceRequestLocation and showLocationDialog
       },
     );
   });
 };
 
-// ✅ NEW: Use centralized API client with automatic token refresh
+// ✅ NEW: Throttle location updates to prevent overload
+export const shouldThrottleLocationUpdate = () => {
+  const now = Date.now();
+  if (now - lastLocationUpdateTime < LOCATION_THROTTLE_MS) {
+    return true; // Skip this update
+  }
+  lastLocationUpdateTime = now;
+  return false;
+};
+
+// ✅ UPDATED: Better error mapping
 export const shareLocationAndFetchAll = async (
   rideId,
   latitude,
   longitude,
-  authToken, // ← Keep this for backward compatibility but may not need it
+  authToken,
 ) => {
   if (!rideId) throw new Error('Missing rideId');
+
+  // ✅ NEW: Check if we should throttle this update
+  if (shouldThrottleLocationUpdate() && latitude && longitude) {
+    console.log('⏱️ Location update throttled — using last good location');
+    // Return previous locations without updating
+    return null; // Handle in calling code
+  }
 
   console.log('🌍 Sharing location:', {rideId, latitude, longitude});
 
   try {
-    // Use centralized api client which:
-    // 1. Automatically handles 401 with token refresh
-    // 2. Has retry logic built-in
-    // 3. Accesses AuthContext for fresh tokens
     const response = await api.post(
       `/location/${rideId}/share?latitude=${latitude}&longitude=${longitude}`,
-      {}, // Empty body
-      authToken, // Pass token if provided, otherwise api client will fetch from context
+      {},
+      authToken,
     );
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      let errorMsg = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData.message || errorData.error || errorMsg;
+      } catch (e) {
+        // Response is not JSON
+      }
+      throw new Error(errorMsg);
     }
 
     return response.json();
   } catch (error) {
-    // Map API client errors to meaningful messages
-    if (error.message === 'AUTH_EXPIRED') {
+    const errorMsg = error.message || String(error);
+
+    // Authentication errors (fatal)
+    if (
+      errorMsg.includes('AUTH_EXPIRED') ||
+      errorMsg.includes('Session expired') ||
+      errorMsg.includes('401')
+    ) {
       throw new Error('Session expired. Please log in again.');
     }
-    if (error.message === 'AUTH_FORBIDDEN') {
+
+    if (
+      errorMsg.includes('AUTH_FORBIDDEN') ||
+      errorMsg.includes('Unauthorized') ||
+      errorMsg.includes('403')
+    ) {
       throw new Error('Unauthorized to share location.');
     }
-    if (error.message === 'AUTH_MISSING') {
+
+    if (errorMsg.includes('AUTH_MISSING')) {
       throw new Error('AUTH_MISSING - No access token available');
     }
+
+    // Server errors (retryable)
+    if (
+      errorMsg.includes('500') ||
+      errorMsg.includes('502') ||
+      errorMsg.includes('503') ||
+      errorMsg.includes('504')
+    ) {
+      throw new Error(`SERVER_ERROR - ${errorMsg}`);
+    }
+
+    // Ride errors (fatal)
+    if (
+      errorMsg.includes('404') ||
+      errorMsg.includes('not found') ||
+      errorMsg.includes('Invalid state')
+    ) {
+      throw new Error(`FATAL_ERROR - ${errorMsg}`);
+    }
+
     throw error;
   }
 };
@@ -96,20 +152,38 @@ export const calculateBackoffDelay = retryCount =>
 
 export const shouldRetry = retryCount => retryCount <= 3;
 
-export const isAuthError = err =>
-  err.message.includes('Session expired') ||
-  err.message.includes('Unauthorized') ||
-  err.message.includes('401') ||
-  err.message.includes('403') ||
-  err.message.includes('AUTH_EXPIRED') ||
-  err.message.includes('AUTH_MISSING');
+export const isAuthError = err => {
+  const msg = err.message || String(err);
+  return (
+    msg.includes('Session expired') ||
+    msg.includes('Unauthorized') ||
+    msg.includes('AUTH_EXPIRED') ||
+    msg.includes('AUTH_MISSING') ||
+    msg.includes('401') ||
+    msg.includes('403')
+  );
+};
+
+export const isFatalError = err => {
+  const msg = err.message || String(err);
+  return (
+    msg.includes('FATAL_ERROR') ||
+    msg.includes('404') ||
+    msg.includes('not found') ||
+    msg.includes('Location permission not granted') ||
+    msg.includes('Invalid state')
+  );
+};
+
+export const shouldRetryError = retryCount => retryCount <= 3;
 
 export const createIntervalManager = () => {
   let intervalId = null;
   return {
     start: (callback, intervalMs = 8000) => {
       if (intervalId) return;
-      intervalId = setInterval(callback, intervalMs);
+      // ✅ CHANGED: Use 15-20 second interval instead of 8
+      intervalId = setInterval(callback, Math.max(intervalMs, 15000));
     },
     stop: () => {
       if (intervalId) {
