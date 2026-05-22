@@ -1,7 +1,7 @@
 import {api} from './Apiclient';
 
 export const startService = {
-  startRide: async (generatedRidesId) => {
+  startRide: async generatedRidesId => {
     const response = await api.post(`/start/${generatedRidesId}`, {});
     if (!response.ok) {
       const messages = {
@@ -18,11 +18,8 @@ export const startService = {
     return response.json();
   },
 
-  deactivateRide: async (generatedRidesId) => {
-    const response = await api.post(
-      `/start/update/${generatedRidesId}`,
-      {},
-    );
+  deactivateRide: async generatedRidesId => {
+    const response = await api.post(`/start/update/${generatedRidesId}`, {});
     if (!response.ok) {
       const messages = {
         404: 'Ride not found.',
@@ -36,7 +33,7 @@ export const startService = {
     return true;
   },
 
-  leaveRide: async (generatedRidesId) => {
+  leaveRide: async generatedRidesId => {
     const response = await api.post(`/start/leave/${generatedRidesId}`, {});
     if (!response.ok) {
       const messages = {
@@ -45,16 +42,14 @@ export const startService = {
         409: 'Ride is in a conflicting state.',
       };
       throw new Error(
-        messages[response.status] || 'An error occurred while leaving the ride.',
+        messages[response.status] ||
+          'An error occurred while leaving the ride.',
       );
     }
     return true;
   },
 
-
-
 };
-
 
 
 

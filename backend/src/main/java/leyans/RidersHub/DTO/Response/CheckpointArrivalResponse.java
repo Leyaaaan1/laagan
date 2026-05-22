@@ -27,4 +27,24 @@ public class CheckpointArrivalResponse {
     public String getCheckpointType() { return checkpointType; }
     public Integer getCheckpointIndex() { return checkpointIndex; }
     public LocalDateTime getArrivedAt() { return arrivedAt; }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public void setRiderUsername(String riderUsername) {
+        this.riderUsername = riderUsername;
+    }
+
+    public void setCheckpointType(String checkpointType) {
+        this.checkpointType = checkpointType;
+    }
+
+    public void setCheckpointIndex(Integer checkpointIndex) {
+        this.checkpointIndex = checkpointIndex;
+    }
+
+    public void setArrivedAt(LocalDateTime arrivedAt) {
+        this.arrivedAt = arrivedAt;
+    }
 }

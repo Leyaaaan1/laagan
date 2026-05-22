@@ -4,13 +4,11 @@ import leyans.RidersHub.DTO.Request.LocationDTO.LocationUpdateRequestDTO;
 import leyans.RidersHub.ExceptionHandler.UnauthorizedAccessException;
 import leyans.RidersHub.Repository.*;
 import leyans.RidersHub.Utility.AppLogger;
-import leyans.RidersHub.Utility.CheckPointUtility;
 import leyans.RidersHub.Utility.RiderUtil;
 import leyans.RidersHub.model.*;
 import leyans.RidersHub.model.participant.ParticipantLocation;
 import org.springframework.stereotype.Service;
 import org.locationtech.jts.geom.Point;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -31,9 +29,7 @@ public class RideLocationService {
     private final RiderUtil riderUtil;
     private final ParticipantLocationRepository participantLocationRepository;
 
-    private final RideCheckpointArrivalRepository rideCheckpointArrivalRepository;
 
-    private final CheckPointUtility checkPointUtility;
 
     private final FinishedRideService finishedRideService;
 
@@ -43,14 +39,12 @@ public class RideLocationService {
     public RideLocationService(RiderLocationRepository locationRepo,
                                PsgcDataRepository psgcDataRepository,
                                LocationService locationService,
-                               RiderUtil riderUtil, ParticipantLocationRepository participantLocationRepository, RideCheckpointArrivalRepository rideCheckpointArrivalRepository, CheckPointUtility checkPointUtility, FinishedRideService finishedRideService) {
+                               RiderUtil riderUtil, ParticipantLocationRepository participantLocationRepository, FinishedRideService finishedRideService) {
         this.locationRepo = locationRepo;
         this.psgcDataRepository = psgcDataRepository;
         this.locationService = locationService;
         this.riderUtil = riderUtil;
         this.participantLocationRepository = participantLocationRepository;
-        this.rideCheckpointArrivalRepository = rideCheckpointArrivalRepository;
-        this.checkPointUtility = checkPointUtility;
         this.finishedRideService = finishedRideService;
     }
     @Transactional(readOnly = true)

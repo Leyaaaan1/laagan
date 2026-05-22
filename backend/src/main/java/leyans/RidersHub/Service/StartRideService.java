@@ -1,4 +1,3 @@
-
 package leyans.RidersHub.Service;
 
 import leyans.RidersHub.DTO.Response.StartRideResponseDTO;
@@ -13,7 +12,6 @@ import leyans.RidersHub.model.Rides;
 import leyans.RidersHub.model.StartedRide;
 import leyans.RidersHub.model.participant.ParticipantLocation;
 import org.locationtech.jts.geom.Point;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -109,34 +107,42 @@ public class StartRideService {
         // Check if the leaving rider is the creator
         boolean isCreator = ride.getUsername().getUsername().equals(rider.getUsername());
 
-        // Remove the rider from participants
+        // Remove the rider from both participant sets
         startedRide.getParticipants().remove(rider);
         ride.getParticipants().remove(rider);
 
-        // If creator is leaving, transfer ownership to a random remaining participant
+        Set<Rider> remainingParticipants = startedRide.getParticipants();
+
+        // If no one is left (last participant, whether creator or not) — fully clean up
+        if (remainingParticipants.isEmpty()) {
+            AppLogger.info(this.getClass(), "Last participant left. Cleaning up and deactivating ride.",
+                    "generatedRidesId", generatedRidesId);
+            startedRideRepository.deleteRiderLocationsByStartedRideId(generatedRidesId);
+            startedRideRepository.deleteParticipantLocationsByStartedRideId(generatedRidesId);
+            startedRideRepository.deleteParticipantsByStartedRideId(generatedRidesId);
+            startedRideRepository.delete(startedRide);
+            startedRideRepository.flush();
+            ride.setActive(false);
+            ridesRepository.save(ride);
+            AppLogger.info(this.getClass(), "Ride cleaned up and deactivated",
+                    "generatedRidesId", generatedRidesId);
+            return;
+        }
+
+        // If creator is leaving but others remain — transfer ownership to a random participant
         if (isCreator) {
-            Set<Rider> remainingParticipants = startedRide.getParticipants();
+            Rider newCreator = remainingParticipants.stream()
+                    .skip(new Random().nextInt(remainingParticipants.size()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("Failed to select new creator"));
 
-            if (remainingParticipants.isEmpty()) {
-                // No other participants — ride ends
-                AppLogger.info(this.getClass(), "Creator left; no remaining participants. Ride will be deactivated.",
-                        "generatedRidesId", generatedRidesId);
-                ride.setActive(false);
-            } else {
-                // Select random participant as new creator
-                Rider newCreator = remainingParticipants.stream()
-                        .skip(new Random().nextInt(remainingParticipants.size()))
-                        .findFirst()
-                        .orElseThrow(() -> new IllegalStateException("Failed to select new creator"));
+            ride.setUsername(newCreator);
+            startedRide.setUsername(newCreator);
 
-                ride.setUsername(newCreator);
-                startedRide.setUsername(newCreator);
-
-                AppLogger.info(this.getClass(), "Creator left; transferred ownership to new creator",
-                        "previousCreator", rider.getUsername(),
-                        "newCreator", newCreator.getUsername(),
-                        "generatedRidesId", generatedRidesId);
-            }
+            AppLogger.info(this.getClass(), "Creator left; transferred ownership to new creator",
+                    "previousCreator", rider.getUsername(),
+                    "newCreator", newCreator.getUsername(),
+                    "generatedRidesId", generatedRidesId);
         }
 
         startedRideRepository.save(startedRide);

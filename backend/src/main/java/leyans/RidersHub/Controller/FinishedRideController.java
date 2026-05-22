@@ -3,9 +3,9 @@ package leyans.RidersHub.Controller;
 
 import leyans.RidersHub.DTO.Request.FinishedRideRequest;
 import leyans.RidersHub.DTO.Response.CheckpointArrivalResponse;
-import leyans.RidersHub.DTO.Response.FinishedRideResponse;
+import leyans.RidersHub.DTO.Response.FinishedDTO.FinishedRideResponseDTO;
+import leyans.RidersHub.DTO.Response.FinishedDTO.RideCompletionStatusDTO;
 import leyans.RidersHub.Service.FinishedRideService;
-import leyans.RidersHub.model.FinishedRide;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,12 +24,21 @@ public class FinishedRideController {
     }
 
     @PostMapping("/finish")
-    public ResponseEntity<FinishedRideResponse> finishRide(
+    public ResponseEntity<FinishedRideResponseDTO> finishRide(
             @Valid @RequestBody FinishedRideRequest request) {
 
-        FinishedRide finishedRide = finishedRideService.finishRide(request.getGeneratedRidesId());
+        FinishedRideResponseDTO response = finishedRideService.finishRide(request.getGeneratedRidesId());
 
-        return ResponseEntity.ok(new FinishedRideResponse(finishedRide));
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{generatedRidesId}/completion-status")
+    public ResponseEntity<RideCompletionStatusDTO> getRideCompletionStatus(
+            @PathVariable String generatedRidesId) {
+
+        RideCompletionStatusDTO status = finishedRideService.getRideCompletionStatus(generatedRidesId);
+
+        return ResponseEntity.ok(status);
     }
 
     @GetMapping("/{generatedRidesId}/checkpoint-arrivals")
@@ -40,5 +49,12 @@ public class FinishedRideController {
                 finishedRideService.getCheckpointArrivalsByRide(generatedRidesId);
 
         return ResponseEntity.ok(arrivals);
+    }
+
+    @GetMapping("/{generatedRidesId}/summary")
+    public ResponseEntity<FinishedRideResponseDTO> getFinishedRideSummary(
+            @PathVariable String generatedRidesId) {
+        FinishedRideResponseDTO summary = finishedRideService.getFinishedRideSummary(generatedRidesId);
+        return ResponseEntity.ok(summary);
     }
 }

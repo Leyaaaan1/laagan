@@ -2,6 +2,8 @@ import {useState, useCallback} from 'react';
 import {Alert} from 'react-native';
 import {startService} from '../../../services/startService';
 import {buildRideStep4Params} from '../../../utilities/NavigationParamsBuilder';
+import {useNavigation} from '@react-navigation/native';
+import {finishedRideService} from '../../../services/finishedRideService';
 
 /** * Custom hook to handle stop ride logic */
 export const useStartedRideHandler = (
@@ -12,54 +14,29 @@ export const useStartedRideHandler = (
 ) => {
   const [isStopping, setIsStopping] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
-  const handleStopRide = useCallback(
-    navigation => {
-      Alert.alert(
-        'Stop Ride',
-        'Are you sure you want to stop this ride? This action cannot be undone.',
-        [
-          {text: 'Cancel', style: 'cancel'},
-          {
-            text: 'Stop Ride',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                setIsStopping(true);
-                setPollingEnabled(false); // Stop polling immediately
+  const navigation = useNavigation();
 
-                await startService.deactivateRide(activeRide.generatedRidesId);
-
-                stopPolling(); // Explicit cleanup
-
-                const params = buildRideStep4Params(activeRide, username);
-                navigation.reset({
-                  index: 1,
-                  routes: [
-                    {name: 'RiderPage', params: {username}},
-                    {name: 'RideStep4', params},
-                  ],
-                });
-              } catch (error) {
-                setPollingEnabled(true); // Re-enable if error
-                Alert.alert(
-                  'Error',
-                  error.message || 'Failed to stop the ride. Please try again.',
-                );
-              } finally {
-                setIsStopping(false);
-              }
-            },
-          },
-        ],
-        {cancelable: true},
+  const handleStopRide = async navigation => {
+    if (!activeRide?.generatedRidesId) {
+      Alert.alert('Error', 'No active ride found');
+      return;
+    }
+    setIsStopping(true);
+    try {
+      const finishedRideData = await finishedRideService.finishRide(
+        activeRide.generatedRidesId,
       );
-    },
-    [activeRide, username, stopPolling, setPollingEnabled],
-  );
+      stopPolling();
+      setPollingEnabled(false);
+      navigation.navigate('FinishedRideView', {finishedRideData});
+    } catch (error) {
+      Alert.alert('Error', error.message || 'Failed to finish ride');
+    } finally {
+      setIsStopping(false);
+    }
+  };
 
-
-
-
+  // ✅ handleLeaveRide is NOW inside the hook
   const handleLeaveRide = useCallback(
     navigation => {
       Alert.alert(
@@ -74,11 +51,8 @@ export const useStartedRideHandler = (
               try {
                 setIsLeaving(true);
                 setPollingEnabled(false);
-
                 await startService.leaveRide(activeRide.generatedRidesId);
-
                 stopPolling();
-
                 const params = buildRideStep4Params(activeRide, username);
                 navigation.reset({
                   index: 1,
@@ -105,5 +79,7 @@ export const useStartedRideHandler = (
     },
     [activeRide, username, stopPolling, setPollingEnabled],
   );
+
+  // ✅ Single return at the end
   return {isStopping, handleStopRide, isLeaving, handleLeaveRide};
 };

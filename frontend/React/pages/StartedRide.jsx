@@ -1,5 +1,13 @@
 import React, {useState, useRef, useEffect, useMemo, useContext} from 'react';
-import {View, Text, StatusBar, Animated, TouchableOpacity, ScrollView, ActivityIndicator,} from 'react-native';
+import {
+  View,
+  Text,
+  StatusBar,
+  Animated,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import {processRideCoordinates} from '../utilities/CoordinateUtils';
 import startedRideStyles from '../styles/screens/startedRideStyles';
@@ -16,6 +24,7 @@ import {usePollingStatusPill} from './utilities/hooks/usePollingStatusPill';
 import {useStartedRideHandler} from './utilities/hooks/useStartedRideHandler';
 import {useOfflineRouteCache} from './utilities/hooks/useOfflineRouteCache';
 import CheckpointArrivalsModal from './utilities/CheckpointArrivalsModal';
+import {useEndingPointAlert} from '../hooks/useEndingPointAlert';
 
 const StartedRide = ({route, navigation}) => {
   const {username: routeUsername} = route?.params || {};
@@ -40,10 +49,24 @@ const StartedRide = ({route, navigation}) => {
     isOffline,
   );
 
-
   const pillVisible = usePollingStatusPill(isPolling, pollingError);
-  const {isStopping, handleStopRide, isLeaving, handleLeaveRide} =
-    useStartedRideHandler(activeRide, username, stopPolling, setPollingEnabled);
+  const {handleStopRide, isLeaving, handleLeaveRide} = useStartedRideHandler(
+    activeRide,
+    username,
+    stopPolling,
+    setPollingEnabled,
+  );
+
+  const {showEndingAlert} = useEndingPointAlert(
+    activeRide?.generatedRidesId,
+    username,
+    pollingEnabled,
+  );
+  useEffect(() => {
+    if (showEndingAlert) {
+      setCheckpointModalVisible(true);
+    }
+  }, [showEndingAlert]);
 
   useEffect(() => {
     if (initialActiveRide && !activeRide) {
@@ -51,8 +74,7 @@ const StartedRide = ({route, navigation}) => {
     }
   }, [initialActiveRide, activeRide, setActiveRide]);
 
-  useEffect(() => {
-  }, [activeRide, isOffline]);
+  useEffect(() => {}, [activeRide, isOffline]);
 
   useEffect(() => {
     startPolling();
@@ -67,10 +89,8 @@ const StartedRide = ({route, navigation}) => {
     [activeRide],
   );
 
-
   const routeDataForMap = useMemo(() => {
     if (isOffline && cachedRouteData) {
-
       if (cachedRouteData.routeCoordinates) {
         try {
           const parsed = JSON.parse(cachedRouteData.routeCoordinates);
@@ -111,7 +131,6 @@ const StartedRide = ({route, navigation}) => {
     );
   };
 
-
   const handleViewModal = () => {
     setCheckpointModalVisible(true);
   };
@@ -120,8 +139,6 @@ const StartedRide = ({route, navigation}) => {
     setCheckpointModalVisible(false);
   };
 
-
-
   return (
     <View style={startedRideStyles.container}>
       <StatusBar
@@ -129,7 +146,6 @@ const StartedRide = ({route, navigation}) => {
         barStyle="light-content"
         backgroundColor="transparent"
       />
-
       <Animated.View
         style={[
           rideRoutes.mapSection,
@@ -195,8 +211,11 @@ const StartedRide = ({route, navigation}) => {
           <FontAwesome name="chevron-right" size={14} color="#fff" />
         </TouchableOpacity>
 
-
-        <View style={[startedRideStyles.routeInfoOverlay, {pointerEvents: 'box-none'}]}>
+        <View
+          style={[
+            startedRideStyles.routeInfoOverlay,
+            {pointerEvents: 'box-none'},
+          ]}>
           <TouchableOpacity
             pointerEvents="auto"
             onPress={() => setShowRouteInfo(!showRouteInfo)}
@@ -423,19 +442,6 @@ const StartedRide = ({route, navigation}) => {
                 {isLeaving ? 'Leaving…' : 'Leave'}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={startedRideStyles.actionStopButton}
-              onPress={() => handleStopRide(navigation)}
-              disabled={isStopping}>
-              {isStopping ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <FontAwesome name="stop-circle" size={14} color="#fff" />
-              )}
-              <Text style={startedRideStyles.actionStopLabel}>
-                {isStopping ? 'Stopping…' : 'Stop'}
-              </Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Animated.View>
@@ -445,6 +451,42 @@ const StartedRide = ({route, navigation}) => {
         generatedRidesId={activeRide?.generatedRidesId}
         stopPoints={mapData.stopPoints}
         endingPointName={activeRide?.endingPointName}
+        username={username}
+        onFinishRide={
+          activeRide?.creatorUsername === username
+            ? () => {
+                handleCloseModal();
+                handleStopRide();
+              }
+            : undefined
+        }
+        onNavigateToSummary={
+          activeRide?.creatorUsername !== username
+            ? arrivals => {
+                handleCloseModal();
+                navigation.navigate('FinishedRideView', {
+                  finishedRideData: {
+                    rideName: activeRide?.rideName,
+                    startingPointName:
+                      activeRide?.startingPointName ||
+                      mapData?.startingPoint?.name,
+                    endingPointName:
+                      activeRide?.endingPointName || mapData?.endingPoint?.name,
+                    stopPoints:
+                      activeRide?.stopPoints || mapData?.stopPoints || [],
+                    checkpointArrivals: arrivals,
+                    participantCount: activeRide?.participants?.length,
+                    startTime: activeRide?.startTime,
+                    completedParticipants: activeRide?.participants?.map(p => ({
+                      username: typeof p === 'string' ? p : p.username,
+                      checkpointsReached: 0,
+                      totalCheckpoints: 0,
+                    })),
+                  },
+                });
+              }
+            : undefined
+        }
       />
     </View>
   );

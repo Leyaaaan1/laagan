@@ -24,13 +24,11 @@ public interface RideCheckpointArrivalRepository extends JpaRepository<RideCheck
             @Param("generatedRidesId") String generatedRidesId
     );
 
-    // Who arrived at a specific stop point
-    List<RideCheckpointArrival> findByStartedRideIdAndCheckpointTypeAndCheckpointIndex(
-            Integer startedRideId,
-            CheckpointType checkpointType,
-            Integer checkpointIndex
-    );
 
+    long countByStartedRideIdAndCheckpointType(
+            Integer startedRideId,
+            CheckpointType checkpointType
+    );
 
 
     // Who marked themselves as arrived at the ending point
