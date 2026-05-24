@@ -5,7 +5,7 @@
  * No React, no styles — import freely from components or hooks.
  */
 
-import {reverseGeocodeLandmark} from '../../../services/rideService';
+import {reverseGeocode} from '../../../services/rideService';
 import {createRouteData, getRoutePreview} from '../../../services/RouteService';
 import {buildCenterMapScript, buildDrawRouteScript} from './RideStepUtils';
 import {routePreviewCache} from '../../../services/cache/routePreviewCache';
@@ -147,7 +147,7 @@ export const handleStopMapTap = async (
   setCurrentStop({lat: data.lat, lng: data.lng, name: 'Fetching…'});
   setAddingStopLoading(true);
 
-  const name = await reverseGeocodeLandmark(data.lat, data.lng);
+  const name = await reverseGeocode(data.lat, data.lng);
 
   setCurrentStop({
     lat: data.lat,
