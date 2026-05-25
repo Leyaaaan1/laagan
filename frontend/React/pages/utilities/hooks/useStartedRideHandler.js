@@ -16,27 +16,6 @@ export const useStartedRideHandler = (
   const [isLeaving, setIsLeaving] = useState(false);
   const navigation = useNavigation();
 
-  const handleStopRide = async navigation => {
-    if (!activeRide?.generatedRidesId) {
-      Alert.alert('Error', 'No active ride found');
-      return;
-    }
-    setIsStopping(true);
-    try {
-      const finishedRideData = await finishedRideService.finishRide(
-        activeRide.generatedRidesId,
-      );
-      stopPolling();
-      setPollingEnabled(false);
-      navigation.navigate('FinishedRideView', {finishedRideData});
-    } catch (error) {
-      Alert.alert('Error', error.message || 'Failed to finish ride');
-    } finally {
-      setIsStopping(false);
-    }
-  };
-
-  // ✅ handleLeaveRide is NOW inside the hook
   const handleLeaveRide = useCallback(
     navigation => {
       Alert.alert(
@@ -80,6 +59,5 @@ export const useStartedRideHandler = (
     [activeRide, username, stopPolling, setPollingEnabled],
   );
 
-  // ✅ Single return at the end
-  return {isStopping, handleStopRide, isLeaving, handleLeaveRide};
+  return {isLeaving, handleLeaveRide};
 };

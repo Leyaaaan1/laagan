@@ -1,4 +1,3 @@
-
 package leyans.RidersHub.Service;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -14,6 +13,7 @@ import leyans.RidersHub.Utility.CheckPointUtility;
 import leyans.RidersHub.Utility.StartedUtil;
 import leyans.RidersHub.model.*;
 import org.locationtech.jts.geom.Point;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,8 +49,10 @@ public class FinishedRideService {
         this.checkPointUtility = checkPointUtility;
     }
 
-    /**     * Finish ride when all participants reach the ending point.     * Individual riders mark themselves as done, but ride only completes when ALL arrive.     */
-
+    /**
+     * Finish ride when ALL participants have reached the ending point.
+     * Any participant can trigger this once everyone has arrived.
+     */
     @Transactional
     public FinishedRideResponseDTO finishRide(String generatedRidesId) {
         AppLogger.info(this.getClass(), "finishRide called", "generatedRidesId", generatedRidesId);
@@ -72,7 +74,7 @@ public class FinishedRideService {
                 .findByRideGeneratedRidesId(generatedRidesId)
                 .orElseThrow(() -> new IllegalStateException("StartedRide record missing"));
 
-        // ✨ Check if requester is at ending point
+        // Check if requester is at ending point
         boolean requesterAtEnding = rideCheckpointArrivalRepository
                 .existsByStartedRideIdAndRiderUsernameAndCheckpointType(
                         startedRide.getId(),
@@ -81,11 +83,10 @@ public class FinishedRideService {
                 );
 
         if (!requesterAtEnding) {
-            throw new IllegalStateException(
-                    "You must reach the ending point before finishing the ride");
+            throw new IllegalStateException("You must reach the ending point before finishing the ride");
         }
 
-        // ✨ Check if ALL participants have reached the ending point
+        // Check if ALL participants have reached the ending point
         int totalParticipants = startedRide.getParticipants().size();
         long participantsAtEnding = rideCheckpointArrivalRepository
                 .countByStartedRideIdAndCheckpointType(
@@ -95,11 +96,62 @@ public class FinishedRideService {
         if (participantsAtEnding < totalParticipants) {
             int stillWaiting = (int) (totalParticipants - participantsAtEnding);
             throw new IllegalStateException(
-                    "Waiting for " + stillWaiting + " participant(s) to reach the finish line"
-            );
+                    "Waiting for " + stillWaiting + " participant(s) to reach the finish line");
         }
 
-        // ✨ All participants have arrived - finish the ride
+        return buildAndSaveFinishedRide(startedRide, ride, requester, generatedRidesId);
+    }
+
+    /**
+     * Force-finish a ride regardless of participant checkpoint status.
+     * Only the ride creator can call this.
+     */
+    @Transactional
+    public FinishedRideResponseDTO forceFinishRide(String generatedRidesId) {
+        AppLogger.info(this.getClass(), "forceFinishRide called", "generatedRidesId", generatedRidesId);
+
+        Rider requester = startedUtil.authenticateAndGetInitiator();
+
+        Rides ride = ridesRepository.findByGeneratedRidesId(generatedRidesId)
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found: " + generatedRidesId));
+
+        // Only the ride creator can force-finish
+        if (!ride.getUsername().getUsername().equals(requester.getUsername())) {
+            throw new RideAuthorizationException("Only the ride creator can force-finish a ride");
+        }
+
+        if (!Boolean.TRUE.equals(ride.getActive())) {
+            throw new IllegalStateException("Ride is not currently active");
+        }
+
+        if (finishedRideRepository.existsByRideGeneratedRidesId(generatedRidesId)) {
+            throw new IllegalStateException("Ride has already been finished");
+        }
+
+        StartedRide startedRide = startedRideRepository
+                .findByRideGeneratedRidesId(generatedRidesId)
+                .orElseThrow(() -> new IllegalStateException("StartedRide record missing"));
+
+        AppLogger.warn(this.getClass(), "Force-finishing ride by creator",
+                "generatedRidesId", generatedRidesId,
+                "creator", requester.getUsername());
+
+        return buildAndSaveFinishedRide(startedRide, ride, requester, generatedRidesId);
+    }
+
+    /**
+     * Shared logic: saves the FinishedRide, marks ride inactive,
+     * and builds the response DTO.
+     * StartedRide is intentionally kept so checkpoint arrivals and
+     * summaries remain queryable after the ride ends.
+     */
+    private FinishedRideResponseDTO buildAndSaveFinishedRide(
+            StartedRide startedRide,
+            Rides ride,
+            Rider finishedBy,
+            String generatedRidesId) {
+
+        // Use the latest ENDING arrival as end time, or now if none exist
         LocalDateTime endTime = rideCheckpointArrivalRepository
                 .findByStartedRideIdAndCheckpointType(
                         startedRide.getId(),
@@ -114,14 +166,17 @@ public class FinishedRideService {
         FinishedRide finishedRide = new FinishedRide(
                 startedRide,
                 ride,
-                requester,
+                finishedBy,
                 startedRide.getStartTime(),
                 endTime,
                 durationMinutes,
-                startedRide.getParticipants()
+                new java.util.HashSet<>(startedRide.getParticipants())
         );
 
         FinishedRide saved = finishedRideRepository.save(finishedRide);
+
+        // Mark ride as inactive — keep StartedRide intact so checkpoint
+        // arrivals and summaries remain queryable via its ID.
         ride.setActive(false);
         ridesRepository.save(ride);
 
@@ -129,11 +184,15 @@ public class FinishedRideService {
                 "generatedRidesId", generatedRidesId,
                 "durationMinutes", durationMinutes);
 
-        // ✨ BUILD COMPREHENSIVE RESPONSE
+        // Copy into a new HashSet — do NOT pass startedRide.getParticipants() directly
+        // into FinishedRide or use it as a shared reference. Hibernate will throw
+        // "shared references to a collection" and roll back the whole transaction.
+        java.util.Set<Rider> participants = new java.util.HashSet<>(startedRide.getParticipants());
+
+        // Build response DTO
         FinishedRideResponseDTO response = new FinishedRideResponseDTO(saved);
 
-        // Build participant summaries with checkpoint completion
-        List<ParticipantSummaryDTO> participantSummaries = saved.getCompletedParticipants().stream()
+        List<ParticipantSummaryDTO> participantSummaries = participants.stream()
                 .map(rider -> {
                     int totalCheckpoints = 1 + (ride.getStopPoints() != null ? ride.getStopPoints().size() : 0) + 1;
                     int checkpointsReached = countCheckpointsForRider(startedRide.getId(), rider.getUsername());
@@ -142,15 +201,13 @@ public class FinishedRideService {
                 .toList();
         response.setCompletedParticipants(participantSummaries);
 
-        // Build detailed participant statistics
         List<ParticipantStatisticsDTO> stats = buildParticipantStatistics(
                 startedRide.getId(),
-                saved.getCompletedParticipants(),
+                participants,
                 ride
         );
         response.setParticipantStats(stats);
 
-        // Get all checkpoint arrivals for display
         List<CheckpointArrivalResponse> arrivals = rideCheckpointArrivalRepository
                 .findByGeneratedRidesId(generatedRidesId).stream()
                 .map(CheckpointArrivalResponse::new)
@@ -167,13 +224,17 @@ public class FinishedRideService {
                 .orElseThrow(() -> new EntityNotFoundException("Finished ride not found: " + generatedRidesId));
 
         Rides ride = finishedRide.getRide();
-        StartedRide startedRide = startedRideRepository
-                .findByRideGeneratedRidesId(generatedRidesId)
-                .orElseThrow(() -> new EntityNotFoundException("Started ride not found"));
+        // Retrieve StartedRide via the FK stored on FinishedRide — safe even
+        // after the ride ends because we no longer delete StartedRide records.
+        StartedRide startedRide = finishedRide.getStartedRide();
+
+        // Force-initialize the lazy collection inside the transaction
+        java.util.Set<Rider> participants = finishedRide.getCompletedParticipants();
+        Hibernate.initialize(participants);
 
         FinishedRideResponseDTO response = new FinishedRideResponseDTO(finishedRide);
 
-        List<ParticipantSummaryDTO> participantSummaries = finishedRide.getCompletedParticipants().stream()
+        List<ParticipantSummaryDTO> participantSummaries = participants.stream()
                 .map(rider -> {
                     int totalCheckpoints = 1 + (ride.getStopPoints() != null ? ride.getStopPoints().size() : 0) + 1;
                     int checkpointsReached = countCheckpointsForRider(startedRide.getId(), rider.getUsername());
@@ -181,6 +242,13 @@ public class FinishedRideService {
                 })
                 .toList();
         response.setCompletedParticipants(participantSummaries);
+
+        List<ParticipantStatisticsDTO> stats = buildParticipantStatistics(
+                startedRide.getId(),
+                participants,
+                ride
+        );
+        response.setParticipantStats(stats);
 
         List<CheckpointArrivalResponse> arrivals = rideCheckpointArrivalRepository
                 .findByGeneratedRidesId(generatedRidesId).stream()
@@ -190,16 +258,26 @@ public class FinishedRideService {
 
         return response;
     }
-    /**     * Get ride completion status for frontend polling.     * Shows how many participants have reached the ending point.     */
+
     @Transactional(readOnly = true)
     public RideCompletionStatusDTO getRideCompletionStatus(String generatedRidesId) {
-        AppLogger.info(this.getClass(), "getRideCompletionStatus called", "generatedRidesId", generatedRidesId);
-
         Rides ride = ridesRepository.findByGeneratedRidesId(generatedRidesId)
-                .orElseThrow(() -> new IllegalArgumentException("Ride not found: " + generatedRidesId));
+                .orElseThrow(() -> new EntityNotFoundException("Ride not found: " + generatedRidesId));
 
-        StartedRide startedRide = startedRideRepository.findByRideGeneratedRidesId(generatedRidesId)
-                .orElseThrow(() -> new IllegalStateException("Started ride not found"));
+        // If the ride is already finished, derive status from FinishedRide
+        java.util.Optional<FinishedRide> finishedOpt =
+                finishedRideRepository.findByRideGeneratedRidesId(generatedRidesId);
+        if (finishedOpt.isPresent()) {
+            int total = finishedOpt.get().getCompletedParticipants().size();
+            AppLogger.info(this.getClass(), "Completion status from FinishedRide (ride already done)",
+                    "generatedRidesId", generatedRidesId);
+            return new RideCompletionStatusDTO(total, total, true, false);
+        }
+
+        // Ride is still active — use StartedRide
+        StartedRide startedRide = startedRideRepository
+                .findByRideGeneratedRidesId(generatedRidesId)
+                .orElseThrow(() -> new EntityNotFoundException("Started ride not found: " + generatedRidesId));
 
         int totalParticipants = startedRide.getParticipants().size();
         long participantsAtEnding = rideCheckpointArrivalRepository
@@ -220,14 +298,10 @@ public class FinishedRideService {
         );
     }
 
-    /**     * Count checkpoints reached by a specific rider     */
     private int countCheckpointsForRider(Integer startedRideId, String riderUsername) {
         int count = 0;
+        count++; // start point always counts
 
-        // Count start (always reached if participant)
-        count++;
-
-        // Count all checkpoint arrivals for this rider
         List<RideCheckpointArrival> arrivals = rideCheckpointArrivalRepository.findByStartedRideId(startedRideId);
         count += (int) arrivals.stream()
                 .filter(a -> a.getRider().getUsername().equals(riderUsername))
@@ -236,7 +310,6 @@ public class FinishedRideService {
         return count;
     }
 
-    /**     * Build detailed statistics for each participant     */
     private List<ParticipantStatisticsDTO> buildParticipantStatistics(
             Integer startedRideId,
             java.util.Set<Rider> participants,
@@ -252,7 +325,7 @@ public class FinishedRideService {
                             .toList();
 
                     LocalDateTime arrivalTime = riderArrivals.stream()
-                            .filter(a -> a.getCheckpointType().toString().equals("ENDING"))
+                            .filter(a -> a.getCheckpointType() == RideCheckpointArrival.CheckpointType.ENDING)
                             .map(RideCheckpointArrival::getArrivedAt)
                             .findFirst()
                             .orElse(null);
@@ -272,19 +345,16 @@ public class FinishedRideService {
                 .toList();
     }
 
-    /**     * Auto-mark checkpoints when rider reaches them     */
     public void autoMarkCheckpoints(StartedRide startedRide, Rider rider, Point riderPoint) {
         Rides ride = startedRide.getRide();
         if (ride == null) return;
 
-        // ── Check stop points ────────────────────────────────────────────────
         List<StopPoint> stopPoints = ride.getStopPoints();
         for (int i = 0; i < stopPoints.size(); i++) {
             StopPoint stop = stopPoints.get(i);
             Point stopLocation = stop.getStopLocation();
             if (stopLocation == null) continue;
 
-            // Skip if already marked
             boolean alreadyMarked = rideCheckpointArrivalRepository
                     .existsByStartedRideIdAndRiderUsernameAndCheckpointTypeAndCheckpointIndex(
                             startedRide.getId(),
@@ -312,7 +382,6 @@ public class FinishedRideService {
             }
         }
 
-        // ── Check ending point ───────────────────────────────────────────────
         Point endingLocation = ride.getEndingLocation();
         if (endingLocation == null) return;
 
@@ -341,40 +410,46 @@ public class FinishedRideService {
         }
     }
 
-    /**     * Get checkpoint arrivals for a specific ride     */
     public List<CheckpointArrivalResponse> getCheckpointArrivalsByRide(String generatedRidesId) {
         AppLogger.info(this.getClass(), "getCheckpointArrivalsByRide called", "generatedRidesId", generatedRidesId);
 
-        // Get the ride first
         Rides ride = ridesRepository.findByGeneratedRidesId(generatedRidesId)
                 .orElseThrow(() -> new EntityNotFoundException("Ride not found: " + generatedRidesId));
 
-        // Get the started ride to check participants
-        StartedRide startedRide = startedRideRepository.findByRideGeneratedRidesId(generatedRidesId)
-                .orElseThrow(() -> new EntityNotFoundException("Started ride not found for: " + generatedRidesId));
-
-        // Get current user
         Rider currentUser = startedUtil.authenticateAndGetInitiator();
 
-        // Authorization check
         boolean isRideOwner = ride.getUsername().getUsername().equals(currentUser.getUsername());
-        boolean isParticipant = startedRide.getParticipants().stream()
-                .anyMatch(p -> p.getUsername().equals(currentUser.getUsername()));
+
+        // For active rides, check the StartedRide participants table.
+        // For finished rides, StartedRide still exists (we no longer delete it),
+        // but we also accept participants stored on the FinishedRide record.
+        boolean isParticipant = false;
+
+        java.util.Optional<StartedRide> startedRideOpt =
+                startedRideRepository.findByRideGeneratedRidesId(generatedRidesId);
+
+        if (startedRideOpt.isPresent()) {
+            isParticipant = startedRideOpt.get().getParticipants().stream()
+                    .anyMatch(p -> p.getUsername().equals(currentUser.getUsername()));
+        } else {
+            // Fallback: check FinishedRide completedParticipants
+            java.util.Optional<FinishedRide> finishedOpt =
+                    finishedRideRepository.findByRideGeneratedRidesId(generatedRidesId);
+            if (finishedOpt.isPresent()) {
+                isParticipant = finishedOpt.get().getCompletedParticipants().stream()
+                        .anyMatch(p -> p.getUsername().equals(currentUser.getUsername()));
+            }
+        }
 
         if (!isRideOwner && !isParticipant) {
             AppLogger.warn(this.getClass(), "Unauthorized checkpoint access attempt",
                     "user", currentUser.getUsername(),
                     "rideId", generatedRidesId);
             throw new RideAuthorizationException(
-                    "You must be the ride owner or a participant to view checkpoint arrivals"
-            );
+                    "You must be the ride owner or a participant to view checkpoint arrivals");
         }
 
-        List<RideCheckpointArrival> arrivals =
-                rideCheckpointArrivalRepository.findByGeneratedRidesId(generatedRidesId);
-
-        // Convert to DTOs
-        return arrivals.stream()
+        return rideCheckpointArrivalRepository.findByGeneratedRidesId(generatedRidesId).stream()
                 .map(CheckpointArrivalResponse::new)
                 .toList();
     }

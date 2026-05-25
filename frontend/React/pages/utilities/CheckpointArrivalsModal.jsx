@@ -10,7 +10,11 @@ import {
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import checkpointModalStyles from '../../styles/screens/checkpointModalStyles';
-import {getCheckpointArrivals} from '../../services/startService';
+import {
+  getCheckpointArrivals,
+  getFinishedRideSummary,
+} from '../../services/startService';
+import {useFinishRideHandler} from './hooks/UseFinishRideHandler';
 import colors from '../../styles/tokens/colors';
 
 // ─── Helpers ────────────────────────────────────────────────────
@@ -123,17 +127,37 @@ const CheckpointArrivalsModal = ({
   stopPoints = [],
   endingPointName = 'Ending Point',
   username, // current logged-in user
-  onFinishRide, // only passed if user is the ride creator
-  onNavigateToSummary, // only passed if user is NOT the ride creator
+  isCreator, // true if this user is the ride creator
+  activeRide, // passed from StartedRide for the finish hook
+  stopPolling, // passed from StartedRide for the finish hook
+  setPollingEnabled, // passed from StartedRide for the finish hook
+  onRideFinished, // (finishedRideData) => void — navigate to FinishedRideView
+  onNavigateToSummary, // (arrivals) => void — non-creator summary navigation
 }) => {
   const [arrivals, setArrivals] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // ── Finish / force-finish delegated to the dedicated hook ─────
+  const {isFinishing, handleFinishRide, handleForceFinishRide} =
+    useFinishRideHandler(
+      activeRide,
+      stopPolling,
+      setPollingEnabled,
+      onRideFinished,
+    );
+
   useEffect(() => {
-    if (visible && generatedRidesId) {
-      fetchCheckpointArrivals();
+    if (!visible || !generatedRidesId) return;
+
+    // If the ride is already finished (active === false), skip the modal
+    // and navigate straight to the finished ride summary.
+    if (activeRide?.active === false) {
+      onNavigateToSummary?.(generatedRidesId);
+      return;
     }
+
+    fetchCheckpointArrivals();
   }, [visible, generatedRidesId]);
 
   const fetchCheckpointArrivals = async () => {
@@ -167,6 +191,60 @@ const CheckpointArrivalsModal = ({
 
   // ─── Ending-point banner ──────────────────────────────────────
   const renderEndingBanner = () => {
+    // Creator who has NOT reached the ending point — only Force End
+    if (!currentUserAtEnding && isCreator) {
+      return (
+        <View
+          style={{
+            backgroundColor: 'rgba(239,68,68,0.08)',
+            borderColor: 'rgba(239,68,68,0.35)',
+            borderWidth: 1,
+            borderRadius: 10,
+            marginHorizontal: 12,
+            marginTop: 12,
+            padding: 16,
+            alignItems: 'center',
+            gap: 6,
+          }}>
+          <FontAwesome name="exclamation-triangle" size={22} color="#ef4444" />
+          <Text
+            style={{
+              color: 'rgba(255,255,255,0.6)',
+              fontSize: 13,
+              textAlign: 'center',
+              marginTop: 2,
+            }}>
+            You haven't reached the finish line yet.
+          </Text>
+          <TouchableOpacity
+            disabled={isFinishing}
+            onPress={handleForceFinishRide}
+            style={{
+              backgroundColor: 'transparent',
+              borderWidth: 1,
+              borderColor: '#ef4444',
+              borderRadius: 8,
+              paddingVertical: 9,
+              paddingHorizontal: 28,
+              marginTop: 4,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              opacity: isFinishing ? 0.5 : 1,
+            }}>
+            {isFinishing ? (
+              <ActivityIndicator size="small" color="#ef4444" />
+            ) : (
+              <FontAwesome name="stop-circle" size={15} color="#ef4444" />
+            )}
+            <Text style={{color: '#ef4444', fontWeight: 'bold', fontSize: 14}}>
+              {isFinishing ? 'Ending…' : 'Force End Ride'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
     if (!currentUserAtEnding) return null;
 
     return (
@@ -193,23 +271,95 @@ const CheckpointArrivalsModal = ({
           You've reached the finish line!
         </Text>
 
-        {onFinishRide ? (
-          // ── Creator: finish the ride ──────────────────────────
-          <TouchableOpacity
-            onPress={onFinishRide}
+        {isCreator ? (
+          // ── Creator at ending: View Summary (calls finishRide) + Force End below
+          <View
             style={{
-              backgroundColor: '#4CAF50',
-              borderRadius: 8,
-              paddingVertical: 10,
-              paddingHorizontal: 32,
-              marginTop: 6,
+              alignItems: 'center',
+              gap: 10,
+              marginTop: 4,
+              width: '100%',
             }}>
-            <Text style={{color: '#fff', fontWeight: 'bold', fontSize: 15}}>
-              Finish Ride
-            </Text>
-          </TouchableOpacity>
+            {/* Primary: finish the ride and view summary */}
+            <TouchableOpacity
+              disabled={isFinishing}
+              onPress={handleFinishRide}
+              style={{
+                backgroundColor: isFinishing
+                  ? 'rgba(76,175,80,0.5)'
+                  : '#4CAF50',
+                borderRadius: 8,
+                paddingVertical: 10,
+                paddingHorizontal: 32,
+                width: '100%',
+                alignItems: 'center',
+                flexDirection: 'row',
+                justifyContent: 'center',
+                gap: 8,
+              }}>
+              {isFinishing ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : null}
+              <Text style={{color: '#fff', fontWeight: 'bold', fontSize: 15}}>
+                {isFinishing ? 'Finishing…' : 'View Ride Summary'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Divider */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                width: '100%',
+                marginVertical: 2,
+              }}>
+              <View
+                style={{
+                  flex: 1,
+                  height: 1,
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                }}
+              />
+              <Text style={{color: 'rgba(255,255,255,0.3)', fontSize: 11}}>
+                or
+              </Text>
+              <View
+                style={{
+                  flex: 1,
+                  height: 1,
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                }}
+              />
+            </View>
+
+            {/* Secondary: force end */}
+            <TouchableOpacity
+              disabled={isFinishing}
+              onPress={handleForceFinishRide}
+              style={{
+                backgroundColor: 'transparent',
+                borderWidth: 1,
+                borderColor: 'rgba(239,68,68,0.6)',
+                borderRadius: 8,
+                paddingVertical: 9,
+                paddingHorizontal: 28,
+                width: '100%',
+                alignItems: 'center',
+                flexDirection: 'row',
+                justifyContent: 'center',
+                gap: 8,
+                opacity: isFinishing ? 0.5 : 1,
+              }}>
+              <FontAwesome name="stop-circle" size={15} color="#ef4444" />
+              <Text
+                style={{color: '#ef4444', fontWeight: 'bold', fontSize: 14}}>
+                Force End Ride
+              </Text>
+            </TouchableOpacity>
+          </View>
         ) : (
-          // ── Non-creator: view summary (ride already finished by creator) ──
+          // ── Non-creator at ending point ───────────────────────
           <View style={{alignItems: 'center', gap: 8, marginTop: 4}}>
             <Text
               style={{
@@ -221,7 +371,7 @@ const CheckpointArrivalsModal = ({
             </Text>
             {onNavigateToSummary && (
               <TouchableOpacity
-                onPress={() => onNavigateToSummary(arrivals)}
+                onPress={() => onNavigateToSummary(generatedRidesId)}
                 style={{
                   backgroundColor: '#4CAF50',
                   borderRadius: 8,
@@ -335,7 +485,6 @@ const CheckpointArrivalsModal = ({
             </TouchableOpacity>
           </View>
 
-          {/* Ending-point banner */}
           {renderEndingBanner()}
 
           {/* Arrivals list */}
