@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import {processRideCoordinates} from '../utilities/CoordinateUtils';
@@ -25,6 +26,7 @@ import {useStartedRideHandler} from './utilities/hooks/useStartedRideHandler';
 import {useOfflineRouteCache} from './utilities/hooks/useOfflineRouteCache';
 import CheckpointArrivalsModal from './utilities/CheckpointArrivalsModal';
 import {useEndingPointAlert} from '../hooks/useEndingPointAlert';
+import {getFinishedRideSummary} from '../services/startService';
 
 const StartedRide = ({route, navigation}) => {
   const {username: routeUsername} = route?.params || {};
@@ -50,12 +52,15 @@ const StartedRide = ({route, navigation}) => {
   );
 
   const pillVisible = usePollingStatusPill(isPolling, pollingError);
-  const {handleStopRide, isLeaving, handleLeaveRide} = useStartedRideHandler(
+  const {isLeaving, handleLeaveRide} = useStartedRideHandler(
     activeRide,
     username,
     stopPolling,
     setPollingEnabled,
   );
+
+  const isCreator =
+    username === activeRide?.startedBy || username === activeRide?.username;
 
   const {showEndingAlert} = useEndingPointAlert(
     activeRide?.generatedRidesId,
@@ -452,41 +457,24 @@ const StartedRide = ({route, navigation}) => {
         stopPoints={mapData.stopPoints}
         endingPointName={activeRide?.endingPointName}
         username={username}
-        onFinishRide={
-          activeRide?.creatorUsername === username
-            ? () => {
-                handleCloseModal();
-                handleStopRide();
-              }
-            : undefined
-        }
-        onNavigateToSummary={
-          activeRide?.creatorUsername !== username
-            ? arrivals => {
-                handleCloseModal();
-                navigation.navigate('FinishedRideView', {
-                  finishedRideData: {
-                    rideName: activeRide?.rideName,
-                    startingPointName:
-                      activeRide?.startingPointName ||
-                      mapData?.startingPoint?.name,
-                    endingPointName:
-                      activeRide?.endingPointName || mapData?.endingPoint?.name,
-                    stopPoints:
-                      activeRide?.stopPoints || mapData?.stopPoints || [],
-                    checkpointArrivals: arrivals,
-                    participantCount: activeRide?.participants?.length,
-                    startTime: activeRide?.startTime,
-                    completedParticipants: activeRide?.participants?.map(p => ({
-                      username: typeof p === 'string' ? p : p.username,
-                      checkpointsReached: 0,
-                      totalCheckpoints: 0,
-                    })),
-                  },
-                });
-              }
-            : undefined
-        }
+        isCreator={isCreator}
+        activeRide={activeRide}
+        stopPolling={stopPolling}
+        setPollingEnabled={setPollingEnabled}
+        onRideFinished={data => {
+          handleCloseModal();
+          navigation.navigate('FinishedRideView', {finishedRideData: data});
+        }}
+        onNavigateToSummary={async (generatedRidesId) => {
+          handleCloseModal();
+          try {
+            const data = await getFinishedRideSummary(generatedRidesId);
+            navigation.navigate('FinishedRideView', {finishedRideData: data});
+          } catch (e) {
+            // fallback: let FinishedRideView fetch it on its own
+            navigation.navigate('FinishedRideView', {generatedRidesId});
+          }
+        }}
       />
     </View>
   );

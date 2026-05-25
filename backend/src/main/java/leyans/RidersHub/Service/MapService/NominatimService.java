@@ -1,6 +1,5 @@
 package leyans.RidersHub.Service.MapService;
 
-import com.cloudinary.Api;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;

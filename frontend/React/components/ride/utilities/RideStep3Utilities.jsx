@@ -1,31 +1,15 @@
-/**
- * RideStep3Utilities.js
- *
- * Pure logic helpers for the RideStep3 screen.
- * No React, no styles — import freely from components or hooks.
- */
 
-import {reverseGeocodeLandmark} from '../../../services/rideService';
+import {reverseGeocode} from '../../../services/rideService';
 import {createRouteData, getRoutePreview} from '../../../services/RouteService';
 import {buildCenterMapScript, buildDrawRouteScript} from './RideStepUtils';
 import {routePreviewCache} from '../../../services/cache/routePreviewCache';
 
-// ─── Map init ────────────────────────────────────────────────────────────────
 
-/**
- * Returns parsed lat/lng for the initial map centre.
- * Falls back to the geographic centre of the Philippines.
- */
 export const getInitialMapCoords = (startingLatitude, startingLongitude) => ({
   lat: parseFloat(startingLatitude) || 12.8797,
   lng: parseFloat(startingLongitude) || 121.774,
 });
 
-// ─── Route drawing ───────────────────────────────────────────────────────────
-
-/**
- * Returns true when both endpoints are set and differ enough to be distinct.
- */
 export const canDrawRoute = (sLat, sLng, eLat, eLng) => {
   if (!sLat || !sLng || !eLat || !eLng) {
     return false;
@@ -35,20 +19,7 @@ export const canDrawRoute = (sLat, sLng, eLat, eLng) => {
   return !isSame;
 };
 
-/**
- * Fetches route GeoJSON and injects the draw script into the WebView.
- *
- * @param {object} params
- * @param {number} params.sLat
- * @param {number} params.sLng
- * @param {number} params.eLat
- * @param {number} params.eLng
- * @param {Array}  params.stopPoints
- * @param {string} params.token
- * @param {object} params.webViewRef   – React ref to the WebView
- * @param {Function} params.setRouteLoading
- * @returns {Promise<void>}
- */
+
 export const drawRoadRoute = async ({
   sLat,
   sLng,
@@ -122,17 +93,6 @@ export const drawRoadRoute = async ({
   }
 };
 
-// ─── Stop point handlers ─────────────────────────────────────────────────────
-
-/**
- * Handles a map-tap event while the user is placing a stop.
- * Updates currentStop state with a reverse-geocoded name.
- *
- * @param {object} event           – WebView onMessage event
- * @param {Function} setCurrentStop
- * @param {Function} setAddingStopLoading
- * @returns {Promise<void>}
- */
 
 export const handleStopMapTap = async (
   event,
@@ -147,7 +107,7 @@ export const handleStopMapTap = async (
   setCurrentStop({lat: data.lat, lng: data.lng, name: 'Fetching…'});
   setAddingStopLoading(true);
 
-  const name = await reverseGeocodeLandmark(data.lat, data.lng);
+  const name = await reverseGeocode(data.lat, data.lng);
 
   setCurrentStop({
     lat: data.lat,
@@ -157,16 +117,7 @@ export const handleStopMapTap = async (
 
   setAddingStopLoading(false);
 };
-/**
- * Confirms the pending stop and appends it to the stop list.
- *
- * @param {object|null} currentStop
- * @param {Function} setStopPoints
- * @param {Function} setIsAddingStop
- * @param {Function} setCurrentStop
- * @param {Function} setMapMode
- * @param {Function} onRouteReady   – callback to trigger route redraw
- */
+
 export const confirmStopPoint = ({
   currentStop,
   setStopPoints,
@@ -201,18 +152,7 @@ export const removeStopPoint = (index, setStopPoints, onRouteReady) => {
   setTimeout(onRouteReady, 300);
 };
 
-// ─── Point finalization ──────────────────────────────────────────────────────
 
-/**
- * Advances the map mode after the user confirms a start or end point.
- *
- * @param {string}   mapMode
- * @param {string}   startingPoint
- * @param {string}   endingPoint
- * @param {Function} setMapMode
- * @param {Function} setLocalQuery
- * @param {Function} onRouteReady
- */
 export const finalizePointSelection = ({
   mapMode,
   startingPoint,
@@ -232,27 +172,7 @@ export const finalizePointSelection = ({
   }
 };
 
-// ─── Location selection ──────────────────────────────────────────────────────
 
-/**
- * Processes a search-result item selection: resolves the display name,
- * updates the relevant point state, centres the map, and optionally draws
- * the route if both endpoints are already set.
- *
- * @param {object} params
- * @param {object} params.item              – search result object
- * @param {string} params.mapMode
- * @param {Function} params.handleLocationSelect – parent handler (returns resolved name)
- * @param {Function} params.setStartingPoint
- * @param {Function} params.setEndingPoint
- * @param {Function} params.setLocalQuery
- * @param {object}   params.webViewRef
- * @param {string}   params.startingLatitude
- * @param {string}   params.startingLongitude
- * @param {string}   params.endingLatitude
- * @param {string}   params.endingLongitude
- * @param {Function} params.onRouteReady
- */
 export const handleSelectLocationAndUpdateMap = async ({
   item,
   mapMode,
@@ -302,24 +222,7 @@ export const handleSelectLocationAndUpdateMap = async ({
   }
 };
 
-// ─── WebView message router ──────────────────────────────────────────────────
 
-/**
- * Routes incoming WebView messages to the appropriate handler.
- *
- * @param {object} params
- * @param {object} params.event
- * @param {string} params.mapMode
- * @param {boolean} params.isAddingStop
- * @param {string}  params.startingLatitude
- * @param {string}  params.startingLongitude
- * @param {string}  params.endingLatitude
- * @param {string}  params.endingLongitude
- * @param {Function} params.onRouteReady
- * @param {Function} params.handleMessage      – parent handler for normal map taps
- * @param {Function} params.setCurrentStop
- * @param {Function} params.setAddingStopLoading
- */
 export const routeWebViewMessage = ({
   event,
   mapMode,
@@ -361,28 +264,14 @@ export const routeWebViewMessage = ({
   }
 };
 
-// ─── Bottom sheet animation ──────────────────────────────────────────────────
 
-/**
- * Returns the animated height interpolation for the bottom sheet.
- *
- * @param {Animated.Value} animValue
- * @returns {Animated.AnimatedInterpolation}
- */
 export const getBottomSheetHeight = animValue =>
   animValue.interpolate({
     inputRange: [0, 1],
     outputRange: ['35%', '10%'],
   });
 
-// ─── Derived UI values ────────────────────────────────────────────────────────
 
-/**
- * Returns the search input placeholder based on the current map mode.
- *
- * @param {string} mapMode
- * @returns {string}
- */
 export const getSearchPlaceholder = mapMode =>
   ({
     starting: 'Search starting point',
@@ -390,21 +279,10 @@ export const getSearchPlaceholder = mapMode =>
     stop: 'Search stop point',
   }[mapMode] || 'Search location');
 
-/**
- * Returns the label for the finalize button based on the current map mode.
- *
- * @param {string} mapMode
- * @returns {string}
- */
+
 export const getFinalizeButtonLabel = mapMode =>
   mapMode === 'starting' ? 'Set End' : 'Continue';
 
-/**
- * Returns the mode label shown in the floating nav bar.
- *
- * @param {string} mapMode
- * @returns {string}
- */
 export const getMapModeLabel = mapMode =>
   ({
     starting: 'START POINT',
@@ -412,13 +290,6 @@ export const getMapModeLabel = mapMode =>
     stop: 'STOPS',
   }[mapMode] || '');
 
-/**
- * Returns true when the Create Ride button should be enabled.
- *
- * @param {string}  startingPoint
- * @param {string}  endingPoint
- * @param {boolean} loading
- * @returns {boolean}
- */
+
 export const canCreateRide = (startingPoint, endingPoint, loading) =>
   !!startingPoint && !!endingPoint && !loading;

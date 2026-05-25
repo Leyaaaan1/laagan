@@ -48,10 +48,60 @@ export const startService = {
     }
     return true;
   },
-
 };
 
+export const finishRide = async generatedRidesId => {
+  const response = await api.post(`/ride/finished/${generatedRidesId}`, {});
+  if (!response.ok) {
+    const messages = {
+      400: 'Ride cannot be finished yet.',
+      401: 'Unauthorized. Please log in again.',
+      404: 'Ride not found.',
+      409: 'Ride has already been finished.',
+    };
+    throw new Error(
+      messages[response.status] ||
+        'Failed to finish the ride. Please try again.',
+    );
+  }
+  return response.json();
+};
 
+export const forceFinishRide = async generatedRidesId => {
+  const response = await api.post(
+    `/ride/finished/${generatedRidesId}/force`,
+    {},
+  );
+  if (!response.ok) {
+    const messages = {
+      401: 'Unauthorized. Please log in again.',
+      403: 'Only the ride creator can force-end a ride.',
+      404: 'Ride not found.',
+      409: 'Ride has already been finished.',
+    };
+    throw new Error(
+      messages[response.status] ||
+        'Failed to force-end the ride. Please try again.',
+    );
+  }
+  return response.json();
+};
+
+export const getFinishedRideSummary = async generatedRidesId => {
+  const response = await api.get(`/ride/${generatedRidesId}/summary`);
+  if (!response.ok) {
+    const messages = {
+      404: 'Finished ride not found.',
+      401: 'Unauthorized. Please log in again.',
+      403: 'You do not have permission to view this ride summary.',
+    };
+    throw new Error(
+      messages[response.status] ||
+        'Failed to fetch ride summary. Please try again.',
+    );
+  }
+  return response.json();
+};
 
 export const getCheckpointArrivals = async generatedRidesId => {
   const response = await api.get(
@@ -97,10 +147,3 @@ export const getStopPointsByRideId = async generatedRidesId => {
   }
   return response.json();
 };
-
-
-
-
-
-
-

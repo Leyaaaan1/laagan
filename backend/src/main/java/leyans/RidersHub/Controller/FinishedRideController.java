@@ -23,12 +23,19 @@ public class FinishedRideController {
         this.finishedRideService = finishedRideService;
     }
 
-    @PostMapping("/finish")
+    @PostMapping("/finished/{generatedRidesId}")
     public ResponseEntity<FinishedRideResponseDTO> finishRide(
-            @Valid @RequestBody FinishedRideRequest request) {
+            @PathVariable String generatedRidesId) {
 
-        FinishedRideResponseDTO response = finishedRideService.finishRide(request.getGeneratedRidesId());
+        FinishedRideResponseDTO response = finishedRideService.finishRide(generatedRidesId);
+        return ResponseEntity.ok(response);
+    }
 
+    @PostMapping("/finished/{generatedRidesId}/force")
+    public ResponseEntity<FinishedRideResponseDTO> forceFinishRide(
+            @PathVariable String generatedRidesId) {
+
+        FinishedRideResponseDTO response = finishedRideService.forceFinishRide(generatedRidesId);
         return ResponseEntity.ok(response);
     }
 
