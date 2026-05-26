@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 
-
 import {useNavigation} from '@react-navigation/native';
 import {rideAction} from '../../services/rideAction';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
@@ -46,6 +45,9 @@ const RideActionButton = ({
   hasJoined,
   hasPendingRequest,
   rideStarted,
+  rideFinished,
+  onViewStarted,
+  onViewFinished,
   isLoading,
 }) => {
   if (isLoading) {
@@ -56,15 +58,38 @@ const RideActionButton = ({
     );
   }
 
+  // ── Ride finished — show "View Summary" for everyone ──────────────────────
+  if (rideFinished) {
+    return (
+      <TouchableOpacity
+        style={[rideStep4Styles.startButton, {backgroundColor: '#4CAF50'}]}
+        onPress={onViewFinished}>
+        <FontAwesome
+          name="flag-checkered"
+          size={14}
+          color="#fff"
+          style={{marginRight: 6}}
+        />
+        <Text style={rideStep4Styles.joinButtonText}>Summary</Text>
+      </TouchableOpacity>
+    );
+  }
+
   // ── Owner branch ──────────────────────────────────────────────────────────
   if (isOwner) {
     if (rideStarted) {
+      // Ride in progress — let owner jump back into the started ride view
       return (
         <TouchableOpacity
-          style={[rideStep4Styles.startButton, {opacity: 0.5}]}
-          disabled={true}
-          onPress={() => Alert.alert('Info', 'Ride already started')}>
-          <FontAwesome name="check" size={16} color="#fff" />
+          style={[rideStep4Styles.startButton, {backgroundColor: '#2196F3'}]}
+          onPress={onViewStarted}>
+          <FontAwesome
+            name="map-marker"
+            size={14}
+            color="#fff"
+            style={{marginRight: 6}}
+          />
+          <Text style={rideStep4Styles.joinButtonText}>View</Text>
         </TouchableOpacity>
       );
     }
@@ -78,6 +103,23 @@ const RideActionButton = ({
 
   // ── Participant branch ────────────────────────────────────────────────────
   if (hasJoined) {
+    if (rideStarted) {
+      // Ride in progress — let participant jump into the started ride view
+      return (
+        <TouchableOpacity
+          style={[rideStep4Styles.joinButton, {backgroundColor: '#2196F3'}]}
+          onPress={onViewStarted}>
+          <FontAwesome
+            name="map-marker"
+            size={14}
+            color="#fff"
+            style={{marginRight: 6}}
+          />
+          <Text style={rideStep4Styles.joinButtonText}>View</Text>
+        </TouchableOpacity>
+      );
+    }
+
     return (
       <TouchableOpacity
         style={[rideStep4Styles.joinButton, {opacity: 0.5}]}
@@ -136,16 +178,16 @@ const RideActionButton = ({
 // RideHeroCard (Updated)
 // ─────────────────────────────────────────────────────────────────────────────
 const RideHeroCard = ({
-                        rideName,
-                        date,
-                        username,
-                        riderType,
-                        distance,
-                        description,
-                        rideDetailsWithCoords,
-                        startingPointName,
-                        endingPointName,
-                      }) => {
+  rideName,
+  date,
+  username,
+  riderType,
+  distance,
+  description,
+  rideDetailsWithCoords,
+  startingPointName,
+  endingPointName,
+}) => {
   const displayDistance = distance || rideDetailsWithCoords?.distance || '--';
   const displayStarting =
     rideDetailsWithCoords?.startingPointName || startingPointName;
@@ -284,7 +326,6 @@ const RideStep4 = props => {
   const endLng =
     merged.endLng ?? merged.endingPoint?.lng ?? merged.endingPoint?.longitude;
 
-
   // Prefer the currentUsername passed via params (set by buildRideStep4Params),
   // fall back to the auth context username.
   const resolvedCurrentUsername = currentUsername || authUsername;
@@ -301,6 +342,7 @@ const RideStep4 = props => {
     hasJoined: false,
     hasPendingRequest: false,
     rideStarted: false,
+    rideFinished: false,
     isActive: false,
   });
 
@@ -335,6 +377,7 @@ const RideStep4 = props => {
         hasJoined: status?.hasJoined ?? false,
         hasPendingRequest: status?.hasPendingRequest ?? false,
         rideStarted: status?.rideStarted ?? false,
+        rideFinished: status?.rideFinished ?? false,
         isActive: status?.isActive ?? false,
       });
     } catch (error) {
@@ -388,6 +431,20 @@ const RideStep4 = props => {
       },
       username: resolvedCurrentUsername,
     });
+  };
+
+  // Navigate to finished ride summary — owner sees full summary, participant sees personal
+  const handleViewFinished = () => {
+    if (actionStatus.isOwner || !actionStatus.hasJoined) {
+      navigation.navigate('FinishedRideView', {
+        generatedRidesId,
+        isRideActive: false,
+      });
+    } else {
+      navigation.navigate('PersonalSummaryView', {
+        generatedRidesId,
+      });
+    }
   };
 
   const handleStartRide = async () => {
@@ -560,9 +617,12 @@ const RideStep4 = props => {
             isOwner={actionStatus.isOwner}
             onJoin={handleJoinRide}
             onStart={handleStartRide}
+            onViewStarted={handleSwipeToMap}
+            onViewFinished={handleViewFinished}
             hasJoined={actionStatus.hasJoined}
             hasPendingRequest={actionStatus.hasPendingRequest}
             rideStarted={actionStatus.rideStarted}
+            rideFinished={actionStatus.rideFinished}
             isLoading={actionStatusLoading}
           />
         </View>
@@ -645,6 +705,13 @@ const RideStep4 = props => {
               <FontAwesome name="map-marker" size={18} color="#fff" />
               <Text style={buttons.textNav}>Stop Point</Text>
             </TouchableOpacity>
+            <View style={header.bottomNavDivider} />
+            <TouchableOpacity
+              style={buttons.bottomNav}
+              onPress={handleViewFinished}>
+              <FontAwesome name="flag-checkered" size={18} color="#fff" />
+              <Text style={buttons.textNav}>Summary</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </View>
@@ -662,34 +729,31 @@ const RideStep4 = props => {
   );
 };
 
-export default React.memo(
-  RideStep4,
-  (prevProps, nextProps) => {
-    // For RideStep4, only compare significant data props, not callbacks/functions
-    const significantKeys = [
-      'generatedRidesId',
-      'rideName',
-      'locationName',
-      'riderType',
-      'date',
-      'startingPointName',
-      'endingPointName',
-      'participants',
-      'description',
-      'distance',
-      'username',
-      'stopPoints',
-    ];
+export default React.memo(RideStep4, (prevProps, nextProps) => {
+  // For RideStep4, only compare significant data props, not callbacks/functions
+  const significantKeys = [
+    'generatedRidesId',
+    'rideName',
+    'locationName',
+    'riderType',
+    'date',
+    'startingPointName',
+    'endingPointName',
+    'participants',
+    'description',
+    'distance',
+    'username',
+    'stopPoints',
+  ];
 
-    for (const key of significantKeys) {
-      const prevVal = prevProps[key] ?? prevProps?.route?.params?.[key];
-      const nextVal = nextProps[key] ?? nextProps?.route?.params?.[key];
+  for (const key of significantKeys) {
+    const prevVal = prevProps[key] ?? prevProps?.route?.params?.[key];
+    const nextVal = nextProps[key] ?? nextProps?.route?.params?.[key];
 
-      if (prevVal !== nextVal) {
-        return false; // Re-render if significant prop changed
-      }
+    if (prevVal !== nextVal) {
+      return false; // Re-render if significant prop changed
     }
-
-    return true; // Skip re-render
   }
-);
+
+  return true; // Skip re-render
+});

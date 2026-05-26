@@ -1,63 +1,70 @@
 package leyans.RidersHub.Repository;
 
-import leyans.RidersHub.model.RideCheckpointArrival;
-import leyans.RidersHub.model.RideCheckpointArrival.CheckpointType;
+import leyans.RidersHub.model.participant.RideCheckpointArrival;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface RideCheckpointArrivalRepository extends JpaRepository<RideCheckpointArrival, Integer> {
 
-    // All arrivals for a started ride (useful for building summary)
-    List<RideCheckpointArrival> findByStartedRideId(Integer startedRideId);
-
-
+    // All arrivals for a ride — used for summary and checkpoint modal
     @Query("SELECT c FROM RideCheckpointArrival c " +
-            "WHERE c.startedRide.ride.generatedRidesId = :generatedRidesId " +
-            "ORDER BY c.arrivedAt DESC")
-    List<RideCheckpointArrival> findByGeneratedRidesId(
+            "WHERE c.ride.generatedRidesId = :generatedRidesId " +
+            "ORDER BY c.arrivedAt ASC")
+    List<RideCheckpointArrival> findByRideGeneratedRidesId(
             @Param("generatedRidesId") String generatedRidesId
     );
 
-
-    long countByStartedRideIdAndCheckpointType(
-            Integer startedRideId,
-            CheckpointType checkpointType
+    // All arrivals for a ride filtered by checkpoint type
+    @Query("SELECT c FROM RideCheckpointArrival c " +
+            "WHERE c.ride.generatedRidesId = :generatedRidesId " +
+            "AND c.checkpointType = :checkpointType")
+    List<RideCheckpointArrival> findByRideGeneratedRidesIdAndCheckpointType(
+            @Param("generatedRidesId") String generatedRidesId,
+            @Param("checkpointType") RideCheckpointArrival.CheckpointType checkpointType
     );
 
-
-    // Who marked themselves as arrived at the ending point
-    List<RideCheckpointArrival> findByStartedRideIdAndCheckpointType(
-            Integer startedRideId,
-            CheckpointType checkpointType
-    );
-
-    // Check if a specific rider already marked a checkpoint (prevent duplicates)
-    boolean existsByStartedRideIdAndRiderUsernameAndCheckpointTypeAndCheckpointIndex(
-            Integer startedRideId,
-            String riderUsername,
-            CheckpointType checkpointType,
-            Integer checkpointIndex
-    );
-
-    // Check if a specific rider already marked the ending
-    boolean existsByStartedRideIdAndRiderUsernameAndCheckpointType(
-            Integer startedRideId,
-            String riderUsername,
-            CheckpointType checkpointType
-    );
-
-    // Count how many riders arrived at the ending point
+    // Count riders at a specific checkpoint type (e.g. how many reached ENDING)
     @Query("SELECT COUNT(c) FROM RideCheckpointArrival c " +
-            "WHERE c.startedRide.id = :startedRideId " +
-            "AND c.checkpointType = 'ENDING'")
-    long countEndingArrivals(@Param("startedRideId") Integer startedRideId);
+            "WHERE c.ride.generatedRidesId = :generatedRidesId " +
+            "AND c.checkpointType = :checkpointType")
+    long countByRideGeneratedRidesIdAndCheckpointType(
+            @Param("generatedRidesId") String generatedRidesId,
+            @Param("checkpointType") RideCheckpointArrival.CheckpointType checkpointType
+    );
 
-    // Delete all checkpoint arrivals for a started ride (used during deactivateRide cleanup)
-    void deleteByStartedRideId(Integer startedRideId);
+    // Count distinct riders who have any arrival recorded (used for completion status)
+    @Query("SELECT COUNT(DISTINCT c.rider.username) FROM RideCheckpointArrival c " +
+            "WHERE c.ride.generatedRidesId = :generatedRidesId")
+    long countDistinctRidersByGeneratedRidesId(
+            @Param("generatedRidesId") String generatedRidesId
+    );
+
+    // Check if a specific rider already arrived at a stop point (prevents duplicates)
+    @Query("SELECT COUNT(c) > 0 FROM RideCheckpointArrival c " +
+            "WHERE c.ride.generatedRidesId = :generatedRidesId " +
+            "AND c.rider.username = :riderUsername " +
+            "AND c.checkpointType = :checkpointType " +
+            "AND c.checkpointIndex = :checkpointIndex")
+    boolean existsByRideGeneratedRidesIdAndRiderUsernameAndCheckpointTypeAndCheckpointIndex(
+            @Param("generatedRidesId") String generatedRidesId,
+            @Param("riderUsername") String riderUsername,
+            @Param("checkpointType") RideCheckpointArrival.CheckpointType checkpointType,
+            @Param("checkpointIndex") Integer checkpointIndex
+    );
+
+    // Check if a specific rider already arrived at a checkpoint type (e.g. ENDING)
+    @Query("SELECT COUNT(c) > 0 FROM RideCheckpointArrival c " +
+            "WHERE c.ride.generatedRidesId = :generatedRidesId " +
+            "AND c.rider.username = :riderUsername " +
+            "AND c.checkpointType = :checkpointType")
+    boolean existsByRideGeneratedRidesIdAndRiderUsernameAndCheckpointType(
+            @Param("generatedRidesId") String generatedRidesId,
+            @Param("riderUsername") String riderUsername,
+            @Param("checkpointType") RideCheckpointArrival.CheckpointType checkpointType
+    );
 }

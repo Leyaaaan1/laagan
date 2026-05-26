@@ -11,7 +11,8 @@ import RideRoutesPage from '../components/ride/utilities/RideRoutesPage';
 import RiderProfile from '../pages/RiderProfile';
 import {useAuth} from '../context/AuthContext';
 import LegalScreen from '../screens/LegalScreen';
-import FinishedRideView from '../pages/FinishedRideView';
+import FinishedRideView from '../pages/finishedRide/FinishedRideView';
+import PersonalSummaryView from '../pages/finishedRide/PersonalSummaryView';
 
 const Stack = createNativeStackNavigator();
 
@@ -56,6 +57,7 @@ const MainNavigator = ({navigationRef}) => {
       <Stack.Screen name="RiderProfile" component={RiderProfile} />
       <Stack.Screen name="LegalScreen" component={LegalScreen} />
       <Stack.Screen name="FinishedRideView" component={FinishedRideView} />
+      <Stack.Screen name="PersonalSummaryView" component={PersonalSummaryView} />
     </Stack.Navigator>
   );
 };

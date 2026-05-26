@@ -2,7 +2,7 @@ package leyans.RidersHub.DTO.Response.FinishedDTO;
 
 import leyans.RidersHub.DTO.Request.RidesDTO.StopPointDTO;
 import leyans.RidersHub.DTO.Response.CheckpointArrivalResponse;
-import leyans.RidersHub.model.FinishedRide;
+import leyans.RidersHub.model.FinishedRide.FinishedRide;
 import java.time.LocalDateTime;
 import java.util.List;
 

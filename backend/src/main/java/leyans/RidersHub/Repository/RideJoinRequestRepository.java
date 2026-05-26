@@ -1,6 +1,6 @@
 package leyans.RidersHub.Repository;
 
-import leyans.RidersHub.model.RideJoinRequest;
+import leyans.RidersHub.model.participant.RideJoinRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

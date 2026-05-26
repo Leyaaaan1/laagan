@@ -4,9 +4,11 @@ import leyans.RidersHub.DTO.Request.LocationDTO.LocationUpdateRequestDTO;
 import leyans.RidersHub.ExceptionHandler.UnauthorizedAccessException;
 import leyans.RidersHub.Repository.*;
 import leyans.RidersHub.Utility.AppLogger;
+import leyans.RidersHub.Utility.CheckPointUtility;
 import leyans.RidersHub.Utility.RiderUtil;
 import leyans.RidersHub.model.*;
 import leyans.RidersHub.model.participant.ParticipantLocation;
+import leyans.RidersHub.model.participant.RiderLocation;
 import org.springframework.stereotype.Service;
 import org.locationtech.jts.geom.Point;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,10 +30,8 @@ public class RideLocationService {
 
     private final RiderUtil riderUtil;
     private final ParticipantLocationRepository participantLocationRepository;
+    private final CheckPointUtility checkPointUtility;
 
-
-
-    private final FinishedRideService finishedRideService;
 
 
 
@@ -39,13 +39,13 @@ public class RideLocationService {
     public RideLocationService(RiderLocationRepository locationRepo,
                                PsgcDataRepository psgcDataRepository,
                                LocationService locationService,
-                               RiderUtil riderUtil, ParticipantLocationRepository participantLocationRepository, FinishedRideService finishedRideService) {
+                               RiderUtil riderUtil, ParticipantLocationRepository participantLocationRepository, CheckPointUtility checkPointUtility) {
         this.locationRepo = locationRepo;
         this.psgcDataRepository = psgcDataRepository;
         this.locationService = locationService;
         this.riderUtil = riderUtil;
         this.participantLocationRepository = participantLocationRepository;
-        this.finishedRideService = finishedRideService;
+        this.checkPointUtility = checkPointUtility;
     }
     @Transactional(readOnly = true)
     public List<LocationUpdateRequestDTO> getAllRiderLocations(Integer startedRideId) {
@@ -123,7 +123,7 @@ public class RideLocationService {
         loc = locationRepo.save(loc);
         locationRepo.deleteOldDuplicates(started, rider, loc.getId());
 
-        finishedRideService.autoMarkCheckpoints(started, rider, userPoint);
+        checkPointUtility.autoMarkCheckpoints(started, rider, userPoint);
 
         AppLogger.info(this.getClass(), "Location updated successfully", "username", username, "distance", distanceMeters);
         return new LocationUpdateRequestDTO(

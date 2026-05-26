@@ -39,7 +39,7 @@ const FinishedRideCheckpoints = ({
     }
   };
 
-  const getCheckpointIcon = type => {
+  const getCheckpointIconName = type => {
     switch (type) {
       case 'START':
         return 'play-circle';
@@ -59,7 +59,6 @@ const FinishedRideCheckpoints = ({
       const key = `${arrival.checkpointType}-${
         arrival.checkpointIndex ?? 'null'
       }`;
-
       if (!map[key]) {
         map[key] = {
           type: arrival.checkpointType,
@@ -71,7 +70,6 @@ const FinishedRideCheckpoints = ({
           arrivers: [],
         };
       }
-
       map[key].arrivers.push({
         username: arrival.riderUsername,
         arrivedAt: arrival.arrivedAt,
@@ -79,76 +77,130 @@ const FinishedRideCheckpoints = ({
     });
 
     return Object.values(map).sort((a, b) => {
-      const typeSortOrder = {START: 0, STOP_POINT: 1, ENDING: 2};
-      const diff = (typeSortOrder[a.type] || 3) - (typeSortOrder[b.type] || 3);
+      const order = {START: 0, STOP_POINT: 1, ENDING: 2};
+      const diff = (order[a.type] || 3) - (order[b.type] || 3);
       if (diff !== 0) return diff;
       return (a.index ?? 0) - (b.index ?? 0);
     });
   };
 
   const groupedArrivals = getGroupedArrivals();
+  const hasArrivals = groupedArrivals.length > 0;
 
   return (
     <View style={finishedRideStyles.section}>
-      <Text style={finishedRideStyles.sectionTitle}>Checkpoint Arrivals</Text>
+      {/* Section header */}
+      <View style={finishedRideStyles.sectionHeader}>
+        <Text style={finishedRideStyles.sectionTitle}>Checkpoints</Text>
+        {hasArrivals && (
+          <View style={finishedRideStyles.sectionBadge}>
+            <Text style={finishedRideStyles.sectionBadgeText}>
+              {groupedArrivals.length}
+            </Text>
+          </View>
+        )}
+      </View>
 
-      {groupedArrivals.length > 0 ? (
-        <View>
-          {groupedArrivals.map((checkpoint, idx) => (
-            <View
-              key={`checkpoint-${checkpoint.type}-${
-                checkpoint.index ?? 'null'
-              }-${idx}`}>
-              {/* Checkpoint Header */}
-              <View style={finishedRideStyles.checkpointHeader}>
-                <View style={finishedRideStyles.checkpointIconContainer}>
-                  <FontAwesome
-                    name={getCheckpointIcon(checkpoint.type)}
-                    size={18}
-                    color={colors.primary}
-                  />
-                </View>
-                <View style={finishedRideStyles.checkpointTitleContainer}>
-                  <Text style={finishedRideStyles.checkpointTitle}>
-                    {checkpoint.name}
-                  </Text>
-                  <Text style={finishedRideStyles.checkpointCount}>
-                    {checkpoint.arrivers.length} rider
-                    {checkpoint.arrivers.length !== 1 ? 's' : ''}
-                  </Text>
-                </View>
-              </View>
+      {hasArrivals ? (
+        <View style={finishedRideStyles.timelineContainer}>
+          {groupedArrivals.map((checkpoint, idx) => {
+            const isLast = idx === groupedArrivals.length - 1;
+            const hasArrivers = checkpoint.arrivers.length > 0;
 
-              {/* Arrivers List */}
-              <View style={finishedRideStyles.arrivalsContainer}>
-                {checkpoint.arrivers.map((arriver, arriverIdx) => (
+            return (
+              <View
+                key={`checkpoint-${checkpoint.type}-${
+                  checkpoint.index ?? 'null'
+                }-${idx}`}
+                style={finishedRideStyles.timelineRow}>
+                {/* Left: icon + vertical line */}
+                <View style={finishedRideStyles.timelineLeft}>
                   <View
-                    key={`arriver-${arriverIdx}`}
-                    style={finishedRideStyles.arriverItem}>
-                    <View style={finishedRideStyles.arriverAvatar}>
-                      <Text style={finishedRideStyles.arriverInitial}>
-                        {(arriver.username || 'U')[0].toUpperCase()}
-                      </Text>
-                    </View>
-                    <View style={finishedRideStyles.arriverInfo}>
-                      <Text style={finishedRideStyles.arriverUsername}>
-                        {arriver.username}
-                      </Text>
-                      <Text style={finishedRideStyles.arriverTime}>
-                        {formatTime(arriver.arrivedAt)}
-                      </Text>
-                    </View>
+                    style={[
+                      finishedRideStyles.timelineIconWrap,
+                      hasArrivers && finishedRideStyles.timelineIconWrapActive,
+                    ]}>
+                    <FontAwesome
+                      name={getCheckpointIconName(checkpoint.type)}
+                      size={15}
+                      color={
+                        hasArrivers ? colors.primary : colors.textSecondary
+                      }
+                    />
                   </View>
-                ))}
+                  {!isLast && (
+                    <View
+                      style={[
+                        finishedRideStyles.timelineLine,
+                        hasArrivers && finishedRideStyles.timelineLineActive,
+                      ]}
+                    />
+                  )}
+                </View>
+
+                {/* Right: header + arrivers */}
+                <View style={finishedRideStyles.timelineContent}>
+                  {/* Checkpoint header */}
+                  <View
+                    style={[
+                      finishedRideStyles.timelineHeader,
+                      hasArrivers && finishedRideStyles.timelineHeaderActive,
+                    ]}>
+                    <Text style={finishedRideStyles.timelineName}>
+                      {checkpoint.name}
+                    </Text>
+                    <Text style={finishedRideStyles.timelineCount}>
+                      {checkpoint.arrivers.length}{' '}
+                      {checkpoint.arrivers.length !== 1 ? 'riders' : 'rider'}
+                    </Text>
+                  </View>
+
+                  {/* Arrivers */}
+                  {hasArrivers && (
+                    <View style={finishedRideStyles.timelineArrivers}>
+                      {checkpoint.arrivers.map((arriver, arriverIdx) => (
+                        <View
+                          key={`arriver-${arriverIdx}`}
+                          style={finishedRideStyles.arriverItem}>
+                          <View style={finishedRideStyles.arriverAvatar}>
+                            <Text style={finishedRideStyles.arriverInitial}>
+                              {(arriver.username || 'U')[0].toUpperCase()}
+                            </Text>
+                          </View>
+                          <View style={finishedRideStyles.arriverInfo}>
+                            <Text style={finishedRideStyles.arriverUsername}>
+                              {arriver.username}
+                            </Text>
+                            <Text style={finishedRideStyles.arriverTime}>
+                              {formatTime(arriver.arrivedAt)}
+                            </Text>
+                          </View>
+                          <View style={finishedRideStyles.arriverCheck}>
+                            <FontAwesome
+                              name="check-circle"
+                              size={16}
+                              color="#4CAF50"
+                            />
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
               </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
       ) : (
         <View style={finishedRideStyles.emptyContainer}>
-          <FontAwesome name="flag-o" size={32} color={colors.textSecondary} />
+          <View style={finishedRideStyles.emptyIconWrap}>
+            <FontAwesome name="flag-o" size={22} color={colors.textSecondary} />
+          </View>
           <Text style={finishedRideStyles.emptyText}>
             No checkpoint arrivals recorded
+          </Text>
+          <Text style={finishedRideStyles.emptySubText}>
+            Data will appear once riders pass checkpoints
           </Text>
         </View>
       )}

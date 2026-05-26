@@ -1,3 +1,4 @@
+// File: frontend/React/pages/FinishedRide/FinishedRideSummary.jsx
 
 import React from 'react';
 import {View, Text} from 'react-native';
@@ -12,7 +13,6 @@ const FinishedRideSummary = ({rideData}) => {
     return new Date(timestamp).toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit',
     });
   };
 
@@ -25,65 +25,86 @@ const FinishedRideSummary = ({rideData}) => {
     });
   };
 
+  const stats = [
+    {
+      icon: 'clock-o',
+      label: 'Duration',
+      value: rideData.durationMinutes ?? '—',
+      unit: rideData.durationMinutes ? 'min' : '',
+    },
+    {
+      icon: 'road',
+      label: 'Distance',
+      value: rideData.distance ?? '—',
+      unit: rideData.distance ? 'km' : '',
+    },
+    {
+      icon: 'bicycle',
+      label: 'Type',
+      value: rideData.riderType ?? '—',
+      unit: '',
+    },
+  ];
+
   return (
-    <View style={finishedRideStyles.summaryCard}>
-      <Text style={finishedRideStyles.rideName}>{rideData.rideName}</Text>
+    <View style={finishedRideStyles.heroCard}>
+      {/* Top accent line */}
+      <View style={finishedRideStyles.heroAccent} />
 
-      <View style={finishedRideStyles.summaryRow}>
-        <View style={finishedRideStyles.summaryItem}>
-          <FontAwesome name="clock-o" size={16} color={colors.primary} />
-          <Text style={finishedRideStyles.summaryLabel}>Duration</Text>
-          <Text style={finishedRideStyles.summaryValue}>
-            {rideData.durationMinutes ?? '—'}{' '}
-            {rideData.durationMinutes ? 'min' : ''}
-          </Text>
+      <View style={finishedRideStyles.heroPadding}>
+        <Text style={finishedRideStyles.rideName}>{rideData.rideName}</Text>
+
+        {/* Stats row */}
+        <View style={finishedRideStyles.statsRow}>
+          {stats.map((stat, idx) => (
+            <View key={idx} style={finishedRideStyles.statItem}>
+              <View style={finishedRideStyles.statIconWrap}>
+                <FontAwesome
+                  name={stat.icon}
+                  size={14}
+                  color={colors.primary}
+                />
+              </View>
+              <Text style={finishedRideStyles.statLabel}>{stat.label}</Text>
+              <Text style={finishedRideStyles.statValue}>{stat.value}</Text>
+              {!!stat.unit && (
+                <Text style={finishedRideStyles.statUnit}>{stat.unit}</Text>
+              )}
+            </View>
+          ))}
         </View>
 
-        <View style={finishedRideStyles.summaryItem}>
-          <FontAwesome name="road" size={16} color={colors.primary} />
-          <Text style={finishedRideStyles.summaryLabel}>Distance</Text>
-          <Text style={finishedRideStyles.summaryValue}>
-            {rideData.distance ?? '—'} {rideData.distance ? 'km' : ''}
-          </Text>
-        </View>
+        <View style={finishedRideStyles.divider} />
 
-        <View style={finishedRideStyles.summaryItem}>
-          <FontAwesome name="bicycle" size={16} color={colors.primary} />
-          <Text style={finishedRideStyles.summaryLabel}>Type</Text>
-          <Text style={finishedRideStyles.summaryValue}>
-            {rideData.riderType ?? '—'}
-          </Text>
-        </View>
-      </View>
+        {/* Start → End time row */}
+        <View style={finishedRideStyles.timeRow}>
+          <View style={finishedRideStyles.timeItem}>
+            <Text style={finishedRideStyles.timeLabel}>Started</Text>
+            <Text style={finishedRideStyles.timeValue}>
+              {formatTime(rideData.startTime)}
+            </Text>
+            <Text style={finishedRideStyles.timeDate}>
+              {formatDate(rideData.startTime)}
+            </Text>
+          </View>
 
-      <View style={finishedRideStyles.divider} />
+          <View style={finishedRideStyles.timeArrow}>
+            <FontAwesome
+              name="long-arrow-right"
+              size={18}
+              color={colors.textSecondary}
+            />
+          </View>
 
-      <View style={finishedRideStyles.timeRow}>
-        <View style={finishedRideStyles.timeItem}>
-          <Text style={finishedRideStyles.timeLabel}>Started</Text>
-          <Text style={finishedRideStyles.timeValue}>
-            {formatTime(rideData.startTime)}
-          </Text>
-          <Text style={finishedRideStyles.timeDate}>
-            {formatDate(rideData.startTime)}
-          </Text>
-        </View>
-
-        <FontAwesome
-          name="arrow-right"
-          size={16}
-          color={colors.textSecondary}
-          style={{marginHorizontal: spacing.md}}
-        />
-
-        <View style={finishedRideStyles.timeItem}>
-          <Text style={finishedRideStyles.timeLabel}>Ended</Text>
-          <Text style={finishedRideStyles.timeValue}>
-            {formatTime(rideData.endTime)}
-          </Text>
-          <Text style={finishedRideStyles.timeDate}>
-            {formatDate(rideData.endTime)}
-          </Text>
+          <View style={[finishedRideStyles.timeItem, {alignItems: 'flex-end'}]}>
+            <Text style={finishedRideStyles.timeLabel}>Ended</Text>
+            <Text style={finishedRideStyles.timeValue}>
+              {formatTime(rideData.endTime)}
+            </Text>
+            <Text style={finishedRideStyles.timeDate}>
+              {formatDate(rideData.endTime)}
+            </Text>
+          </View>
         </View>
       </View>
     </View>

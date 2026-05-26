@@ -12,7 +12,7 @@ export const startService = {
       };
       throw new Error(
         messages[response.status] ||
-          'An error occurred while starting the ride.',
+        'An error occurred while starting the ride.',
       );
     }
     return response.json();
@@ -27,7 +27,7 @@ export const startService = {
       };
       throw new Error(
         messages[response.status] ||
-          'An error occurred while stopping the ride.',
+        'An error occurred while stopping the ride.',
       );
     }
     return true;
@@ -43,7 +43,7 @@ export const startService = {
       };
       throw new Error(
         messages[response.status] ||
-          'An error occurred while leaving the ride.',
+        'An error occurred while leaving the ride.',
       );
     }
     return true;
@@ -61,7 +61,7 @@ export const finishRide = async generatedRidesId => {
     };
     throw new Error(
       messages[response.status] ||
-        'Failed to finish the ride. Please try again.',
+      'Failed to finish the ride. Please try again.',
     );
   }
   return response.json();
@@ -81,7 +81,7 @@ export const forceFinishRide = async generatedRidesId => {
     };
     throw new Error(
       messages[response.status] ||
-        'Failed to force-end the ride. Please try again.',
+      'Failed to force-end the ride. Please try again.',
     );
   }
   return response.json();
@@ -97,7 +97,25 @@ export const getFinishedRideSummary = async generatedRidesId => {
     };
     throw new Error(
       messages[response.status] ||
-        'Failed to fetch ride summary. Please try again.',
+      'Failed to fetch ride summary. Please try again.',
+    );
+  }
+  return response.json();
+};
+
+export const getPersonalSummary = async generatedRidesId => {
+  const response = await api.get(
+    `/ride/${generatedRidesId}/personal-summary`,
+  );
+  if (!response.ok) {
+    const messages = {
+      404: 'Personal summary not found.',
+      401: 'Unauthorized. Please log in again.',
+      403: 'You do not have permission to view this summary.',
+    };
+    throw new Error(
+      messages[response.status] ||
+      'Failed to fetch personal summary. Please try again.',
     );
   }
   return response.json();
@@ -114,7 +132,7 @@ export const getCheckpointArrivals = async generatedRidesId => {
     };
     throw new Error(
       messages[response.status] ||
-        'Failed to fetch checkpoint arrivals. Please try again.',
+      'Failed to fetch checkpoint arrivals. Please try again.',
     );
   }
   return response.json();
@@ -142,7 +160,7 @@ export const getStopPointsByRideId = async generatedRidesId => {
     };
     throw new Error(
       messages[response.status] ||
-        'Failed to fetch stop points. Please try again.',
+      'Failed to fetch stop points. Please try again.',
     );
   }
   return response.json();

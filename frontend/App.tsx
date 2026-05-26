@@ -17,7 +17,8 @@ import {GoogleSignin} from '@react-native-google-signin/google-signin';
 import {GOOGLE_CLIENT_ID} from '@env';
 import LoadingScreen from '../frontend/React/commons/LoadingScreen';
 import LegalScreen from '../frontend/React/screens/LegalScreen';
-import FinishedRideView from './React/pages/FinishedRideView';
+import FinishedRideView from './React/pages/finishedRide/FinishedRideView';
+import PersonalSummaryView from './React/pages/finishedRide/PersonalSummaryView';
 
 
 interface AuthContextValue {
@@ -45,6 +46,8 @@ const AppStack = () => (
     <Stack.Screen name="RiderProfile" component={RiderProfile} />
     <Stack.Screen name="LegalScreen" component={LegalScreen} />
     <Stack.Screen name="FinishedRideView" component={FinishedRideView} />
+    <Stack.Screen name="PersonalSummaryView" component={PersonalSummaryView} />
+
   </Stack.Navigator>
 );
 

@@ -1,10 +1,9 @@
-
 // File: frontend/React/styles/screens/finishedRideStyles.js
 
-import { StyleSheet } from 'react-native';
+import {StyleSheet} from 'react-native';
 import colors from '../tokens/colors';
 import spacing from '../tokens/spacing';
-import { fontSize, fontWeight } from '../tokens/typography';
+import {fontSize, fontWeight} from '../tokens/typography';
 
 const finishedRideStyles = StyleSheet.create({
   // ── Screen root ──────────────────────────────
@@ -14,7 +13,7 @@ const finishedRideStyles = StyleSheet.create({
   },
 
   scrollContent: {
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xl * 2,
   },
 
   // ── Header ───────────────────────────────────
@@ -30,108 +29,185 @@ const finishedRideStyles = StyleSheet.create({
   },
 
   headerTitle: {
-    fontSize: fontSize.xl,
+    fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
     color: colors.textPrimary,
+    letterSpacing: -0.3,
   },
 
   backButtonSmall: {
-    padding: spacing.sm,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
-  // ── Summary Card ─────────────────────────────
-  summaryCard: {
+  headerActionButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ── Hero / Summary Card ───────────────────────
+  heroCard: {
     backgroundColor: colors.surface,
     marginHorizontal: spacing.lg,
-    marginVertical: spacing.md,
-    borderRadius: 12,
-    padding: spacing.lg,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+    borderRadius: 16,
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.borderLight,
+  },
+
+  heroAccent: {
+    height: 3,
+    backgroundColor: colors.primary,
+    width: '100%',
+  },
+
+  heroPadding: {
+    padding: spacing.lg,
   },
 
   rideName: {
     fontSize: fontSize.h2,
     fontWeight: fontWeight.bold,
     color: colors.textPrimary,
-    marginBottom: spacing.md,
+    letterSpacing: -0.5,
+    marginBottom: spacing.lg,
   },
 
-  summaryRow: {
+  // ── Stats Row ────────────────────────────────
+  statsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
     marginBottom: spacing.md,
   },
 
-  summaryItem: {
+  statItem: {
+    flex: 1,
     alignItems: 'center',
+    paddingVertical: spacing.md,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 10,
+    marginHorizontal: 3,
   },
 
-  summaryLabel: {
-    fontSize: fontSize.sm,
+  statIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(140,35,35,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+  },
+
+  statLabel: {
+    fontSize: fontSize.xs,
     color: colors.textSecondary,
-    marginTop: spacing.xs,
+    marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
 
-  summaryValue: {
+  statValue: {
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.semi,
-    color: colors.primary,
-    marginTop: spacing.xs,
+    fontWeight: fontWeight.bold,
+    color: colors.white,
   },
 
+  statUnit: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    fontWeight: fontWeight.medium,
+    marginTop: 1,
+  },
+
+  // ── Divider ───────────────────────────────────
   divider: {
     height: 1,
     backgroundColor: colors.borderLight,
     marginVertical: spacing.md,
   },
 
+  // ── Time Row ──────────────────────────────────
   timeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
   },
 
   timeItem: {
     flex: 1,
-    alignItems: 'center',
   },
 
   timeLabel: {
-    fontSize: fontSize.sm,
+    fontSize: fontSize.xs,
     color: colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 4,
   },
 
   timeValue: {
-    fontSize: fontSize.lg,
+    fontSize: fontSize.md,
     fontWeight: fontWeight.bold,
-    color: colors.primary,
-    marginTop: spacing.xs,
+    color: colors.white,
   },
 
   timeDate: {
     fontSize: fontSize.xs,
     color: colors.textSecondary,
-    marginTop: spacing.xs,
+    marginTop: 2,
+  },
+
+  timeArrow: {
+    paddingHorizontal: spacing.md,
+    alignItems: 'center',
   },
 
   // ── Section ──────────────────────────────────
   section: {
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
     paddingHorizontal: spacing.lg,
   },
 
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+
   sectionTitle: {
-    fontSize: fontSize.lg,
+    fontSize: fontSize.base,
     fontWeight: fontWeight.bold,
     color: colors.textPrimary,
-    marginBottom: spacing.md,
+    letterSpacing: -0.2,
+    flex: 1,
+  },
+
+  sectionBadge: {
+    backgroundColor: 'rgba(140,35,35,0.18)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: 20,
+  },
+
+  sectionBadgeText: {
+    fontSize: fontSize.xs,
+    color: colors.primary,
+    fontWeight: fontWeight.bold,
   },
 
   // ── Participants List ────────────────────────
   participantsList: {
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.borderLight,
@@ -141,15 +217,19 @@ const finishedRideStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
   },
 
+  participantItemLast: {
+    borderBottomWidth: 0,
+  },
+
   participantAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -157,7 +237,7 @@ const finishedRideStyles = StyleSheet.create({
   },
 
   participantInitial: {
-    fontSize: fontSize.lg,
+    fontSize: fontSize.md,
     fontWeight: fontWeight.bold,
     color: colors.white,
   },
@@ -173,88 +253,147 @@ const finishedRideStyles = StyleSheet.create({
   },
 
   participantCheckpoints: {
-    fontSize: fontSize.sm,
+    fontSize: fontSize.xs,
     color: colors.textSecondary,
-    marginTop: spacing.xs,
+    marginTop: 2,
   },
 
   completionBadge: {
-    backgroundColor: colors.primary,
+    minWidth: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingVertical: 4,
     borderRadius: 8,
+    backgroundColor: 'rgba(140,35,35,0.18)',
+  },
+
+  completionBadgeFull: {
+    backgroundColor: 'rgba(76,175,80,0.18)',
   },
 
   completionPercent: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
-    color: colors.white,
+    color: colors.primary,
   },
 
-  // ── Checkpoint Header ────────────────────────
-  checkpointHeader: {
+  completionPercentFull: {
+    color: '#4CAF50',
+  },
+
+  // ── Checkpoint Timeline ──────────────────────
+  timelineContainer: {
+    paddingLeft: 8,
+  },
+
+  timelineRow: {
+    flexDirection: 'row',
+    marginBottom: 2,
+  },
+
+  timelineLeft: {
+    alignItems: 'center',
+    width: 40,
+  },
+
+  timelineIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(140,35,35,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.borderLight,
+    zIndex: 1,
+  },
+
+  timelineIconWrapActive: {
+    backgroundColor: 'rgba(140,35,35,0.25)',
+    borderColor: colors.primary,
+  },
+
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    backgroundColor: colors.borderLight,
+    marginVertical: 2,
+  },
+
+  timelineLineActive: {
+    backgroundColor: 'rgba(140,35,35,0.4)',
+  },
+
+  timelineContent: {
+    flex: 1,
+    marginLeft: spacing.md,
+    marginBottom: spacing.md,
+  },
+
+  timelineHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    marginBottom: spacing.sm,
     borderRadius: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
     borderWidth: 1,
     borderColor: colors.borderLight,
+    marginBottom: spacing.xs,
   },
 
-  checkpointIconContainer: {
-    marginRight: spacing.md,
+  timelineHeaderActive: {
+    borderColor: 'rgba(140,35,35,0.4)',
+    backgroundColor: 'rgba(140,35,35,0.06)',
   },
 
-  checkpointTitleContainer: {
+  timelineName: {
     flex: 1,
-  },
-
-  checkpointTitle: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semi,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
     color: colors.textPrimary,
+    letterSpacing: -0.2,
   },
 
-  checkpointCount: {
+  timelineCount: {
     fontSize: fontSize.xs,
     color: colors.textSecondary,
-    marginTop: spacing.xs,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    fontWeight: fontWeight.semi,
   },
 
-  // ── Arrivals Container ───────────────────────
-  arrivalsContainer: {
-    backgroundColor: colors.surface,
-    marginBottom: spacing.md,
-    borderRadius: 8,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.borderLight,
+  timelineArrivers: {
+    paddingLeft: spacing.sm,
+    gap: 4,
   },
 
   arriverItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 8,
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
   },
 
   arriverAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: colors.tibetanRed200,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.md,
+    marginRight: spacing.sm,
   },
 
   arriverInitial: {
-    fontSize: fontSize.sm,
+    fontSize: fontSize.xs,
     fontWeight: fontWeight.bold,
     color: colors.textDark,
   },
@@ -264,7 +403,7 @@ const finishedRideStyles = StyleSheet.create({
   },
 
   arriverUsername: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.semi,
     color: colors.textPrimary,
   },
@@ -272,28 +411,53 @@ const finishedRideStyles = StyleSheet.create({
   arriverTime: {
     fontSize: fontSize.xs,
     color: colors.textSecondary,
-    marginTop: spacing.xs,
+    marginTop: 1,
+  },
+
+  arriverCheck: {
+    marginLeft: spacing.sm,
   },
 
   // ── Empty States ─────────────────────────────
   emptyContainer: {
     alignItems: 'center',
-    paddingVertical: spacing.xl,
+    paddingVertical: spacing.xl * 1.5,
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+  },
+
+  emptyIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
   },
 
   emptyText: {
     fontSize: fontSize.md,
     color: colors.textSecondary,
-    marginTop: spacing.md,
+    fontWeight: fontWeight.medium,
+  },
+
+  emptySubText: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted || colors.textSecondary,
+    marginTop: spacing.xs,
   },
 
   noDataText: {
     fontSize: fontSize.md,
     color: colors.textSecondary,
     textAlign: 'center',
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.lg,
   },
 
+  // ── Error state ───────────────────────────────
   errorContainer: {
     flex: 1,
     alignItems: 'center',
@@ -306,20 +470,43 @@ const finishedRideStyles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: spacing.md,
     textAlign: 'center',
+    lineHeight: 22,
   },
 
   backButton: {
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.lg,
+    marginTop: spacing.lg,
+    paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     backgroundColor: colors.primary,
-    borderRadius: 8,
+    borderRadius: 10,
   },
 
   backButtonText: {
     fontSize: fontSize.md,
     color: colors.white,
     fontWeight: fontWeight.semi,
+  },
+
+  // ── Personal Badge ────────────────────────────
+  personalBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(140,35,35,0.08)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(140,35,35,0.2)',
+  },
+
+  personalBadgeText: {
+    color: colors.primary,
+    fontSize: fontSize.sm,
+    fontStyle: 'italic',
+    fontWeight: fontWeight.medium,
   },
 
   // ── Done Button ──────────────────────────────
@@ -329,16 +516,22 @@ const finishedRideStyles = StyleSheet.create({
     justifyContent: 'center',
     marginHorizontal: spacing.lg,
     marginTop: spacing.xl,
-    paddingVertical: spacing.md,
+    paddingVertical: 14,
     backgroundColor: colors.primary,
-    borderRadius: 8,
+    borderRadius: 12,
     gap: spacing.sm,
+    shadowColor: colors.primary,
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
   },
 
   doneButtonText: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.bold,
     color: colors.white,
+    letterSpacing: 0.2,
   },
 });
 
