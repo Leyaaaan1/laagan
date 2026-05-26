@@ -68,28 +68,48 @@ public class RidesService {
             double latitude, double longitude,
             double startLatitude, double startLongitude,
             double endLatitude, double endLongitude,
+            boolean isLocationFromSearch,
+            boolean isStartingPointFromSearch,      //
+            boolean isEndingPointFromSearch,
+            String startingPointName,
+            String endingPointName,
+            List<Boolean> stopPointsFromSearch,     //
             List<StopPointDTO> stopPointsDto) {
         AppLogger.info(this.getClass(), "createRide called", "generatedRidesId", generatedRidesId, "creatorUsername", creatorUsername, "ridesName", ridesName);
+
         List<StopPointDTO> validStopPoints = stopPointsDto.stream()
                 .filter(stop -> stop.getStopLongitude() != 0.0 && stop.getStopLatitude() != 0.0)
                 .collect(Collectors.toList());
 
-        ApiFutures futures = prepareApiFutures(validStopPoints, latitude, longitude, startLatitude, startLongitude, endLatitude, endLongitude, locationName);
+        ApiFutures futures = prepareApiFutures(validStopPoints, latitude, longitude, startLatitude,
+                startLongitude, endLatitude, endLongitude, locationName, isLocationFromSearch,
+                isStartingPointFromSearch,
+                isEndingPointFromSearch,
+                startingPointName,
+                endingPointName,
+                stopPointsFromSearch);
 
         awaitApiFuturesAndCollect(futures);
 
         return buildAndSaveRide(
                 generatedRidesId, creatorUsername, ridesName, riderType, date, participantUsernames,
                 description, latitude, longitude, startLatitude, startLongitude, endLatitude, endLongitude,
+                isStartingPointFromSearch,
+                isEndingPointFromSearch,
+                startingPointName,
+                endingPointName,
                 futures
-        );
-    }
+        );    }
 
     private ApiFutures prepareApiFutures(List<StopPointDTO> validStopPoints,
                                          double latitude, double longitude,
                                          double startLatitude, double startLongitude,
                                          double endLatitude, double endLongitude,
-                                         String locationName) {
+                                         String locationName ,
+                                         boolean isLocationFromSearch, boolean isStartingPointFromSearch,
+                                         boolean isEndingPointFromSearch,    String startingPointName,
+                                         String endingPointName,
+                                         List<Boolean> stopPointsFromSearch) {
         ApiFutures f = new ApiFutures();
 
         f.mainImageFuture = CompletableFuture.supplyAsync(
@@ -105,28 +125,65 @@ public class RidesService {
                 ),
                 externalApiExecutor
         );
-        f.mainLocationFuture = CompletableFuture.supplyAsync(
-                () -> locationService.resolveLandMark(locationName, latitude, longitude),
-                externalApiExecutor
-        );
-        f.startLocationFuture = CompletableFuture.supplyAsync(
-                () -> locationService.resolveBarangayName(null, startLatitude, startLongitude),
-                externalApiExecutor
-        );
-        f.endLocationFuture = CompletableFuture.supplyAsync(
-                () -> locationService.resolveBarangayName(null, endLatitude, endLongitude),
-                externalApiExecutor
-        );
+        if (isLocationFromSearch) {
+            // Use the locationName as-is from search result
+            f.mainLocationFuture = CompletableFuture.completedFuture(locationName);
+        } else {
+            // Georeverse only if from map tap
+            f.mainLocationFuture = CompletableFuture.supplyAsync(
+                    () -> locationService.resolveLandMark(locationName, latitude, longitude),
+                    externalApiExecutor
+            );
+        }
+        if (isStartingPointFromSearch) {
+            // Use the name from search result
+            f.startLocationFuture = CompletableFuture.completedFuture(startingPointName);
+        } else {
+            f.startLocationFuture = CompletableFuture.supplyAsync(
+                    () -> locationService.resolveBarangayName(null, startLatitude, startLongitude),
+                    externalApiExecutor
+            );
+        }
 
-        f.stopPointFutures = validStopPoints.stream()
-                .map(dto -> CompletableFuture.supplyAsync(
-                        () -> new RidesUtil.GeocodeResult(
-                                dto.getStopLatitude(),
-                                dto.getStopLongitude(),
-                                locationService.resolveBarangayName(null, dto.getStopLatitude(), dto.getStopLongitude())
-                        ),
-                        externalApiExecutor
-                ))
+        if (isEndingPointFromSearch) {
+            // Use the name from search result
+            f.endLocationFuture = CompletableFuture.completedFuture(endingPointName);
+        } else {
+            f.endLocationFuture = CompletableFuture.supplyAsync(
+                    () -> locationService.resolveBarangayName(null, endLatitude, endLongitude),
+                    externalApiExecutor
+            );
+        }
+
+
+        f.stopPointFutures = java.util.stream.IntStream.range(0, validStopPoints.size())
+                .mapToObj(index -> {
+                    StopPointDTO dto = validStopPoints.get(index);
+                    boolean fromSearch = (stopPointsFromSearch != null && index < stopPointsFromSearch.size())
+                            ? stopPointsFromSearch.get(index)
+                            : false;
+
+                    if (fromSearch) {
+                        // Use the stop name as-is from search
+                        return CompletableFuture.completedFuture(
+                                new RidesUtil.GeocodeResult(
+                                        dto.getStopLatitude(),
+                                        dto.getStopLongitude(),
+                                        dto.getStopName()  // Use the name from request
+                                )
+                        );
+                    } else {
+                        // Georeverse only if from map tap
+                        return CompletableFuture.supplyAsync(
+                                () -> new RidesUtil.GeocodeResult(
+                                        dto.getStopLatitude(),
+                                        dto.getStopLongitude(),
+                                        locationService.resolveBarangayName(null, dto.getStopLatitude(), dto.getStopLongitude())
+                                ),
+                                externalApiExecutor
+                        );
+                    }
+                })
                 .collect(Collectors.toList());
 
         return f;
@@ -187,14 +244,25 @@ public class RidesService {
             double latitude, double longitude,
             double startLatitude, double startLongitude,
             double endLatitude, double endLongitude,
+            boolean isStartingPointFromSearch,    //
+            boolean isEndingPointFromSearch,      //
+            String startingPointName,             //
+            String endingPointName,               //
             ApiFutures f) {
 
         String imageUrl = f.mainImageFuture.join();
         String routeCoordinates = f.routeFuture.join();
-        String resolvedLocationName = f.mainLocationFuture.join();
-        String startLocationName = f.startLocationFuture.join();
-        String endLocationName = f.endLocationFuture.join();
+        String resolvedLocationName = f.mainLocationFuture.join(
 
+        );
+        String startLocationName = (isStartingPointFromSearch && startingPointName != null && !startingPointName.isEmpty())
+                ? startingPointName
+                : f.startLocationFuture.join();
+
+        String endLocationName = (isEndingPointFromSearch && endingPointName != null && !endingPointName.isEmpty())
+                ? endingPointName
+                : f.endLocationFuture.join();
+        
         List<RidesUtil.GeocodeResult> geocodedStops = f.stopPointFutures.stream()
                 .map(CompletableFuture::join)
                 .collect(Collectors.toList());

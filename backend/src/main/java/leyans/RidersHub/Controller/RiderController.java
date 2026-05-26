@@ -60,7 +60,7 @@ public class RiderController {
         try {
             String username = SecurityUtils.getCurrentUsername();
 
-            RideDetailDTO response = ridesService.createRide(  // ← RideDetailDTO
+            RideDetailDTO response = ridesService.createRide(
                     rideRequest.getGeneratedRidesId(),
                     username,
                     rideRequest.getRidesName(),
@@ -75,6 +75,12 @@ public class RiderController {
                     rideRequest.getStartLng(),
                     rideRequest.getEndLat(),
                     rideRequest.getEndLng(),
+                    rideRequest.isLocationFromSearch(),
+                    rideRequest.isStartingPointFromSearch(),
+                    rideRequest.isEndingPointFromSearch(),
+                    rideRequest.getStartingPointName(),
+                    rideRequest.getEndingPointName(),
+                    rideRequest.getStopPointsFromSearch(),
                     rideRequest.getStopPoints()
             );
             return ResponseEntity.ok(response);

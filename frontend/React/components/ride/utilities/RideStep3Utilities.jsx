@@ -132,14 +132,18 @@ export const confirmStopPoint = ({
 
   setStopPoints(prev => [
     ...prev,
-    {lat: currentStop.lat, lng: currentStop.lng, name: currentStop.name},
+    {
+      lat: currentStop.lat,
+      lng: currentStop.lng,
+      name: currentStop.name,
+      isFromSearch: false,
+    },
   ]);
   setIsAddingStop(false);
   setCurrentStop(null);
   setMapMode('stop');
   setTimeout(onRouteReady, 500);
 };
-
 /**
  * Removes a stop by index and triggers a route redraw.
  *
@@ -173,6 +177,7 @@ export const finalizePointSelection = ({
 };
 
 
+
 export const handleSelectLocationAndUpdateMap = async ({
   item,
   mapMode,
@@ -185,6 +190,9 @@ export const handleSelectLocationAndUpdateMap = async ({
   startingLongitude,
   endingLatitude,
   endingLongitude,
+  setStopPoints, // ✅ ADD THIS
+  setCurrentStop, // ✅ ADD THIS
+  setIsAddingStop, // ✅ ADD THIS
   onRouteReady,
 }) => {
   const lat = parseFloat(item.lat);
@@ -204,12 +212,22 @@ export const handleSelectLocationAndUpdateMap = async ({
 
   if (mapMode === 'starting') {
     setStartingPoint(resolvedName);
-  }
-  if (mapMode === 'ending') {
+  } else if (mapMode === 'ending') {
     setEndingPoint(resolvedName);
+  } else if (mapMode === 'stop') {
+    // ✅ NEW: Handle stop point from search - mark as from search
+    setStopPoints(prev => [
+      ...prev,
+      {lat, lng: lon, name: resolvedName, isFromSearch: true},
+    ]);
+    setIsAddingStop(false);
+    setCurrentStop(null);
+    setLocalQuery('');
+    setTimeout(onRouteReady, 500);
+    return; // Exit early - don't continue with the rest
   }
-  setLocalQuery(resolvedName);
 
+  setLocalQuery(resolvedName);
   webViewRef.current?.injectJavaScript(buildCenterMapScript(lat, lon));
 
   if (
@@ -221,7 +239,6 @@ export const handleSelectLocationAndUpdateMap = async ({
     setTimeout(onRouteReady, 500);
   }
 };
-
 
 export const routeWebViewMessage = ({
   event,

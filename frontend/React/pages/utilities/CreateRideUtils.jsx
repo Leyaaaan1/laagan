@@ -38,10 +38,14 @@ const useCreateRide = ({}) => {
 
   // ── Ride details (Step 1) ─────────────────────────────────────────────────
   const [rideName, setRideName] = useState('');
-  const [riderType, setRiderType] = useState('CAR');
+  const [riderType, setRiderType] = useState('ADV 160');
   const [date, setDate] = useState(new Date());
   const [participants, setParticipants] = useState('');
   const [description, setDescription] = useState('');
+
+  const [startingPointFromSearch, setStartingPointFromSearch] = useState(false);
+
+  const [endingPointFromSearch, setEndingPointFromSearch] = useState(false);
 
   // ── Destination / location (Step 2) ──────────────────────────────────────
   const [locationName, setLocationName] = useState('');
@@ -101,6 +105,7 @@ const useCreateRide = ({}) => {
   }, []);
 
   // ─── Map tap / drag ───────────────────────────────────────────────────────
+
   const handleMessage = useCallback(
     event =>
       handleWebViewMessage(event, {
@@ -109,13 +114,15 @@ const useCreateRide = ({}) => {
         setLongitude,
         setStartingLatitude,
         setStartingLongitude,
+        setStartingPointFromSearch, // ✅ ADD
         setEndingLatitude,
         setEndingLongitude,
+        setEndingPointFromSearch, // ✅ ADD
         setLocationName,
         setStartingPoint,
         setEndingPoint,
       }),
-    [mapMode], // Include mapMode as dependency
+    [mapMode],
   );
   const handleSearchInputChange = useCallback(value => {
     setLocationSelected(false);
@@ -189,11 +196,13 @@ const useCreateRide = ({}) => {
         setStartingLatitude(lat.toString());
         setStartingLongitude(lon.toString());
         setStartingPoint(selectedName);
+        setStartingPointFromSearch(true); // ✅ MARK AS FROM SEARCH
         setMapMode('ending');
       } else if (mapMode === 'ending') {
         setEndingLatitude(lat.toString());
         setEndingLongitude(lon.toString());
         setEndingPoint(selectedName);
+        setEndingPointFromSearch(true); // ✅ MARK AS FROM SEARCH
       }
 
       setSearchQuery(selectedName);
@@ -201,9 +210,8 @@ const useCreateRide = ({}) => {
 
       return selectedName;
     },
-    [mapMode], // Include mapMode as dependency
+    [mapMode],
   );
-
   // ─── Build stop-points payload for the API ────────────────────────────────
   const buildStopPointsPayload = () =>
     stopPoints.map(sp => ({
@@ -211,6 +219,14 @@ const useCreateRide = ({}) => {
       stopLongitude: sp.lng ?? sp.stopLongitude,
       stopName: sp.name ?? sp.stopName,
     }));
+
+  const buildStopPointsFromSearchArray = () =>
+    stopPoints.map(sp => sp.isFromSearch ?? false);
+
+  const isStartingFromSearch = startingPoint && locationSelected; // Use locationSelected as proxy for starting
+
+  // ✅ NEW: Determine if ending point is from search
+  const isEndingFromSearch = endingPoint && locationSelected; // Use locationSelected as proxy for ending
 
   // ─── Build participants array from either array or comma-string ───────────
   const buildParticipantsArray = () => {
@@ -295,9 +311,12 @@ const useCreateRide = ({}) => {
       return typeMap[type] || typeMap['default'];
     };
 
+
+
     const rideData = {
       ridesName: rideName.trim(),
       locationName: locationName.trim(),
+      isLocationFromSearch: locationSelected,
       riderType: mapRiderTypeToDatabase(riderType),
       date: date.toISOString(),
       description: description.trim(),
@@ -309,11 +328,14 @@ const useCreateRide = ({}) => {
       endLng: endLngParsed,
       startingPoint: startingPoint.trim(),
       endingPoint: endingPoint.trim(),
+      startingPointName: startingPoint.trim(), //
+      endingPointName: endingPoint.trim(), //
+      isStartingPointFromSearch: startingPointFromSearch,
+      isEndingPointFromSearch: endingPointFromSearch,
       stopPoints: buildStopPointsPayload(),
+      stopPointsFromSearch: buildStopPointsFromSearchArray(),
       participants: buildParticipantsArray(),
-    };
-
-    // ────────────────────────────────────────────────────────────────────────────
+    };    // ────────────────────────────────────────────────────────────────────────────
     // STEP 3: CREATE RIDE (API CALL)
     // ────────────────────────────────────────────────────────────────────────────
 
@@ -371,8 +393,6 @@ const useCreateRide = ({}) => {
       await routeCache.save(generatedId, routeCoordinates).catch(e => {
         console.warn('[handleCreateRide] Route cache save (non-fatal):', e);
       });
-
-
 
       setGeneratedRidesId(generatedId);
       pendingRideIdRef.current = generatedId;
@@ -468,6 +488,8 @@ const useCreateRide = ({}) => {
     setSearchQuery,
     searchResults,
     isSearching,
+    setStartingPointFromSearch, //
+    setEndingPointFromSearch,
     handleSearchInputChange, //
     handleLocationSelect, //
     mapMode,
