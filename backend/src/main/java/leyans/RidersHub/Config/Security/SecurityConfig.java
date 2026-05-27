@@ -44,6 +44,7 @@ public class SecurityConfig {
                                 "/riders/google-login"
                         ).permitAll()
                         .requestMatchers(
+                                "/status/**",
                                 "/ride/**",
                                 "/rides/*/start",
                                 "/riders/rider-type",

@@ -1,7 +1,7 @@
 
 package leyans.RidersHub.DTO.Response;
 
-import leyans.RidersHub.model.RideCheckpointArrival;
+import leyans.RidersHub.model.participant.RideCheckpointArrival;
 import java.time.LocalDateTime;
 
 public class CheckpointArrivalResponse {

@@ -66,6 +66,8 @@ const CreateRide = ({}) => {
           searchQuery={ride.searchQuery}
           handleLocationSelect={ride.handleLocationSelect}
           handleSearchInputChange={ride.handleSearchInputChange}
+          setStartingPointFromSearch={ride.setStartingPointFromSearch}
+          setEndingPointFromSearch={ride.setEndingPointFromSearch}
           webViewRef={ride.webViewRef}
           startingLatitude={ride.startingLatitude}
           startingLongitude={ride.startingLongitude}

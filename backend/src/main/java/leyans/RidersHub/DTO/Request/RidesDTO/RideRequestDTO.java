@@ -18,6 +18,7 @@ public class RideRequestDTO {
 
 
     private String locationName;
+    private boolean isLocationFromSearch;
     private String riderType;
     private Integer distance;
 
@@ -40,28 +41,27 @@ public class RideRequestDTO {
     private String routeCoordinates;
     private List<StopPointDTO> stopPoints;
 
+    private boolean isStartingPointFromSearch;
+    private boolean isEndingPointFromSearch;
+    private List<Boolean> stopPointsFromSearch;
+
+    public RideRequestDTO() {
+    }
 
 
-    public RideRequestDTO(String generatedRidesId, String username, List<String> participants, String description,
-                          String ridesName, String locationName,
-                          String riderType, Integer distance,
-                          LocalDateTime date, double latitude, double longitude,
-                          String startingPointName, double startLat,double startLng,
-            String endingPointName, double endLat, double endLng,
-                          String mapImageUrl,
-                          String routeCoordinates,
-                          List<StopPointDTO> stopPoints) {
+    public RideRequestDTO(String generatedRidesId, String username, String ridesName, String locationName, boolean isLocationFromSearch, String riderType, Integer distance, LocalDateTime date, double latitude, double longitude, List<String> participants, String description, String startingPointName, double startLat, double startLng, String endingPointName, double endLat, double endLng, String mapImageUrl, String routeCoordinates, List<StopPointDTO> stopPoints, boolean isStartingPointFromSearch, boolean isEndingPointFromSearch, List<Boolean> stopPointsFromSearch) {
         this.generatedRidesId = generatedRidesId;
         this.username = username;
         this.ridesName = ridesName;
-        this.description = description;
         this.locationName = locationName;
+        this.isLocationFromSearch = isLocationFromSearch;
         this.riderType = riderType;
         this.distance = distance;
         this.date = date;
         this.latitude = latitude;
         this.longitude = longitude;
         this.participants = participants;
+        this.description = description;
         this.startingPointName = startingPointName;
         this.startLat = startLat;
         this.startLng = startLng;
@@ -69,10 +69,43 @@ public class RideRequestDTO {
         this.endLat = endLat;
         this.endLng = endLng;
         this.mapImageUrl = mapImageUrl;
-        this.stopPoints = stopPoints;
         this.routeCoordinates = routeCoordinates;
+        this.stopPoints = stopPoints;
+        this.isStartingPointFromSearch = isStartingPointFromSearch;
+        this.isEndingPointFromSearch = isEndingPointFromSearch;
+        this.stopPointsFromSearch = stopPointsFromSearch;
+    }
 
+    public boolean isStartingPointFromSearch() {
+        return isStartingPointFromSearch;
+    }
 
+    public void setStartingPointFromSearch(boolean startingPointFromSearch) {
+        isStartingPointFromSearch = startingPointFromSearch;
+    }
+
+    public boolean isEndingPointFromSearch() {
+        return isEndingPointFromSearch;
+    }
+
+    public void setEndingPointFromSearch(boolean endingPointFromSearch) {
+        isEndingPointFromSearch = endingPointFromSearch;
+    }
+
+    public List<Boolean> getStopPointsFromSearch() {
+        return stopPointsFromSearch;
+    }
+
+    public void setStopPointsFromSearch(List<Boolean> stopPointsFromSearch) {
+        this.stopPointsFromSearch = stopPointsFromSearch;
+    }
+
+    public boolean isLocationFromSearch() {
+        return isLocationFromSearch;
+    }
+
+    public void setLocationFromSearch(boolean locationFromSearch) {
+        isLocationFromSearch = locationFromSearch;
     }
 
     public String getRouteCoordinates() {

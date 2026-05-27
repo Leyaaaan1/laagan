@@ -1,14 +1,23 @@
 // hooks/useEndingPointAlert.js
 import {useState, useEffect, useRef} from 'react';
-import {getCheckpointArrivals} from '../services/startService';
+import {getRideStatus} from '../services/startService';
 
+// FIX: was calling getCheckpointArrivals every 4s — that endpoint loads all
+// checkpoint records + does auth checks, causing the constant log spam:
+//   "getCheckpointArrivalsByRide called [generatedRidesId=...]"
+//
+// Now polls getRideStatus instead, which is lightweight and already polled
+// elsewhere in the app. We detect completion via riderStatuses[].status
+// === 'RIDER_FINISHED' for the current user, which is set by
+// rideStatusService.markRiderFinished() in CheckPointUtility right after
+// the ENDING arrival is saved.
 export const useEndingPointAlert = (
   generatedRidesId,
   username,
   pollingEnabled,
 ) => {
   const [showEndingAlert, setShowEndingAlert] = useState(false);
-  const hasDetected = useRef(false); // only show once
+  const hasDetected = useRef(false);
 
   useEffect(() => {
     if (
@@ -21,21 +30,25 @@ export const useEndingPointAlert = (
 
     const interval = setInterval(async () => {
       try {
-        const arrivals = await getCheckpointArrivals(generatedRidesId);
+        const statusData = await getRideStatus(generatedRidesId);
 
-        const reachedEnding = arrivals.some(
-          a => a.checkpointType === 'ENDING' && a.riderUsername === username,
+        // Check via riderStatuses (set by markRiderFinished in CheckPointUtility)
+        const riderFinished = statusData?.riderStatuses?.some(
+          r => r.riderUsername === username && r.status === 'RIDER_FINISHED',
         );
 
-        if (reachedEnding) {
-          hasDetected.current = true; // stop checking
+        // Also handle the case where the whole ride is already FINISHED
+        const rideFinished = statusData?.currentStatus === 'FINISHED';
+
+        if (riderFinished || rideFinished) {
+          hasDetected.current = true;
           setShowEndingAlert(true);
           clearInterval(interval);
         }
       } catch (_) {
         // silently ignore polling errors
       }
-    }, 4000); // poll every 4 seconds
+    }, 4000);
 
     return () => clearInterval(interval);
   }, [generatedRidesId, username, pollingEnabled]);

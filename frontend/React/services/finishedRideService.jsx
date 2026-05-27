@@ -14,14 +14,4 @@ export const finishedRideService = {
     return response.json();
   },
 
-  // Poll for completion status while ride is active (OPTIONAL - only if needed)
-  getCompletionStatus: async generatedRidesId => {
-    const response = await api.get(
-      `/ride/${generatedRidesId}/completion-status`,
-    );
-    if (!response.ok) {
-      throw new Error('Failed to fetch completion status');
-    }
-    return response.json();
-  },
 };

@@ -2,51 +2,95 @@
 
 import React from 'react';
 import {View, Text} from 'react-native';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import colors from '../../styles/tokens/colors';
 import finishedRideStyles from '../../styles/screens/finishedRideStyles';
 
 const FinishedRideParticipants = ({participants, participantCount}) => {
+  const hasParticipants = participants && participants.length > 0;
+
   return (
     <View style={finishedRideStyles.section}>
-      <Text style={finishedRideStyles.sectionTitle}>
-        Participants ({participantCount})
-      </Text>
-      <View style={finishedRideStyles.participantsList}>
-        {participants && participants.length > 0 ? (
-          participants.map((participant, idx) => (
-            <View
-              key={`participant-${idx}`}
-              style={finishedRideStyles.participantItem}>
-              <View style={finishedRideStyles.participantAvatar}>
-                <Text style={finishedRideStyles.participantInitial}>
-                  {(participant.username || 'U')[0].toUpperCase()}
-                </Text>
-              </View>
-              <View style={finishedRideStyles.participantInfo}>
-                <Text style={finishedRideStyles.participantName}>
-                  {participant.username}
-                </Text>
-                <Text style={finishedRideStyles.participantCheckpoints}>
-                  {participant.checkpointsReached}/
-                  {participant.totalCheckpoints} checkpoints
-                </Text>
-              </View>
-              <View style={finishedRideStyles.completionBadge}>
-                <Text style={finishedRideStyles.completionPercent}>
-                  {Math.round(
+      {/* Section header */}
+      <View style={finishedRideStyles.sectionHeader}>
+        <Text style={finishedRideStyles.sectionTitle}>Participants</Text>
+        {participantCount > 0 && (
+          <View style={finishedRideStyles.sectionBadge}>
+            <Text style={finishedRideStyles.sectionBadgeText}>
+              {participantCount}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      {hasParticipants ? (
+        <View style={finishedRideStyles.participantsList}>
+          {participants.map((participant, idx) => {
+            const pct =
+              participant.totalCheckpoints > 0
+                ? Math.round(
                     (participant.checkpointsReached /
                       participant.totalCheckpoints) *
                       100,
-                  )}
-                  %
-                </Text>
+                  )
+                : 0;
+            const isComplete = pct === 100;
+            const isLast = idx === participants.length - 1;
+
+            return (
+              <View
+                key={`participant-${idx}`}
+                style={[
+                  finishedRideStyles.participantItem,
+                  isLast && finishedRideStyles.participantItemLast,
+                ]}>
+                {/* Avatar */}
+                <View style={finishedRideStyles.participantAvatar}>
+                  <Text style={finishedRideStyles.participantInitial}>
+                    {(participant.username || 'U')[0].toUpperCase()}
+                  </Text>
+                </View>
+
+                {/* Info */}
+                <View style={finishedRideStyles.participantInfo}>
+                  <Text style={finishedRideStyles.participantName}>
+                    {participant.username}
+                  </Text>
+                  <Text style={finishedRideStyles.participantCheckpoints}>
+                    {participant.checkpointsReached} /{' '}
+                    {participant.totalCheckpoints} checkpoints
+                  </Text>
+                </View>
+
+                {/* Completion badge */}
+                <View
+                  style={[
+                    finishedRideStyles.completionBadge,
+                    isComplete && finishedRideStyles.completionBadgeFull,
+                  ]}>
+                  {isComplete ? (
+                    <FontAwesome name="check" size={12} color="#4CAF50" />
+                  ) : null}
+                  <Text
+                    style={[
+                      finishedRideStyles.completionPercent,
+                      isComplete && finishedRideStyles.completionPercentFull,
+                    ]}>
+                    {pct}%
+                  </Text>
+                </View>
               </View>
-            </View>
-          ))
-        ) : (
-          <Text style={finishedRideStyles.noDataText}>No participants</Text>
-        )}
-      </View>
+            );
+          })}
+        </View>
+      ) : (
+        <View style={finishedRideStyles.emptyContainer}>
+          <View style={finishedRideStyles.emptyIconWrap}>
+            <FontAwesome name="users" size={22} color={colors.textSecondary} />
+          </View>
+          <Text style={finishedRideStyles.emptyText}>No participants</Text>
+        </View>
+      )}
     </View>
   );
 };

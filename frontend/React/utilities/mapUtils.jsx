@@ -1,5 +1,6 @@
 import {reverseGeocode, reverseGeocodeLandmark} from '../services/rideService'; // adjust path as needed
 
+
 export const handleWebViewMessage = (
   event,
   {
@@ -8,8 +9,10 @@ export const handleWebViewMessage = (
     setLongitude,
     setStartingLatitude,
     setStartingLongitude,
+    setStartingPointFromSearch,        // ✅ ADD THIS
     setEndingLatitude,
     setEndingLongitude,
+    setEndingPointFromSearch,          // ✅ ADD THIS
     setLocationName,
     setStartingPoint,
     setEndingPoint,
@@ -42,6 +45,7 @@ export const handleWebViewMessage = (
     // Step 3 — plain address for start/end points
     setStartingLatitude(lat.toString());
     setStartingLongitude(lng.toString());
+    setStartingPointFromSearch(false);  // ✅ ADD THIS - Mark as NOT from search (from map tap)
 
     if (setStartingPoint) {
       reverseGeocode(lat, lng)
@@ -53,6 +57,7 @@ export const handleWebViewMessage = (
   } else if (mapMode === 'ending') {
     setEndingLatitude(lat.toString());
     setEndingLongitude(lng.toString());
+    setEndingPointFromSearch(false);    // ✅ ADD THIS - Mark as NOT from search (from map tap)
 
     if (setEndingPoint) {
       reverseGeocode(lat, lng)

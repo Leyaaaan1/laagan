@@ -1,15 +1,15 @@
 
 package leyans.RidersHub.Controller;
 
-import leyans.RidersHub.DTO.Request.FinishedRideRequest;
 import leyans.RidersHub.DTO.Response.CheckpointArrivalResponse;
 import leyans.RidersHub.DTO.Response.FinishedDTO.FinishedRideResponseDTO;
-import leyans.RidersHub.DTO.Response.FinishedDTO.RideCompletionStatusDTO;
+import leyans.RidersHub.DTO.Response.FinishedDTO.PersonalFinishedRideDTO;
 import leyans.RidersHub.Service.FinishedRideService;
+import leyans.RidersHub.Service.PersonalFinishedRideService;
+import leyans.RidersHub.Utility.CheckPointUtility;
+import leyans.RidersHub.Utility.FinishedRideUtility;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -18,9 +18,17 @@ import java.util.List;
 public class FinishedRideController {
 
     private final FinishedRideService finishedRideService;
+    private final FinishedRideUtility finishedRideUtility;
+    private final CheckPointUtility checkPointUtility;
 
-    public FinishedRideController(FinishedRideService finishedRideService) {
+    private final PersonalFinishedRideService personalFinishedRideService;
+
+
+    public FinishedRideController(FinishedRideService finishedRideService, FinishedRideUtility finishedRideUtility, CheckPointUtility checkPointUtility, PersonalFinishedRideService personalFinishedRideService) {
         this.finishedRideService = finishedRideService;
+        this.finishedRideUtility = finishedRideUtility;
+        this.checkPointUtility = checkPointUtility;
+        this.personalFinishedRideService = personalFinishedRideService;
     }
 
     @PostMapping("/finished/{generatedRidesId}")
@@ -39,21 +47,13 @@ public class FinishedRideController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{generatedRidesId}/completion-status")
-    public ResponseEntity<RideCompletionStatusDTO> getRideCompletionStatus(
-            @PathVariable String generatedRidesId) {
-
-        RideCompletionStatusDTO status = finishedRideService.getRideCompletionStatus(generatedRidesId);
-
-        return ResponseEntity.ok(status);
-    }
 
     @GetMapping("/{generatedRidesId}/checkpoint-arrivals")
     public ResponseEntity<List<CheckpointArrivalResponse>> getCheckpointArrivals(
             @PathVariable String generatedRidesId) {
 
         List<CheckpointArrivalResponse> arrivals =
-                finishedRideService.getCheckpointArrivalsByRide(generatedRidesId);
+                checkPointUtility.getCheckpointArrivalsByRide(generatedRidesId);
 
         return ResponseEntity.ok(arrivals);
     }
@@ -61,7 +61,13 @@ public class FinishedRideController {
     @GetMapping("/{generatedRidesId}/summary")
     public ResponseEntity<FinishedRideResponseDTO> getFinishedRideSummary(
             @PathVariable String generatedRidesId) {
-        FinishedRideResponseDTO summary = finishedRideService.getFinishedRideSummary(generatedRidesId);
+        FinishedRideResponseDTO summary = finishedRideUtility.getFinishedRideSummary(generatedRidesId);
         return ResponseEntity.ok(summary);
+    }
+
+    @GetMapping("/{generatedRidesId}/personal-summary")
+    public ResponseEntity<PersonalFinishedRideDTO> getPersonalSummary(
+            @PathVariable String generatedRidesId) {
+        return ResponseEntity.ok(personalFinishedRideService.getPersonalSummaryDTO(generatedRidesId));
     }
 }

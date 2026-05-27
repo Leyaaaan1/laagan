@@ -8,11 +8,10 @@ import leyans.RidersHub.Repository.RideJoinRequestRepository;
 import leyans.RidersHub.Repository.RidesRepository;
 import leyans.RidersHub.Repository.StartedRideRepository;
 import leyans.RidersHub.Utility.RiderUtil;
-import leyans.RidersHub.model.RideJoinRequest;
+import leyans.RidersHub.model.participant.RideJoinRequest;
 import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.Rides;
 import leyans.RidersHub.model.participant.ParticipantLocation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

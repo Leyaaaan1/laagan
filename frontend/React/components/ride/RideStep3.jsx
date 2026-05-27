@@ -19,9 +19,35 @@ import {createMemoCompare} from '../../utilities/propsComparison';
 
 
 const RideStep3 = ({
-  mapMode, setMapMode, isSearching, searchResults, handleLocationSelect, webViewRef, startingLatitude, startingLongitude, endingLatitude, endingLongitude, handleMessage,
-  startingPoint,  setStartingPoint, endingPoint, setEndingPoint, prevStep, loading, setEndingLatitude, setEndingLongitude, step2LocationName, step2Latitude, step2Longitude,
-  handleCreateRide, handleSearchInputChange, searchQuery, stopPoints, setStopPoints, token,
+  mapMode,
+  setMapMode,
+  isSearching,
+  searchResults,
+  handleLocationSelect,
+  webViewRef,
+  startingLatitude,
+  startingLongitude,
+  endingLatitude,
+  endingLongitude,
+  handleMessage,
+  startingPoint,
+  setStartingPoint,
+  endingPoint,
+  setEndingPoint,
+  prevStep,
+  loading,
+  setEndingLatitude,
+  setEndingLongitude,
+  step2LocationName,
+  step2Latitude,
+  step2Longitude,
+  handleCreateRide,
+  handleSearchInputChange,
+  searchQuery,
+  stopPoints,
+  setStopPoints,
+  token,
+  setStartingPointFromSearch, setEndingPointFromSearch,
 }) => {
   const [currentStop, setCurrentStop] = useState(null);
   const [isAddingStop, setIsAddingStop] = useState(false);
@@ -105,6 +131,7 @@ const RideStep3 = ({
       setEndingPoint(step2LocationName);
       setEndingLatitude(step2Latitude);
       setEndingLongitude(step2Longitude);
+      setEndingPointFromSearch(true);
       setMapMode('starting');
       // Pan map to the suggested location
       webViewRef.current?.injectJavaScript(
@@ -169,6 +196,9 @@ const RideStep3 = ({
       startingLongitude,
       endingLatitude,
       endingLongitude,
+      setStopPoints, //
+      setCurrentStop, //
+      setIsAddingStop, //
       onRouteReady: triggerDrawRoute,
     });
 
@@ -270,7 +300,6 @@ const RideStep3 = ({
             )}
           </TouchableOpacity>
         </View>
-
 
         {/* ── Search card ── */}
         <View style={rideCreation.searchContainer}>

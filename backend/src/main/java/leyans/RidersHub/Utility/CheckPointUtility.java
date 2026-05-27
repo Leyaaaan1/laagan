@@ -1,63 +1,146 @@
 package leyans.RidersHub.Utility;
 
+import jakarta.persistence.EntityNotFoundException;
+import leyans.RidersHub.DTO.Response.CheckpointArrivalResponse;
 import leyans.RidersHub.ExceptionHandler.RideAuthorizationException;
-import leyans.RidersHub.Repository.StartedRideRepository;
-import leyans.RidersHub.Service.LocationService;
-import leyans.RidersHub.model.Rider;
-import leyans.RidersHub.model.StartedRide;
+import leyans.RidersHub.Repository.RideCheckpointArrivalRepository;
+import leyans.RidersHub.Repository.RiderLocationRepository;
+import leyans.RidersHub.Repository.RidesRepository;
+import leyans.RidersHub.Service.PersonalFinishedRideService;
+import leyans.RidersHub.Service.RideStatusService;
+import leyans.RidersHub.model.*;
+import leyans.RidersHub.model.participant.RideCheckpointArrival;
 import org.locationtech.jts.geom.Point;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 
 @Service
 public class CheckPointUtility {
 
     public static final double ARRIVAL_THRESHOLD_METERS = 50.0;
-    private final StartedRideRepository startedRideRepository;
-    private final LocationService locationService;
 
-    public CheckPointUtility(StartedRideRepository startedRideRepository, LocationService locationService) {
-        this.startedRideRepository = startedRideRepository;
-        this.locationService = locationService;
+    private final RideCheckpointArrivalRepository rideCheckpointArrivalRepository;
+    private final RidesRepository ridesRepository;
+    private final RiderLocationRepository locationRepo;
+    private final StartedUtil startedUtil;
+    private final RideStatusService rideStatusService;
+    private final PersonalFinishedRideService personalFinishedRideService;
+
+    public CheckPointUtility(RideCheckpointArrivalRepository rideCheckpointArrivalRepository,
+                             RidesRepository ridesRepository,
+                             RiderLocationRepository locationRepo,
+                             StartedUtil startedUtil,
+                             RideStatusService rideStatusService,
+                             PersonalFinishedRideService personalFinishedRideService) {
+        this.rideCheckpointArrivalRepository = rideCheckpointArrivalRepository;
+        this.ridesRepository = ridesRepository;
+        this.locationRepo = locationRepo;
+        this.startedUtil = startedUtil;
+        this.rideStatusService = rideStatusService;
+        this.personalFinishedRideService = personalFinishedRideService;
     }
 
-    public StartedRide getActiveStartedRide(String generatedRidesId) {
-        return startedRideRepository
-                .findByRideGeneratedRidesId(generatedRidesId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "No active ride found for: " + generatedRidesId));
-    }
 
-    public void validateRiderIsParticipant(StartedRide startedRide, Rider rider) {
-        boolean isParticipant = startedRide.getParticipants()
-                .stream()
-                .anyMatch(p -> p.getUsername().equals(rider.getUsername()));
+    public void autoMarkCheckpoints(StartedRide startedRide, Rider rider, Point riderPoint) {
+        Rides ride = startedRide.getRide();
+        if (ride == null) return;
 
-        if (!isParticipant) {
-            throw new RideAuthorizationException("You are not a participant of this ride");
+        List<StopPoint> stopPoints = ride.getStopPoints();
+        for (int i = 0; i < stopPoints.size(); i++) {
+            StopPoint stop = stopPoints.get(i);
+            Point stopLocation = stop.getStopLocation();
+            if (stopLocation == null) continue;
+
+            boolean alreadyMarked = rideCheckpointArrivalRepository
+                    .existsByRideGeneratedRidesIdAndRiderUsernameAndCheckpointTypeAndCheckpointIndex(
+                            ride.getGeneratedRidesId(),
+                            rider.getUsername(),
+                            RideCheckpointArrival.CheckpointType.STOP_POINT,
+                            i
+                    );
+            if (alreadyMarked) continue;
+
+            double distanceMeters = locationRepo.getDistanceBetweenPoints(riderPoint, stopLocation);
+            if (distanceMeters <= ARRIVAL_THRESHOLD_METERS) {
+                RideCheckpointArrival arrival = new RideCheckpointArrival(
+                        ride,
+                        rider,
+                        RideCheckpointArrival.CheckpointType.STOP_POINT,
+                        i,
+                        LocalDateTime.now()
+                );
+                rideCheckpointArrivalRepository.save(arrival);
+                AppLogger.info(this.getClass(), "Auto-marked stop point arrival",
+                        "rider", rider.getUsername(),
+                        "stopName", stop.getStopName(),
+                        "stopIndex", i,
+                        "distanceMeters", distanceMeters);
+            }
         }
-    }
 
-    /**
-     * Validates the rider is within ARRIVAL_THRESHOLD_METERS of the checkpoint.
-     * Uses LocationService.calculateDistance which calls PostGIS ST_Distance.
-     */
-    public void validateProximity(Point riderPoint, Point checkpointPoint, String checkpointName) {
-        // calculateDistance returns km — convert to meters for comparison
-        int distanceKm = locationService.calculateDistance(riderPoint, checkpointPoint);
-        double distanceMeters = distanceKm * 1000.0;
+        Point endingLocation = ride.getEndingLocation();
+        if (endingLocation == null) return;
 
-        AppLogger.info(this.getClass(), "Proximity check",
-                "checkpoint", checkpointName,
-                "distanceMeters", distanceMeters,
-                "thresholdMeters", ARRIVAL_THRESHOLD_METERS);
+        boolean endingAlreadyMarked = rideCheckpointArrivalRepository
+                .existsByRideGeneratedRidesIdAndRiderUsernameAndCheckpointType(
+                        ride.getGeneratedRidesId(),
+                        rider.getUsername(),
+                        RideCheckpointArrival.CheckpointType.ENDING
+                );
+        if (endingAlreadyMarked) return;
 
-        if (distanceMeters > ARRIVAL_THRESHOLD_METERS) {
-            throw new IllegalStateException(
-                    "You are too far from " + checkpointName + ". " +
-                            "Distance: " + (int) distanceMeters + "m. " +
-                            "Required: within " + (int) ARRIVAL_THRESHOLD_METERS + "m."
+        double endingDistanceMeters = locationRepo.getDistanceBetweenPoints(riderPoint, endingLocation);
+        if (endingDistanceMeters <= ARRIVAL_THRESHOLD_METERS) {
+            LocalDateTime endTime = LocalDateTime.now();
+
+            RideCheckpointArrival arrival = new RideCheckpointArrival(
+                    ride,
+                    rider,
+                    RideCheckpointArrival.CheckpointType.ENDING,
+                    null,
+                    endTime
             );
+            rideCheckpointArrivalRepository.save(arrival);
+
+            AppLogger.info(this.getClass(), "Auto-marked ending arrival",
+                    "rider", rider.getUsername(),
+                    "endingPoint", ride.getEndingPointName(),
+                    "distanceMeters", endingDistanceMeters);
+
+            // Delegate to PersonalFinishedRideService — a separate Spring bean,
+            // so its @Transactional proxy is properly invoked (no self-invocation issue)
+            personalFinishedRideService.createPersonalSummaryOnArrival(rider, ride, endTime);
+
+            rideStatusService.markRiderFinished(ride.getGeneratedRidesId(), rider.getUsername());
         }
+    }
+
+    public List<CheckpointArrivalResponse> getCheckpointArrivalsByRide(String generatedRidesId) {
+        AppLogger.info(this.getClass(), "getCheckpointArrivalsByRide called", "generatedRidesId", generatedRidesId);
+
+        Rides ride = ridesRepository.findByGeneratedRidesId(generatedRidesId)
+                .orElseThrow(() -> new EntityNotFoundException("Ride not found: " + generatedRidesId));
+
+        Rider currentUser = startedUtil.authenticateAndGetInitiator();
+
+        boolean isRideOwner = ride.getUsername().getUsername().equals(currentUser.getUsername());
+
+        boolean isParticipant = ride.getParticipants().stream()
+                .anyMatch(p -> p.getUsername().equals(currentUser.getUsername()));
+
+        if (!isRideOwner && !isParticipant) {
+            AppLogger.warn(this.getClass(), "Unauthorized checkpoint access attempt",
+                    "user", currentUser.getUsername(),
+                    "rideId", generatedRidesId);
+            throw new RideAuthorizationException(
+                    "You must be the ride owner or a participant to view checkpoint arrivals");
+        }
+
+        return rideCheckpointArrivalRepository.findByRideGeneratedRidesId(generatedRidesId).stream()
+                .map(CheckpointArrivalResponse::new)
+                .toList();
     }
 }

@@ -1,6 +1,6 @@
 package leyans.RidersHub.Repository;
 
-import leyans.RidersHub.model.FinishedRide;
+import leyans.RidersHub.model.FinishedRide.FinishedRide;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -27,12 +27,15 @@ public class StartRideService {
     private final StartedUtil startedUtil;
     private final RidesUtil ridesUtil;
 
+    private final RideStatusService rideStatusService;
+
     public StartRideService(StartedRideRepository startedRideRepository, RidesRepository ridesRepository,
-                            StartedUtil startedUtil, RidesUtil ridesUtil) {
+                            StartedUtil startedUtil, RidesUtil ridesUtil, RideStatusService rideStatusService) {
         this.startedRideRepository = startedRideRepository;
         this.ridesRepository = ridesRepository;
         this.startedUtil = startedUtil;
         this.ridesUtil = ridesUtil;
+        this.rideStatusService = rideStatusService;
     }
 
     @Transactional
@@ -68,6 +71,7 @@ public class StartRideService {
         AppLogger.info(this.getClass(), "Ride started successfully", "rideId", generatedRidesId);
         ride.setActive(true);
         ridesRepository.save(ride);
+        rideStatusService.markStarted(generatedRidesId);
 
         List<ParticipantLocation> participantLocations = startedUtil.initializeParticipantLocations(
                 startedRide,

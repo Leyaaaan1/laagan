@@ -1,7 +1,7 @@
 package leyans.RidersHub.Repository;
 
 import leyans.RidersHub.model.Rider;
-import leyans.RidersHub.model.RiderLocation;
+import leyans.RidersHub.model.participant.RiderLocation;
 import leyans.RidersHub.model.StartedRide;
 import leyans.RidersHub.model.participant.ParticipantLocation;
 import org.locationtech.jts.geom.Point;

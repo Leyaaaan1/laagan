@@ -26,7 +26,10 @@ import {useStartedRideHandler} from './utilities/hooks/useStartedRideHandler';
 import {useOfflineRouteCache} from './utilities/hooks/useOfflineRouteCache';
 import CheckpointArrivalsModal from './utilities/CheckpointArrivalsModal';
 import {useEndingPointAlert} from '../hooks/useEndingPointAlert';
-import {getFinishedRideSummary} from '../services/startService';
+import {
+  getFinishedRideSummary,
+  getPersonalSummary,
+} from '../services/startService';
 
 const StartedRide = ({route, navigation}) => {
   const {username: routeUsername} = route?.params || {};
@@ -142,6 +145,23 @@ const StartedRide = ({route, navigation}) => {
 
   const handleCloseModal = () => {
     setCheckpointModalVisible(false);
+  };
+
+  // ── Participant: fetch their personal summary (ride may still be active) ──
+  const handleNavigateToPersonalSummary = async rideId => {
+    handleCloseModal();
+    try {
+      const data = await getPersonalSummary(rideId);
+      navigation.navigate('FinishedRideView', {
+        finishedRideData: data,
+        isPersonalSummary: true,
+      });
+    } catch (e) {
+      navigation.navigate('FinishedRideView', {
+        generatedRidesId: rideId,
+        isPersonalSummary: true,
+      });
+    }
   };
 
   return (
@@ -465,7 +485,7 @@ const StartedRide = ({route, navigation}) => {
           handleCloseModal();
           navigation.navigate('FinishedRideView', {finishedRideData: data});
         }}
-        onNavigateToSummary={async (generatedRidesId) => {
+        onNavigateToSummary={async generatedRidesId => {
           handleCloseModal();
           try {
             const data = await getFinishedRideSummary(generatedRidesId);
@@ -475,6 +495,7 @@ const StartedRide = ({route, navigation}) => {
             navigation.navigate('FinishedRideView', {generatedRidesId});
           }
         }}
+        onNavigateToPersonalSummary={handleNavigateToPersonalSummary}
       />
     </View>
   );
