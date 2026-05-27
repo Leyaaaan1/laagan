@@ -6,10 +6,10 @@ import leyans.RidersHub.ExceptionHandler.RideAuthorizationException;
 import leyans.RidersHub.Repository.RideCheckpointArrivalRepository;
 import leyans.RidersHub.Repository.RiderLocationRepository;
 import leyans.RidersHub.Repository.RidesRepository;
+import leyans.RidersHub.Service.PersonalFinishedRideService;
+import leyans.RidersHub.Service.RideStatusService;
 import leyans.RidersHub.model.*;
 import leyans.RidersHub.model.participant.RideCheckpointArrival;
-import leyans.RidersHub.model.FinishedRide.PersonalFinishedRide;
-import leyans.RidersHub.Repository.PersonalFinishedRideRepository;
 import org.locationtech.jts.geom.Point;
 import org.springframework.stereotype.Service;
 
@@ -26,14 +26,21 @@ public class CheckPointUtility {
     private final RidesRepository ridesRepository;
     private final RiderLocationRepository locationRepo;
     private final StartedUtil startedUtil;
-    private final PersonalFinishedRideRepository personalFinishedRideRepository;
+    private final RideStatusService rideStatusService;
+    private final PersonalFinishedRideService personalFinishedRideService;
 
-    public CheckPointUtility(RideCheckpointArrivalRepository rideCheckpointArrivalRepository, RidesRepository ridesRepository, RiderLocationRepository locationRepo, StartedUtil startedUtil, PersonalFinishedRideRepository personalFinishedRideRepository) {
+    public CheckPointUtility(RideCheckpointArrivalRepository rideCheckpointArrivalRepository,
+                             RidesRepository ridesRepository,
+                             RiderLocationRepository locationRepo,
+                             StartedUtil startedUtil,
+                             RideStatusService rideStatusService,
+                             PersonalFinishedRideService personalFinishedRideService) {
         this.rideCheckpointArrivalRepository = rideCheckpointArrivalRepository;
         this.ridesRepository = ridesRepository;
         this.locationRepo = locationRepo;
         this.startedUtil = startedUtil;
-        this.personalFinishedRideRepository = personalFinishedRideRepository;
+        this.rideStatusService = rideStatusService;
+        this.personalFinishedRideService = personalFinishedRideService;
     }
 
 
@@ -86,7 +93,7 @@ public class CheckPointUtility {
         if (endingAlreadyMarked) return;
 
         double endingDistanceMeters = locationRepo.getDistanceBetweenPoints(riderPoint, endingLocation);
-        if (endingDistanceMeters <= CheckPointUtility.ARRIVAL_THRESHOLD_METERS) {
+        if (endingDistanceMeters <= ARRIVAL_THRESHOLD_METERS) {
             LocalDateTime endTime = LocalDateTime.now();
 
             RideCheckpointArrival arrival = new RideCheckpointArrival(
@@ -98,32 +105,16 @@ public class CheckPointUtility {
             );
             rideCheckpointArrivalRepository.save(arrival);
 
-            // Save PersonalFinishedRide immediately when this rider reaches the ending —
-            // independent of whether the creator has ended the group ride yet
-            if (!personalFinishedRideRepository.existsByRideGeneratedRidesIdAndRiderUsername(
-                    ride.getGeneratedRidesId(), rider.getUsername())) {
-
-                int durationMinutes = (int) java.time.temporal.ChronoUnit.MINUTES.between(
-                        startedRide.getStartTime(), endTime);
-
-                PersonalFinishedRide personal = new PersonalFinishedRide(
-                        ride,
-                        rider,
-                        startedRide.getStartTime(),
-                        endTime,
-                        durationMinutes
-                );
-                personalFinishedRideRepository.save(personal);
-                AppLogger.info(this.getClass(), "PersonalFinishedRide saved",
-                        "rider", rider.getUsername(),
-                        "generatedRidesId", ride.getGeneratedRidesId(),
-                        "durationMinutes", durationMinutes);
-            }
-
             AppLogger.info(this.getClass(), "Auto-marked ending arrival",
                     "rider", rider.getUsername(),
                     "endingPoint", ride.getEndingPointName(),
                     "distanceMeters", endingDistanceMeters);
+
+            // Delegate to PersonalFinishedRideService — a separate Spring bean,
+            // so its @Transactional proxy is properly invoked (no self-invocation issue)
+            personalFinishedRideService.createPersonalSummaryOnArrival(rider, ride, endTime);
+
+            rideStatusService.markRiderFinished(ride.getGeneratedRidesId(), rider.getUsername());
         }
     }
 
@@ -137,7 +128,6 @@ public class CheckPointUtility {
 
         boolean isRideOwner = ride.getUsername().getUsername().equals(currentUser.getUsername());
 
-        // Check participation via Rides.participants (permanent record)
         boolean isParticipant = ride.getParticipants().stream()
                 .anyMatch(p -> p.getUsername().equals(currentUser.getUsername()));
 

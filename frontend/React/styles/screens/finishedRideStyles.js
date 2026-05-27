@@ -67,7 +67,6 @@ const finishedRideStyles = StyleSheet.create({
 
   heroAccent: {
     height: 3,
-    backgroundColor: colors.primary,
     width: '100%',
   },
 
@@ -102,7 +101,7 @@ const finishedRideStyles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(140,35,35,0.15)',
+    backgroundColor: '#fffff',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xs,
@@ -200,7 +199,7 @@ const finishedRideStyles = StyleSheet.create({
 
   sectionBadgeText: {
     fontSize: fontSize.xs,
-    color: colors.primary,
+    color: colors.white,
     fontWeight: fontWeight.bold,
   },
 
@@ -265,7 +264,7 @@ const finishedRideStyles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     borderRadius: 8,
-    backgroundColor: 'rgba(140,35,35,0.18)',
+    backgroundColor: 'rgb(255 255 255)',
   },
 
   completionBadgeFull: {
@@ -310,7 +309,7 @@ const finishedRideStyles = StyleSheet.create({
   },
 
   timelineIconWrapActive: {
-    backgroundColor: 'rgba(140,35,35,0.25)',
+    backgroundColor: '#ffffff',
     borderColor: colors.primary,
   },
 
@@ -344,7 +343,7 @@ const finishedRideStyles = StyleSheet.create({
   },
 
   timelineHeaderActive: {
-    borderColor: 'rgba(140,35,35,0.4)',
+    borderColor: colors.primary,
     backgroundColor: 'rgba(140,35,35,0.06)',
   },
 
@@ -496,14 +495,12 @@ const finishedRideStyles = StyleSheet.create({
     marginHorizontal: spacing.lg,
     marginBottom: spacing.sm,
     paddingVertical: 8,
-    backgroundColor: 'rgba(140,35,35,0.08)',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(140,35,35,0.2)',
   },
 
   personalBadgeText: {
-    color: colors.primary,
+    color: colors.white,
     fontSize: fontSize.sm,
     fontStyle: 'italic',
     fontWeight: fontWeight.medium,

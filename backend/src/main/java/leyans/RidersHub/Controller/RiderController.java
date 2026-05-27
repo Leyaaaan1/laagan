@@ -3,7 +3,6 @@ package leyans.RidersHub.Controller;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import leyans.RidersHub.Config.Security.SecurityUtils;
-import leyans.RidersHub.DTO.Request.RideActionStatusDTO;
 import leyans.RidersHub.DTO.Request.RiderDTO.RiderTypeRequest;
 import leyans.RidersHub.DTO.Request.RidesDTO.RideRequestDTO;
 import leyans.RidersHub.DTO.Request.RidesDTO.StopPointDTO;
@@ -11,10 +10,8 @@ import leyans.RidersHub.DTO.Response.RideDetailDTO;    // ← new
 import leyans.RidersHub.DTO.Response.RideSummaryDTO;  // ← new
 import leyans.RidersHub.Service.RiderService;
 import leyans.RidersHub.Service.RidesService;
-import leyans.RidersHub.Utility.RideActionUtil;
 import leyans.RidersHub.Utility.RidesUtil;
 import leyans.RidersHub.model.RiderType;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,13 +29,11 @@ public class RiderController {
     private final RidesService ridesService;
     private final RidesUtil ridesUtil;
 
-    private final RideActionUtil rideActionUtil;
 
-    public RiderController(RiderService riderService, RidesService ridesService, RidesUtil ridesUtil, RideActionUtil rideActionUtil) {
+    public RiderController(RiderService riderService, RidesService ridesService, RidesUtil ridesUtil) {
         this.riderService = riderService;
         this.ridesService = ridesService;
         this.ridesUtil = ridesUtil;
-        this.rideActionUtil = rideActionUtil;
     }
 
     @PostMapping("/rider-type")
@@ -166,17 +161,6 @@ public class RiderController {
         }
     }
 
-    @GetMapping("/{generatedRidesId}/action-status")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<RideActionStatusDTO> getRideActionStatus(
-            @PathVariable String generatedRidesId) {
-        try {
-            RideActionStatusDTO status = rideActionUtil.getRideActionStatusForCurrentUser(generatedRidesId);
-            return ResponseEntity.ok(status);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
 
 
     @GetMapping("/all")

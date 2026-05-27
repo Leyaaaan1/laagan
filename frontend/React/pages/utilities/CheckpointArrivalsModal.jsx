@@ -12,7 +12,10 @@ import {
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import checkpointModalStyles from '../../styles/screens/checkpointModalStyles';
-import {getCheckpointArrivals} from '../../services/startService';
+import {
+  getCheckpointArrivals,
+  getRideStatusDetailed,
+} from '../../services/startService';
 import {useFinishRideHandler} from './hooks/UseFinishRideHandler';
 import colors from '../../styles/tokens/colors';
 
@@ -102,23 +105,24 @@ const groupAndSortArrivals = (
 // ─── Component ──────────────────────────────────────────────────
 
 const CheckpointArrivalsModal = ({
-  visible,
-  onClose,
-  generatedRidesId,
-  stopPoints = [],
-  endingPointName = 'Ending Point',
-  username,
-  isCreator,
-  activeRide,
-  stopPolling,
-  setPollingEnabled,
-  onRideFinished,
-  onNavigateToSummary,
-  onNavigateToPersonalSummary,
-}) => {
+                                   visible,
+                                   onClose,
+                                   generatedRidesId,
+                                   stopPoints = [],
+                                   endingPointName = 'Ending Point',
+                                   username,
+                                   isCreator,
+                                   activeRide,
+                                   stopPolling,
+                                   setPollingEnabled,
+                                   onRideFinished,
+                                   onNavigateToSummary,
+                                   onNavigateToPersonalSummary,
+                                 }) => {
   const [arrivals, setArrivals] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [rideStatus, setRideStatus] = useState(null);
 
   const {isFinishing, handleFinishRide, handleForceFinishRide} =
     useFinishRideHandler(
@@ -141,8 +145,31 @@ const CheckpointArrivalsModal = ({
     try {
       setLoading(true);
       setError(null);
-      const data = await getCheckpointArrivals(generatedRidesId);
+
+      // Fetch both in parallel
+      const [data, statusData] = await Promise.all([
+        getCheckpointArrivals(generatedRidesId),
+        getRideStatusDetailed(generatedRidesId),
+      ]);
+
       setArrivals(data);
+      setRideStatus(statusData); // ← FIX: was never being set; currentUserAtEnding always fell back to null
+
+      // If backend says FINISHED, navigate away immediately
+      if (statusData.currentStatus === 'FINISHED') {
+        onNavigateToSummary?.(generatedRidesId);
+        return;
+      }
+
+      // If backend says STOPPED, close modal and inform user
+      if (statusData.currentStatus === 'STOPPED') {
+        onClose?.();
+        Alert.alert(
+          'Ride Stopped',
+          'This ride has been stopped by the creator.',
+        );
+        return;
+      }
     } catch (err) {
       setError(err.message);
       Alert.alert('Error', err.message);
@@ -151,11 +178,15 @@ const CheckpointArrivalsModal = ({
     }
   };
 
+
   const currentUserAtEnding =
     !!username &&
-    arrivals.some(
-      a => a.checkpointType === 'ENDING' && a.riderUsername === username,
-    );
+    (arrivals.some(
+        a => a.checkpointType === 'ENDING' && a.riderUsername === username,
+      ) ||
+      rideStatus?.riderStatuses?.some(
+        r => r.riderUsername === username && r.status === 'RIDER_FINISHED',
+      ));
 
   const sortedCheckpoints = groupAndSortArrivals(
     arrivals,

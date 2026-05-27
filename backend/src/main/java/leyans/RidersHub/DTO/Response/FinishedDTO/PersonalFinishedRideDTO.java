@@ -2,8 +2,11 @@ package leyans.RidersHub.DTO.Response.FinishedDTO;
 
 
 
+import leyans.RidersHub.DTO.Request.RidesDTO.StopPointDTO;
+import leyans.RidersHub.DTO.Response.CheckpointArrivalResponse;
 import leyans.RidersHub.model.FinishedRide.PersonalFinishedRide;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class PersonalFinishedRideDTO {
 
@@ -14,17 +17,57 @@ public class PersonalFinishedRideDTO {
     private LocalDateTime endTime;
     private Integer durationMinutes;
     private LocalDateTime createdAt;
+    private List<CheckpointArrivalResponse> checkpointArrivals;
+    private List<StopPointDTO> stopPoints;
+    private String startingPointName;
+    private String endingPointName;
 
     public PersonalFinishedRideDTO() {}
 
-    public PersonalFinishedRideDTO(PersonalFinishedRide personalFinishedRide) {
-        this.id = personalFinishedRide.getId();
-        this.riderUsername = personalFinishedRide.getRider().getUsername();
-        this.generatedRidesId = personalFinishedRide.getRide().getGeneratedRidesId();
-        this.startTime = personalFinishedRide.getStartTime();
-        this.endTime = personalFinishedRide.getEndTime();
-        this.durationMinutes = personalFinishedRide.getDurationMinutes();
-        this.createdAt = personalFinishedRide.getCreatedAt();
+    public PersonalFinishedRideDTO(Integer id, String riderUsername, String generatedRidesId, LocalDateTime startTime, LocalDateTime endTime, Integer durationMinutes, LocalDateTime createdAt, List<CheckpointArrivalResponse> checkpointArrivals, List<StopPointDTO> stopPoints, String startingPointName, String endingPointName) {
+        this.id = id;
+        this.riderUsername = riderUsername;
+        this.generatedRidesId = generatedRidesId;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.durationMinutes = durationMinutes;
+        this.createdAt = createdAt;
+        this.checkpointArrivals = checkpointArrivals;
+        this.stopPoints = stopPoints;
+        this.startingPointName = startingPointName;
+        this.endingPointName = endingPointName;
+    }
+
+    public List<CheckpointArrivalResponse> getCheckpointArrivals() {
+        return checkpointArrivals;
+    }
+
+    public void setCheckpointArrivals(List<CheckpointArrivalResponse> checkpointArrivals) {
+        this.checkpointArrivals = checkpointArrivals;
+    }
+
+    public List<StopPointDTO> getStopPoints() {
+        return stopPoints;
+    }
+
+    public void setStopPoints(List<StopPointDTO> stopPoints) {
+        this.stopPoints = stopPoints;
+    }
+
+    public String getStartingPointName() {
+        return startingPointName;
+    }
+
+    public void setStartingPointName(String startingPointName) {
+        this.startingPointName = startingPointName;
+    }
+
+    public String getEndingPointName() {
+        return endingPointName;
+    }
+
+    public void setEndingPointName(String endingPointName) {
+        this.endingPointName = endingPointName;
     }
 
     // Getters and Setters

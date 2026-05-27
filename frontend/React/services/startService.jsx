@@ -165,3 +165,31 @@ export const getStopPointsByRideId = async generatedRidesId => {
   }
   return response.json();
 };
+
+export const getRideStatus = async (generatedRidesId) => {
+  const response = await api.get(`/status/${generatedRidesId}`);
+  if (!response.ok) {
+    const messages = {
+      404: 'Ride not found.',
+      401: 'Unauthorized. Please log in again.',
+    };
+    throw new Error(
+      messages[response.status] || 'Failed to fetch ride status.',
+    );
+  }
+  return response.json();
+};
+
+export const getRideStatusDetailed = async (generatedRidesId) => {
+  const response = await api.get(`/status/${generatedRidesId}/detailed`);
+  if (!response.ok) {
+    const messages = {
+      404: 'Ride not found.',
+      401: 'Unauthorized. Please log in again.',
+    };
+    throw new Error(
+      messages[response.status] || 'Failed to fetch detailed ride status.',
+    );
+  }
+  return response.json();
+};

@@ -1,5 +1,3 @@
-// File: frontend/React/pages/FinishedRide/FinishedRideView.jsx
-
 import React, {useEffect, useState} from 'react';
 import {
   View,
@@ -16,6 +14,7 @@ import {
   getCheckpointArrivals,
   getFinishedRideSummary,
   getPersonalSummary,
+  getRideStatus,
 } from '../../services/startService';
 import FinishedRideSummary from './FinishedRideSummary';
 import FinishedRideParticipants from './FinishedRideParticipants';
@@ -60,39 +59,51 @@ const FinishedRideView = ({route, navigation}) => {
   const [loading, setLoading] = useState(!passedData && !!generatedRidesId);
   const [error, setError] = useState(null);
 
+  // FIX: wrap load() in useEffect so it only runs once on mount,
+  // not on every render. The original code called load() directly
+  // in the render body, causing an infinite re-render + request loop.
   useEffect(() => {
     if (passedData || !generatedRidesId) return;
 
-    if (isPersonalSummary) {
-      getPersonalSummary(generatedRidesId)
-        .then(data => setFinishedRideData(data))
-        .catch(err => setError(err.message))
-        .finally(() => setLoading(false));
-    } else if (isRideActive) {
-      getCheckpointArrivals(generatedRidesId)
-        .then(arrivals => {
-          setFinishedRideData({
-            rideName,
-            startingPointName: passedStartingPointName,
-            endingPointName: passedEndingPointName,
-            stopPoints: passedStopPoints || [],
-            participantCount: passedParticipantCount,
-            startTime: passedStartTime,
-            checkpointArrivals: arrivals,
-            completedParticipants: (passedParticipants || []).map(p => ({
-              username: typeof p === 'string' ? p : p.username,
-            })),
-          });
-        })
-        .catch(err => setError(err.message))
-        .finally(() => setLoading(false));
-    } else {
-      getFinishedRideSummary(generatedRidesId)
-        .then(data => setFinishedRideData(data))
-        .catch(err => setError(err.message))
-        .finally(() => setLoading(false));
-    }
-  }, []);
+    const load = async () => {
+      try {
+        const statusData = await getRideStatus(generatedRidesId);
+
+        if (isPersonalSummary) {
+          const data = await getPersonalSummary(generatedRidesId);
+          setFinishedRideData(data);
+          return;
+        }
+
+        if (statusData.currentStatus === 'FINISHED') {
+          const data = await getFinishedRideSummary(generatedRidesId);
+          setFinishedRideData(data);
+          return;
+        }
+
+        // Still active — load live arrivals
+        const arrivals = await getCheckpointArrivals(generatedRidesId);
+        setFinishedRideData({
+          rideName,
+          startingPointName: passedStartingPointName,
+          endingPointName: passedEndingPointName,
+          stopPoints: passedStopPoints || [],
+          participantCount: passedParticipantCount,
+          startTime: passedStartTime,
+          checkpointArrivals: arrivals,
+          completedParticipants: (passedParticipants || []).map(p => ({
+            username: typeof p === 'string' ? p : p.username,
+          })),
+        });
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [generatedRidesId]); // only re-run if the ride ID changes
 
   // ── Loading ───────────────────────────────────────────────────
   if (loading) {
@@ -180,10 +191,8 @@ const FinishedRideView = ({route, navigation}) => {
       <ScrollView
         contentContainerStyle={finishedRideStyles.scrollContent}
         showsVerticalScrollIndicator={false}>
-        {/* Summary hero card */}
         <FinishedRideSummary rideData={finishedRideData} />
 
-        {/* Participants — hidden in personal summary */}
         {!isPersonalSummary && (
           <FinishedRideParticipants
             participants={enrichedParticipants}
@@ -191,7 +200,6 @@ const FinishedRideView = ({route, navigation}) => {
           />
         )}
 
-        {/* Checkpoint timeline */}
         <FinishedRideCheckpoints
           checkpointArrivals={safeArrivals}
           startingPointName={startingPointName}

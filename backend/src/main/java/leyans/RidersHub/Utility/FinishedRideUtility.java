@@ -6,7 +6,6 @@ import leyans.RidersHub.DTO.Response.CheckpointArrivalResponse;
 import leyans.RidersHub.DTO.Response.FinishedDTO.FinishedRideResponseDTO;
 import leyans.RidersHub.DTO.Response.FinishedDTO.ParticipantStatisticsDTO;
 import leyans.RidersHub.DTO.Response.FinishedDTO.ParticipantSummaryDTO;
-import leyans.RidersHub.DTO.Response.FinishedDTO.RideCompletionStatusDTO;
 import leyans.RidersHub.Repository.FinishedRideRepository;
 import leyans.RidersHub.Repository.RideCheckpointArrivalRepository;
 import leyans.RidersHub.Repository.RidesRepository;
@@ -153,41 +152,6 @@ public class FinishedRideUtility {
         return response;
     }
 
-    @Transactional(readOnly = true)
-    public RideCompletionStatusDTO getRideCompletionStatus(String generatedRidesId) {
-        Rides ride = ridesRepository.findByGeneratedRidesId(generatedRidesId)
-                .orElseThrow(() -> new EntityNotFoundException("Ride not found: " + generatedRidesId));
-
-        // If the ride is already finished, derive status from FinishedRide
-        java.util.Optional<FinishedRide> finishedOpt =
-                finishedRideRepository.findByRideGeneratedRidesId(generatedRidesId);
-        if (finishedOpt.isPresent()) {
-            int total = finishedOpt.get().getCompletedParticipants().size();
-            AppLogger.info(this.getClass(), "Completion status from FinishedRide (ride already done)",
-                    "generatedRidesId", generatedRidesId);
-            return new RideCompletionStatusDTO(total, total, true, false);
-        }
-
-        // Ride is still active — count via generatedRidesId directly
-        long totalParticipants = rideCheckpointArrivalRepository
-                .countDistinctRidersByGeneratedRidesId(generatedRidesId);
-        long participantsAtEnding = rideCheckpointArrivalRepository
-                .countByRideGeneratedRidesIdAndCheckpointType(
-                        generatedRidesId,
-                        RideCheckpointArrival.CheckpointType.ENDING);
-
-        boolean isComplete = totalParticipants > 0 && participantsAtEnding >= totalParticipants;
-
-        AppLogger.info(this.getClass(), "Completion status retrieved",
-                "total", totalParticipants, "arrived", participantsAtEnding, "complete", isComplete);
-
-        return new RideCompletionStatusDTO(
-                (int) totalParticipants,
-                (int) participantsAtEnding,
-                isComplete,
-                ride.getActive()
-        );
-    }
 
 
 

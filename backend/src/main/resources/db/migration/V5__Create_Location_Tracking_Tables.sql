@@ -63,6 +63,23 @@ CREATE TABLE public.personal_finished_rides (
                                                 CONSTRAINT uq_personal_finished_ride UNIQUE (generated_rides_id, rider_username)
 );
 
+CREATE TABLE public.ride_status_entries (
+                                            id                  SERIAL PRIMARY KEY,
+                                            generated_rides_id  VARCHAR(12)  NOT NULL REFERENCES public.event_rides(generated_rides_id) ON DELETE CASCADE,
+                                            status              VARCHAR(20)  NOT NULL,
+                                            scope               VARCHAR(10)  NOT NULL,
+                                            rider_username      VARCHAR(255) REFERENCES public.rider(username) ON DELETE CASCADE,
+                                            active              BOOLEAN      NOT NULL DEFAULT TRUE,
+                                            changed_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                            note                TEXT
+);
+
+CREATE INDEX idx_rse_generated_rides_id  ON public.ride_status_entries(generated_rides_id);
+CREATE INDEX idx_rse_rider_username      ON public.ride_status_entries(rider_username);
+CREATE INDEX idx_rse_status              ON public.ride_status_entries(status);
+CREATE INDEX idx_rse_scope               ON public.ride_status_entries(scope);
+CREATE INDEX idx_rse_generated_status    ON public.ride_status_entries(generated_rides_id, status);
+
 
 CREATE INDEX idx_personal_finished_ride_generated_id ON public.personal_finished_rides(generated_rides_id);
 CREATE INDEX idx_personal_finished_ride_rider ON public.personal_finished_rides(rider_username);

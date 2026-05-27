@@ -80,8 +80,8 @@ const useCreateRide = ({}) => {
   // ── Map ───────────────────────────────────────────────────────────────────
   const [mapMode, setMapMode] = useState('starting');
 
-  const [riderTypeOptions, setRiderTypeOptions] = useState([]);
-  const [riderTypeLoading, setRiderTypeLoading] = useState(false);
+  const [setRiderTypeOptions] = useState([]);
+  const [ setRiderTypeLoading] = useState(false);
 
   // ── Step-based map mode sync ──────────────────────────────────────────────
   useEffect(() => {

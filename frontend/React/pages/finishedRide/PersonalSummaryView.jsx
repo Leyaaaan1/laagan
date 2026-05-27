@@ -1,5 +1,3 @@
-// File: frontend/React/pages/FinishedRide/PersonalSummaryView.jsx
-
 import React, {useEffect, useState} from 'react';
 import {
   View,
@@ -10,26 +8,54 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import {getPersonalSummary} from '../../services/startService';
+import {getPersonalSummary, getRideStatus} from '../../services/startService';
 import finishedRideStyles from '../../styles/screens/finishedRideStyles';
 import colors from '../../styles/tokens/colors';
 import FinishedRideSummary from './FinishedRideSummary';
 import FinishedRideCheckpoints from './FinishedRideCheckpoints';
 
 const PersonalSummaryView = ({route, navigation}) => {
-  const {finishedRideData: passedData, generatedRidesId} = route.params || {};
+  const {
+    finishedRideData: passedData,
+    generatedRidesId,
+    username,
+  } = route.params || {};
 
   const [rideData, setRideData] = useState(passedData || null);
   const [loading, setLoading] = useState(!passedData && !!generatedRidesId);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // FIX 1: guard against missing data before accessing passedData.u
+    // FIX 2: load() was defined but the effect had no actual fetch call path —
+    //         the console.log crashed when passedData was undefined
     if (passedData || !generatedRidesId) return;
-    getPersonalSummary(generatedRidesId)
-      .then(data => setRideData(data))
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false));
-  }, []);
+
+    const load = async () => {
+      try {
+        // Only check riderStatus if we have a username to check against
+        if (username) {
+          const statusData = await getRideStatus(generatedRidesId);
+          const riderDone = statusData.riderStatuses?.some(
+            r => r.riderUsername === username && r.status === 'RIDER_FINISHED',
+          );
+          if (!riderDone && statusData.currentStatus !== 'FINISHED') {
+            setError("You haven't completed this ride yet.");
+            return;
+          }
+        }
+
+        const data = await getPersonalSummary(generatedRidesId);
+        setRideData(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [generatedRidesId]); // only re-run if the ride ID changes
 
   // ── Loading ───────────────────────────────────────────────────
   if (loading) {
@@ -83,7 +109,6 @@ const PersonalSummaryView = ({route, navigation}) => {
       <ScrollView
         contentContainerStyle={finishedRideStyles.scrollContent}
         showsVerticalScrollIndicator={false}>
-        {/* Personal badge */}
         <View style={finishedRideStyles.personalBadge}>
           <FontAwesome name="user" size={12} color={colors.primary} />
           <Text style={finishedRideStyles.personalBadgeText}>
@@ -91,10 +116,8 @@ const PersonalSummaryView = ({route, navigation}) => {
           </Text>
         </View>
 
-        {/* Summary hero card */}
         <FinishedRideSummary rideData={rideData} />
 
-        {/* Personal checkpoint timeline */}
         <FinishedRideCheckpoints
           checkpointArrivals={safeArrivals}
           startingPointName={rideData.startingPointName}
@@ -102,13 +125,6 @@ const PersonalSummaryView = ({route, navigation}) => {
           stopPoints={safeStopPoints}
         />
 
-        {/* Done / Home button */}
-        <TouchableOpacity
-          style={finishedRideStyles.doneButton}
-          onPress={() => navigation.navigate('RiderPage')}>
-          <FontAwesome name="home" size={16} color={colors.white} />
-          <Text style={finishedRideStyles.doneButtonText}>Back to Home</Text>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );

@@ -19,6 +19,18 @@ public interface RideCheckpointArrivalRepository extends JpaRepository<RideCheck
             @Param("generatedRidesId") String generatedRidesId
     );
 
+
+    @Query("SELECT c FROM RideCheckpointArrival c " +
+            "WHERE c.ride.generatedRidesId = :generatedRidesId " +
+            "AND LOWER(c.rider.username) = LOWER(:riderUsername) " +
+            "AND c.checkpointType = :checkpointType")
+    List<RideCheckpointArrival> findByRideGeneratedRidesIdAndRiderUsernameAndCheckpointType(
+            @Param("generatedRidesId") String generatedRidesId,
+            @Param("riderUsername") String riderUsername,
+            @Param("checkpointType") RideCheckpointArrival.CheckpointType checkpointType
+    );
+
+
     // All arrivals for a ride filtered by checkpoint type
     @Query("SELECT c FROM RideCheckpointArrival c " +
             "WHERE c.ride.generatedRidesId = :generatedRidesId " +

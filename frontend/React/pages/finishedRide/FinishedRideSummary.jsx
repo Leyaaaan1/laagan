@@ -45,14 +45,13 @@ const FinishedRideSummary = ({rideData}) => {
       unit: '',
     },
   ];
-
+console.log('ridedata',rideData);
   return (
     <View style={finishedRideStyles.heroCard}>
       {/* Top accent line */}
       <View style={finishedRideStyles.heroAccent} />
 
       <View style={finishedRideStyles.heroPadding}>
-        <Text style={finishedRideStyles.rideName}>{rideData.rideName}</Text>
 
         {/* Stats row */}
         <View style={finishedRideStyles.statsRow}>
@@ -92,7 +91,7 @@ const FinishedRideSummary = ({rideData}) => {
             <FontAwesome
               name="long-arrow-right"
               size={18}
-              color={colors.textSecondary}
+              color={colors.white}
             />
           </View>
 

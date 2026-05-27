@@ -37,12 +37,13 @@ public class RidesService {
     private final RouteService routeService;
 
     private final RidesUtil ridesUtil;
+    private final RideStatusService rideStatusService;
 
     @Qualifier("externalApiExecutor")
     private final Executor externalApiExecutor;
 
     public RidesService(LocationService locationService, RiderService riderService, MapboxService mapboxService,
-                        RideParticipantService rideParticipantService, RouteService routeService, RidesUtil ridesUtil, Executor externalApiExecutor) {
+                        RideParticipantService rideParticipantService, RouteService routeService, RidesUtil ridesUtil, RideStatusService rideStatusService, Executor externalApiExecutor) {
 
         this.riderService = riderService;
         this.locationService = locationService;
@@ -50,6 +51,7 @@ public class RidesService {
         this.rideParticipantService = rideParticipantService;
         this.routeService = routeService;
         this.ridesUtil = ridesUtil;
+        this.rideStatusService = rideStatusService;
         this.externalApiExecutor = externalApiExecutor;
     }
     private static class ApiFutures {
@@ -90,6 +92,7 @@ public class RidesService {
                 stopPointsFromSearch);
 
         awaitApiFuturesAndCollect(futures);
+
 
         return buildAndSaveRide(
                 generatedRidesId, creatorUsername, ridesName, riderType, date, participantUsernames,
@@ -262,7 +265,7 @@ public class RidesService {
         String endLocationName = (isEndingPointFromSearch && endingPointName != null && !endingPointName.isEmpty())
                 ? endingPointName
                 : f.endLocationFuture.join();
-        
+
         List<RidesUtil.GeocodeResult> geocodedStops = f.stopPointFutures.stream()
                 .map(CompletableFuture::join)
                 .collect(Collectors.toList());
@@ -304,6 +307,7 @@ public class RidesService {
         newRide.setActive(false);
 
         Rides savedRide = ridesUtil.saveRideWithTransaction(newRide, creator);
+        rideStatusService.markInactive(savedRide.getGeneratedRidesId());
 
         AppLogger.info(this.getClass(), "Ride created successfully", "rideId", savedRide.getGeneratedRidesId(), "rideName", savedRide.getRidesName());
 

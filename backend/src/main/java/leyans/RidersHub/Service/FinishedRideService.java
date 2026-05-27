@@ -20,18 +20,20 @@ public class FinishedRideService {
     private final StartedUtil startedUtil;
     private final RideCheckpointArrivalRepository rideCheckpointArrivalRepository;
     private final FinishedRideUtility finishedRideUtility;
+    private final RideStatusService rideStatusService;
 
     public FinishedRideService(StartedRideRepository startedRideRepository,
                                RidesRepository ridesRepository,
                                FinishedRideRepository finishedRideRepository,
                                StartedUtil startedUtil,
-                               RideCheckpointArrivalRepository rideCheckpointArrivalRepository, FinishedRideUtility finishedRideUtility) {
+                               RideCheckpointArrivalRepository rideCheckpointArrivalRepository, FinishedRideUtility finishedRideUtility, RideStatusService rideStatusService) {
         this.startedRideRepository = startedRideRepository;
         this.ridesRepository = ridesRepository;
         this.finishedRideRepository = finishedRideRepository;
         this.startedUtil = startedUtil;
         this.rideCheckpointArrivalRepository = rideCheckpointArrivalRepository;
         this.finishedRideUtility = finishedRideUtility;
+        this.rideStatusService = rideStatusService;
     }
 
     @Transactional
@@ -79,6 +81,7 @@ public class FinishedRideService {
             throw new IllegalStateException(
                     "Waiting for " + stillWaiting + " participant(s) to reach the finish line");
         }
+        rideStatusService.markFinished(generatedRidesId, "Ride finished by " + requester.getUsername());
 
         return finishedRideUtility.buildAndSaveFinishedRide(startedRide, ride, requester, generatedRidesId);
     }
@@ -112,6 +115,7 @@ public class FinishedRideService {
         AppLogger.warn(this.getClass(), "Force-finishing ride by creator",
                 "generatedRidesId", generatedRidesId,
                 "creator", requester.getUsername());
+        rideStatusService.markFinished(generatedRidesId, "Ride finished by " + requester.getUsername());
 
         return finishedRideUtility.buildAndSaveFinishedRide(startedRide, ride, requester, generatedRidesId);
     }

@@ -2,8 +2,11 @@ package leyans.RidersHub.Service;
 
 
 import jakarta.persistence.EntityNotFoundException;
+import leyans.RidersHub.DTO.Request.RidesDTO.StopPointDTO;
+import leyans.RidersHub.DTO.Response.CheckpointArrivalResponse;
 import leyans.RidersHub.DTO.Response.FinishedDTO.PersonalFinishedRideDTO;
 import leyans.RidersHub.Repository.PersonalFinishedRideRepository;
+import leyans.RidersHub.Repository.RideCheckpointArrivalRepository;
 import leyans.RidersHub.Repository.StartedRideRepository;
 import leyans.RidersHub.Utility.StartedUtil;
 import leyans.RidersHub.model.Rider;
@@ -15,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class PersonalFinishedRideService {
@@ -22,23 +27,63 @@ public class PersonalFinishedRideService {
     private final PersonalFinishedRideRepository personalFinishedRideRepository;
     private final StartedUtil startedUtil;
     private final StartedRideRepository startedRideRepository;
+    private final RideCheckpointArrivalRepository rideCheckpointArrivalRepository;
 
     public PersonalFinishedRideService(PersonalFinishedRideRepository personalFinishedRideRepository,
+                                       RideCheckpointArrivalRepository rideCheckpointArrivalRepository,  // ← ADD THIS
                                        StartedUtil startedUtil,
                                        StartedRideRepository startedRideRepository) {
         this.personalFinishedRideRepository = personalFinishedRideRepository;
+        this.rideCheckpointArrivalRepository = rideCheckpointArrivalRepository;  // ← ADD THIS
         this.startedUtil = startedUtil;
         this.startedRideRepository = startedRideRepository;
     }
 
     // ── Read ──────────────────────────────────────────────────────────────────
 
+
     @Transactional(readOnly = true)
     public PersonalFinishedRideDTO getPersonalSummaryDTO(String generatedRidesId) {
         PersonalFinishedRide personalFinishedRide = getPersonalSummary(generatedRidesId);
-        return new PersonalFinishedRideDTO(personalFinishedRide);
-    }
+        Rides ride = personalFinishedRide.getRide();
+        String riderUsername = personalFinishedRide.getRider().getUsername();
 
+        // Fetch checkpoint arrivals specific to this rider
+        List<CheckpointArrivalResponse> checkpointArrivals =
+                rideCheckpointArrivalRepository.findByRideGeneratedRidesId(generatedRidesId)
+                        .stream()
+                        .filter(arrival -> arrival.getRider().getUsername().equals(riderUsername))
+                        .map(CheckpointArrivalResponse::new)
+                        .toList();
+
+        // Convert StopPoint entities to StopPointDTO
+        List<StopPointDTO> stopPointDTOs = ride.getStopPoints() != null
+                ? ride.getStopPoints().stream()
+                  .map(sp -> new StopPointDTO(
+                          sp.getStopName(),
+                          sp.getStopLocation().getX(),
+                          sp.getStopLocation().getY()
+                  ))
+                  .toList()
+                : new ArrayList<>();
+
+        // Create DTO with all needed data
+        PersonalFinishedRideDTO dto = new PersonalFinishedRideDTO(
+                personalFinishedRide.getId(),
+                riderUsername,
+                generatedRidesId,
+                personalFinishedRide.getStartTime(),
+                personalFinishedRide.getEndTime(),
+                personalFinishedRide.getDurationMinutes(),
+                personalFinishedRide.getCreatedAt(),
+                checkpointArrivals,
+                stopPointDTOs,  //
+                ride.getStartingPointName(),
+                ride.getEndingPointName()
+        );
+
+        return dto;
+    }
     @Transactional(readOnly = true)
     public PersonalFinishedRide getPersonalSummary(String generatedRidesId) {
         Rider currentUser = startedUtil.authenticateAndGetInitiator();
