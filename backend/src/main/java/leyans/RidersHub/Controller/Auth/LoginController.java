@@ -1,6 +1,6 @@
-
 package leyans.RidersHub.Controller.Auth;
 
+import jakarta.servlet.http.HttpServletResponse;
 import leyans.RidersHub.Config.Security.ClientIpResolver;
 import leyans.RidersHub.DTO.Request.LoginRequest;
 import leyans.RidersHub.DTO.Request.RegisterRequest;
@@ -10,6 +10,7 @@ import leyans.RidersHub.ExceptionHandler.RateLimitExceededException;
 import leyans.RidersHub.Service.Auth.LoginService;
 import leyans.RidersHub.Service.Auth.TokenBlacklistService;
 import leyans.RidersHub.Service.UserDetailsManager;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -29,12 +30,17 @@ public class LoginController {
     private final LoginService loginService;
     private final TokenBlacklistService tokenBlacklistService;
     private final ClientIpResolver clientIpResolver;
-
     private final UserDetailsManager userDetailsManager;
+
+    // Injected from application.properties → baseurl=${tokenBaseUrl}
+    // Set tokenBaseUrl=http://192.168.1.51:8080 in your .env
+    @Value("${baseurl}")
+    private String baseUrl;
 
     public LoginController(LoginService loginService,
                            TokenBlacklistService tokenBlacklistService,
-                           ClientIpResolver clientIpResolver, UserDetailsManager userDetailsManager) {
+                           ClientIpResolver clientIpResolver,
+                           UserDetailsManager userDetailsManager) {
         this.loginService = loginService;
         this.tokenBlacklistService = tokenBlacklistService;
         this.clientIpResolver = clientIpResolver;
@@ -61,6 +67,74 @@ public class LoginController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(createResponse(500, "Login failed", e.getMessage()));
         }
+    }
+
+    /**
+     * Supabase redirects here after email confirmation.
+     *
+     * PKCE flow (default for new projects):
+     *   GET /riders/confirm?token_hash=xxx&type=signup
+     *
+     * Implicit flow (legacy / PKCE disabled):
+     *   GET /riders/confirm  (with #access_token=... in the fragment — handled by JS below)
+     *   GET /riders/confirm?access_token=xxx&type=signup  (after the JS redirect)
+     *
+     * We forward whichever token arrived to the app via a deep link:
+     *   ridershub://verify?token_hash=xxx&type=signup   ← PKCE
+     *   ridershub://verify?access_token=xxx&type=signup ← implicit
+     */
+    @GetMapping("/confirm")
+    public void confirmRedirect(
+            // PKCE — Supabase sends these two
+            @RequestParam(name = "token_hash",   required = false) String tokenHash,
+            // Implicit — either from Supabase directly or forwarded by the JS fragment handler below
+            @RequestParam(name = "access_token", required = false) String accessToken,
+            @RequestParam(name = "type",         required = false, defaultValue = "signup") String type,
+            HttpServletResponse response) throws Exception {
+
+        // ── Neither token present: fragment flow — serve a tiny JS page ──────
+        // Supabase puts the access_token in the URL hash (#access_token=...)
+        // which servers never see. The page reads it and redirects back here
+        // as a proper query param.
+        if ((tokenHash == null || tokenHash.isBlank()) &&
+                (accessToken == null || accessToken.isBlank())) {
+
+            response.setContentType("text/html");
+            response.getWriter().write("""
+                <html><body>
+                <script>
+                  var hash = window.location.hash.substring(1);
+                  var params = new URLSearchParams(hash);
+                  var at = params.get('access_token');
+                  if (at) {
+                    window.location.href = '/riders/confirm?access_token='
+                        + encodeURIComponent(at)
+                        + '&type=' + (params.get('type') || 'signup');
+                  } else {
+                    document.body.innerText = 'Verification link is invalid or expired.';
+                  }
+                </script>
+                </body></html>
+                """);
+            return;
+        }
+
+        // ── Build deep link based on whichever token we received ─────────────
+        String deepLink;
+        if (tokenHash != null && !tokenHash.isBlank()) {
+            // PKCE flow — forward token_hash + type
+            deepLink = "ridershub://verify"
+                    + "?token_hash=" + java.net.URLEncoder.encode(tokenHash, java.nio.charset.StandardCharsets.UTF_8)
+                    + "&type="       + java.net.URLEncoder.encode(type,      java.nio.charset.StandardCharsets.UTF_8);
+        } else {
+            // Implicit flow — forward access_token + type
+            deepLink = "ridershub://verify"
+                    + "?access_token=" + java.net.URLEncoder.encode(accessToken, java.nio.charset.StandardCharsets.UTF_8)
+                    + "&type="         + java.net.URLEncoder.encode(type,        java.nio.charset.StandardCharsets.UTF_8);
+        }
+
+        System.out.println("✅ [/confirm] Redirecting to deep link: " + deepLink.substring(0, Math.min(deepLink.length(), 80)));
+        response.sendRedirect(deepLink);
     }
 
     @PostMapping("/register")
@@ -100,7 +174,6 @@ public class LoginController {
         return Map.of("status", status, "error", error, "message", message);
     }
 
-
     @DeleteMapping("/account")
     public ResponseEntity<?> deleteAccount(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -115,6 +188,27 @@ public class LoginController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("status", 500, "error", "Server error", "message", "An unexpected error occurred."));
+        }
+    }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<?> verifyEmail(
+            @RequestParam(required = false) String accessToken,
+            @RequestParam(name = "token_hash", required = false) String tokenHash,
+            @RequestParam(required = false, defaultValue = "signup") String type,
+            HttpServletRequest request) {
+        try {
+            if (accessToken == null && tokenHash == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(createResponse(400, "Verification failed",
+                                "No verification token provided."));
+            }
+            String clientIp = clientIpResolver.getClientIp(request);
+            LoginResponse response = loginService.verifyEmail(accessToken, tokenHash, type, clientIp);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(createResponse(400, "Verification failed", e.getMessage()));
         }
     }
 }

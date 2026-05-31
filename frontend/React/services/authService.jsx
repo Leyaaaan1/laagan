@@ -1,12 +1,7 @@
 import {API_BASE_URL} from './Apiclient';
 import {AccessToken, LoginManager} from 'react-native-fbsdk-next';
 import {GoogleSignin} from '@react-native-google-signin/google-signin';
-// ─────────────────────────────────────────────────────────────────────────────
-// safeJson
-//
-// Safely parses a fetch Response body as JSON without throwing.
-// Returns null if the body is empty or malformed.
-// ─────────────────────────────────────────────────────────────────────────────
+
 const safeJson = async response => {
   try {
     const text = await response.text();
@@ -17,19 +12,6 @@ const safeJson = async response => {
 };
 
 export const authService = {
-  // ───────────────────────────────────────────────────────────────────────────
-  // login
-  //
-  // CHANGED: sends `email` instead of `username` in the request body.
-  // The backend LoginRequest now expects an `email` field.
-  //
-  // CHANGED: response now includes `username` (the in-app display name
-  // auto-generated or set during registration). We return it so AuthContext
-  // can store it — the user never typed it, so we can't derive it locally.
-  //
-  // Was:  { username, password }  →  { accessToken, refreshToken }
-  // Now:  { email, password }     →  { accessToken, refreshToken, username }
-  // ───────────────────────────────────────────────────────────────────────────
   login: async (email, password) => {
     try {
       const response = await fetch(`${API_BASE_URL}/riders/login`, {
@@ -48,7 +30,7 @@ export const authService = {
         data: {
           accessToken: data.accessToken,
           refreshToken: data.refreshToken,
-          username: data.username, // in-app display name returned by server
+          username: data.username,
         },
       };
     } catch (err) {
@@ -57,19 +39,9 @@ export const authService = {
     }
   },
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // register
-  //
-  // CHANGED: sends `email` + `password` only. No `username` in the body.
-  // The backend auto-generates a username from the email local-part and stores
-  // it on the Rider. The generated username is returned in the response.
-  //
-  // Example: email "juandelacruz@gmail.com" → username "juandelacruz"
-  //          (with a numeric suffix if taken: "juandelacruz_2")
-  //
-  // Was:  { username, password }  →  { accessToken, refreshToken }
-  // Now:  { email, password }     →  { accessToken, refreshToken, username }
-  // ───────────────────────────────────────────────────────────────────────────
+  // FIX: Backend returns {null, null, null} on successful registration —
+  // it just triggers Supabase email and waits. We must signal pendingVerification
+  // so AuthScreen shows PendingVerificationScreen instead of trying to log in.
   register: async (email, password) => {
     try {
       const response = await fetch(`${API_BASE_URL}/riders/register`, {
@@ -83,13 +55,10 @@ export const authService = {
         console.error('❌ Register failed:', response.status, message);
         return {success: false, error: message};
       }
+      // Backend returns nulls — registration started, email verification pending
       return {
         success: true,
-        data: {
-          accessToken: data.accessToken,
-          refreshToken: data.refreshToken,
-          username: data.username, // auto-generated display name from server
-        },
+        pendingVerification: true, // ← always true for email/password register
       };
     } catch (err) {
       console.error('❌ Register network error:', err);
@@ -97,6 +66,60 @@ export const authService = {
     }
   },
 
+
+
+    verifyEmail: async (accessToken, tokenHash, type = 'signup') => {
+      try {
+        let url;
+
+        if (tokenHash) {
+          // PKCE flow — newer Supabase (no toggle available)
+          console.log('🔍 [verifyEmail] Using token_hash flow');
+          url = `${API_BASE_URL}/riders/verify-email?token_hash=${encodeURIComponent(tokenHash)}&type=${type}`;
+        } else if (accessToken) {
+          // Implicit flow — older Supabase or PKCE disabled
+          console.log('🔍 [verifyEmail] Using access_token flow');
+          url = `${API_BASE_URL}/riders/verify-email?accessToken=${encodeURIComponent(accessToken)}`;
+        } else {
+          return {success: false, error: 'No verification token provided'};
+        }
+
+        console.log('🔍 [verifyEmail] Calling:', url.substring(0, 80) + '...');
+
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {'Content-Type': 'application/json'},
+        });
+
+        const data = await safeJson(response);
+        console.log('🔍 [verifyEmail] Response status:', response.status);
+        console.log('🔍 [verifyEmail] Response body:', JSON.stringify(data));
+
+        if (!response.ok) {
+          return {success: false, error: data?.message || `HTTP ${response.status}`};
+        }
+
+        const accessTokenValue = data?.accessToken || data?.access_token;
+        const refreshTokenValue = data?.refreshToken || data?.refresh_token;
+        const usernameValue = data?.username;
+
+        if (!accessTokenValue || !refreshTokenValue) {
+          return {success: false, error: 'Server returned incomplete response'};
+        }
+
+        return {
+          success: true,
+          data: {
+            accessToken: accessTokenValue,
+            refreshToken: refreshTokenValue,
+            username: usernameValue,
+          },
+        };
+      } catch (err) {
+        console.error('❌ [verifyEmail] Network error:', err.message);
+        return {success: false, error: err.message || 'Network error'};
+      }
+    },
 
   deleteAccount: async token => {
     try {
@@ -120,12 +143,6 @@ export const authService = {
     }
   },
 
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // logout
-  //
-  // Unchanged — logout is token-based, not tied to email or username.
-  // ───────────────────────────────────────────────────────────────────────────
   logout: async token => {
     try {
       await fetch(`${API_BASE_URL}/riders/logout`, {
@@ -143,16 +160,8 @@ export const authService = {
   },
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// loginWithFacebook
-//
-// Unchanged in logic — the backend already returns `username` (display name)
-// from FacebookLoginController, and AuthScreen already reads it from
-// result.data.username. No changes needed here.
-// ─────────────────────────────────────────────────────────────────────────────
 export const loginWithFacebook = async () => {
   try {
-    // 1. Open native Facebook login dialog
     const loginResult = await LoginManager.logInWithPermissions([
       'public_profile',
       'email',
@@ -162,15 +171,11 @@ export const loginWithFacebook = async () => {
       return {success: false, error: 'Facebook login cancelled'};
     }
 
-    // 2. Get the Facebook access token from the SDK
     const tokenData = await AccessToken.getCurrentAccessToken();
     if (!tokenData?.accessToken) {
       return {success: false, error: 'Failed to get Facebook token'};
     }
 
-    // 3. Send Facebook token to the Spring backend.
-    //    Backend verifies with Facebook Graph API and returns our own JWT tokens
-    //    plus the rider's display username.
     const response = await fetch(`${API_BASE_URL}/riders/facebook-login`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -189,7 +194,7 @@ export const loginWithFacebook = async () => {
       data: {
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
-        username: data.username, // display name derived from FB name
+        username: data.username,
       },
     };
   } catch (err) {
@@ -198,24 +203,14 @@ export const loginWithFacebook = async () => {
   }
 };
 
-
-
-
-
-
 export const loginWithGoogle = async () => {
   try {
     console.log('📱 [GoogleSignIn] Starting...');
-
     const hasPlayServices = await GoogleSignin.hasPlayServices();
     console.log('📱 [GoogleSignIn] Play Services:', hasPlayServices);
-
-    console.log('📱 [GoogleSignIn] Calling signIn()...');
     const userInfo = await GoogleSignin.signIn();
-    console.log('📱 [GoogleSignIn] Success:', userInfo);
     const idToken = userInfo.data?.idToken;
     if (!idToken) {
-      console.log('❌ [GoogleSignIn] No ID token received');
       return {success: false, error: 'No ID token from Google'};
     }
 
@@ -232,14 +227,18 @@ export const loginWithGoogle = async () => {
 
     return {
       success: true,
-      data: {accessToken: data.accessToken, refreshToken: data.refreshToken, username: data.username},
+      data: {
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        username: data.username,
+      },
     };
   } catch (err) {
     console.error('❌ [GoogleSignIn] Error:', err.message);
-    console.error('❌ [GoogleSignIn] Code:', err.code);
-    console.error('❌ [GoogleSignIn] Full error:', JSON.stringify(err));
     return {success: false, error: err.message || 'Google login failed'};
   }
 };
+
 export const loginUser = authService.login;
 export const registerUser = authService.register;
+export const verifyEmail = authService.verifyEmail;

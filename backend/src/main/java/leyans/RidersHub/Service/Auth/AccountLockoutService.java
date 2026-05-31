@@ -2,9 +2,7 @@
 package leyans.RidersHub.Service.Auth;
 
 import leyans.RidersHub.ExceptionHandler.RateLimitExceededException;
-import leyans.RidersHub.ExceptionHandler.RedisUnavailableException;
 import leyans.RidersHub.Utility.AppLogger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -81,7 +79,10 @@ public class AccountLockoutService {
             attempts++;
 
             // Set with 10-minute TTL
-            redisTemplate.opsForValue().set(key, attempts, 10, TimeUnit.MINUTES);
+//            redisTemplate.opsForValue().set(key, attempts, 10, TimeUnit.MINUTES);
+            //temporary dev
+            redisTemplate.opsForValue().set(key, attempts, 30, TimeUnit.SECONDS);
+
 
             log.warn(" Register failed for IP: {} | Attempt #{}", ipAddress, attempts);
         } catch (Exception e) {

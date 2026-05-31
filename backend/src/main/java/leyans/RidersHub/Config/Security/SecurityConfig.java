@@ -40,6 +40,8 @@ public class SecurityConfig {
                                 "/riders/login",
                                 "/riders/register",
                                 "/riders/refresh",
+                                "/riders/verify-email",
+                                "/riders/confirm",
                                 "/riders/facebook-login",  // ← new SDK endpoint, no OAuth2 flow
                                 "/riders/google-login"
                         ).permitAll()

@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/backend/RidersHub.iml" filepath="$PROJECT_DIR$/backend/RidersHub.iml" />
       <module fileurl="file://$PROJECT_DIR$/frontend/ui.iml" filepath="$PROJECT_DIR$/frontend/ui.iml" />
     </modules>
   </component>

@@ -16,8 +16,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Service
 public class LoginService {
@@ -36,6 +36,7 @@ public class LoginService {
     private final AccountLockoutService accountLockoutService;
     private final RiderUtil riderUtil;
     private final RiderRepository riderRepository;
+    private final SupabaseAuthService supabaseAuthService;
 
 
     public LoginService(
@@ -43,7 +44,7 @@ public class LoginService {
             JwtUtil jwtUtil,
             RiderService riderService,
             RefreshTokenService refreshTokenService,
-            AccountLockoutService accountLockoutService, RiderUtil riderUtil, RiderRepository riderRepository) {
+            AccountLockoutService accountLockoutService, RiderUtil riderUtil, RiderRepository riderRepository, SupabaseAuthService supabaseAuthService) {
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.riderService = riderService;
@@ -51,6 +52,7 @@ public class LoginService {
         this.accountLockoutService = accountLockoutService;
         this.riderUtil = riderUtil;
         this.riderRepository = riderRepository;
+        this.supabaseAuthService = supabaseAuthService;
     }
 
     /**
@@ -75,7 +77,11 @@ public class LoginService {
                     new UsernamePasswordAuthenticationToken(email, loginRequest.getPassword()));
 
             Rider rider = riderUtil.findByAuthEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Rider not found for: " + email));
+                    .orElseThrow(() -> {
+                        log.warn("⚠️ Login attempted for email with no Rider record: {}", email);
+                        return new BadCredentialsException(
+                                "Account not found. Please verify your email first.");
+                    });
 
             String accessToken  = jwtUtil.generateToken(rider.getUsername());
             String refreshToken = refreshTokenService.createRefreshToken(rider.getUsername());
@@ -101,16 +107,6 @@ public class LoginService {
      */
 
 
-    //Register was limited to 50, but it is subject to change
-
-    //command for RLS
-    //ALTER TABLE rider ENABLE ROW LEVEL SECURITY;
-    //
-    //CREATE POLICY "Only enabled rider can access data"
-    //ON rider
-    //FOR SELECT
-    //USING (enabled = true);
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public RegisterResponse register(RegisterRequest registerRequest, String clientIp) {
         String email    = registerRequest.getEmail();
         String password = registerRequest.getPassword();
@@ -124,34 +120,19 @@ public class LoginService {
 
         try {
             int attempts = accountLockoutService.getRegisterAttempts(clientIp);
-            if (attempts >= 3) {
-                log.warn("⚠️ Registration limit exceeded for IP: {}", clientIp);
+
+            // 3 is the original 999 is temporary for dev
+            if (attempts >= 999) {
                 throw new RuntimeException("Registration limit exceeded. Please try again later.");
             }
 
-            // Derive display username from email local-part
-            // "juandelacruz@gmail.com" → "juandelacruz"
-            String localPart = email.contains("@")
-                    ? email.substring(0, email.indexOf('@'))
-                      .toLowerCase()
-                      .replaceAll("[^a-z0-9_]", "_")
-                    : email.toLowerCase();
-            String displayUsername = ensureUniqueUsername(localPart);
+            // ── NEW: trigger Supabase email verification ──────────────
+            supabaseAuthService.signUp(email, password);
+            // ── Supabase sends the verify email. Stop here. ───────────
+            // Don't create Rider yet — wait until email is confirmed.
 
-            // ✅ Pass parameters in correct order: displayUsername, email, password, clientIp, lockoutService
-            String registeredUsername = riderService.registerRiderWithValidation(
-                    displayUsername,
-                    email,
-                    password,
-                    clientIp,
-                    accountLockoutService
-            );
-
-            String accessToken  = jwtUtil.generateToken(registeredUsername);
-            String refreshToken = refreshTokenService.createRefreshToken(registeredUsername);
-
-            log.info("✅ Registered: {} (email: {}) from IP: {}", registeredUsername, email, clientIp);
-            return new RegisterResponse(accessToken, refreshToken, registeredUsername);
+            return new RegisterResponse(null, null, null);
+            // Tell client to check their email
 
         } catch (RuntimeException e) {
             accountLockoutService.recordFailedRegisterAttempt(clientIp);
@@ -159,6 +140,74 @@ public class LoginService {
             throw e;
         }
     }
+
+    public LoginResponse verifyEmail(String accessToken, String tokenHash,
+                                     String type, String clientIp) {
+        String email;
+        try {
+            if (tokenHash != null && !tokenHash.isBlank()) {
+                // PKCE flow — newer Supabase projects (no toggle)
+                log.info("🔍 [verifyEmail] token_hash flow, type: {}", type);
+                email = supabaseAuthService.getEmailFromTokenHash(tokenHash, type);
+            } else if (accessToken != null && !accessToken.isBlank()) {
+                // Implicit flow — older Supabase or PKCE disabled
+                log.info("🔍 [verifyEmail] access_token flow");
+                email = supabaseAuthService.getEmailFromToken(accessToken);
+            } else {
+                throw new RuntimeException("No verification token provided.");
+            }
+        } catch (Exception e) {
+            log.error("❌ [verifyEmail] Token decode failed: {}", e.getMessage());
+            throw new RuntimeException("Invalid or expired verification token. Please register again.");
+        }
+
+        if (email == null || email.isBlank()) {
+            throw new RuntimeException("Verification token contained no email address.");
+        }
+
+        log.info("🔍 [verifyEmail] Verified email: {}", email);
+
+        // ── Idempotent: Rider already exists (link tapped twice) ──
+        Optional<Rider> existingRider = riderUtil.findByAuthEmail(email);
+        if (existingRider.isPresent()) {
+            Rider rider = existingRider.get();
+            log.info("✅ [verifyEmail] Rider already exists — issuing tokens for: {}", email);
+            String existingAccess  = jwtUtil.generateToken(rider.getUsername());
+            String existingRefresh = refreshTokenService.createRefreshToken(rider.getUsername());
+            return new LoginResponse(existingAccess, existingRefresh, rider.getUsername());
+        }
+
+        // ── First-time: create the Rider ──
+        String localPart = email.contains("@")
+                ? email.substring(0, email.indexOf('@'))
+                  .toLowerCase()
+                  .replaceAll("[^a-z0-9_]", "_")
+                : email.toLowerCase();
+
+        String displayUsername = ensureUniqueUsername(localPart);
+        log.info("🆕 [verifyEmail] Creating Rider — username: {}, email: {}", displayUsername, email);
+
+        String registeredUsername;
+        try {
+            registeredUsername = riderService.registerRiderWithValidation(
+                    displayUsername, email, null, clientIp, accountLockoutService);
+        } catch (Exception e) {
+            log.error("❌ [verifyEmail] registerRiderWithValidation failed: {}", e.getMessage(), e);
+            throw new RuntimeException("Account creation failed: " + e.getMessage());
+        }
+
+        String myAccessToken  = jwtUtil.generateToken(registeredUsername);
+        String myRefreshToken = refreshTokenService.createRefreshToken(registeredUsername);
+
+        log.info("✅ [verifyEmail] Rider created — username: {}", registeredUsername);
+        return new LoginResponse(myAccessToken, myRefreshToken, registeredUsername);
+    }
+
+
+
+
+
+
 
     // ADD this private helper at the bottom of the class (same logic as FacebookTokenVerifier)
 // Later: extract both copies into a shared UsernameGenerator utility

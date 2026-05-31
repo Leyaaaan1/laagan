@@ -14,6 +14,7 @@ public class RegisterResponse {
         this.tokenType = "Bearer";
     }
 
+    
     public String getAccessToken() {
         return accessToken;
     }

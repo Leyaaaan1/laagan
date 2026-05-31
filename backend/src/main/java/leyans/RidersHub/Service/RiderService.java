@@ -61,7 +61,11 @@ public class RiderService {
         if (riderRepository.findByUsername(username).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
-        String encodedPassword = passwordEncoder.encode(password);
+
+        // FIX: Handle null password for Supabase-only users (email verification flow)
+        // For Supabase users, password is null since auth is handled by Supabase
+        String encodedPassword = password != null ? passwordEncoder.encode(password) : null;
+
         Rider newRider = new Rider();
         newRider.setUsername(username);
         newRider.setPassword(encodedPassword);
