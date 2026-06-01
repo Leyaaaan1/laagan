@@ -40,6 +40,9 @@ public class Rider {
     @Column(name = "about", length = 500, nullable = true)
     private String about;
 
+    @Column(name = "email_verified", nullable = false)
+    private Boolean emailVerified = false;
+
     public Rider(Integer id, String authEmail, String username, String password, Boolean enabled, List<RiderType> riderTypes, String about) {
         this.id = id;
         this.authEmail = authEmail;
@@ -48,6 +51,14 @@ public class Rider {
         this.enabled = enabled;
         this.riderTypes = riderTypes;
         this.about = about;
+    }
+
+    public Boolean getEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(Boolean emailVerified) {
+        this.emailVerified = emailVerified;
     }
 
     public String getAuthEmail() {

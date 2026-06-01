@@ -41,7 +41,11 @@ public class SecurityConfig {
                                 "/riders/register",
                                 "/riders/refresh",
                                 "/riders/facebook-login",  // ← new SDK endpoint, no OAuth2 flow
-                                "/riders/google-login"
+                                "/riders/google-login",
+                                "/riders/verify-email",
+                                "/riders/resend-verification",
+                                "/riders/check-email-verified"
+
                         ).permitAll()
                         .requestMatchers(
                                 "/status/**",

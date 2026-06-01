@@ -13,6 +13,8 @@ import {useAuth} from '../context/AuthContext';
 import LegalScreen from '../screens/LegalScreen';
 import FinishedRideView from '../pages/finishedRide/FinishedRideView';
 import PersonalSummaryView from '../pages/finishedRide/PersonalSummaryView';
+import EmailVerificationScreen from '../screens/EmailVerificationScreen';
+import VerifyEmailLinkScreen from '../screens/VerifyEmailLinkScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -57,7 +59,23 @@ const MainNavigator = ({navigationRef}) => {
       <Stack.Screen name="RiderProfile" component={RiderProfile} />
       <Stack.Screen name="LegalScreen" component={LegalScreen} />
       <Stack.Screen name="FinishedRideView" component={FinishedRideView} />
-      <Stack.Screen name="PersonalSummaryView" component={PersonalSummaryView} />
+      <Stack.Screen
+        name="PersonalSummaryView"
+        component={PersonalSummaryView}
+      />
+      <Stack.Screen
+        name="EmailVerification"
+        component={EmailVerificationScreen}
+        options={{
+          title: 'Verify Email',
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="VerifyEmailLink"
+        component={VerifyEmailLinkScreen}
+        options={{headerShown: false}}
+      />
     </Stack.Navigator>
   );
 };

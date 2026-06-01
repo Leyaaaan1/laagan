@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
@@ -19,7 +20,7 @@ import LoadingScreen from '../frontend/React/commons/LoadingScreen';
 import LegalScreen from '../frontend/React/screens/LegalScreen';
 import FinishedRideView from './React/pages/finishedRide/FinishedRideView';
 import PersonalSummaryView from './React/pages/finishedRide/PersonalSummaryView';
-
+import {useDeepLinking} from './React/utilities/deepLinking';
 
 interface AuthContextValue {
   token: string | null;
@@ -47,12 +48,16 @@ const AppStack = () => (
     <Stack.Screen name="LegalScreen" component={LegalScreen} />
     <Stack.Screen name="FinishedRideView" component={FinishedRideView} />
     <Stack.Screen name="PersonalSummaryView" component={PersonalSummaryView} />
-
   </Stack.Navigator>
 );
 
-const AppContent = () => {
+// ← CREATE NEW COMPONENT INSIDE NavigationContainer
+const NavigationContent = () => {
   const auth = useAuth() as unknown as AuthContextValue;
+
+  // ← MOVE useDeepLinking HERE (inside NavigationContainer)
+  useDeepLinking();
+
   setAuthContextRef(auth);
 
   GoogleSignin.configure({
@@ -64,17 +69,16 @@ const AppContent = () => {
     return <LoadingScreen />;
   }
 
-  return (
-    <NavigationContainer>
-      {auth.token ? <AppStack /> : <AuthStack />}
-    </NavigationContainer>
-  );
+  return auth.token ? <AppStack /> : <AuthStack />;
 };
+
 export default function App() {
   return (
     <AuthProvider>
       <RideProvider>
-        <AppContent />
+        <NavigationContainer>
+          <NavigationContent />
+        </NavigationContainer>
       </RideProvider>
     </AuthProvider>
   );

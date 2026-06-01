@@ -74,6 +74,19 @@ CREATE TABLE public.ride_status_entries (
                                             note                TEXT
 );
 
+CREATE TABLE IF NOT EXISTS email_verification_token (
+                                                        id SERIAL PRIMARY KEY,
+                                                        email VARCHAR(254) NOT NULL UNIQUE,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    expiry_time TIMESTAMP NOT NULL,
+    verified BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+
+CREATE INDEX idx_email_verification_token_email ON email_verification_token(email);
+CREATE INDEX idx_email_verification_token_token ON email_verification_token(token);
+
 CREATE INDEX idx_rse_generated_rides_id  ON public.ride_status_entries(generated_rides_id);
 CREATE INDEX idx_rse_rider_username      ON public.ride_status_entries(rider_username);
 CREATE INDEX idx_rse_status              ON public.ride_status_entries(status);

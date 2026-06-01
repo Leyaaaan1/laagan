@@ -42,17 +42,20 @@ public class JwtFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
 
         // Public endpoints — skip auth entirely
+
         if (path.equals("/riders/login")
                 || path.equals("/riders/register")
                 || path.equals("/riders/refresh")
+                || path.equals("/riders/verify-email")
+                || path.equals("/riders/resend-verification")
+                || path.equals("/riders/check-email-verified")
                 || path.startsWith("/facebook/login")
                 || path.equals("/riders/google-login")
                 || path.startsWith("/oauth2/")
-                || path.startsWith("/login/oauth2/")) {   // ← make sure this is here
+                || path.startsWith("/login/oauth2/")) {
             filterChain.doFilter(request, response);
             return;
-        }
-        String header = request.getHeader("Authorization");
+        }        String header = request.getHeader("Authorization");
 
         if (header == null || header.trim().isEmpty()) {
             logger.debug("No Authorization header present");

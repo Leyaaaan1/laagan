@@ -35,16 +35,7 @@ import {createMemoCompare} from '../utilities/propsComparison';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ValidationChecklist
-//
-// Unchanged in structure. USERNAME_RULES swapped for EMAIL_RULES — make sure
-// your Authvalidation.js exports EMAIL_RULES. Minimum rules to validate:
-//   - Not empty
-//   - Contains @
-//   - Has a domain part (e.g. ".com")
-//   - Max length 254 (RFC 5321)
 // ─────────────────────────────────────────────────────────────────────────────
-
-// ✅ WRAP THIS TOO
 const ValidationChecklist = React.memo(({rules, value, touched, isLogin}) => {
   if (isLogin || !touched || value.length === 0) return null;
 
@@ -57,13 +48,13 @@ const ValidationChecklist = React.memo(({rules, value, touched, isLogin}) => {
         const dotStyle = isPending
           ? authStyle.dotPending
           : rule.passed
-            ? authStyle.dotPassed
-            : authStyle.dotFailed;
+          ? authStyle.dotPassed
+          : authStyle.dotFailed;
         const labelStyle = isPending
           ? authStyle.ruleTextPending
           : rule.passed
-            ? authStyle.ruleTextPassed
-            : authStyle.ruleTextFailed;
+          ? authStyle.ruleTextPassed
+          : authStyle.ruleTextFailed;
 
         return (
           <View key={rule.key} style={authStyle.ruleRow}>
@@ -84,13 +75,6 @@ const getInputBorderStyle = (rules, value, touched, isLogin) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AuthForm
-//
-// CHANGED: `username` state/prop renamed to `email` throughout.
-// The TextInput now uses keyboardType="email-address", autoCapitalize="none",
-// and placeholder "Email" instead of "Username".
-// USERNAME_RULES replaced with EMAIL_RULES for validation.
-//
-// The confirm-password field and all password logic are unchanged.
 // ─────────────────────────────────────────────────────────────────────────────
 const AuthForm = React.memo(
   ({
@@ -248,6 +232,7 @@ const AuthForm = React.memo(
           </Text>
         </TouchableOpacity>
       )}
+
       {isLogin && (
         <TouchableOpacity
           style={[
@@ -272,9 +257,6 @@ const AuthForm = React.memo(
       </TouchableOpacity>
     </KeyboardAvoidingView>
   ),
-  // Custom comparison function
-  // Ignore React function references (they're always new objects)
-  // But DO compare data like email, password, loading
   createMemoCompare([
     'setEmail',
     'setPassword',
@@ -289,18 +271,8 @@ const AuthForm = React.memo(
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AuthScreen
-//
-// CHANGED:
-//   - `username` state renamed to `email`
-//   - touched.username renamed to touched.email
-//   - handleAuth passes email to loginUser/registerUser instead of username
-//   - saveAuth receives username from server response (data.username),
-//     not from what the user typed — because users no longer type a username.
-//     For login:    server returns the stored Rider.username
-//     For register: server returns the auto-generated Rider.username
-//   - toggleMode resets email instead of username
 // ─────────────────────────────────────────────────────────────────────────────
-const AuthScreen = () => {
+const AuthScreen = ({navigation}) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -318,9 +290,6 @@ const AuthScreen = () => {
   const handleAuth = useCallback(async () => {
     setTouched({email: true, password: true, confirmPassword: true});
 
-    // isFormValid needs to know we're validating email now, not username.
-    // Update your Authvalidation.js isFormValid() to accept email instead —
-    // or pass the field directly. See note at bottom of this file.
     if (!isFormValid(email, password, confirmPassword, isLogin)) {
       return;
     }
@@ -335,20 +304,16 @@ const AuthScreen = () => {
         const {accessToken, refreshToken, username} = result.data;
 
         if (accessToken && refreshToken) {
-          // username comes from the server — either the stored display name
-          // (login) or the freshly auto-generated one (register).
-          // We no longer use email.trim() as the stored identity.
           await saveAuth(accessToken, refreshToken, username ?? email.trim());
         } else if (!isLogin) {
-          // Server registered but didn't issue tokens (no auto-login path).
-          setIsLogin(true);
-          setPassword('');
-          setConfirmPassword('');
-          setTouched({email: false, password: false, confirmPassword: false});
+          // 📧 Registration successful but email not verified
           Alert.alert(
-            'Account Created',
-            'You can now log in with your new account.',
+            '✅ Account Created',
+            'Check your email to verify your account.',
+            [{text: 'OK'}],
           );
+          // ✅ Navigate to email verification screen
+          navigation.replace('EmailVerification', {email: email.trim()});
         }
       } else {
         const errorMessage =
@@ -364,8 +329,7 @@ const AuthScreen = () => {
     } finally {
       setLoading(false);
     }
-  }, [email, password, confirmPassword, isLogin]);
-
+  }, [email, password, confirmPassword, isLogin, saveAuth, navigation]);
 
   const handleGoogleLogin = useCallback(async () => {
     setLoading(true);
@@ -382,8 +346,7 @@ const AuthScreen = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
-
+  }, [saveAuth]);
 
   const handleFacebookLogin = useCallback(async () => {
     setLoading(true);
@@ -404,7 +367,7 @@ const AuthScreen = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [saveAuth]);
 
   const toggleMode = useCallback(() => {
     setIsLogin(prev => !prev);
