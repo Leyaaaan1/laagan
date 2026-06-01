@@ -19,6 +19,7 @@ CREATE TABLE public.rider (
                               auth_email VARCHAR(255) UNIQUE,
                               password VARCHAR(255),
                               enabled BOOLEAN NOT NULL DEFAULT true,
+                              email_verified BOOLEAN NOT NULL DEFAULT false,
                               about VARCHAR(500),
                               rider_type INTEGER REFERENCES public.rider_type(rider_type_id) ON DELETE SET NULL
 );

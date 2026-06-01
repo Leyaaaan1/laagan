@@ -1,3 +1,4 @@
+
 package leyans.RidersHub.Service.Auth;
 
 import leyans.RidersHub.Config.JWT.JwtUtil;
@@ -36,14 +37,17 @@ public class LoginService {
     private final AccountLockoutService accountLockoutService;
     private final RiderUtil riderUtil;
     private final RiderRepository riderRepository;
-
+    private final EmailVerificationService emailVerificationService;
 
     public LoginService(
             AuthenticationManager authenticationManager,
             JwtUtil jwtUtil,
             RiderService riderService,
             RefreshTokenService refreshTokenService,
-            AccountLockoutService accountLockoutService, RiderUtil riderUtil, RiderRepository riderRepository) {
+            AccountLockoutService accountLockoutService,
+            RiderUtil riderUtil,
+            RiderRepository riderRepository,
+            EmailVerificationService emailVerificationService) {
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.riderService = riderService;
@@ -51,11 +55,10 @@ public class LoginService {
         this.accountLockoutService = accountLockoutService;
         this.riderUtil = riderUtil;
         this.riderRepository = riderRepository;
+        this.emailVerificationService = emailVerificationService;
     }
 
-    /**
-     * Authenticate user and generate tokens
-     */
+    /**     * Authenticate user and generate tokens     */
     public LoginResponse login(LoginRequest loginRequest, String clientIp) {
         String email = loginRequest.getEmail();
         log.info("🔐 Login attempt from IP: {} for email: {}", clientIp, email);
@@ -77,45 +80,40 @@ public class LoginService {
             Rider rider = riderUtil.findByAuthEmail(email)
                     .orElseThrow(() -> new RuntimeException("Rider not found for: " + email));
 
-            String accessToken  = jwtUtil.generateToken(rider.getUsername());
+            // ✅ CHECK IF EMAIL IS VERIFIED
+            if (!rider.getEmailVerified()) {
+                log.warn("📧 Email not verified for: {}", email);
+                throw new IllegalStateException(
+                        "Email not verified. Check your inbox for verification link.");
+            }
+
+            String accessToken = jwtUtil.generateToken(rider.getUsername());
             String refreshToken = refreshTokenService.createRefreshToken(rider.getUsername());
 
             // Reset both counters on success
             accountLockoutService.resetFailedAttempts(email);
             accountLockoutService.resetIpLoginAttempts(clientIp);
 
-            log.info("✅ Login successful: {} ({})", rider.getUsername(), email);
+            log.info(" Login successful: {} ({})", rider.getUsername(), email);
             return new LoginResponse(accessToken, refreshToken, rider.getUsername());
 
         } catch (BadCredentialsException e) {
             accountLockoutService.recordFailedLoginAttempt(email);
             int remaining = accountLockoutService.getRemainingAttempts(email);
-            log.warn("❌ Login failed for: {} | {} attempts remaining", email, remaining);
+            log.warn(" Login failed for: {} | {} attempts remaining", email, remaining);
             throw new BadCredentialsException(
                     "Invalid email or password. " + remaining + " attempts remaining.");
         }
     }
 
-    /**
-     * Register new user and generate tokens
-     */
 
-
-    //Register was limited to 50, but it is subject to change
-
-    //command for RLS
-    //ALTER TABLE rider ENABLE ROW LEVEL SECURITY;
-    //
-    //CREATE POLICY "Only enabled rider can access data"
-    //ON rider
-    //FOR SELECT
-    //USING (enabled = true);
+    /** * Register new user and generate tokens */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public RegisterResponse register(RegisterRequest registerRequest, String clientIp) {
-        String email    = registerRequest.getEmail();
+        String email = registerRequest.getEmail();
         String password = registerRequest.getPassword();
 
-        log.info("📝 Register attempt from IP: {} for email: {}", clientIp, email);
+        log.info(" Register attempt from IP: {} for email: {}", clientIp, email);
 
         long totalUsers = riderRepository.count();
         if (totalUsers >= maxUsers) {
@@ -125,7 +123,7 @@ public class LoginService {
         try {
             int attempts = accountLockoutService.getRegisterAttempts(clientIp);
             if (attempts >= 3) {
-                log.warn("⚠️ Registration limit exceeded for IP: {}", clientIp);
+                log.warn("⚠ Registration limit exceeded for IP: {}", clientIp);
                 throw new RuntimeException("Registration limit exceeded. Please try again later.");
             }
 
@@ -138,7 +136,6 @@ public class LoginService {
                     : email.toLowerCase();
             String displayUsername = ensureUniqueUsername(localPart);
 
-            // ✅ Pass parameters in correct order: displayUsername, email, password, clientIp, lockoutService
             String registeredUsername = riderService.registerRiderWithValidation(
                     displayUsername,
                     email,
@@ -147,21 +144,20 @@ public class LoginService {
                     accountLockoutService
             );
 
-            String accessToken  = jwtUtil.generateToken(registeredUsername);
-            String refreshToken = refreshTokenService.createRefreshToken(registeredUsername);
+            // ✅ Send verification email
+            emailVerificationService.sendVerificationToken(email);
+            log.info(" Verification email sent to: {}", email);
 
-            log.info("✅ Registered: {} (email: {}) from IP: {}", registeredUsername, email, clientIp);
-            return new RegisterResponse(accessToken, refreshToken, registeredUsername);
+            log.info(" Registered (awaiting email verification): {} (email: {})", registeredUsername, email);
+            return new RegisterResponse(null, null, registeredUsername);
 
         } catch (RuntimeException e) {
             accountLockoutService.recordFailedRegisterAttempt(clientIp);
-            log.warn("❌ Registration failed from IP: {} | {}", clientIp, e.getMessage());
+            log.warn(" Registration failed from IP: {} | {}", clientIp, e.getMessage());
             throw e;
         }
     }
-
-    // ADD this private helper at the bottom of the class (same logic as FacebookTokenVerifier)
-// Later: extract both copies into a shared UsernameGenerator utility
+    /**     * Ensure username is unique by appending suffix if needed     */
     private String ensureUniqueUsername(String base) {
         String candidate = base;
         int suffix = 2;
@@ -171,9 +167,7 @@ public class LoginService {
         return candidate;
     }
 
-    /**
-     * Logout user by blacklisting token
-     */
+    /**     * Logout user by blacklisting token     */
     public void logout(String token, TokenBlacklistService tokenBlacklistService) {
         try {
             String username = jwtUtil.getUsernameFromToken(token);
@@ -189,9 +183,9 @@ public class LoginService {
                 refreshTokenService.revokeAll(username);
             }
 
-            log.info("✅ User logged out: {}", username);
+            log.info(" User logged out: {}", username);
         } catch (Exception e) {
-            log.error("❌ Error during logout", e);
+            log.error(" Error during logout", e);
             throw new RuntimeException("Logout failed: " + e.getMessage());
         }
     }

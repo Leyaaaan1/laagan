@@ -98,6 +98,75 @@ export const authService = {
   },
 
 
+  verifyEmail: async (token) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/riders/verify-email?token=${token}`, {
+        method: 'GET',
+        headers: {'Content-Type': 'application/json'},
+      });
+      const data = await safeJson(response);
+      if (!response.ok) {
+        const message = data?.message || 'Email verification failed';
+        console.error('❌ Verification failed:', response.status, message);
+        return {success: false, error: message};
+      }
+      return {success: true, message: data?.message};
+    } catch (err) {
+      console.error('❌ Verification network error:', err);
+      return {success: false, error: err.message || 'Network error'};
+    }
+  },
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // resendVerificationEmail
+  //
+  // Resend verification email to user's email address
+  // ───────────────────────────────────────────────────────────────────────────
+  resendVerificationEmail: async (email) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/riders/resend-verification`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email}),
+      });
+      const data = await safeJson(response);
+      if (!response.ok) {
+        const message = data?.message || 'Failed to resend verification email';
+        console.error('❌ Resend failed:', response.status, message);
+        return {success: false, error: message};
+      }
+      return {success: true, message: data?.message};
+    } catch (err) {
+      console.error('❌ Resend network error:', err);
+      return {success: false, error: err.message || 'Network error'};
+    }
+  },
+
+
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // checkEmailVerified
+  //
+  // Check if an email has been verified
+  // ───────────────────────────────────────────────────────────────────────────
+  checkEmailVerified: async (email) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/riders/check-email-verified?email=${email}`, {
+        method: 'GET',
+        headers: {'Content-Type': 'application/json'},
+      });
+      const data = await safeJson(response);
+      if (!response.ok) {
+        return {success: false, verified: false};
+      }
+      return {success: true, verified: data?.verified};
+    } catch (err) {
+      console.error('❌ Check verification network error:', err);
+      return {success: false, verified: false};
+    }
+  },
+
+
   deleteAccount: async token => {
     try {
       const response = await fetch(`${API_BASE_URL}/riders/account`, {
@@ -198,6 +267,27 @@ export const loginWithFacebook = async () => {
   }
 };
 
+const verifyEmail = async token => {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/riders/verify-email?token=${token}`,
+      {
+        method: 'GET',
+        headers: {'Content-Type': 'application/json'},
+      },
+    );
+    const data = await safeJson(response);
+    if (!response.ok) {
+      const message = data?.message || 'Email verification failed';
+      console.error('❌ Verification failed:', response.status, message);
+      return {success: false, error: message};
+    }
+    return {success: true, message: data?.message};
+  } catch (err) {
+    console.error('❌ Verification network error:', err);
+    return {success: false, error: err.message || 'Network error'};
+  }
+};
 
 
 
@@ -243,3 +333,6 @@ export const loginWithGoogle = async () => {
 };
 export const loginUser = authService.login;
 export const registerUser = authService.register;
+export const verifyEmailToken = verifyEmail;
+export const resendVerificationEmail = resendVerificationEmail;
+export const checkEmailVerified = checkEmailVerified;
