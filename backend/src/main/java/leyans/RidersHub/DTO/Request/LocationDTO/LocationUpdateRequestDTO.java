@@ -20,14 +20,37 @@ public class LocationUpdateRequestDTO {
     private double distanceMeters;
 
     private String username;
+    private LocalDateTime timestamp;
+    private String riderStatus;
 
-    public LocationUpdateRequestDTO(Integer startedRideId, String username, double latitude, double longitude, String locationName, double distanceMeters, LocalDateTime timestamp) {
+    public LocationUpdateRequestDTO(Integer startedRideId, String username,
+                                    double latitude, double longitude,
+                                    String locationName, double distanceMeters,
+                                    LocalDateTime timestamp, String riderStatus) {
         this.startedRideId = startedRideId;
         this.username = username;
         this.latitude = latitude;
         this.longitude = longitude;
-        this.distanceMeters = distanceMeters;
         this.locationName = locationName;
+        this.distanceMeters = distanceMeters;
+        this.timestamp = timestamp;
+        this.riderStatus = riderStatus;
+    }
+
+    public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(LocalDateTime timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public String getRiderStatus() {
+        return riderStatus;
+    }
+
+    public void setRiderStatus(String riderStatus) {
+        this.riderStatus = riderStatus;
     }
 
     public String getLocationName() {
