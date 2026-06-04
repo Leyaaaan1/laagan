@@ -21,7 +21,7 @@ import java.nio.file.Paths;
 @EnableJpaRepositories(basePackages = "leyans.RidersHub.Repository")
 public class RidersHubApplication {
 
-	static {
+	/*static {
 		loadEnvVariables();
 	}
 
@@ -66,8 +66,7 @@ public class RidersHubApplication {
 			}
 		}
 
-		System.out.println("Warning: .env file not found");
-	}
+	}*/
 
 	public static void main(String[] args) {
 		SpringApplication.run(RidersHubApplication.class, args);
