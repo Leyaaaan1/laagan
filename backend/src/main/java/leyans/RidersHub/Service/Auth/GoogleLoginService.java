@@ -88,7 +88,7 @@ public class GoogleLoginService {
      * or creates a new rider (Google-only, no password) and returns their username.
      */
     @Transactional
-    private String findOrCreateRider(String googleId, String email, String googleDisplayName) {
+    protected String findOrCreateRider(String googleId, String email, String googleDisplayName) {
 
         // 1. Check if this Google account already exists
         Optional<GoogleAccount> existingAccount = googleAccountRepository.findByGoogleId(googleId);

@@ -49,7 +49,7 @@ const EmailVerificationScreen = ({navigation, route}) => {
       const result = await resendVerificationEmail(email);
       if (result.success) {
         Alert.alert(
-          '✅ Email Sent',
+          ' Email Sent',
           'Verification email has been resent to your inbox.',
         );
         setCountdown(60); // 60 second cooldown
