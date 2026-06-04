@@ -44,7 +44,11 @@ const StartedRide = ({route, navigation}) => {
   const [checkpointModalVisible, setCheckpointModalVisible] = useState(false);
 
   const {riderMarkers, pollingError, isPolling, isOffline} =
-    useStartedRideMarkers(activeRide?.startedRideId, pollingEnabled);
+    useStartedRideMarkers(
+      activeRide?.startedRideId,
+      pollingEnabled,
+      () => setCheckpointModalVisible(true), // ← onRiderFinished
+    );
 
   // Cache route when online
   useStartedRideRouteCache(activeRide);
@@ -65,16 +69,7 @@ const StartedRide = ({route, navigation}) => {
   const isCreator =
     username === activeRide?.startedBy || username === activeRide?.username;
 
-  const {showEndingAlert} = useEndingPointAlert(
-    activeRide?.generatedRidesId,
-    username,
-    pollingEnabled,
-  );
-  useEffect(() => {
-    if (showEndingAlert) {
-      setCheckpointModalVisible(true);
-    }
-  }, [showEndingAlert]);
+
 
   useEffect(() => {
     if (initialActiveRide && !activeRide) {

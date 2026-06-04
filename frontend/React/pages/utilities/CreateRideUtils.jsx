@@ -43,9 +43,17 @@ const useCreateRide = ({}) => {
   const [participants, setParticipants] = useState('');
   const [description, setDescription] = useState('');
 
-  const [startingPointFromSearch, setStartingPointFromSearch] = useState(false);
+  const startingPointFromSearchRef = useRef(false);
+  const endingPointFromSearchRef = useRef(false);
 
-  const [endingPointFromSearch, setEndingPointFromSearch] = useState(false);
+
+  const setStartingPointFromSearch = useCallback(val => {
+    startingPointFromSearchRef.current = val;
+  }, []);
+
+  const setEndingPointFromSearch = useCallback(val => {
+    endingPointFromSearchRef.current = val;
+  }, []);
 
   // ── Destination / location (Step 2) ──────────────────────────────────────
   const [locationName, setLocationName] = useState('');
@@ -53,6 +61,7 @@ const useCreateRide = ({}) => {
   const [longitude, setLongitude] = useState(location.longitude);
   const [locationSelected, setLocationSelected] = useState(false);
   const [rideNameImage, setRideNameImage] = useState([]);
+
 
   useEffect(() => {
     setLatitude(location.latitude);
@@ -115,17 +124,17 @@ const useCreateRide = ({}) => {
         setLongitude,
         setStartingLatitude,
         setStartingLongitude,
-        setStartingPointFromSearch,
         setEndingLatitude,
         setEndingLongitude,
-        setEndingPointFromSearch,
         setLocationName,
         setStartingPoint,
         setEndingPoint,
-        startingPointFromSearch,
-        endingPointFromSearch,
+        startingPointFromSearch: startingPointFromSearchRef.current,
+        endingPointFromSearch: endingPointFromSearchRef.current,
+        setStartingPointFromSearch,
+        setEndingPointFromSearch,
       }),
-    [mapMode, startingPointFromSearch, endingPointFromSearch],
+    [mapMode],
   );  const handleSearchInputChange = useCallback(value => {
     setLocationSelected(false);
     setSearchQuery(value);
@@ -225,10 +234,7 @@ const useCreateRide = ({}) => {
   const buildStopPointsFromSearchArray = () =>
     stopPoints.map(sp => sp.isFromSearch ?? false);
 
-  const isStartingFromSearch = startingPoint && locationSelected; // Use locationSelected as proxy for starting
 
-  // ✅ NEW: Determine if ending point is from search
-  const isEndingFromSearch = endingPoint && locationSelected; // Use locationSelected as proxy for ending
 
   // ─── Build participants array from either array or comma-string ───────────
   const buildParticipantsArray = () => {
@@ -332,8 +338,8 @@ const useCreateRide = ({}) => {
       endingPoint: endingPoint.trim(),
       startingPointName: startingPoint.trim(), //
       endingPointName: endingPoint.trim(), //
-      isStartingPointFromSearch: startingPointFromSearch,
-      isEndingPointFromSearch: endingPointFromSearch,
+      isStartingPointFromSearch: startingPointFromSearchRef.current, //
+      isEndingPointFromSearch: endingPointFromSearchRef.current, //
       stopPoints: buildStopPointsPayload(),
       stopPointsFromSearch: buildStopPointsFromSearchArray(),
       participants: buildParticipantsArray(),

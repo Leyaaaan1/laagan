@@ -117,6 +117,14 @@ public class CheckPointUtility {
             rideStatusService.markRiderFinished(ride.getGeneratedRidesId(), rider.getUsername());
         }
     }
+    public boolean isRiderFinished(String generatedRidesId, String username) {
+        return rideCheckpointArrivalRepository
+                .existsByRideGeneratedRidesIdAndRiderUsernameAndCheckpointType(
+                        generatedRidesId,
+                        username,
+                        RideCheckpointArrival.CheckpointType.ENDING
+                );
+    }
 
     public List<CheckpointArrivalResponse> getCheckpointArrivalsByRide(String generatedRidesId) {
         AppLogger.info(this.getClass(), "getCheckpointArrivalsByRide called", "generatedRidesId", generatedRidesId);

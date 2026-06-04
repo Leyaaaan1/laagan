@@ -4,22 +4,30 @@ import {useRideLocationPolling} from '../../../hooks/useRideLocationPolling';
 const MARKERS_UPDATE_THROTTLE_MS = 2000;
 const LOCATION_THRESHOLD = 0.00005; // ~5 meters
 
-export const useStartedRideMarkers = (rideId, pollingEnabled) => {
+export const useStartedRideMarkers = (rideId, pollingEnabled, onRiderFinished) => { // ← add onRiderFinished
   const [riderMarkers, setRiderMarkers] = useState({});
   const [pollingError, setPollingError] = useState(null);
 
   const prevMarkersRef = useRef({});
   const lastMarkersUpdateRef = useRef(0);
+  const riderFinishedRef = useRef(false); // ← prevent firing multiple times
 
   const handleLocationsUpdate = useCallback(locations => {
-    // ✅ NEW: Handle null/undefined locations
     if (!locations || !Array.isArray(locations)) {
       console.warn('⚠️ Invalid locations received:', locations);
       return;
     }
 
-    const now = Date.now();
+    // ← check riderStatus before throttle so it's never missed
+    if (!riderFinishedRef.current) {
+      const finished = locations.some(loc => loc.riderStatus === 'RIDER_FINISHED');
+      if (finished) {
+        riderFinishedRef.current = true;
+        onRiderFinished?.();
+      }
+    }
 
+    const now = Date.now();
     if (now - lastMarkersUpdateRef.current < MARKERS_UPDATE_THROTTLE_MS) {
       console.log('⏱️ Markers update throttled');
       return;
@@ -29,7 +37,6 @@ export const useStartedRideMarkers = (rideId, pollingEnabled) => {
 
     const markers = {};
     locations.forEach(loc => {
-      // ✅ Safely access location properties
       if (loc && loc.username) {
         markers[loc.username] = {
           latitude: loc.latitude || 0,
@@ -42,7 +49,6 @@ export const useStartedRideMarkers = (rideId, pollingEnabled) => {
     });
 
     let hasChanged = false;
-
     const prevKeys = Object.keys(prevMarkersRef.current);
     const currKeys = Object.keys(markers);
 
@@ -52,15 +58,9 @@ export const useStartedRideMarkers = (rideId, pollingEnabled) => {
       for (const username of currKeys) {
         const prev = prevMarkersRef.current[username];
         const curr = markers[username];
-
-        if (!prev) {
-          hasChanged = true;
-          break;
-        }
-
+        if (!prev) { hasChanged = true; break; }
         const latDiff = Math.abs(prev.latitude - curr.latitude);
         const lngDiff = Math.abs(prev.longitude - curr.longitude);
-
         if (latDiff > LOCATION_THRESHOLD || lngDiff > LOCATION_THRESHOLD) {
           hasChanged = true;
           break;
@@ -75,7 +75,7 @@ export const useStartedRideMarkers = (rideId, pollingEnabled) => {
     }
 
     setPollingError(null);
-  }, []);
+  }, [onRiderFinished]);
 
   const handlePollingError = useCallback(err => {
     setPollingError(err.message);

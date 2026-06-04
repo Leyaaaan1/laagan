@@ -63,7 +63,8 @@ public class RideLocationService {
                         p.getX(),   // longitude
                         loc.getLocationName(),
                         loc.getDistanceMeters(),
-                        loc.getTimestamp()
+                        loc.getTimestamp(),
+                        null
                 );
             }).collect(Collectors.toList());
 
@@ -133,7 +134,8 @@ public class RideLocationService {
                 longitude,
                 locationName,
                 distanceMeters,
-                loc.getTimestamp()
+                loc.getTimestamp(),
+                null
         );
     }    // =========================================================================
 // GET LATEST PARTICIPANT LOCATIONS
@@ -201,7 +203,8 @@ public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer star
                     p.getX(),   // longitude
                     loc.getLocationName(),
                     loc.getDistanceMeters(),
-                    loc.getTimestamp()
+                    loc.getTimestamp(),
+                    null
             );
         }).collect(Collectors.toList()));
 
@@ -215,7 +218,8 @@ public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer star
                     p.getX(),   // longitude
                     "Starting Point",  // or get from location name
                     0.0,  // no distance available
-                    loc.getLastUpdate()
+                    loc.getLastUpdate(),
+                    null
             );
         }).collect(Collectors.toList()));
 
@@ -238,17 +242,25 @@ public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer star
         List<RiderLocation> locations =
                 locationRepo.findLatestLocationPerParticipantOptimized(startedRideId);
 
+        String currentUsername = riderUtil.getCurrentUsername();
+        StartedRide started = riderUtil.findStartedRideById(startedRideId);
+        boolean currentUserFinished = checkPointUtility.isRiderFinished(
+                started.getRide().getGeneratedRidesId(), currentUsername);
         // Step 3: Convert to DTOs
         return locations.stream().map(loc -> {
             Point p = loc.getLocation();
+            String locUsername = loc.getUsername().getUsername();
             return new LocationUpdateRequestDTO(
                     startedRideId,
-                    loc.getUsername().getUsername(),
-                    p.getY(),   // latitude
-                    p.getX(),   // longitude
+                    locUsername,
+                    p.getY(),
+                    p.getX(),
                     loc.getLocationName(),
                     loc.getDistanceMeters(),
-                    loc.getTimestamp()
+                    loc.getTimestamp(),
+                    locUsername.equals(currentUsername) && currentUserFinished
+                            ? "RIDER_FINISHED"
+                            : null  // ← only set for current user when finished
             );
         }).collect(Collectors.toList());
     }
