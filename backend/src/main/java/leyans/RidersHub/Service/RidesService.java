@@ -28,8 +28,6 @@ import java.util.stream.Collectors;
 @Service
 public class RidesService {
 
-
-
     private final LocationService locationService;
     private final RiderService riderService;
     private final MapboxService mapboxService;
@@ -92,6 +90,7 @@ public class RidesService {
                 stopPointsFromSearch);
 
         awaitApiFuturesAndCollect(futures);
+
 
 
         return buildAndSaveRide(

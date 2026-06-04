@@ -1,9 +1,7 @@
-
 import {reverseGeocode} from '../../../services/rideService';
 import {createRouteData, getRoutePreview} from '../../../services/RouteService';
 import {buildCenterMapScript, buildDrawRouteScript} from './RideStepUtils';
 import {routePreviewCache} from '../../../services/cache/routePreviewCache';
-
 
 export const getInitialMapCoords = (startingLatitude, startingLongitude) => ({
   lat: parseFloat(startingLatitude) || 12.8797,
@@ -18,7 +16,6 @@ export const canDrawRoute = (sLat, sLng, eLat, eLng) => {
     Math.abs(sLat - eLat) < 0.0001 && Math.abs(sLng - eLng) < 0.0001;
   return !isSame;
 };
-
 
 export const drawRoadRoute = async ({
   sLat,
@@ -93,7 +90,6 @@ export const drawRoadRoute = async ({
   }
 };
 
-
 export const handleStopMapTap = async (
   event,
   setCurrentStop,
@@ -156,7 +152,6 @@ export const removeStopPoint = (index, setStopPoints, onRouteReady) => {
   setTimeout(onRouteReady, 300);
 };
 
-
 export const finalizePointSelection = ({
   mapMode,
   startingPoint,
@@ -176,8 +171,6 @@ export const finalizePointSelection = ({
   }
 };
 
-
-
 export const handleSelectLocationAndUpdateMap = async ({
   item,
   mapMode,
@@ -190,9 +183,11 @@ export const handleSelectLocationAndUpdateMap = async ({
   startingLongitude,
   endingLatitude,
   endingLongitude,
-  setStopPoints, // ✅ ADD THIS
-  setCurrentStop, // ✅ ADD THIS
-  setIsAddingStop, // ✅ ADD THIS
+  setStopPoints,
+  setCurrentStop,
+  setIsAddingStop,
+  setStartingPointFromSearch, // ✅ ADD
+  setEndingPointFromSearch, // ✅ ADD
   onRouteReady,
 }) => {
   const lat = parseFloat(item.lat);
@@ -212,10 +207,14 @@ export const handleSelectLocationAndUpdateMap = async ({
 
   if (mapMode === 'starting') {
     setStartingPoint(resolvedName);
+    if (setStartingPointFromSearch) setStartingPointFromSearch(true);
+    // NOTE: do NOT call setMapMode('ending') here — handleLocationSelect
+    // in CreateRideUtils already switches mode via _setMapMode so the ref
+    // stays in sync. Switching it here too would cause a double-flip.
   } else if (mapMode === 'ending') {
     setEndingPoint(resolvedName);
+    if (setEndingPointFromSearch) setEndingPointFromSearch(true);
   } else if (mapMode === 'stop') {
-    // ✅ NEW: Handle stop point from search - mark as from search
     setStopPoints(prev => [
       ...prev,
       {lat, lng: lon, name: resolvedName, isFromSearch: true},
@@ -281,13 +280,11 @@ export const routeWebViewMessage = ({
   }
 };
 
-
 export const getBottomSheetHeight = animValue =>
   animValue.interpolate({
     inputRange: [0, 1],
     outputRange: ['35%', '10%'],
   });
-
 
 export const getSearchPlaceholder = mapMode =>
   ({
@@ -295,7 +292,6 @@ export const getSearchPlaceholder = mapMode =>
     ending: 'Search destination',
     stop: 'Search stop point',
   }[mapMode] || 'Search location');
-
 
 export const getFinalizeButtonLabel = mapMode =>
   mapMode === 'starting' ? 'Set End' : 'Continue';
@@ -306,7 +302,6 @@ export const getMapModeLabel = mapMode =>
     ending: 'END POINT',
     stop: 'STOPS',
   }[mapMode] || '');
-
 
 export const canCreateRide = (startingPoint, endingPoint, loading) =>
   !!startingPoint && !!endingPoint && !loading;

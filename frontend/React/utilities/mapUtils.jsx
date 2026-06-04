@@ -1,4 +1,4 @@
-import {reverseGeocode, reverseGeocodeLandmark} from '../services/rideService';
+import {reverseGeocode, reverseGeocodeLandmark} from '../services/rideService'; // adjust path as needed
 
 export const handleWebViewMessage = (
   event,
@@ -9,12 +9,11 @@ export const handleWebViewMessage = (
     setStartingLatitude,
     setStartingLongitude,
     setStartingPointFromSearch,
-    startingPointFromSearch, // ✅ ADD — current boolean value
     setEndingLatitude,
     setEndingLongitude,
     setEndingPointFromSearch,
-    endingPointFromSearch, // ✅ ADD — current boolean value
     setLocationName,
+    setLocationSelected, // reset the from-search flag when user taps map in Step 2
     setStartingPoint,
     setEndingPoint,
   },
@@ -33,6 +32,9 @@ export const handleWebViewMessage = (
   if (mapMode === 'location') {
     setLatitude(lat.toString());
     setLongitude(lng.toString());
+    // User tapped the map directly — this is NOT a search selection, so
+    // clear locationSelected so isLocationFromSearch is sent as false to the backend.
+    if (setLocationSelected) setLocationSelected(false);
 
     if (setLocationName) {
       reverseGeocodeLandmark(lat, lng)
@@ -42,12 +44,12 @@ export const handleWebViewMessage = (
         .catch(() => {});
     }
   } else if (mapMode === 'starting') {
+    // Step 3 — plain address for start/end points
     setStartingLatitude(lat.toString());
     setStartingLongitude(lng.toString());
-    setStartingPointFromSearch(false); // map tap resets the flag
+    setStartingPointFromSearch(false); // NOT from search — use georeverse
 
-    // ✅ Only reverse-geocode if this point was NOT set via search
-    if (setStartingPoint && !startingPointFromSearch) {
+    if (setStartingPoint) {
       reverseGeocode(lat, lng)
         .then(name => {
           if (name) setStartingPoint(name);
@@ -57,10 +59,9 @@ export const handleWebViewMessage = (
   } else if (mapMode === 'ending') {
     setEndingLatitude(lat.toString());
     setEndingLongitude(lng.toString());
-    setEndingPointFromSearch(false); // map tap resets the flag
+    setEndingPointFromSearch(false); // NOT from search — use georeverse
 
-    // ✅ Only reverse-geocode if this point was NOT set via search
-    if (setEndingPoint && !endingPointFromSearch) {
+    if (setEndingPoint) {
       reverseGeocode(lat, lng)
         .then(name => {
           if (name) setEndingPoint(name);

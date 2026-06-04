@@ -1,5 +1,6 @@
 package leyans.RidersHub.DTO.Request.RidesDTO;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -41,7 +42,9 @@ public class RideRequestDTO {
     private String routeCoordinates;
     private List<StopPointDTO> stopPoints;
 
+    @JsonProperty("isStartingPointFromSearch")
     private boolean isStartingPointFromSearch;
+    @JsonProperty("isEndingPointFromSearch")
     private boolean isEndingPointFromSearch;
     private List<Boolean> stopPointsFromSearch;
 
@@ -80,6 +83,7 @@ public class RideRequestDTO {
         return isStartingPointFromSearch;
     }
 
+    @JsonProperty("isStartingPointFromSearch")
     public void setStartingPointFromSearch(boolean startingPointFromSearch) {
         isStartingPointFromSearch = startingPointFromSearch;
     }
@@ -88,6 +92,7 @@ public class RideRequestDTO {
         return isEndingPointFromSearch;
     }
 
+    @JsonProperty("isEndingPointFromSearch")
     public void setEndingPointFromSearch(boolean endingPointFromSearch) {
         isEndingPointFromSearch = endingPointFromSearch;
     }
@@ -104,6 +109,7 @@ public class RideRequestDTO {
         return isLocationFromSearch;
     }
 
+    @JsonProperty("isLocationFromSearch")  // ← add this
     public void setLocationFromSearch(boolean locationFromSearch) {
         isLocationFromSearch = locationFromSearch;
     }
