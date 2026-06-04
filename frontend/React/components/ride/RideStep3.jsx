@@ -1,12 +1,32 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StatusBar, ActivityIndicator, Animated,} from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StatusBar,
+  ActivityIndicator,
+  Animated,
+} from 'react-native';
 import {WebView} from 'react-native-webview';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import getMapHTML from '../../utilities/mapHTML';
 import {buildSearchHandlers} from './utilities/RideStepUtils';
 import LocationSuggestionModal from './utilities/LocationSuggestionModal';
-import {getInitialMapCoords, drawRoadRoute, confirmStopPoint, removeStopPoint, finalizePointSelection, handleSelectLocationAndUpdateMap, routeWebViewMessage,
-  getBottomSheetHeight, getSearchPlaceholder, getFinalizeButtonLabel, getMapModeLabel, canCreateRide,
+import {
+  getInitialMapCoords,
+  drawRoadRoute,
+  confirmStopPoint,
+  removeStopPoint,
+  finalizePointSelection,
+  handleSelectLocationAndUpdateMap,
+  routeWebViewMessage,
+  getBottomSheetHeight,
+  getSearchPlaceholder,
+  getFinalizeButtonLabel,
+  getMapModeLabel,
+  canCreateRide,
 } from './utilities/RideStep3Utilities';
 import text from '../../styles/base/text';
 import buttons from '../../styles/base/buttons';
@@ -16,7 +36,6 @@ import inputs from '../../styles/base/inputs';
 import RouteTimeline from './utilities/RouteTimeline';
 import ridestep3style from '../../styles/screens/ridestep3style';
 import {createMemoCompare} from '../../utilities/propsComparison';
-
 
 const RideStep3 = ({
   mapMode,
@@ -47,7 +66,8 @@ const RideStep3 = ({
   stopPoints,
   setStopPoints,
   token,
-  setStartingPointFromSearch, setEndingPointFromSearch,
+  setStartingPointFromSearch,
+  setEndingPointFromSearch,
 }) => {
   const [currentStop, setCurrentStop] = useState(null);
   const [isAddingStop, setIsAddingStop] = useState(false);
@@ -196,9 +216,11 @@ const RideStep3 = ({
       startingLongitude,
       endingLatitude,
       endingLongitude,
-      setStopPoints, //
-      setCurrentStop, //
-      setIsAddingStop, //
+      setStopPoints,
+      setCurrentStop,
+      setIsAddingStop,
+      setStartingPointFromSearch, // ✅ now forwarded
+      setEndingPointFromSearch, // ✅ now forwarded
       onRouteReady: triggerDrawRoute,
     });
 

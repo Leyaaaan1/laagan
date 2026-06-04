@@ -10,6 +10,7 @@ import leyans.RidersHub.DTO.Response.RideDetailDTO;    // ← new
 import leyans.RidersHub.DTO.Response.RideSummaryDTO;  // ← new
 import leyans.RidersHub.Service.RiderService;
 import leyans.RidersHub.Service.RidesService;
+import leyans.RidersHub.Utility.AppLogger;
 import leyans.RidersHub.Utility.RidesUtil;
 import leyans.RidersHub.model.RiderType;
 import org.springframework.data.domain.Page;
@@ -77,6 +78,11 @@ public class RiderController {
                     rideRequest.getEndingPointName(),
                     rideRequest.getStopPointsFromSearch(),
                     rideRequest.getStopPoints()
+            );
+            AppLogger.info(this.getClass(), "Ride request flags",
+                    "isLocationFromSearch", rideRequest.isLocationFromSearch(),
+                    "isStartingPointFromSearch", rideRequest.isStartingPointFromSearch(),
+                    "isEndingPointFromSearch", rideRequest.isEndingPointFromSearch()
             );
             return ResponseEntity.ok(response);
         } catch (EntityNotFoundException e) {
