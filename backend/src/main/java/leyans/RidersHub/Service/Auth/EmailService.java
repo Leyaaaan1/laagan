@@ -66,15 +66,14 @@ public class EmailService {
                     """.formatted(verificationLink, verificationLink);
 
             sendHtmlEmail(toEmail, subject, htmlContent);
-            log.info("✅ Verification email sent to: {}", toEmail);
+            log.info("Verification email sent to: {}", toEmail);
 
         } catch (Exception e) {
-            log.error("❌ Error sending verification email to: {}", toEmail, e);
+            log.error(" Error sending verification email to: {}", toEmail, e);
             throw new RuntimeException("Failed to send verification email: " + e.getMessage());
         }
     }
 
-    /**     * Send HTML email     */
     private void sendHtmlEmail(String toEmail, String subject, String htmlContent) throws MessagingException, UnsupportedEncodingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -87,20 +86,5 @@ public class EmailService {
         mailSender.send(message);
     }
 
-    /**     * Send plain text email     */
-    public void sendSimpleEmail(String toEmail, String subject, String message) {
-        try {
-            SimpleMailMessage simpleMessage = new SimpleMailMessage();
-            simpleMessage.setFrom(fromEmail);
-            simpleMessage.setTo(toEmail);
-            simpleMessage.setSubject(subject);
-            simpleMessage.setText(message);
 
-            mailSender.send(simpleMessage);
-            log.info("✅ Simple email sent to: {}", toEmail);
-        } catch (Exception e) {
-            log.error("❌ Error sending simple email to: {}", toEmail, e);
-            throw new RuntimeException("Failed to send email: " + e.getMessage());
-        }
-    }
 }

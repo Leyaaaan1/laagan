@@ -106,6 +106,7 @@ const useCreateRide = ({}) => {
 
   // ─── Map tap / drag ───────────────────────────────────────────────────────
 
+// In CreateRideUtils.jsx
   const handleMessage = useCallback(
     event =>
       handleWebViewMessage(event, {
@@ -114,17 +115,18 @@ const useCreateRide = ({}) => {
         setLongitude,
         setStartingLatitude,
         setStartingLongitude,
-        setStartingPointFromSearch, // ✅ ADD
+        setStartingPointFromSearch,
         setEndingLatitude,
         setEndingLongitude,
-        setEndingPointFromSearch, // ✅ ADD
+        setEndingPointFromSearch,
         setLocationName,
         setStartingPoint,
         setEndingPoint,
+        startingPointFromSearch,
+        endingPointFromSearch,
       }),
-    [mapMode],
-  );
-  const handleSearchInputChange = useCallback(value => {
+    [mapMode, startingPointFromSearch, endingPointFromSearch],
+  );  const handleSearchInputChange = useCallback(value => {
     setLocationSelected(false);
     setSearchQuery(value);
   }, []);

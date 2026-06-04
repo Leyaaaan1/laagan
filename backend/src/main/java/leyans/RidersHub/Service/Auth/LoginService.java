@@ -61,14 +61,14 @@ public class LoginService {
     /**     * Authenticate user and generate tokens     */
     public LoginResponse login(LoginRequest loginRequest, String clientIp) {
         String email = loginRequest.getEmail();
-        log.info("🔐 Login attempt from IP: {} for email: {}", clientIp, email);
+        log.info("Login attempt from IP: {} for email: {}", clientIp, email);
 
         // 1. IP-level check first (broad gate) — throws RateLimitExceededException
         accountLockoutService.checkIpLoginRate(clientIp);
 
         // 2. Account-level lockout check (per-user gate)
         if (accountLockoutService.isAccountLocked(email)) {
-            log.warn("🔒 Account locked for: {}", email);
+            log.warn(" Account locked for: {}", email);
             throw new IllegalStateException(
                     "Account temporarily locked. Try again in 15 minutes.");
         }
@@ -80,9 +80,8 @@ public class LoginService {
             Rider rider = riderUtil.findByAuthEmail(email)
                     .orElseThrow(() -> new RuntimeException("Rider not found for: " + email));
 
-            // ✅ CHECK IF EMAIL IS VERIFIED
             if (!rider.getEmailVerified()) {
-                log.warn("📧 Email not verified for: {}", email);
+                log.warn(" Email not verified for: {}", email);
                 throw new IllegalStateException(
                         "Email not verified. Check your inbox for verification link.");
             }
