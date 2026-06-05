@@ -193,13 +193,6 @@ const EmailVerificationScreen = ({navigation, route}) => {
               )}
             </TouchableOpacity>
 
-            {/* Back to Login */}
-            <TouchableOpacity
-              style={[buttons.ghost, {marginTop: spacing.md}]}
-              onPress={() => navigation.goBack()}
-              disabled={resending}>
-              <Text style={text.muted}>Back to Login</Text>
-            </TouchableOpacity>
 
             {/* Already Verified? */}
             <TouchableOpacity

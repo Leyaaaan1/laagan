@@ -88,7 +88,7 @@ const LoadingScreen = ({context = 'boot'}) => {
       </View>
 
       <Text style={styles.wordmark}>
-        RIDE<Text style={styles.wordmarkAccent}>GO</Text>
+        RIDE<Text style={styles.wordmarkAccent}>G?</Text>
       </Text>
       <Text style={styles.tagline}>YOUR RIDE, YOUR ROUTE</Text>
 
@@ -99,6 +99,9 @@ const LoadingScreen = ({context = 'boot'}) => {
       </View>
 
       <Text style={styles.message}>{message}</Text>
+      <Text style={styles.freeTierNote}>
+         First load may take a moment — we're on free tier servers
+      </Text>
 
       <Text style={styles.version}>v1.0</Text>
     </Animated.View>
@@ -204,10 +207,18 @@ const styles = StyleSheet.create({
     marginTop: 20,
     letterSpacing: 0.5,
   },
+  freeTierNote: {
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontSize: 10,
+    letterSpacing: 0.4,
+    marginTop: 10,
+    textAlign: 'center',
+    paddingHorizontal: 40,
+  },
   version: {
     position: 'absolute',
     bottom: 40,
-    color: 'rgba(255, 255, 255, 0.2)',
+    color: 'rgba(255, 255, 255, 0.4)',
     fontSize: 11,
     letterSpacing: 1,
   },
