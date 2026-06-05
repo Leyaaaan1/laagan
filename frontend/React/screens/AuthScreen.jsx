@@ -254,6 +254,9 @@ const AuthForm = React.memo(
             ? "Don't have an account? Register"
             : 'Already have an account? Login'}
         </Text>
+        <Text style={text.muted}>
+          First load may take a moment — we're on free tier servers
+        </Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>
   ),
