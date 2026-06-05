@@ -325,12 +325,19 @@ export const loginWithGoogle = async () => {
       data: {accessToken: data.accessToken, refreshToken: data.refreshToken, username: data.username},
     };
   } catch (err) {
-    console.error('❌ [GoogleSignIn] Error:', err.message);
-    console.error('❌ [GoogleSignIn] Code:', err.code);
-    console.error('❌ [GoogleSignIn] Full error:', JSON.stringify(err));
     return {success: false, error: err.message || 'Google login failed'};
   }
 };
+
+export const markOnboardingComplete = async () => {
+  try {
+    const response = await api.patch('/riders/onboarding-complete');
+    return {success: response.ok};
+  } catch (err) {
+    return {success: false};
+  }
+};
+
 export const loginUser = authService.login;
 export const registerUser = authService.register;
 export const verifyEmailToken = verifyEmail;

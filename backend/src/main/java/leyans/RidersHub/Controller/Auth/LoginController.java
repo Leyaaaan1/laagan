@@ -100,6 +100,17 @@ public class LoginController {
         return Map.of("status", status, "error", error, "message", message);
     }
 
+    @PatchMapping("/onboarding-complete")
+    public ResponseEntity<?> completeOnboarding(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            loginService.completeOnboarding(userDetails.getUsername());
+            return ResponseEntity.ok(Map.of("status", 200, "message", "Onboarding marked complete"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("status", 500, "message", e.getMessage()));
+        }
+    }
 
     @DeleteMapping("/account")
     public ResponseEntity<?> deleteAccount(

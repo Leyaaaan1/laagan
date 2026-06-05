@@ -47,6 +47,8 @@ const fetchWithTimeout = (url, options = {}, timeout = DEFAULT_TIMEOUT_MS) => {
   return Promise.race([fetch(url, options), timeoutPromise]);
 };
 
+
+
 /** * Trigger a token refresh, or return the already-in-flight refresh promise. * This guarantees only one refresh call is made even if many requests 401 at once. */
 const refreshOnce = async () => {
   if (refreshPromise) {
@@ -181,4 +183,11 @@ export const api = {
 
   /**   * Public GET request (no auth required)   * @param {string} path - API endpoint   */
   publicGet: path => apiFetch(path, {method: 'GET'}, null, true),
+
+  patch: (path, body = null, token = null) =>
+    apiFetch(
+      path,
+      {method: 'PATCH', body: body ? JSON.stringify(body) : undefined},
+      token,
+    ),
 };

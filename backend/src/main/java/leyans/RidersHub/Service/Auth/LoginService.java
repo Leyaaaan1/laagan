@@ -94,7 +94,8 @@ public class LoginService {
             accountLockoutService.resetIpLoginAttempts(clientIp);
 
             log.info(" Login successful: {} ({})", rider.getUsername(), email);
-            return new LoginResponse(accessToken, refreshToken, rider.getUsername());
+            return new LoginResponse(accessToken, refreshToken, rider.getUsername(), rider.getOnboardingCompleted());
+
 
         } catch (BadCredentialsException e) {
             accountLockoutService.recordFailedLoginAttempt(email);
@@ -106,6 +107,12 @@ public class LoginService {
     }
 
 
+    public void completeOnboarding(String username) {
+        Rider rider = riderUtil.findRiderByUsername(username);
+        rider.setOnboardingCompleted(true);
+        riderRepository.save(rider);
+        log.info("Onboarding completed for: {}", username);
+    }
     /** * Register new user and generate tokens */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public RegisterResponse register(RegisterRequest registerRequest, String clientIp) {

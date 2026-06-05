@@ -60,7 +60,6 @@ public class GoogleLoginService {
         // 2. IP-level rate check — reuses your existing register IP limiter
         int ipAttempts = accountLockoutService.getRegisterAttempts(clientIp);
         if (ipAttempts >= 20) {
-            log.warn("⚠️ Google login IP rate limit exceeded for: {}", clientIp);
             throw new RuntimeException("Too many requests from this IP. Try again later.");
         }
 
@@ -71,17 +70,17 @@ public class GoogleLoginService {
         String email    = payload.getEmail();
         String name     = (String) payload.get("name");
 
-        log.info("🔍 Google token verified — googleId: {}, email: {}", googleId, email);
 
         // 4. Find or create Rider + GoogleAccount
         String resolvedUsername = findOrCreateRider(googleId, email, name);
+        Rider rider = riderUtil.findRiderByUsername(resolvedUsername);
 
         // 5. Issue your own tokens — same as email/Facebook login
         String accessToken  = jwtUtil.generateToken(resolvedUsername);
         String refreshToken = refreshTokenService.createRefreshToken(resolvedUsername);
 
-        log.info("✅ Google login successful: {} ({})", resolvedUsername, email);
-        return new LoginResponse(accessToken, refreshToken, resolvedUsername);
+        return new LoginResponse(accessToken, refreshToken, resolvedUsername, rider.getOnboardingCompleted());
+
     }
     /**
      * Returns the username of the existing rider if found by email,

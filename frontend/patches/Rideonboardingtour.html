@@ -1,0 +1,567 @@
+<style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{
+        --primary:#8c2323;
+        --primary-dim:rgba(140,35,35,0.18);
+        --surface:#2a2a2a;
+        --surface-dark:#1c1c1e;
+        --surface-alt:#333333;
+        --border:#3a3a3a;
+        --border-light:#4a4a4a;
+        --text-primary:#f5f5f5;
+        --text-secondary:#aaaaaa;
+        --text-muted:#888888;
+        --white:#fff;
+        --success:#10b981;
+        --spacing-xs:4px;
+        --spacing-sm:8px;
+        --spacing-md:16px;
+        --spacing-lg:24px;
+    }
+    body{background:#111;font-family:'SF Pro Display',-apple-system,sans-serif;color:var(--text-primary)}
+
+    .tour-shell{width:380px;margin:0 auto;position:relative;user-select:none}
+
+    .screen{display:none;flex-direction:column;min-height:640px;background:var(--surface-dark);border-radius:24px;overflow:hidden;border:1px solid var(--border-light);box-shadow:0 0 0 1px rgba(255,255,255,0.06)}
+    .screen.active{display:flex}
+
+    /* ── Dimming overlay ── */
+    .dim-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.62);z-index:10;border-radius:24px;pointer-events:none}
+
+    /* ── Highlight cutout via box-shadow ── */
+    .highlight-box{position:absolute;z-index:11;border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.62);pointer-events:none;transition:all 0.35s cubic-bezier(.4,0,.2,1)}
+
+    /* ── Tooltip ── */
+    .tooltip{position:absolute;z-index:20;background:#fff;color:#111;border-radius:14px;padding:14px 16px;width:220px;box-shadow:0 8px 32px rgba(0,0,0,0.35);transition:all 0.3s ease}
+    .tooltip-step{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--primary);margin-bottom:4px}
+    .tooltip-title{font-size:14px;font-weight:700;margin-bottom:4px;line-height:1.3;color:#111}
+    .tooltip-desc{font-size:12px;color:#555;line-height:1.5}
+    .tooltip-arrow{position:absolute;width:10px;height:10px;background:#fff;transform:rotate(45deg)}
+
+    /* ── Nav bar ── */
+    .nav-bar{position:absolute;bottom:0;left:0;right:0;z-index:30;background:rgba(30,30,32,0.98);border-top:1px solid var(--border-light);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-radius:0 0 24px 24px;backdrop-filter:blur(8px)}
+    .nav-skip{font-size:12px;color:#bbb;padding:8px 12px;cursor:pointer;border-radius:8px;transition:background 0.2s}
+    .nav-skip:hover{background:rgba(255,255,255,0.1)}
+    .nav-dots{display:flex;gap:6px;align-items:center}
+    .dot{width:6px;height:6px;border-radius:50%;background:#666;transition:all 0.3s}
+    .dot.active{width:18px;border-radius:3px;background:var(--primary)}
+    .nav-next{background:var(--primary);color:#fff;border:none;border-radius:50px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:opacity 0.2s}
+    .nav-next:hover{opacity:0.85}
+
+    /* ── Step progress ── */
+    .screen-label{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:25;background:rgba(140,35,35,0.92);border-radius:20px;padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:1px;color:#fff}
+
+    /* ═══════════════════════════════
+       SCREEN 1 — Create Ride
+    ═══════════════════════════════ */
+    .s1-header{background:var(--surface);padding:16px;border-bottom:1px solid var(--border)}
+    .s1-header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+    .s1-header-title{font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--text-primary)}
+    .s1-header-sub{font-size:11px;color:var(--text-secondary)}
+    .s1-next-btn{background:var(--primary);border-radius:20px;padding:7px 14px;font-size:12px;font-weight:600;color:#fff;display:flex;align-items:center;gap:4px;opacity:0.5}
+
+    .s1-card{background:var(--surface);border-radius:14px;padding:16px;margin:12px 14px 0;border:1px solid var(--border-light)}
+    .s1-card-title{font-size:16px;font-weight:700;color:#f0f0f0;margin-bottom:2px}
+    .s1-card-sub{font-size:11px;color:#999;margin-bottom:12px}
+    .s1-input{background:#2e2e2e;border:1.5px solid var(--border-light);border-radius:10px;padding:12px 14px;font-size:14px;color:#999;width:100%;pointer-events:none}
+    .s1-input.filled{color:#f0f0f0;border-color:var(--primary)}
+
+    .s1-date-row{display:flex;align-items:center;justify-content:center;gap:8px;background:#2e2e2e;border:1.5px solid var(--border-light);border-radius:10px;padding:12px;cursor:default}
+    .s1-date-val{text-align:center}
+    .s1-date-val p{font-size:13px;font-weight:600;color:#f0f0f0}
+    .s1-date-val span{font-size:11px;color:#aaa}
+
+    .bike-row{display:flex;gap:8px;margin-top:8px}
+    .bike-opt{flex:1;background:#2e2e2e;border:2px solid var(--border-light);border-radius:12px;padding:10px 8px;text-align:center;font-size:11px;color:#aaa;pointer-events:none}
+    .bike-opt.sel{border-color:var(--primary);background:var(--primary-dim);color:#f0a0a0;font-weight:700}
+
+    .s1-desc-input{background:#2e2e2e;border:1.5px solid var(--border-light);border-radius:10px;padding:12px 14px;font-size:12px;color:#aaa;width:100%;height:72px;pointer-events:none}
+
+    .s1-cta{margin:14px 14px 70px;background:var(--primary);border-radius:12px;padding:14px;text-align:center;font-size:14px;font-weight:700;color:#fff;opacity:0.5;display:flex;align-items:center;justify-content:center;gap:8px}
+
+    /* ═══════════════════════════════
+       SCREEN 2 — Started Ride / Map
+    ═══════════════════════════════ */
+    .s2-header{background:var(--surface);padding:10px 14px;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center}
+    .s2-title{font-size:16px;font-weight:800;color:#f0f0f0;text-decoration:underline}
+    .s2-id{font-size:11px;color:#aaa}
+
+    .map-mock{height:210px;background:linear-gradient(160deg,#0d1f0d 0%,#0d1a14 50%,#0d1f0d 100%);position:relative;overflow:hidden;flex-shrink:0}
+
+    .route-overlay{position:absolute;top:30px;right:10px;background:rgba(30,30,32,0.95);border-radius:10px;padding:10px;border:1px solid var(--border-light);width:120px}
+    .route-overlay-title{font-size:9px;font-weight:700;letter-spacing:1px;color:#ccc;margin-bottom:8px}
+    .route-point{display:flex;align-items:flex-start;gap:6px;margin-bottom:6px}
+    .route-dot{width:18px;height:18px;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;flex-shrink:0;margin-top:1px}
+
+    .polling-pill{position:absolute;top:8px;right:10px;background:rgba(30,30,32,0.92);border-radius:6px;padding:6px 10px;display:flex;align-items:center;gap:5px;border:1px solid #16a34a}
+    .poll-dot{width:7px;height:7px;border-radius:50%;background:#16a34a}
+    .poll-text{font-size:9px;color:#f0f0f0;font-weight:600}
+
+    .participants-section{background:var(--surface);margin:12px 14px 0;border-radius:12px;padding:12px;border:1px solid var(--border-light)}
+    .participants-title{font-size:9px;font-weight:700;letter-spacing:1px;color:#ccc;margin-bottom:8px}
+    .p-item{display:flex;align-items:center;gap:10px;padding:8px;background:rgba(255,255,255,0.06);border-radius:8px;border:1px solid rgba(255,255,255,0.1);margin-bottom:6px}
+    .p-avatar{width:32px;height:32px;border-radius:50%;background:rgba(139,92,246,0.35);border:2px solid rgba(139,92,246,0.6);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+    .p-name{font-size:12px;font-weight:600;color:#f0f0f0}
+    .p-status{font-size:10px;color:rgba(255,255,255,0.6)}
+
+    .action-pill{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);background:rgba(35,35,38,0.96);border:0.5px solid rgba(255,255,255,0.2);border-radius:99px;padding:8px 8px 8px 16px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+    .action-label{font-size:12px;color:rgba(255,255,255,0.85);font-weight:600}
+    .p-status-dot{width:7px;height:7px;border-radius:50%;background:var(--success);margin-left:auto}
+    .action-sep{width:0.5px;height:20px;background:rgba(255,255,255,0.25)}
+    .stop-btn{background:var(--primary);border-radius:99px;padding:6px 14px;font-size:12px;color:#fff;font-weight:600;display:flex;align-items:center;gap:5px}
+
+    .checkpoint-btn{position:absolute;bottom:70px;right:14px;background:rgba(28,28,30,0.92);border:1px solid var(--border-light);border-radius:99px;padding:8px 14px;font-size:12px;color:#fff;font-weight:600}
+
+    /* ═══════════════════════════════
+       SCREEN 3 — Finished / Checkpoints
+    ═══════════════════════════════ */
+    .s3-header{background:var(--surface);padding:12px 16px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between}
+    .s3-back{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--primary)}
+    .s3-title{font-size:15px;font-weight:700;color:#fff}
+    .s3-user-btn{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--primary)}
+
+    .hero-card{background:var(--surface);border-radius:14px;margin:12px 14px 6px;border:1px solid var(--border-light);overflow:hidden}
+    .hero-accent{height:3px;background:linear-gradient(90deg,var(--primary) 0%,#cf4f4f 100%)}
+    .hero-body{padding:14px}
+    .ride-name-hero{font-size:20px;font-weight:700;color:#f0f0f0;margin-bottom:12px}
+    .stats-row{display:flex;gap:6px;margin-bottom:10px}
+    .stat-item{flex:1;background:rgba(255,255,255,0.07);border-radius:10px;padding:10px 6px;text-align:center}
+    .stat-lbl{font-size:9px;color:#bbb;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px}
+    .stat-val{font-size:15px;font-weight:700;color:#f0f0f0}
+    .stat-unit{font-size:9px;color:#aaa}
+
+    .time-row-display{display:flex;align-items:center;border-top:1px solid var(--border-light);padding-top:10px;margin-top:4px}
+    .time-item-d{flex:1}
+    .time-lbl{font-size:9px;color:#bbb;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px}
+    .time-val{font-size:13px;font-weight:700;color:#f0f0f0}
+
+    .cp-section{padding:10px 14px 80px}
+    .cp-header-row{display:flex;align-items:center;margin-bottom:10px}
+    .cp-title{font-size:14px;font-weight:700;color:#f0f0f0;flex:1}
+    .cp-badge{background:var(--primary-dim);padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;color:#f0a0a0}
+
+    .timeline{padding-left:6px}
+    .tl-row{display:flex;margin-bottom:2px}
+    .tl-left{align-items:center;display:flex;flex-direction:column;width:36px}
+    .tl-icon{width:32px;height:32px;border-radius:50%;background:#fff;border:2px solid var(--primary);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--primary);z-index:1}
+    .tl-icon.inactive{background:rgba(140,35,35,0.15);border-color:var(--border-light);color:#888}
+    .tl-line{width:2px;flex:1;background:rgba(140,35,35,0.5);margin:2px 0;min-height:14px}
+    .tl-line.inactive{background:var(--border-light)}
+    .tl-content{flex:1;margin-left:12px;margin-bottom:12px}
+    .tl-header{display:flex;align-items:center;background:rgba(140,35,35,0.12);border:1px solid var(--primary);border-radius:10px;padding:9px 12px;margin-bottom:4px}
+    .tl-header.inactive{background:var(--surface);border-color:var(--border-light)}
+    .tl-name{flex:1;font-size:12px;font-weight:700;color:#f0f0f0}
+    .tl-count{font-size:10px;color:#bbb;background:rgba(255,255,255,0.1);padding:2px 8px;border-radius:10px}
+
+    .arriver{display:flex;align-items:center;padding:7px 10px;background:var(--surface);border-radius:9px;border:1px solid var(--border-light);margin-bottom:3px}
+    .av-avatar{width:28px;height:28px;border-radius:50%;background:rgba(232,152,152,0.3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#e89898;margin-right:8px;flex-shrink:0}
+    .av-name{font-size:11px;font-weight:600;color:#f0f0f0}
+    .av-time{font-size:10px;color:#aaa;margin-top:1px}
+    .av-check{margin-left:auto;font-size:13px;color:#4CAF50}
+
+    /* ── Completed screen ── */
+    .done-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:640px;background:var(--surface-dark);border-radius:24px;border:1px solid var(--border-light);padding:40px 24px}
+    .done-screen.active{display:flex}
+    .done-icon{width:72px;height:72px;border-radius:50%;background:var(--primary-dim);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--primary);margin-bottom:20px;border:2px solid var(--primary)}
+    .done-title{font-size:22px;font-weight:700;color:#f0f0f0;margin-bottom:8px;text-align:center}
+    .done-sub{font-size:14px;color:#bbb;text-align:center;line-height:1.6;margin-bottom:28px}
+    .done-restart{background:var(--primary);color:#fff;border:none;border-radius:12px;padding:14px 32px;font-size:14px;font-weight:700;cursor:pointer;border-radius:50px}
+</style>
+
+<h2 class="sr-only">Ride app onboarding tour — 3 screen walkthrough covering ride creation, active ride navigation, and checkpoint summary</h2>
+
+<div class="tour-shell" id="shell">
+
+  <!-- ══ SCREEN 1: Create Ride ══ -->
+  <div class="screen active" id="s1">
+    <div class="s1-header">
+      <div class="s1-header-top">
+        <span class="s1-header-title">CREATE RIDE</span>
+        <div class="s1-next-btn"><span>Next</span><span>›</span></div>
+      </div>
+      <span class="s1-header-sub">Step 1 of 3 — Details</span>
+    </div>
+
+    <div id="s1-name-card" class="s1-card">
+      <div class="s1-card-title">Name Your Ride</div>
+      <div class="s1-card-sub">Give your adventure a memorable name</div>
+      <div class="s1-input filled">Epic Bukidnon Adventure</div>
+    </div>
+
+    <div id="s1-date-card" class="s1-card">
+      <div class="s1-card-title" style="margin-bottom:2px">When &amp; How</div>
+      <div class="s1-card-sub">Select date, time &amp; ride type</div>
+      <div class="s1-date-row">
+        <span style="font-size:14px">📅</span>
+        <div class="s1-date-val">
+          <p>Saturday, Jul 5 2025</p>
+          <span>06:00 AM</span>
+        </div>
+      </div>
+      <div class="s1-card-sub" style="margin-top:10px">Choose Your Bike</div>
+      <div class="bike-row">
+        <div class="bike-opt sel">🚵 MTB</div>
+        <div class="bike-opt">🚴 Road</div>
+        <div class="bike-opt">🏍 Moto</div>
+      </div>
+    </div>
+
+    <div id="s1-desc-card" class="s1-card">
+      <div class="s1-card-title">Describe Your Route</div>
+      <div class="s1-card-sub">Share details about terrain, highlights, or special stops</div>
+      <div class="s1-desc-input">Scenic trail through the highlands with epic viewpoints...</div>
+    </div>
+
+    <div id="s1-cta" class="s1-cta">
+      <span>Continue to Location</span><span>→</span>
+    </div>
+
+    <!-- overlays for s1 -->
+    <div class="dim-overlay" id="s1-dim"></div>
+    <div class="highlight-box" id="s1-hl"></div>
+    <div class="tooltip" id="s1-tip"></div>
+    <div class="screen-label" id="s1-label"></div>
+    <div class="nav-bar">
+      <span class="nav-skip" id="s1-skip">Skip tour</span>
+      <div class="nav-dots" id="s1-dots"></div>
+      <button class="nav-next" id="s1-next">Next <span>›</span></button>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 2: Started Ride ══ -->
+  <div class="screen" id="s2">
+    <div class="s2-header">
+      <div>
+        <div class="s2-title">Epic Bukidnon Adventure</div>
+        <div class="s2-id">Ride ID: RIDE-8C4F2A</div>
+      </div>
+      <span style="font-size:10px;color:var(--text-secondary);text-align:right">LIVE<br>🟢</span>
+    </div>
+
+    <div class="map-mock" id="s2-map">
+      <svg class="map-grid" viewBox="0 0 380 210" xmlns="http://www.w3.org/2000/svg">
+        <defs><pattern id="g" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M 30 0 L 0 0 0 30" fill="none" stroke="#1a3a1a" stroke-width="1"/></pattern></defs>
+        <rect width="380" height="210" fill="url(#g)"/>
+        <path d="M 50,170 Q 130,100 190,120 Q 250,140 330,60" stroke="#8c2323" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <circle cx="50" cy="170" r="7" fill="#16a34a" stroke="#fff" stroke-width="2"/>
+        <circle cx="190" cy="120" r="6" fill="#d97706" stroke="#fff" stroke-width="2"/>
+        <circle cx="330" cy="60" r="7" fill="#dc2626" stroke="#fff" stroke-width="2"/>
+        <text x="55" y="168" font-size="8" fill="#fff" opacity="0.7">START</text>
+        <text x="196" y="118" font-size="8" fill="#fff" opacity="0.7">STOP</text>
+        <text x="336" y="58" font-size="8" fill="#fff" opacity="0.7">END</text>
+      </svg>
+
+      <div id="s2-poll" class="polling-pill">
+        <div class="poll-dot"></div>
+        <span class="poll-text">Live tracking active</span>
+      </div>
+
+      <div id="s2-route-panel" class="route-overlay">
+        <div class="route-overlay-title">ROUTE</div>
+        <div class="route-point">
+          <div class="route-dot" style="background:#16a34a">S</div>
+          <div style="font-size:10px;color:#fff;line-height:1.3">Cagayan de Oro City</div>
+        </div>
+        <div class="route-point">
+          <div class="route-dot" style="background:#d97706">1</div>
+          <div style="font-size:10px;color:#fff;line-height:1.3">Dahilayan Park</div>
+        </div>
+        <div class="route-point">
+          <div class="route-dot" style="background:#dc2626">E</div>
+          <div style="font-size:10px;color:#fff;line-height:1.3">Mt. Kitanglad</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="s2-participants" class="participants-section">
+      <div class="participants-title">PARTICIPANTS</div>
+      <div class="p-item">
+        <div class="p-avatar">J</div>
+        <div><div class="p-name">juanrider</div><div class="p-status">● Active — near Stop 1</div></div>
+        <div class="p-status-dot"></div>
+      </div>
+      <div class="p-item">
+        <div class="p-avatar">M</div>
+        <div><div class="p-name">mariabiking</div><div class="p-status">● Active — on route</div></div>
+        <div class="p-status-dot" style="background:#f59e0b"></div>
+      </div>
+      <div class="p-item">
+        <div class="p-avatar">C</div>
+        <div><div class="p-name">carlospedal</div><div class="p-status">Waiting at start</div></div>
+        <div class="p-status-dot" style="background:#555"></div>
+      </div>
+    </div>
+
+    <div id="s2-action" class="action-pill">
+      <span class="action-label">View Details</span>
+      <div class="action-sep"></div>
+      <div class="stop-btn">⏹ End Ride</div>
+    </div>
+
+    <!-- overlays for s2 -->
+    <div class="dim-overlay" id="s2-dim"></div>
+    <div class="highlight-box" id="s2-hl"></div>
+    <div class="tooltip" id="s2-tip"></div>
+    <div class="screen-label" id="s2-label"></div>
+    <div class="nav-bar">
+      <span class="nav-skip" id="s2-skip">Skip tour</span>
+      <div class="nav-dots" id="s2-dots"></div>
+      <button class="nav-next" id="s2-next">Next <span>›</span></button>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 3: Finished Ride / Checkpoints ══ -->
+  <div class="screen" id="s3">
+    <div class="s3-header">
+      <div class="s3-back">‹</div>
+      <span class="s3-title">Ride Summary</span>
+      <div class="s3-user-btn">👤</div>
+    </div>
+
+    <div style="overflow-y:auto;flex:1;padding-bottom:80px" id="s3-scroll">
+      <div id="s3-hero" class="hero-card">
+        <div class="hero-accent"></div>
+        <div class="hero-body">
+          <div class="ride-name-hero">Epic Bukidnon Adventure</div>
+          <div class="stats-row">
+            <div class="stat-item">
+              <div class="stat-lbl">Distance</div>
+              <div class="stat-val">87</div>
+              <div class="stat-unit">km</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-lbl">Duration</div>
+              <div class="stat-val">4h 20m</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-lbl">Riders</div>
+              <div class="stat-val">3</div>
+              <div class="stat-unit">finished</div>
+            </div>
+          </div>
+          <div class="time-row-display">
+            <div class="time-item-d">
+              <div class="time-lbl">START</div>
+              <div class="time-val">06:00 AM</div>
+            </div>
+            <div style="padding:0 12px;color:var(--text-secondary)">→</div>
+            <div class="time-item-d" style="text-align:right">
+              <div class="time-lbl">END</div>
+              <div class="time-val">10:20 AM</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="s3-checkpoints" class="cp-section">
+        <div class="cp-header-row">
+          <span class="cp-title">Checkpoints</span>
+          <div class="cp-badge">3</div>
+        </div>
+
+        <div class="timeline">
+          <!-- START -->
+          <div class="tl-row">
+            <div class="tl-left">
+              <div class="tl-icon">▶</div>
+              <div class="tl-line"></div>
+            </div>
+            <div class="tl-content">
+              <div class="tl-header">
+                <span class="tl-name">Cagayan de Oro City</span>
+                <span class="tl-count">3 riders</span>
+              </div>
+              <div class="arriver"><div class="av-avatar">J</div><div><div class="av-name">juanrider</div><div class="av-time">06:01 AM</div></div><div class="av-check">✓</div></div>
+              <div class="arriver"><div class="av-avatar">M</div><div><div class="av-name">mariabiking</div><div class="av-time">06:03 AM</div></div><div class="av-check">✓</div></div>
+            </div>
+          </div>
+          <!-- STOP 1 -->
+          <div class="tl-row">
+            <div class="tl-left">
+              <div class="tl-icon">📍</div>
+              <div class="tl-line"></div>
+            </div>
+            <div class="tl-content">
+              <div class="tl-header">
+                <span class="tl-name">Dahilayan Adventure Park</span>
+                <span class="tl-count">2 riders</span>
+              </div>
+              <div class="arriver"><div class="av-avatar">J</div><div><div class="av-name">juanrider</div><div class="av-time">08:12 AM</div></div><div class="av-check">✓</div></div>
+            </div>
+          </div>
+          <!-- END -->
+          <div class="tl-row">
+            <div class="tl-left">
+              <div class="tl-icon inactive">🏁</div>
+            </div>
+            <div class="tl-content">
+              <div class="tl-header inactive">
+                <span class="tl-name">Mt. Kitanglad</span>
+                <span class="tl-count">1 rider</span>
+              </div>
+              <div class="arriver"><div class="av-avatar">J</div><div><div class="av-name">juanrider</div><div class="av-time">10:20 AM</div></div><div class="av-check">✓</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- overlays for s3 -->
+    <div class="dim-overlay" id="s3-dim"></div>
+    <div class="highlight-box" id="s3-hl"></div>
+    <div class="tooltip" id="s3-tip"></div>
+    <div class="screen-label" id="s3-label"></div>
+    <div class="nav-bar">
+      <span class="nav-skip" id="s3-skip">Skip tour</span>
+      <div class="nav-dots" id="s3-dots"></div>
+      <button class="nav-next" id="s3-next">Done ✓</button>
+    </div>
+  </div>
+
+  <!-- ══ DONE ══ -->
+  <div class="done-screen" id="done">
+    <div class="done-icon">🚵</div>
+    <div class="done-title">You're ready to ride!</div>
+    <div class="done-sub">You've seen how to create a ride, track your group live, and review checkpoint arrivals after finishing.</div>
+    <button class="done-restart" onclick="restartTour()">Restart Tour</button>
+  </div>
+
+</div>
+
+<script>
+  const SCREENS = ['s1','s2','s3'];
+  const TOTAL_STEPS = 10;
+
+  const STEPS = [
+    // Screen 1 — 4 steps
+    {screen:'s1', targetId:'s1-name-card', label:'Screen 1 of 3 — Create Ride', tipTitle:'1. Name your ride', tipDesc:'Tap to give your ride a memorable name that your group will see.', tipPos:'below'},
+    {screen:'s1', targetId:'s1-date-card', label:'Screen 1 of 3 — Create Ride', tipTitle:'2. Set date & bike type', tipDesc:'Pick when you ride and choose your bike: MTB, road, or moto.', tipPos:'below'},
+    {screen:'s1', targetId:'s1-desc-card', label:'Screen 1 of 3 — Create Ride', tipTitle:'3. Describe the route', tipDesc:'Add notes about terrain, highlights, or stops so riders know what to expect.', tipPos:'above'},
+    {screen:'s1', targetId:'s1-cta', label:'Screen 1 of 3 — Create Ride', tipTitle:'4. Continue to location', tipDesc:'Once filled in, tap here to move to the map and set your starting point.', tipPos:'above'},
+
+    // Screen 2 — 3 steps
+    {screen:'s2', targetId:'s2-map', label:'Screen 2 of 3 — Active Ride', tipTitle:'5. Live route map', tipDesc:'Your full route with start, stop points, and the end destination displayed in real time.', tipPos:'below'},
+    {screen:'s2', targetId:'s2-poll', label:'Screen 2 of 3 — Active Ride', tipTitle:'6. Live tracking status', tipDesc:'This pill confirms that participant locations are being polled every few seconds.', tipPos:'below'},
+    {screen:'s2', targetId:'s2-participants', label:'Screen 2 of 3 — Active Ride', tipTitle:'7. Participant status', tipDesc:'See each rider\'s live position and whether they are active, waiting, or offline.', tipPos:'above'},
+    {screen:'s2', targetId:'s2-action', label:'Screen 2 of 3 — Active Ride', tipTitle:'8. End the ride', tipDesc:'When everyone has finished, tap "End Ride" to stop tracking and generate the summary.', tipPos:'above'},
+
+    // Screen 3 — 2 steps
+    {screen:'s3', targetId:'s3-hero', label:'Screen 3 of 3 — Ride Summary', tipTitle:'9. Ride stats overview', tipDesc:'Distance, total duration, and how many riders completed the full route.', tipPos:'below'},
+    {screen:'s3', targetId:'s3-checkpoints', label:'Screen 3 of 3 — Checkpoints', tipTitle:'10. Checkpoint arrivals', tipDesc:'Tap each checkpoint to see which riders arrived and at exactly what time.', tipPos:'above'},
+  ];
+
+  let cur = 0;
+
+  function getDots(screenSteps, localIdx){
+    return screenSteps.map((_,i)=>`<div class="dot${i===localIdx?' active':''}"></div>`).join('');
+  }
+
+  function getScreenSteps(screen){return STEPS.filter(s=>s.screen===screen)}
+
+  function applyStep(idx){
+    const step = STEPS[idx];
+    const prevStep = idx>0?STEPS[idx-1]:null;
+
+    if(prevStep && prevStep.screen !== step.screen){
+      document.getElementById(prevStep.screen).classList.remove('active');
+      document.getElementById(step.screen).classList.add('active');
+    }
+
+    const screenSteps = getScreenSteps(step.screen);
+    const localIdx = screenSteps.findIndex(s=>s===step);
+
+    ['s1','s2','s3'].forEach(s=>{
+      const dim=document.getElementById(s+'-dim');
+      const hl=document.getElementById(s+'-hl');
+      const tip=document.getElementById(s+'-tip');
+      const lbl=document.getElementById(s+'-label');
+      if(dim){dim.style.display=s===step.screen?'block':'none'}
+      if(hl){hl.style.display=s===step.screen?'block':'none'}
+      if(tip){tip.style.display=s===step.screen?'block':'none'}
+      if(lbl){lbl.style.display=s===step.screen?'block':'none'}
+      const dots=document.getElementById(s+'-dots');
+      if(dots && s===step.screen){dots.innerHTML=getDots(screenSteps,localIdx)}
+    });
+
+    const lbl=document.getElementById(step.screen+'-label');
+    if(lbl){lbl.textContent=step.label}
+
+    const target=document.getElementById(step.targetId);
+    if(!target)return;
+
+    const shell=document.getElementById('shell');
+    const shellRect=shell.getBoundingClientRect();
+    const rect=target.getBoundingClientRect();
+
+    const pad=8;
+    const top=rect.top-shellRect.top-pad;
+    const left=rect.left-shellRect.left-pad;
+    const w=rect.width+pad*2;
+    const h=rect.height+pad*2;
+
+    const hl=document.getElementById(step.screen+'-hl');
+    hl.style.top=top+'px';
+    hl.style.left=left+'px';
+    hl.style.width=w+'px';
+    hl.style.height=h+'px';
+    hl.style.borderRadius='14px';
+
+    const tip=document.getElementById(step.screen+'-tip');
+    const tipW=220;
+    let tipLeft=left+(w-tipW)/2;
+    if(tipLeft<6)tipLeft=6;
+    if(tipLeft+tipW>374)tipLeft=374-tipW;
+
+    let tipTop;
+    if(step.tipPos==='below'){
+      tipTop=top+h+12;
+    } else {
+      tipTop=top-120;
+      if(tipTop<6)tipTop=top+h+12;
+    }
+
+    tip.style.left=tipLeft+'px';
+    tip.style.top=tipTop+'px';
+    tip.style.width=tipW+'px';
+    tip.innerHTML=`<div class="tooltip-step">STEP ${idx+1} OF ${TOTAL_STEPS}</div><div class="tooltip-title">${step.tipTitle}</div><div class="tooltip-desc">${step.tipDesc}</div>`;
+
+    const nextBtn=document.getElementById(step.screen+'-next');
+    if(nextBtn){
+      if(step.screen==='s3' && idx===STEPS.length-1){
+        nextBtn.textContent='Done ✓';
+      } else {
+        nextBtn.innerHTML='Next <span>›</span>';
+      }
+    }
+  }
+
+  function nextStep(){
+    if(cur>=STEPS.length-1){
+      SCREENS.forEach(s=>document.getElementById(s).classList.remove('active'));
+      document.getElementById('done').classList.add('active');
+      return;
+    }
+    cur++;
+    applyStep(cur);
+  }
+
+  function skipTour(){
+    SCREENS.forEach(s=>document.getElementById(s).classList.remove('active'));
+    document.getElementById('done').classList.add('active');
+  }
+
+  function restartTour(){
+    cur=0;
+    document.getElementById('done').classList.remove('active');
+    SCREENS.forEach(s=>document.getElementById(s).classList.remove('active'));
+    document.getElementById('s1').classList.add('active');
+    applyStep(0);
+  }
+
+  ['s1','s2','s3'].forEach(s=>{
+    document.getElementById(s+'-next').addEventListener('click',nextStep);
+    document.getElementById(s+'-skip').addEventListener('click',skipTour);
+  });
+
+  applyStep(0);
+</script>

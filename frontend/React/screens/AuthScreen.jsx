@@ -304,7 +304,12 @@ const AuthScreen = ({navigation}) => {
         const {accessToken, refreshToken, username} = result.data;
 
         if (accessToken && refreshToken) {
-          await saveAuth(accessToken, refreshToken, username ?? email.trim());
+          await saveAuth(
+            accessToken,
+            refreshToken,
+            username ?? email.trim(),
+            result.data.onboardingCompleted ?? false,  // ← pass it
+          );
         } else if (!isLogin) {
           // 📧 Registration successful but email not verified
           Alert.alert(

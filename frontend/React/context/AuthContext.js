@@ -42,6 +42,9 @@ export const AuthProvider = ({children}) => {
     });
   };
 
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false);
+  const completeOnboarding = () => setOnboardingCompleted(true);
+
   // REPLACE the initializeAuth function (lines 32-70):
   const initializeAuth = async () => {
     try {
@@ -180,10 +183,10 @@ export const AuthProvider = ({children}) => {
     newAccessToken,
     newRefreshToken,
     newUsername,
+    onboardingDone = false,
     expiresIn = 3600,
   ) => {
     try {
-      console.log('💾 Saving auth tokens for user:', newUsername);
 
       tokenRef.current = newAccessToken;
       refreshTokenRef.current = newRefreshToken;
@@ -192,7 +195,7 @@ export const AuthProvider = ({children}) => {
       syncApiclientRef();
       setToken(newAccessToken);
       setUsername(newUsername);
-
+      setOnboardingCompleted(onboardingDone);
       // Save token expiry metadata
       await saveTokenExpiry(expiresIn);
 
@@ -434,6 +437,8 @@ export const AuthProvider = ({children}) => {
     setAutoLoginPreference,
     getTimeUntilExpiry, // NEW
     onTokenRefreshFailed, // NEW
+    onboardingCompleted,
+    completeOnboarding,
   };
   return (
     <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>

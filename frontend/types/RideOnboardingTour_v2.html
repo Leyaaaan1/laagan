@@ -1,0 +1,552 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+:root{
+  --red:#8c2323;--red-btn:#9b2626;
+  --surface:#111;--surface2:#1a1a1a;--surface3:#222;
+  --border:#2a2a2a;--border2:#333;
+  --txt:#fff;--txt2:#aaa;--txt3:#666;
+  --green:#22c55e;--purple:#7c3aed;
+  --map-bg:#e8e4dc;--map-road:#c8b99a;--map-water:#b8d4e8;
+}
+body{background:#000;font-family:-apple-system,'SF Pro Display',sans-serif;color:var(--txt)}
+
+.shell{width:360px;margin:0 auto;position:relative}
+.phone{border-radius:26px;overflow:hidden;border:1.5px solid #2a2a2a;background:#000;position:relative}
+
+.screen{display:none;flex-direction:column;background:#000;min-height:620px}
+.screen.on{display:flex}
+
+.statusbar{background:#000;display:flex;justify-content:space-between;align-items:center;padding:10px 16px 4px;font-size:11px;color:#fff;flex-shrink:0}
+
+.dim{position:absolute;inset:0;background:rgba(0,0,0,0.68);z-index:10;pointer-events:none;border-radius:26px}
+.hl-box{position:absolute;z-index:11;border-radius:12px;box-shadow:0 0 0 3000px rgba(0,0,0,0.68);pointer-events:none;transition:all 0.3s ease;border:2px solid rgba(255,255,255,0.35)}
+.tip{position:absolute;z-index:20;background:#fff;color:#111;border-radius:14px;padding:12px 14px;width:200px;pointer-events:none;transition:all 0.3s ease}
+.tip-step{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--red);margin-bottom:3px}
+.tip-title{font-size:13px;font-weight:700;margin-bottom:4px;line-height:1.3}
+.tip-desc{font-size:11px;color:#555;line-height:1.45}
+.tip-arrow{font-size:11px;margin-top:6px;color:var(--red);font-weight:700}
+
+.navbar{position:absolute;bottom:0;left:0;right:0;z-index:30;background:rgba(0,0,0,0.97);border-top:1px solid #1f1f1f;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-radius:0 0 26px 26px}
+.nav-skip{font-size:11px;color:#666;padding:8px 10px;cursor:pointer;border-radius:8px}
+.nav-skip:hover{color:#aaa}
+.dots{display:flex;gap:5px;align-items:center}
+.dot{width:5px;height:5px;border-radius:50%;background:#333;transition:all 0.3s}
+.dot.on{width:16px;border-radius:3px;background:var(--red)}
+.btn-next{background:var(--red);color:#fff;border:none;border-radius:50px;padding:8px 18px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px}
+.btn-next:hover{opacity:0.88}
+
+.red-btn{background:var(--red-btn);border-radius:22px;padding:8px 18px;font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:6px;cursor:pointer}
+.red-btn-sm{background:var(--red-btn);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;color:#fff;display:flex;align-items:center;gap:5px}
+
+/* ── SCREEN 1a: Create Ride (Step 1 Details) ── */
+.s1-topbar{background:#000;display:flex;justify-content:space-between;align-items:center;padding:10px 14px 10px;border-bottom:1px solid var(--border)}
+.s1-topbar-left h2{font-size:16px;font-weight:800;color:#fff}
+.s1-topbar-left p{font-size:11px;color:#888;margin-top:1px}
+
+.card{background:var(--surface2);border-radius:14px;padding:14px;margin:10px 12px 0;border:1px solid var(--border)}
+.card-title{font-size:17px;font-weight:700;color:#fff;margin-bottom:2px}
+.card-sub{font-size:11px;color:#666;margin-bottom:10px}
+
+.input-light{background:#f1f5f9;border-radius:12px;padding:12px 14px;font-size:14px;color:#888;width:100%;border:none}
+.input-light.typed{color:#1a1a1a;font-weight:500}
+
+.date-box{background:#e0e0e0;border-radius:12px;padding:14px;text-align:center}
+.date-box p{font-size:14px;font-weight:700;color:#111}
+.date-box span{font-size:11px;color:#555}
+
+.bike-select{background:#e0e0e0;border-radius:12px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.bike-select span{font-size:13px;color:#333;font-weight:500;display:flex;align-items:center;gap:6px}
+
+.desc-box{background:#f1f5f9;border-radius:12px;padding:12px 14px;height:80px;font-size:12px;color:#aaa;width:100%}
+
+.cta-bar{margin:12px 12px 68px;background:var(--red-btn);border-radius:12px;padding:14px;text-align:center;font-size:14px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px}
+
+/* ── SCREEN 1b: Set Location (map) ── */
+.map-topbar{position:absolute;top:30px;left:10px;right:10px;z-index:5;display:flex;justify-content:space-between;align-items:center}
+.map-searchbar{position:absolute;top:76px;left:10px;right:10px;z-index:5;background:#fff;border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:8px}
+.map-searchbar input{border:none;outline:none;font-size:13px;color:#333;flex:1;background:transparent}
+.map-hint{position:absolute;bottom:74px;left:20px;right:20px;z-index:5;background:rgba(30,30,30,0.85);border-radius:14px;padding:12px 16px;text-align:center;font-size:12px;color:#fff;font-weight:500}
+
+.real-map{width:100%;height:340px;position:relative;overflow:hidden;background:var(--map-bg);flex-shrink:0}
+.real-map svg{width:100%;height:100%}
+
+/* ── SCREEN 1c: START/END point picker ── */
+.s3-topbar{background:rgba(255,255,255,0.92);display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #ddd}
+.s3-topbar span{font-size:13px;font-weight:700;color:#333;letter-spacing:0.5px}
+
+.point-sheet{background:#111;border-radius:16px 16px 0 0;padding:14px;margin-top:auto;border-top:1px solid #222}
+.point-row{display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;border:1.5px solid var(--border2);margin-bottom:8px}
+.point-row.active-row{border-color:var(--red)}
+.point-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
+.point-label{font-size:10px;font-weight:700;letter-spacing:0.8px;color:#666}
+.point-val{font-size:13px;font-weight:700;color:#fff;margin-top:1px}
+.point-set-btn{margin-left:auto;font-size:11px;font-weight:700;color:var(--red)}
+
+/* ── SCREEN 2: Started Ride (live map + participant panel) ── */
+.live-map{width:100%;height:310px;position:relative;overflow:hidden;background:#e8e6e0;flex-shrink:0}
+.live-map svg{width:100%;height:100%}
+
+.participant-panel{position:absolute;top:38px;right:10px;background:#1a1a1a;border-radius:14px;padding:10px 12px;z-index:5;width:180px;border:1px solid #2a2a2a}
+.panel-pin-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.p-card{display:flex;align-items:center;gap:8px;background:#111;border-radius:8px;border:1px solid #2a2a2a;padding:8px 10px;margin-bottom:6px}
+.p-avatar{width:34px;height:34px;border-radius:50%;background:#534AB7;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+.p-name{font-size:11px;font-weight:700;color:#fff;line-height:1.2}
+.p-loc{font-size:10px;color:var(--green);margin-top:1px}
+.p-loc.waiting{color:#888}
+.p-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;margin-left:auto}
+
+.bottom-pill{position:absolute;bottom:74px;left:50%;transform:translateX(-50%);background:rgba(28,28,30,0.94);border-radius:99px;padding:8px 8px 8px 16px;display:flex;align-items:center;gap:8px;white-space:nowrap;z-index:6;border:0.5px solid rgba(255,255,255,0.1)}
+.pill-label{font-size:12px;color:rgba(255,255,255,0.75);font-weight:600}
+.pill-sep{width:0.5px;height:18px;background:rgba(255,255,255,0.15)}
+.pill-end{background:var(--red-btn);border-radius:99px;padding:6px 14px;font-size:12px;font-weight:700;color:#fff;display:flex;align-items:center;gap:5px}
+.pill-checkpoint{background:rgba(50,50,50,0.95);border-radius:99px;padding:6px 14px;font-size:11px;font-weight:700;color:#fff}
+
+/* ── SCREEN 3: Checkpoint Arrivals modal ── */
+.modal-bg{background:#1a1a1a;border-radius:20px 20px 0 0;margin-top:auto;border-top:1px solid #2a2a2a;z-index:6;position:relative}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px}
+.modal-title{font-size:18px;font-weight:700;color:#fff}
+.modal-close{width:30px;height:30px;border-radius:50%;background:#2a2a2a;display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff}
+
+.warning-row{display:flex;align-items:flex-start;gap:8px;padding:10px 16px;background:rgba(255,59,48,0.1);border-left:3px solid #ff3b30;margin:0 12px;border-radius:0 8px 8px 0}
+.warning-text{font-size:11px;color:#ff6b6b;line-height:1.4}
+
+.force-end-row{display:flex;align-items:center;gap:8px;padding:10px 16px;cursor:pointer;margin-top:4px}
+.force-dot{width:14px;height:14px;border-radius:50%;background:var(--red);flex-shrink:0}
+.force-text{font-size:13px;color:#fff;font-weight:600}
+
+.cp-section-modal{padding:12px 16px 80px}
+.cp-loc-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px}
+.cp-pin{font-size:16px}
+.cp-loc-name{font-size:16px;font-weight:700;color:#fff}
+.cp-rider-count{font-size:11px;color:#888;margin-top:1px}
+
+.arrival-card{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#111;border-radius:12px;border:1px solid #2a2a2a;margin-bottom:6px}
+.arrival-avatar{width:38px;height:38px;border-radius:50%;background:var(--red-btn);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0}
+.arrival-name{font-size:13px;font-weight:700;color:#fff}
+.arrival-time{font-size:11px;color:#888;margin-top:2px}
+.arrival-check{margin-left:auto;width:24px;height:24px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff}
+
+.modal-footer{display:flex;gap:8px;padding:10px 16px;background:#1a1a1a;border-top:1px solid #2a2a2a}
+.footer-refresh{flex:1;background:#2a2a2a;border-radius:99px;padding:10px;text-align:center;font-size:13px;font-weight:600;color:#fff;display:flex;align-items:center;justify-content:center;gap:6px}
+.footer-close{flex:1;background:var(--red-btn);border-radius:99px;padding:10px;text-align:center;font-size:13px;font-weight:600;color:#fff;display:flex;align-items:center;justify-content:center;gap:6px}
+
+.done-wrap{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:620px;background:#000;border-radius:26px;border:1.5px solid #2a2a2a;padding:36px 24px;text-align:center}
+.done-wrap.on{display:flex}
+.done-icon{width:68px;height:68px;border-radius:50%;background:rgba(140,35,35,0.18);border:2px solid var(--red);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:18px}
+.done-title{font-size:20px;font-weight:700;color:#fff;margin-bottom:8px}
+.done-sub{font-size:13px;color:#666;line-height:1.6;margin-bottom:24px}
+.done-btn{background:var(--red-btn);color:#fff;border:none;border-radius:50px;padding:12px 28px;font-size:13px;font-weight:700;cursor:pointer}
+</style>
+
+<h2 class="sr-only">Interactive onboarding tour showing ride creation, active ride tracking, and checkpoint arrivals</h2>
+
+<div class="shell" id="shell">
+<div class="phone" id="phone">
+
+<!-- ══ SCREEN 1a: Create Ride Details ══ -->
+<div class="screen on" id="s1a">
+  <div class="statusbar"><span>22:57</span><span>▶ ▶ ▶ •</span><span>▣ ▲ ▌▌ 🔋</span></div>
+  <div class="s1-topbar">
+    <div class="s1-topbar-left"><h2>CREATE RIDE</h2><p>Step 1 of 3 — Details</p></div>
+    <div class="red-btn" style="opacity:.45"><span>Next</span><i class="ti ti-arrow-right" aria-hidden="true" style="font-size:13px"></i></div>
+  </div>
+  <div style="flex:1;overflow:hidden;padding-bottom:4px">
+    <div id="el-name" class="card">
+      <div class="card-title">Name Your Ride</div>
+      <div class="card-sub">Give your adventure a memorable name</div>
+      <div class="input-light">Epic Bukidnon Adventure</div>
+    </div>
+    <div id="el-when" class="card">
+      <div class="card-title">When &amp; How</div>
+      <div class="card-sub" style="margin-bottom:8px">Select Date &amp; Time</div>
+      <div class="date-box"><p>Thursday, June 4, 2026</p><span>10:57 PM</span></div>
+      <div class="card-sub" style="margin-top:10px;margin-bottom:6px">Choose Your Bike</div>
+      <div class="bike-select"><span><i class="ti ti-motorbike" aria-hidden="true" style="font-size:16px;color:var(--red)"></i> ADV 160</span><i class="ti ti-chevron-down" aria-hidden="true" style="font-size:14px;color:#888"></i></div>
+    </div>
+    <div id="el-desc" class="card">
+      <div class="card-title">Describe Your Route</div>
+      <div class="card-sub">Share details about terrain, highlights, or special stops</div>
+      <div class="desc-box">Tell us about the terrain, highlights, or any special stops along the way...</div>
+    </div>
+    <div id="el-cta" class="cta-bar">Continue to Location <i class="ti ti-arrow-right" aria-hidden="true" style="font-size:15px"></i></div>
+  </div>
+  <div class="dim" id="d-s1a"></div>
+  <div class="hl-box" id="hl-s1a" style="display:none"></div>
+  <div class="tip" id="tip-s1a" style="display:none"></div>
+  <div class="navbar">
+    <span class="nav-skip" onclick="skip()">Skip</span>
+    <div class="dots" id="dots-s1a"></div>
+    <button class="btn-next" onclick="advance()">Next <i class="ti ti-arrow-right" aria-hidden="true" style="font-size:11px"></i></button>
+  </div>
+</div>
+
+<!-- ══ SCREEN 1b: Set Location Map ══ -->
+<div class="screen" id="s1b" style="position:relative">
+  <div class="statusbar" style="position:absolute;top:0;left:0;right:0;z-index:3"><span>22:57</span><span>▶ ▶ ▶ •</span><span>▣ ▲ ▌▌ 🔋</span></div>
+  <div class="map-topbar">
+    <div class="red-btn-sm" style="background:rgba(255,255,255,0.9);color:#8c2323"><i class="ti ti-arrow-left" aria-hidden="true" style="font-size:12px;color:var(--red)"></i><span style="color:var(--red);font-weight:700;font-size:12px">Back</span></div>
+    <span style="font-size:12px;font-weight:700;color:#333;background:rgba(255,255,255,0.9);padding:6px 12px;border-radius:10px">SET LOCATION</span>
+    <div class="red-btn-sm"><span>Next</span><i class="ti ti-arrow-right" aria-hidden="true" style="font-size:11px"></i></div>
+  </div>
+  <div id="el-search" class="map-searchbar" style="top:76px">
+    <i class="ti ti-search" aria-hidden="true" style="font-size:16px;color:#888"></i>
+    <input placeholder="Where do you want to ride?" readonly>
+  </div>
+  <div class="real-map" style="margin-top:30px">
+    <svg viewBox="0 0 360 340" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+      <rect width="360" height="340" fill="#e8e4dc"/>
+      <rect x="0" y="0" width="360" height="340" fill="#d4d0c8" opacity="0.3"/>
+      <path d="M60,20 L80,80 L100,140 L90,200 L110,260 L130,320" stroke="#c8b99a" stroke-width="6" fill="none"/>
+      <path d="M140,20 L160,100 L150,180 L170,260 L160,340" stroke="#c8a870" stroke-width="8" fill="none" opacity="0.7"/>
+      <path d="M0,120 L80,140 L160,130 L240,150 L360,140" stroke="#c8b99a" stroke-width="5" fill="none"/>
+      <path d="M0,220 L100,210 L200,230 L360,220" stroke="#c8b99a" stroke-width="4" fill="none"/>
+      <ellipse cx="290" cy="200" rx="60" ry="100" fill="#b8d4e8" opacity="0.8"/>
+      <path d="M240,140 Q270,160 280,200 Q285,230 270,270 L260,320" stroke="#a0c0d8" stroke-width="3" fill="none"/>
+      <text x="80" y="60" font-size="11" fill="#555" font-weight="500">Lubogan</text>
+      <text x="180" y="80" font-size="10" fill="#555">Dumoy</text>
+      <text x="50" y="130" font-size="10" fill="#555">Bato</text>
+      <text x="130" y="155" font-size="10" fill="#555">Crossing Bayabas</text>
+      <text x="180" y="195" font-size="10" fill="#555">Toril</text>
+      <text x="60" y="200" font-size="9" fill="#555">Marapangi</text>
+      <text x="110" y="235" font-size="10" fill="#555">Lizada</text>
+      <text x="220" y="240" font-size="10" fill="#555">Daliao</text>
+      <text x="40" y="300" font-size="10" fill="#555">Sirawan</text>
+      <circle cx="185" cy="220" r="10" fill="#4a90d9" opacity="0.9"/>
+      <circle cx="185" cy="220" r="6" fill="#fff"/>
+      <path d="M185,210 L185,190 M178,217 L165,225" stroke="#4a90d9" stroke-width="1.5" fill="none" opacity="0.5"/>
+    </svg>
+  </div>
+  <div id="el-hint" class="map-hint">📍 Tap the map or search above to set your location</div>
+  <div class="dim" id="d-s1b" style="display:none"></div>
+  <div class="hl-box" id="hl-s1b" style="display:none"></div>
+  <div class="tip" id="tip-s1b" style="display:none"></div>
+  <div class="navbar">
+    <span class="nav-skip" onclick="skip()">Skip</span>
+    <div class="dots" id="dots-s1b"></div>
+    <button class="btn-next" onclick="advance()">Next <i class="ti ti-arrow-right" aria-hidden="true" style="font-size:11px"></i></button>
+  </div>
+</div>
+
+<!-- ══ SCREEN 1c: Start/End point picker ══ -->
+<div class="screen" id="s1c" style="position:relative">
+  <div class="statusbar" style="position:absolute;top:0;left:0;right:0;z-index:3"><span>22:58</span><span>▶ ▶ ▶ •</span><span>▣ ▲ ▌▌ 🔋</span></div>
+  <div class="map-topbar" style="top:30px">
+    <div class="red-btn-sm" style="background:rgba(255,255,255,0.9)"><i class="ti ti-arrow-left" aria-hidden="true" style="font-size:12px;color:var(--red)"></i><span style="color:var(--red);font-weight:700;font-size:12px">Back</span></div>
+    <span style="font-size:12px;font-weight:700;color:#333;background:rgba(255,255,255,0.9);padding:6px 12px;border-radius:10px">START POINT</span>
+    <div class="red-btn-sm" style="opacity:0.5"><span>Create</span><i class="ti ti-check" aria-hidden="true" style="font-size:11px"></i></div>
+  </div>
+  <div class="map-searchbar" style="top:76px">
+    <i class="ti ti-search" aria-hidden="true" style="font-size:16px;color:#888"></i>
+    <input placeholder="Search starting point" readonly>
+  </div>
+  <div class="real-map" style="margin-top:30px;height:260px">
+    <svg viewBox="0 0 360 260" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+      <rect width="360" height="260" fill="#e8e4dc"/>
+      <path d="M60,20 L80,80 L100,140 L90,200 L110,260" stroke="#c8b99a" stroke-width="6" fill="none"/>
+      <path d="M140,20 L160,100 L150,180 L170,260" stroke="#c8a870" stroke-width="8" fill="none" opacity="0.7"/>
+      <path d="M0,100 L80,120 L160,110 L240,130 L360,120" stroke="#c8b99a" stroke-width="5" fill="none"/>
+      <path d="M0,190 L100,180 L200,200 L360,190" stroke="#c8b99a" stroke-width="4" fill="none"/>
+      <ellipse cx="310" cy="160" rx="55" ry="90" fill="#b8d4e8" opacity="0.8"/>
+      <text x="80" y="50" font-size="11" fill="#555">Lubogan</text>
+      <text x="180" y="70" font-size="10" fill="#555">Dumoy</text>
+      <text x="50" y="110" font-size="10" fill="#555">Bato</text>
+      <text x="130" y="130" font-size="10" fill="#555">Crossing Bayabas</text>
+      <text x="180" y="165" font-size="10" fill="#555">Toril</text>
+      <text x="60" y="170" font-size="9" fill="#555">Marapangi</text>
+      <text x="110" y="205" font-size="10" fill="#555">Lizada</text>
+      <text x="220" y="205" font-size="10" fill="#555">Daliao</text>
+      <circle cx="185" cy="175" r="10" fill="#4a90d9" opacity="0.9"/>
+      <circle cx="185" cy="175" r="6" fill="#fff"/>
+    </svg>
+  </div>
+  <div id="el-points" class="point-sheet">
+    <div style="text-align:center;margin-bottom:10px"><div style="width:36px;height:4px;background:#333;border-radius:2px;margin:0 auto"></div></div>
+    <div class="point-row active-row">
+      <div class="point-dot" style="background:#22c55e;border:2px solid #fff"></div>
+      <div><div class="point-label">START</div><div class="point-val">Not set</div></div>
+      <div class="point-set-btn">Set</div>
+    </div>
+    <div class="point-row">
+      <div class="point-dot" style="background:var(--red);border-radius:3px"></div>
+      <div><div class="point-label">END</div><div class="point-val">Not set</div></div>
+      <div class="point-set-btn">Set</div>
+    </div>
+  </div>
+  <div class="dim" id="d-s1c" style="display:none"></div>
+  <div class="hl-box" id="hl-s1c" style="display:none"></div>
+  <div class="tip" id="tip-s1c" style="display:none"></div>
+  <div class="navbar">
+    <span class="nav-skip" onclick="skip()">Skip</span>
+    <div class="dots" id="dots-s1c"></div>
+    <button class="btn-next" onclick="advance()">Next <i class="ti ti-arrow-right" aria-hidden="true" style="font-size:11px"></i></button>
+  </div>
+</div>
+
+<!-- ══ SCREEN 2: Started Ride (live map + participants) ══ -->
+<div class="screen" id="s2" style="position:relative">
+  <div class="statusbar" style="position:absolute;top:0;left:0;right:0;z-index:3"><span>22:58</span><span>▶ ▶ ▶ •</span><span>▣ ▲ ▌▌ 🔋</span></div>
+  <div class="live-map">
+    <svg viewBox="0 0 360 310" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+      <rect width="360" height="310" fill="#eeecea"/>
+      <path d="M0,100 L80,110 L160,105 L240,120 L360,115" stroke="#d0c8b8" stroke-width="6" fill="none"/>
+      <path d="M0,190 L100,180 L200,195 L360,188" stroke="#d0c8b8" stroke-width="5" fill="none"/>
+      <path d="M110,0 L120,80 L115,160 L125,240 L120,310" stroke="#c8b89a" stroke-width="7" fill="none"/>
+      <path d="M200,0 L210,90 L205,180 L215,310" stroke="#c8b09a" stroke-width="5" fill="none"/>
+      <path d="M0,50 L80,55 L160,50 L360,48" stroke="#d5cfc2" stroke-width="3" fill="none"/>
+      <ellipse cx="330" cy="180" rx="38" ry="130" fill="#c8dce8" opacity="0.6"/>
+      <text x="55" y="90" font-size="10" fill="#888">CAMP MARY HILL</text>
+      <text x="60" y="140" font-size="9" fill="#999">TABI</text>
+      <text x="150" y="130" font-size="9" fill="#999">PUROK 7</text>
+      <text x="80" y="210" font-size="9" fill="#999">Bayabas Creek</text>
+      <text x="220" y="200" font-size="10" fill="#888">LIZADA</text>
+      <text x="200" y="245" font-size="9" fill="#888">Lipadlas River</text>
+      <text x="90" y="265" font-size="10" fill="#888">Santo Niño</text>
+      <text x="145" y="278" font-size="9" fill="#999">ARAPANGI</text>
+      <path d="M160,258 L185,310" stroke="#3366cc" stroke-width="3" stroke-linecap="round"/>
+      <path d="M130,155 L145,190 L160,258" stroke="#3366cc" stroke-width="3" stroke-linecap="round"/>
+      <path d="M115,70 L125,115 L130,155" stroke="#3366cc" stroke-width="3" stroke-linecap="round"/>
+      <rect x="86" y="248" width="68" height="18" rx="4" fill="#fff" stroke="#22c55e" stroke-width="1"/>
+      <text x="120" y="260" font-size="9" fill="#22c55e" font-weight="700" text-anchor="middle">Santo Niño</text>
+      <circle cx="133" cy="155" r="16" fill="#22c55e" stroke="#fff" stroke-width="2"/>
+      <text x="133" y="160" font-size="14" text-anchor="middle">🚀</text>
+      <rect x="28" y="155" width="26" height="26" rx="6" fill="#3366cc"/>
+      <text x="41" y="170" font-size="9" fill="#fff" text-anchor="middle">≡</text>
+      <text x="52" y="170" font-size="11" fill="#fff">›</text>
+      <text x="10" y="100" font-size="11" fill="#3366cc" text-anchor="middle">+</text>
+      <text x="10" y="115" font-size="9" fill="#3366cc" text-anchor="middle">−</text>
+      <circle cx="300" cy="255" r="22" fill="#fff" stroke="#ccc" stroke-width="1"/>
+      <path d="M300,248 L294,258 L306,258 Z" fill="#cc2222"/>
+      <rect x="290" y="263" width="20" height="10" rx="3" fill="#fff" stroke="#ccc" stroke-width="1"/>
+      <text x="300" y="271" font-size="7" fill="#333" text-anchor="middle" font-weight="700">STR</text>
+    </svg>
+    <div id="el-participants" class="participant-panel">
+      <div class="panel-pin-row"><i class="ti ti-map-pin" aria-hidden="true" style="font-size:16px;color:#fff"></i><i class="ti ti-chevron-up" aria-hidden="true" style="font-size:14px;color:#888"></i></div>
+      <div class="p-card">
+        <div class="p-avatar">L</div>
+        <div style="flex:1;min-width:0"><div class="p-name">lean_paninsoro</div><div class="p-loc">Glabaca · 2273m away</div></div>
+        <div class="p-dot"></div>
+      </div>
+      <div class="p-card">
+        <div class="p-avatar">A</div>
+        <div style="flex:1;min-width:0"><div class="p-name">alayon_alyanna26</div><div class="p-loc waiting">Waiting for location...</div></div>
+        <div class="p-dot"></div>
+      </div>
+      <div class="p-card">
+        <div class="p-avatar">L</div>
+        <div style="flex:1;min-width:0"><div class="p-name">leandropaninsoro</div><div class="p-loc">Glabaca · 2274m away</div></div>
+        <div class="p-dot"></div>
+      </div>
+    </div>
+  </div>
+  <div style="background:#1a1a1a;padding:8px 14px;border-top:1px solid #222;font-size:10px;color:#888;text-align:center;flex-shrink:0">
+    <span style="color:#3366cc;text-decoration:underline">Leaflet</span> | © OpenStreetMap contributors
+  </div>
+  <div id="el-pill" class="bottom-pill">
+    <i class="ti ti-info-circle" aria-hidden="true" style="font-size:14px;color:rgba(255,255,255,0.6)"></i>
+    <span class="pill-label">Details</span>
+    <div class="pill-sep"></div>
+    <div class="pill-end"><i class="ti ti-logout" aria-hidden="true" style="font-size:12px"></i> Leave</div>
+  </div>
+  <div class="dim" id="d-s2" style="display:none"></div>
+  <div class="hl-box" id="hl-s2" style="display:none"></div>
+  <div class="tip" id="tip-s2" style="display:none"></div>
+  <div class="navbar">
+    <span class="nav-skip" onclick="skip()">Skip</span>
+    <div class="dots" id="dots-s2"></div>
+    <button class="btn-next" onclick="advance()">Next <i class="ti ti-arrow-right" aria-hidden="true" style="font-size:11px"></i></button>
+  </div>
+</div>
+
+<!-- ══ SCREEN 3: Checkpoint Arrivals Modal ══ -->
+<div class="screen" id="s3" style="position:relative">
+  <div class="statusbar" style="position:absolute;top:0;left:0;right:0;z-index:3"><span>22:58</span><span>▶ ▶ ▶ •</span><span>▣ ▲ ▌▌ 🔋</span></div>
+  <div class="live-map" style="height:200px;opacity:0.5">
+    <svg viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+      <rect width="360" height="200" fill="#eeecea"/>
+      <path d="M0,80 L80,88 L160,83 L240,95 L360,90" stroke="#d0c8b8" stroke-width="6" fill="none"/>
+      <path d="M110,0 L120,60 L115,130 L125,200" stroke="#c8b89a" stroke-width="7" fill="none"/>
+      <path d="M200,0 L210,80 L205,200" stroke="#c8b09a" stroke-width="5" fill="none"/>
+      <ellipse cx="330" cy="120" rx="38" ry="90" fill="#c8dce8" opacity="0.6"/>
+      <path d="M160,165 L185,200" stroke="#3366cc" stroke-width="3"/>
+      <path d="M130,95 L145,130 L160,165" stroke="#3366cc" stroke-width="3"/>
+      <circle cx="133" cy="97" r="14" fill="#22c55e" stroke="#fff" stroke-width="2"/>
+      <text x="133" y="102" font-size="12" text-anchor="middle">🚀</text>
+      <text x="90" y="175" font-size="10" fill="#888">Santo Niño</text>
+      <text x="148" y="185" font-size="9" fill="#888">ARAPANGI</text>
+      <text x="55" y="70" font-size="9" fill="#999">CAMP MARY HILL</text>
+      <text x="60" y="110" font-size="8" fill="#999">TABI</text>
+      <text x="155" y="100" font-size="8" fill="#999">PUROK 7</text>
+    </svg>
+    <div class="participant-panel" style="opacity:0.6">
+      <div class="panel-pin-row"><i class="ti ti-map-pin" aria-hidden="true" style="font-size:14px;color:#fff"></i><i class="ti ti-chevron-up" aria-hidden="true" style="font-size:12px;color:#888"></i></div>
+      <div class="p-card"><div class="p-avatar" style="width:28px;height:28px;font-size:11px">L</div><div><div class="p-name" style="font-size:10px">lean_paninsoro</div><div class="p-loc" style="font-size:9px">Glabaca · 2273m</div></div></div>
+      <div class="p-card"><div class="p-avatar" style="width:28px;height:28px;font-size:11px">A</div><div><div class="p-name" style="font-size:10px">alayon_alyanna26</div><div class="p-loc waiting" style="font-size:9px">Waiting...</div></div></div>
+      <div class="p-card"><div class="p-avatar" style="width:28px;height:28px;font-size:11px">L</div><div><div class="p-name" style="font-size:10px">leandropaninsoro</div><div class="p-loc" style="font-size:9px">Glabaca · 2274m</div></div></div>
+    </div>
+  </div>
+  <div id="el-modal" class="modal-bg">
+    <div class="modal-header">
+      <span class="modal-title">Checkpoint Arrivals</span>
+      <div class="modal-close"><i class="ti ti-x" aria-hidden="true" style="font-size:13px"></i></div>
+    </div>
+    <div class="warning-row">
+      <i class="ti ti-alert-triangle" aria-hidden="true" style="font-size:16px;color:#ff6b6b;flex-shrink:0;margin-top:1px"></i>
+      <div class="warning-text">You haven't reached the finish line yet.</div>
+    </div>
+    <div class="force-end-row">
+      <div class="force-dot"></div>
+      <div class="force-text">Force End Ride</div>
+    </div>
+    <div id="el-arrival" class="cp-section-modal">
+      <div class="cp-loc-row">
+        <i class="ti ti-map-pin" aria-hidden="true" style="font-size:16px;color:var(--red)"></i>
+        <div><div class="cp-loc-name">Coronon</div><div class="cp-rider-count">1 rider</div></div>
+      </div>
+      <div class="arrival-card">
+        <div class="arrival-avatar">L</div>
+        <div><div class="arrival-name">leandropaninsoro</div><div class="arrival-time">12:21:16 PM</div></div>
+        <div class="arrival-check"><i class="ti ti-check" aria-hidden="true" style="font-size:11px"></i></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div class="footer-refresh"><i class="ti ti-refresh" aria-hidden="true" style="font-size:13px"></i> Refresh</div>
+      <div class="footer-close"><i class="ti ti-x" aria-hidden="true" style="font-size:13px"></i> Close</div>
+    </div>
+  </div>
+  <div class="dim" id="d-s3" style="display:none"></div>
+  <div class="hl-box" id="hl-s3" style="display:none"></div>
+  <div class="tip" id="tip-s3" style="display:none"></div>
+  <div class="navbar">
+    <span class="nav-skip" onclick="skip()">Skip</span>
+    <div class="dots" id="dots-s3"></div>
+    <button class="btn-next" id="btn-s3" onclick="advance()">Next <i class="ti ti-arrow-right" aria-hidden="true" style="font-size:11px"></i></button>
+  </div>
+</div>
+
+</div>
+
+<!-- done -->
+<div class="done-wrap" id="done">
+  <div class="done-icon">🚵</div>
+  <div class="done-title">You're ready to ride!</div>
+  <div class="done-sub">You've learned how to create a ride, choose locations, track riders live on the map, and review checkpoint arrivals.</div>
+  <button class="done-btn" onclick="restart()">Restart Tour</button>
+</div>
+</div>
+
+<script>
+const STEPS = [
+  {sc:'s1a', el:'el-name',         pos:'below', step:'1/8', title:'Name your ride', desc:'Enter a memorable name for your group ride here.'},
+  {sc:'s1a', el:'el-when',         pos:'below', step:'2/8', title:'Set date & bike type', desc:'Pick when you go and select your bike — ADV, MTB, road bike, and more.'},
+  {sc:'s1a', el:'el-desc',         pos:'above', step:'3/8', title:'Describe the route', desc:'Add details about terrain, highlights, or stops so riders know what to expect.'},
+  {sc:'s1a', el:'el-cta',          pos:'above', step:'4/8', title:'Continue to location', desc:'Tap here to open the map and set your ride\'s general location area.'},
+  {sc:'s1b', el:'el-search',       pos:'below', step:'5/8', title:'Search your location', desc:'Type a place name to search, or tap anywhere on the map to drop a pin.'},
+  {sc:'s1b', el:'el-hint',         pos:'above', step:'6/8', title:'Map hint', desc:'This prompt guides you — tap the map or use the search bar above to pick a spot.'},
+  {sc:'s1c', el:'el-points',       pos:'above', step:'7/8', title:'Set start & end points', desc:'Tap SET on each row to define where your ride begins and where it ends.'},
+  {sc:'s2',  el:'el-participants', pos:'below', step:'8/12', title:'Live participant panel', desc:'See all riders\' real-time location and distance. Green dot = active, gray = waiting.'},
+  {sc:'s2',  el:'el-pill',         pos:'above', step:'9/12', title:'Details & Leave', desc:'"Details" opens ride info. "Leave" lets you exit the ride from this screen.'},
+  {sc:'s3',  el:'el-modal',        pos:'above', step:'10/12', title:'Checkpoint Arrivals modal', desc:'Tap the checkpoints button during a ride to see who has arrived at each stop.'},
+  {sc:'s3',  el:'el-arrival',      pos:'above', step:'11/12', title:'Arrival record', desc:'Each arrival shows the rider\'s name and exact timestamp when they passed the checkpoint.'},
+  {sc:'s3',  el:'el-modal',        pos:'above', step:'12/12', title:'Force End or Refresh', desc:'Use Refresh to reload arrivals, or Force End to finish the ride early if needed.'},
+];
+
+const SCREEN_STEPS = {
+  s1a:[0,1,2,3], s1b:[4,5], s1c:[6], s2:[7,8], s3:[9,10,11]
+};
+
+let cur = 0;
+
+function getEl(id){return document.getElementById(id)}
+function getPhone(){return document.getElementById('phone')}
+
+function showScreen(sc){
+  ['s1a','s1b','s1c','s2','s3'].forEach(s=>{
+    const el=getEl(s);
+    if(el) el.classList.toggle('on', s===sc);
+  });
+}
+
+function placeTip(sc, targetId, tipId, hlId, dimId, step){
+  const phone=getPhone();
+  const phoneRect=phone.getBoundingClientRect();
+  const target=getEl(targetId);
+  if(!target) return;
+  const rect=target.getBoundingClientRect();
+
+  const pad=6;
+  const top=rect.top-phoneRect.top-pad;
+  const left=rect.left-phoneRect.left-pad;
+  const w=rect.width+pad*2;
+  const h=rect.height+pad*2;
+
+  const hl=getEl(hlId);
+  hl.style.cssText=`display:block;top:${top}px;left:${left}px;width:${w}px;height:${h}px`;
+
+  const tip=getEl(tipId);
+  const tipW=200;
+  let tL=left+(w-tipW)/2;
+  if(tL<6) tL=6;
+  if(tL+tipW>354) tL=354-tipW;
+
+  let tT;
+  if(step.pos==='below'){
+    tT=top+h+10;
+    if(tT+130>580) tT=top-140;
+  } else {
+    tT=top-140;
+    if(tT<34) tT=top+h+10;
+  }
+
+  tip.style.cssText=`display:block;top:${tT}px;left:${tL}px;width:${tipW}px`;
+  tip.innerHTML=`<div class="tip-step">STEP ${step.step}</div><div class="tip-title">${step.title}</div><div class="tip-desc">${step.desc}</div>`;
+
+  const dim=getEl(dimId);
+  if(dim) dim.style.display='block';
+}
+
+function renderStep(idx){
+  if(idx>=STEPS.length){
+    getEl('phone').style.display='none';
+    getEl('done').classList.add('on');
+    return;
+  }
+  const step=STEPS[idx];
+  const sc=step.sc;
+
+  showScreen(sc);
+
+  ['s1a','s1b','s1c','s2','s3'].forEach(s=>{
+    const d=getEl('d-'+s), hl=getEl('hl-'+s), t=getEl('tip-'+s);
+    if(d) d.style.display='none';
+    if(hl) hl.style.display='none';
+    if(t) t.style.display='none';
+  });
+
+  const localSteps=SCREEN_STEPS[sc];
+  const localIdx=localSteps.indexOf(idx);
+  const dotsEl=getEl('dots-'+sc);
+  if(dotsEl) dotsEl.innerHTML=localSteps.map((_,i)=>`<div class="dot${i===localIdx?' on':''}"></div>`).join('');
+
+  setTimeout(()=>{
+    placeTip(sc, step.el, 'tip-'+sc, 'hl-'+sc, 'd-'+sc, step);
+  }, 80);
+
+  const s3btn=getEl('btn-s3');
+  if(s3btn) s3btn.innerHTML=idx===STEPS.length-1?'Done <i class="ti ti-check" aria-hidden="true" style="font-size:11px"></i>':'Next <i class="ti ti-arrow-right" aria-hidden="true" style="font-size:11px"></i>';
+}
+
+function advance(){cur++;renderStep(cur)}
+function skip(){
+  getEl('phone').style.display='none';
+  getEl('done').classList.add('on');
+}
+function restart(){
+  cur=0;
+  getEl('phone').style.display='block';
+  getEl('done').classList.remove('on');
+  renderStep(0);
+}
+
+renderStep(0);
+</script>

@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {AuthProvider, useAuth} from './React/context/AuthContext';
@@ -21,10 +20,16 @@ import LegalScreen from '../frontend/React/screens/LegalScreen';
 import FinishedRideView from './React/pages/finishedRide/FinishedRideView';
 import PersonalSummaryView from './React/pages/finishedRide/PersonalSummaryView';
 import {useDeepLinking} from './React/utilities/deepLinking';
+import EmailVerificationScreen from './React/screens/EmailVerificationScreen';
+import VerifyEmailLinkScreen from './React/screens/VerifyEmailLinkScreen';
+// ─── ADD these two imports ───────────────────────────────────────────────────
+import OnboardingTour, {ONBOARDING_KEY} from './React/screens/OnboardingTour';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface AuthContextValue {
   token: string | null;
   ready: boolean;
+  onboardingCompleted: boolean;
 }
 
 const Stack = createNativeStackNavigator();
@@ -33,11 +38,19 @@ export const googleclientid = GOOGLE_CLIENT_ID;
 const AuthStack = () => (
   <Stack.Navigator screenOptions={{headerShown: false}}>
     <Stack.Screen name="AuthScreen" component={AuthScreen} />
+    <Stack.Screen
+      name="EmailVerification"
+      component={EmailVerificationScreen}
+    />
+    <Stack.Screen name="VerifyEmailLink" component={VerifyEmailLinkScreen} />
   </Stack.Navigator>
 );
 
-const AppStack = () => (
-  <Stack.Navigator screenOptions={{headerShown: false}}>
+const AppStack = ({initialRoute = 'OnboardingTour'}) => (
+  <Stack.Navigator
+    screenOptions={{headerShown: false}}
+    initialRouteName={initialRoute}>
+    <Stack.Screen name="OnboardingTour" component={OnboardingTour} />
     <Stack.Screen name="RiderPage" component={RiderPage} />
     <Stack.Screen name="Home" component={HomeScreen} />
     <Stack.Screen name="CreateRide" component={CreateRide} />
@@ -51,25 +64,22 @@ const AppStack = () => (
   </Stack.Navigator>
 );
 
-// ← CREATE NEW COMPONENT INSIDE NavigationContainer
 const NavigationContent = () => {
   const auth = useAuth() as unknown as AuthContextValue;
 
-  // ← MOVE useDeepLinking HERE (inside NavigationContainer)
   useDeepLinking();
-
   setAuthContextRef(auth);
+  GoogleSignin.configure({webClientId: googleclientid, offlineAccess: false});
 
-  GoogleSignin.configure({
-    webClientId: googleclientid,
-    offlineAccess: true,
-  });
+  if (!auth.ready) {return <LoadingScreen />;}
+  if (!auth.token) {return <AuthStack />;}
 
-  if (!auth.ready) {
-    return <LoadingScreen />;
-  }
-
-  return auth.token ? <AppStack /> : <AuthStack />;
+  // No more AsyncStorage! Reads directly from context
+  return (
+    <AppStack
+      initialRoute={auth.onboardingCompleted ? 'RiderPage' : 'OnboardingTour'}
+    />
+  );
 };
 
 export default function App() {
