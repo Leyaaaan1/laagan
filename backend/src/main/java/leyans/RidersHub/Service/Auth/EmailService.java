@@ -7,6 +7,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -23,8 +24,8 @@ public class EmailService {
     @Value("${email.verification.frontend-url}")
     private String frontendUrl;
 
-    @Value("${resend.api-key}")
-    private String resendApiKey;
+    @Value("${brevo.api-key}")
+    private String brevoApiKey;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -58,23 +59,20 @@ public class EmailService {
                         </body>
                     </html>
                     """.formatted(verificationLink, verificationLink);
-
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(resendApiKey);
+            headers.set("api-key", brevoApiKey);  // ← different from Resend
 
             Map<String, Object> body = Map.of(
-                    "from", senderName + " <" + fromEmail + ">",
-                    "to", new String[]{toEmail},
+                    "sender", Map.of("name", senderName, "email", fromEmail),
+                    "to", List.of(Map.of("email", toEmail)),
                     "subject", subject,
-                    "html", htmlContent
+                    "htmlContent", htmlContent
             );
 
-            HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
-
             ResponseEntity<String> response = restTemplate.postForEntity(
-                    "https://api.resend.com/emails",
-                    request,
+                    "https://api.brevo.com/v3/transactional-emails",
+                    new HttpEntity<>(body, headers),
                     String.class
             );
 
