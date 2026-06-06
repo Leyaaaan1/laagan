@@ -1,24 +1,18 @@
-
 package leyans.RidersHub.Service.Auth;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+import org.springframework.web.client.RestTemplate;
 
-import java.io.UnsupportedEncodingException;
+import java.util.Map;
 
 @Service
 public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
-
-    private final JavaMailSender mailSender;
 
     @Value("${email.verification.from-email}")
     private String fromEmail;
@@ -29,21 +23,21 @@ public class EmailService {
     @Value("${email.verification.frontend-url}")
     private String frontendUrl;
 
-    public EmailService(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
-    }
+    @Value("${resend.api-key}")
+    private String resendApiKey;
 
-    /**     * Send email verification link     */
+    private final RestTemplate restTemplate = new RestTemplate();
+
     public void sendVerificationEmail(String toEmail, String token) {
         try {
             String verificationLink = frontendUrl + "/riders/verify-email?token=" + token;
-            String subject = "RidersHub - Verify Your Email";
+            String subject = "Laagan - Verify Your Email";
 
             String htmlContent = """
                     <html>
                         <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
                             <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                                <h2 style="color: #333;">Welcome to RidersHub! 🏍️</h2>
+                                <h2 style="color: #333;">Welcome to Laagan! 🏍️</h2>
                                 <p style="color: #666; font-size: 16px;">
                                     Thank you for registering. Please verify your email address to activate your account.
                                 </p>
@@ -65,26 +59,34 @@ public class EmailService {
                     </html>
                     """.formatted(verificationLink, verificationLink);
 
-            sendHtmlEmail(toEmail, subject, htmlContent);
-            log.info("Verification email sent to: {}", toEmail);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(resendApiKey);
+
+            Map<String, Object> body = Map.of(
+                    "from", senderName + " <" + fromEmail + ">",
+                    "to", new String[]{toEmail},
+                    "subject", subject,
+                    "html", htmlContent
+            );
+
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+
+            ResponseEntity<String> response = restTemplate.postForEntity(
+                    "https://api.resend.com/emails",
+                    request,
+                    String.class
+            );
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                log.info("Verification email sent to: {}", toEmail);
+            } else {
+                throw new RuntimeException("Resend API error: " + response.getBody());
+            }
 
         } catch (Exception e) {
-            log.error(" Error sending verification email to: {}", toEmail, e);
+            log.error("Error sending verification email to: {}", toEmail, e);
             throw new RuntimeException("Failed to send verification email: " + e.getMessage());
         }
     }
-
-    private void sendHtmlEmail(String toEmail, String subject, String htmlContent) throws MessagingException, UnsupportedEncodingException {
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-        helper.setFrom(fromEmail, senderName);
-        helper.setTo(toEmail);
-        helper.setSubject(subject);
-        helper.setText(htmlContent, true); // true = HTML content
-
-        mailSender.send(message);
-    }
-
-
 }

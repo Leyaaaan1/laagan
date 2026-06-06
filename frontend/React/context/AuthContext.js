@@ -187,6 +187,7 @@ export const AuthProvider = ({children}) => {
     expiresIn = 3600,
   ) => {
     try {
+      await _clearStorage();
 
       tokenRef.current = newAccessToken;
       refreshTokenRef.current = newRefreshToken;
@@ -199,10 +200,8 @@ export const AuthProvider = ({children}) => {
       // Save token expiry metadata
       await saveTokenExpiry(expiresIn);
 
-      // ✅ NEW: Cache access token for offline use
       await saveCachedAccessToken(newAccessToken);
 
-      await _clearStorage();
 
       await Keychain.setGenericPassword('userToken', newRefreshToken, {
         accessibilityLevel: Keychain.ACCESSIBLE_WHEN_UNLOCKED_THIS_DEVICE_ONLY,
