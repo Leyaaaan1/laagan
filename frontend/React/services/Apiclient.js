@@ -93,12 +93,15 @@ export const apiFetch = async (
     // Ride creation can take a long time, so no timeout
     const isTokenRefresh = path.includes('/refresh');
     const isRideCreation = path.includes('/riders/create');
+    const isRidesList = path.includes('/riders/rides') || path.includes('/rides');
 
     let timeout = DEFAULT_TIMEOUT_MS;
     if (isRideCreation) {
-      timeout = null; // ✅ NO TIMEOUT for ride creation - let it take as long as needed
+      timeout = null;
     } else if (isTokenRefresh) {
       timeout = AUTH_TIMEOUT_MS;
+    } else if (isRidesList) {
+      timeout = 30000; // 30s to allow cold start
     }
 
     // Make fetch call WITH timeout (or without if timeout is null)
