@@ -72,7 +72,9 @@ const RiderPage = ({navigation, route}) => {
       const result = await getActiveRide();
       setActiveRide(result);
     } catch (err) {
-      console.warn('Failed to fetch active ride:', err);
+      if (err.message !== 'NOT_FOUND') {
+        console.warn('Failed to fetch active ride:', err);
+      }
       setActiveRide(null);
     } finally {
       setActiveRideLoading(false);

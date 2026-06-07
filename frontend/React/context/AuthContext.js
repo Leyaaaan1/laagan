@@ -43,8 +43,10 @@ export const AuthProvider = ({children}) => {
   };
 
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
-  const completeOnboarding = () => setOnboardingCompleted(true);
-
+  const completeOnboarding = async () => {
+    setOnboardingCompleted(true);
+    await AsyncStorage.setItem('onboardingCompleted', 'true');
+  };
   // REPLACE the initializeAuth function (lines 32-70):
   const initializeAuth = async () => {
     try {
@@ -54,6 +56,12 @@ export const AuthProvider = ({children}) => {
         usernameRef.current = storedUsername;
         setUsername(storedUsername);
         console.log('✅ Username loaded:', storedUsername);
+      }
+      const storedOnboarding = await AsyncStorage.getItem(
+        'onboardingCompleted',
+      );
+      if (storedOnboarding === 'true') {
+        setOnboardingCompleted(true);
       }
 
       // 2. Check if user previously opted out of auto-login
@@ -209,8 +217,8 @@ export const AuthProvider = ({children}) => {
       });
 
       await AsyncStorage.setItem('username', newUsername);
+      await AsyncStorage.setItem('onboardingCompleted', onboardingDone ? 'true' : 'false'); // ← ADD
 
-      console.log('✅ Auth saved for:', newUsername);
       return newAccessToken;
     } catch (error) {
       console.error('Failed to save auth:', error);
@@ -324,6 +332,7 @@ export const AuthProvider = ({children}) => {
     }
     try {
       await AsyncStorage.removeItem('username');
+      await AsyncStorage.removeItem('onboardingCompleted');
     } catch (err) {
       console.warn('⚠️ AsyncStorage remove warning:', err.message);
     }

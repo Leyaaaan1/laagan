@@ -30,6 +30,13 @@ public class EmailService {
     private final RestTemplate restTemplate = new RestTemplate();
 
     public void sendVerificationEmail(String toEmail, String token) {
+        log.info("=== EMAIL DEBUG ===");
+        log.info("API Key is null: {}", brevoApiKey == null);
+        log.info("API Key length: {}", brevoApiKey != null ? brevoApiKey.length() : 0);
+        log.info("API Key first 10: {}", brevoApiKey != null && brevoApiKey.length() > 10 ? brevoApiKey.substring(0, 10) : brevoApiKey);
+        log.info("From email: {}", fromEmail);
+        log.info("Frontend URL: {}", frontendUrl);
+        log.info("===================");
         try {
             String verificationLink = frontendUrl + "/riders/verify-email?token=" + token;
             String subject = "Laagan - Verify Your Email";

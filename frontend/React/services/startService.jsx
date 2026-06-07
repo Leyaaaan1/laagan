@@ -140,7 +140,7 @@ export const getCheckpointArrivals = async generatedRidesId => {
 
 export const getActiveRide = async () => {
   const response = await api.get('/start/active');
-
+  if (response.status === 404) return null; // no active ride — not an error
   return response.json();
 };
 

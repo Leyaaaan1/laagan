@@ -41,72 +41,78 @@ const MOCK_PARTICIPANTS = [
 ];
 
 // ─── Step definitions ───────────────────────────────────────────────────────
-// screen: which mock screen to show (0-3)
+// screen: which mock screen to show (0-5)
 // tipTitle / tipDesc: tooltip content
 // tipPos: 'above' | 'below' — where the tooltip appears relative to highlight
 // highlightKey: string key that matches a ref registered in each screen
 const STEPS = [
-  // ── Screen 0: Create Ride Details ──────────────────────────────────────
-  {screen: 0, highlightKey: 'name',
+  // ── Screen 0: Home — Create Ride entry point ────────────────────────────
+  {screen: 0, highlightKey: 'plusBtn',
+    tipTitle: 'Create a Ride',
+    tipDesc: 'Tap the + button to start creating a new group ride for you and your friends.',
+    tipPos: 'below'},
+
+  // ── Screen 1: Create Ride Details ──────────────────────────────────────
+  {screen: 1, highlightKey: 'name',
     tipTitle: 'Name your ride',
     tipDesc: 'Give your adventure a memorable name that all participants will see.',
     tipPos: 'below'},
-  {screen: 0, highlightKey: 'when',
+  {screen: 1, highlightKey: 'when',
     tipTitle: 'Set date & bike type',
     tipDesc: 'Choose when the ride happens and select your bike type.',
     tipPos: 'below'},
-  {screen: 0, highlightKey: 'desc',
+  {screen: 1, highlightKey: 'desc',
     tipTitle: 'Describe your route',
     tipDesc: 'Add terrain notes, highlights, or special stops for your riders.',
     tipPos: 'above'},
-  {screen: 0, highlightKey: 'cta',
+  {screen: 1, highlightKey: 'cta',
     tipTitle: 'Continue to location',
     tipDesc: 'Tap here to open the map and pin your ride location.',
     tipPos: 'above'},
 
-  // ── Screen 1: Set Location (map) ────────────────────────────────────────
-  {screen: 1, highlightKey: 'search',
+  // ── Screen 2: Set Location (map) ────────────────────────────────────────
+  {screen: 2, highlightKey: 'search',
     tipTitle: 'Search your location',
     tipDesc: 'Type a place name or tap the map to drop a location pin.',
     tipPos: 'below'},
-  {screen: 1, highlightKey: 'hint',
+  {screen: 2, highlightKey: 'hint',
     tipTitle: 'Tap the map',
     tipDesc: 'Tap anywhere on the map to set your meeting point.',
     tipPos: 'above'},
 
-  // ── Screen 2: Start / End point picker ──────────────────────────────────
-  {screen: 2, highlightKey: 'startRow',
+  // ── Screen 3: Start / End point picker ──────────────────────────────────
+  {screen: 3, highlightKey: 'startRow',
     tipTitle: 'Set your start point',
     tipDesc: 'Tap SET to drop a pin for where the ride begins.',
     tipPos: 'above'},
-  {screen: 2, highlightKey: 'endRow',
+  {screen: 3, highlightKey: 'endRow',
     tipTitle: 'Set your end point',
     tipDesc: 'Then set the destination where your group finishes the ride.',
     tipPos: 'above'},
 
-  // ── Screen 3: Active ride / Participant tracking ─────────────────────────
-  {screen: 3, highlightKey: 'participants',
+  // ── Screen 4: Active ride / Participant tracking ─────────────────────────
+  {screen: 4, highlightKey: 'participants',
     tipTitle: 'Live participant tracking',
     tipDesc: 'See each rider\'s real-time location. Green = active, gray = waiting.',
     tipPos: 'below'},
-  {screen: 3, highlightKey: 'pill',
+  {screen: 4, highlightKey: 'pill',
     tipTitle: 'Details & Leave',
     tipDesc: '"Details" opens ride info. Tap "Leave" to exit the ride at any time.',
     tipPos: 'above'},
 
-  // ── Screen 4: Checkpoint Arrivals modal ─────────────────────────────────
-  {screen: 4, highlightKey: 'modal',
+  // ── Screen 5: Checkpoint Arrivals modal ─────────────────────────────────
+  {screen: 5, highlightKey: 'modal',
     tipTitle: 'Checkpoint Arrivals',
     tipDesc: 'Tap the checkpoints button to see which riders arrived at each stop.',
     tipPos: 'above'},
-  {screen: 4, highlightKey: 'arrival',
+  {screen: 5, highlightKey: 'arrival',
     tipTitle: 'Arrival record',
     tipDesc: 'Each entry shows the rider\'s name and exact arrival timestamp.',
     tipPos: 'above'},
 ];
 
 // Total steps per screen (used for dot indicators)
-const SCREEN_STEP_COUNTS = [4, 2, 2, 2, 2];
+const SCREEN_STEP_COUNTS = [1, 4, 2, 2, 2, 2];
 
 // ─── Highlight + Tooltip overlay ────────────────────────────────────────────
 const StepOverlay = ({targetLayout, tipTitle, tipDesc, tipPos, stepLabel}) => {
@@ -160,7 +166,110 @@ const StepOverlay = ({targetLayout, tipTitle, tipDesc, tipPos, stepLabel}) => {
 
 // ─── Mock screens ────────────────────────────────────────────────────────────
 
-/** Screen 0 — Create Ride Details */
+/** Screen 0 — Home (RiderPage) — highlights the + button */
+const MockHomePage = ({refs}) => (
+  <View style={mock.screen}>
+    {/* ── Header ── */}
+    <View style={mock.homeHeader}>
+      {/* Avatar + username */}
+      <View style={mock.homeUserRow}>
+        <View style={mock.homeAvatar}>
+          <FontAwesome name="motorcycle" size={16} color="#fff" />
+        </View>
+        <View style={{marginLeft: 10}}>
+          <Text style={mock.homeUsername}>YAWELS123</Text>
+          <View style={{flexDirection:'row', alignItems:'center', gap:5}}>
+            <FontAwesome name="motorcycle" size={10} color="#888" />
+            <Text style={mock.homeUserSub}>No type</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Right action buttons */}
+      <View style={mock.homeActions}>
+        <View style={mock.homeRideIdBtn}>
+          <Text style={mock.homeRideIdTxt}>Ride ID</Text>
+          <FontAwesome name="search" size={12} color="#fff" style={{marginLeft:4}} />
+        </View>
+        <View style={mock.homeQrBtn}>
+          <FontAwesome name="qrcode" size={16} color="#fff" />
+        </View>
+        {/* ← THIS IS THE HIGHLIGHTED + BUTTON */}
+        <View ref={refs.plusBtn} style={mock.homePlusBtn}>
+          <FontAwesome name="plus" size={16} color="#fff" />
+        </View>
+      </View>
+    </View>
+
+    {/* ── Active Ride section ── */}
+    <View style={mock.homeSection}>
+      <Text style={mock.homeSectionTitle}>Active Ride</Text>
+      <Text style={mock.homeNoRide}>No active ride</Text>
+    </View>
+
+    {/* ── Ride Card ── */}
+    <View style={mock.homeCard}>
+      {/* Card header */}
+      <View style={{padding:14, borderBottomWidth:1, borderBottomColor:'#2a2a2a'}}>
+        <Text style={mock.homeCardTitle}>DAHILAYAN ADVENTURE PARK</Text>
+        <View style={{flexDirection:'row', alignItems:'center', gap:8, marginTop:4}}>
+          <Text style={{fontSize:11, color:'#888'}}>ID: #5F74527788F3</Text>
+          <View style={mock.inactiveBadge}><Text style={mock.inactiveTxt}>INACTIVE</Text></View>
+        </View>
+      </View>
+
+      {/* Meta row */}
+      <View style={{padding:14, paddingBottom:8}}>
+        <View style={{flexDirection:'row', justifyContent:'space-between', alignItems:'center', marginBottom:10}}>
+          <Text style={{fontSize:15, fontWeight:'800', color:'#fff'}}>Bukidnon Rides</Text>
+          <View style={{flexDirection:'row', alignItems:'center', gap:5}}>
+            <FontAwesome name="motorcycle" size={13} color={colors.primary} />
+            <Text style={{fontSize:13, fontWeight:'700', color:'#fff'}}>144 km</Text>
+          </View>
+        </View>
+
+        {/* Route row */}
+        <View style={{flexDirection:'row', alignItems:'center', gap:6, marginBottom:6}}>
+          <FontAwesome name="map-marker" size={12} color={colors.primary} />
+          <Text style={{fontSize:12, fontWeight:'700', color:colors.primary}}>Toril District</Text>
+          <FontAwesome name="arrow-right" size={10} color="#666" />
+          <Text style={{fontSize:12, color:'#ccc'}} numberOfLines={1}>Dahilayan Adventure Pa...</Text>
+        </View>
+
+        {/* Date row */}
+        <View style={{flexDirection:'row', alignItems:'center', gap:6, marginBottom:6}}>
+          <FontAwesome name="calendar" size={12} color="#888" />
+          <Text style={{fontSize:12, color:'#888'}}>July 02, 2026, 11:10 AM</Text>
+        </View>
+
+        {/* Creator row */}
+        <View style={{flexDirection:'row', alignItems:'center', gap:6}}>
+          <FontAwesome name="user-circle" size={12} color="#888" />
+          <Text style={{fontSize:11, color:'#666'}}>Created by lean_paninsoro</Text>
+        </View>
+      </View>
+
+      {/* Map thumbnail placeholder */}
+      <View style={mock.homeMapThumb}>
+        <View style={{flex:1, backgroundColor:'#d5e8c8', borderRadius:10, margin:2, overflow:'hidden'}}>
+          <Text style={{position:'absolute', top:8, left:30, fontSize:9, color:'#555'}}>Mountain Pines Place</Text>
+          <Text style={{position:'absolute', top:38, left:55, fontSize:9, color:'#555'}}>Dahilayan</Text>
+          <Text style={{position:'absolute', top:48, left:55, fontSize:9, color:'#555'}}>Adventure Park</Text>
+          <View style={{position:'absolute', top:34, left:70, width:10, height:10, borderRadius:5, backgroundColor:colors.primary, borderWidth:1.5, borderColor:'#fff'}} />
+        </View>
+      </View>
+
+      {/* Description */}
+      <View style={{padding:14, backgroundColor:'#1a1a1a', borderBottomLeftRadius:14, borderBottomRightRadius:14}}>
+        <Text style={{fontSize:13, color:'#ccc', lineHeight:19}}>
+          Bukidnon is home to multiple famous destinations, but the most popular is Dahilayan Adventure Park in Manolo Fortich
+        </Text>
+      </View>
+    </View>
+  </View>
+);
+
+/** Screen 1 — Create Ride Details */
 const MockCreateRide = ({refs}) => (
   <View style={mock.screen}>
     {/* header */}
@@ -438,6 +547,8 @@ const OnboardingTour = ({navigation}) => {
   // One ref-map per screen
   const refs = {
     // screen 0
+    plusBtn: useRef(null),
+    // screen 1
     name:    useRef(null),
     when:    useRef(null),
     desc:    useRef(null),
@@ -445,13 +556,13 @@ const OnboardingTour = ({navigation}) => {
     // screen 1
     search:  useRef(null),
     hint:    useRef(null),
-    // screen 2
+    // screen 3
     startRow:useRef(null),
     endRow:  useRef(null),
-    // screen 3
+    // screen 4
     participants: useRef(null),
     pill:    useRef(null),
-    // screen 4
+    // screen 5
     modal:   useRef(null),
     arrival: useRef(null),
   };
@@ -521,11 +632,12 @@ const OnboardingTour = ({navigation}) => {
 
       <View ref={containerRef} style={styles.container} collapsable={false}>
         <Animated.View style={[styles.screenWrap, {opacity: fadeAnim}]}>
-          {currentStep.screen === 0 && <MockCreateRide refs={refs} />}
-          {currentStep.screen === 1 && <MockSetLocation refs={refs} />}
-          {currentStep.screen === 2 && <MockPointPicker refs={refs} />}
-          {currentStep.screen === 3 && <MockStartedRide refs={refs} />}
-          {currentStep.screen === 4 && <MockCheckpointModal refs={refs} />}
+          {currentStep.screen === 0 && <MockHomePage refs={refs} />}
+          {currentStep.screen === 1 && <MockCreateRide refs={refs} />}
+          {currentStep.screen === 2 && <MockSetLocation refs={refs} />}
+          {currentStep.screen === 3 && <MockPointPicker refs={refs} />}
+          {currentStep.screen === 4 && <MockStartedRide refs={refs} />}
+          {currentStep.screen === 5 && <MockCheckpointModal refs={refs} />}
         </Animated.View>
 
         {/* Overlay */}
@@ -719,4 +831,24 @@ const mock = StyleSheet.create({
   modalFooter:{flexDirection:'row', gap:8, padding:12, borderTopWidth:1, borderTopColor:'#2a2a2a'},
   refreshBtn:{flex:1, backgroundColor:'#2a2a2a', borderRadius:99, padding:10, flexDirection:'row', alignItems:'center', justifyContent:'center'},
   closeBtn:  {flex:1, backgroundColor:'#9b2626', borderRadius:99, padding:10, flexDirection:'row', alignItems:'center', justifyContent:'center'},
+
+  // home screen
+  homeHeader:   {backgroundColor:'#111', flexDirection:'row', justifyContent:'space-between', alignItems:'center', paddingHorizontal:14, paddingVertical:12, borderBottomWidth:1, borderBottomColor:'#222'},
+  homeUserRow:  {flexDirection:'row', alignItems:'center'},
+  homeAvatar:   {width:38, height:38, borderRadius:19, backgroundColor:'#9b2626', alignItems:'center', justifyContent:'center'},
+  homeUsername: {fontSize:15, fontWeight:'800', color:'#fff'},
+  homeUserSub:  {fontSize:11, color:'#888'},
+  homeActions:  {flexDirection:'row', alignItems:'center', gap:6},
+  homeRideIdBtn:{flexDirection:'row', alignItems:'center', borderWidth:1.5, borderColor:'#9b2626', borderRadius:8, paddingVertical:6, paddingHorizontal:10},
+  homeRideIdTxt:{fontSize:12, fontWeight:'700', color:'#fff'},
+  homeQrBtn:    {width:34, height:34, borderRadius:8, backgroundColor:'#1e1e1e', alignItems:'center', justifyContent:'center', borderWidth:1, borderColor:'#333'},
+  homePlusBtn:  {width:34, height:34, borderRadius:8, backgroundColor:'#9b2626', alignItems:'center', justifyContent:'center'},
+  homeSection:  {backgroundColor:'#1a1a1a', margin:10, borderRadius:12, padding:14, borderWidth:1, borderColor:'#2a2a2a'},
+  homeSectionTitle:{fontSize:13, fontWeight:'700', color:'#fff', marginBottom:4},
+  homeNoRide:   {fontSize:12, color:'#555'},
+  homeCard:     {backgroundColor:'#1a1a1a', marginHorizontal:10, borderRadius:14, borderWidth:1, borderColor:'#2a2a2a', overflow:'hidden'},
+  homeCardTitle:{fontSize:17, fontWeight:'900', color:'#fff', letterSpacing:0.5},
+  inactiveBadge:{borderWidth:1, borderColor:'#555', borderRadius:4, paddingHorizontal:6, paddingVertical:2},
+  inactiveTxt:  {fontSize:10, fontWeight:'700', color:'#888', letterSpacing:0.5},
+  homeMapThumb: {height:110, marginHorizontal:14, marginBottom:0, borderRadius:10, overflow:'hidden', backgroundColor:'#d5e8c8'},
 });
