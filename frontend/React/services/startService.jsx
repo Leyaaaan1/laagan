@@ -140,13 +140,7 @@ export const getCheckpointArrivals = async generatedRidesId => {
 
 export const getActiveRide = async () => {
   const response = await api.get('/start/active');
-  if (!response.ok) {
-    const messages = {
-      404: 'No active ride found',
-      409: 'Ride is in conflicting state',
-    };
-    throw new Error(messages[response.status] || 'Failed to fetch active ride');
-  }
+
   return response.json();
 };
 

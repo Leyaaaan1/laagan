@@ -71,11 +71,10 @@ public class EmailService {
             );
 
             ResponseEntity<String> response = restTemplate.postForEntity(
-                    "https://api.brevo.com/v3/transactional-emails",
+                    "https://api.brevo.com/v3/smtp/email",
                     new HttpEntity<>(body, headers),
                     String.class
             );
-
             if (response.getStatusCode().is2xxSuccessful()) {
                 log.info("Verification email sent to: {}", toEmail);
             } else {
