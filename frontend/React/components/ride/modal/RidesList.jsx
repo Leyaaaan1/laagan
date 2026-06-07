@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, {useState, useEffect, useCallback, useRef} from 'react';
 import {
   View,
   Text,
@@ -7,27 +7,41 @@ import {
   ActivityIndicator,
 } from 'react-native';
 
-import { fetchRides, fetchMyRides } from '../../../services/rideService';
+import {fetchRides, fetchMyRides} from '../../../services/rideService';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import colors from '../../../styles/tokens/colors';
 import RideCard from './RideCard';
+
+const AUTO_RETRY_DELAY_MS = 8000; // wait 8s then auto-retry on timeout
 
 const RidesList = ({onRideSelect, mode = 'all', pageSize = 10}) => {
   const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isTimeout, setIsTimeout] = useState(false);
+  const [retryCountdown, setRetryCountdown] = useState(0);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const retryTimerRef = useRef(null);
+  const countdownIntervalRef = useRef(null);
 
   const isMyRidesMode = mode === 'my';
+
+  const clearRetryTimers = () => {
+    if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+    if (countdownIntervalRef.current)
+      clearInterval(countdownIntervalRef.current);
+  };
 
   const loadRides = useCallback(
     async (pageNum, refresh = false) => {
       if (!refresh && !hasMore) return;
+      clearRetryTimers();
       try {
         refresh ? setRefreshing(true) : setLoading(true);
         setError('');
+        setIsTimeout(false);
 
         const result = isMyRidesMode
           ? await fetchMyRides(pageNum, pageSize)
@@ -41,7 +55,25 @@ const RidesList = ({onRideSelect, mode = 'all', pageSize = 10}) => {
           setPage(result.number);
         }
       } catch (err) {
-        setError(err.message || 'Failed to load rides');
+        const timedOut = err.message === 'REQUEST_TIMEOUT';
+        setIsTimeout(timedOut);
+        setError(
+          timedOut ? 'REQUEST_TIMEOUT' : err.message || 'Failed to load rides',
+        );
+
+        if (timedOut) {
+          // Start countdown and auto-retry
+          let seconds = Math.round(AUTO_RETRY_DELAY_MS / 1000);
+          setRetryCountdown(seconds);
+          countdownIntervalRef.current = setInterval(() => {
+            seconds -= 1;
+            setRetryCountdown(seconds);
+            if (seconds <= 0) clearInterval(countdownIntervalRef.current);
+          }, 1000);
+          retryTimerRef.current = setTimeout(() => {
+            loadRides(0, true);
+          }, AUTO_RETRY_DELAY_MS);
+        }
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -49,6 +81,9 @@ const RidesList = ({onRideSelect, mode = 'all', pageSize = 10}) => {
     },
     [mode, hasMore, isMyRidesMode, pageSize],
   );
+
+  // Clean up timers on unmount
+  useEffect(() => () => clearRetryTimers(), []);
 
   useEffect(() => {
     loadRides(0, true);
@@ -97,6 +132,53 @@ const RidesList = ({onRideSelect, mode = 'all', pageSize = 10}) => {
   };
 
   if (error) {
+    if (isTimeout) {
+      return (
+        <View style={{padding: 20, alignItems: 'center'}}>
+          <FontAwesome
+            name="hourglass-half"
+            size={36}
+            color="#f59e0b"
+            style={{marginBottom: 12}}
+          />
+          <Text
+            style={{
+              color: '#f59e0b',
+              fontSize: 16,
+              fontWeight: '700',
+              marginBottom: 6,
+            }}>
+            Server is waking up…
+          </Text>
+          <Text
+            style={{
+              color: '#aaa',
+              textAlign: 'center',
+              fontSize: 13,
+              marginBottom: 16,
+              lineHeight: 20,
+            }}>
+            We're on free-tier servers — they go to sleep between requests.
+            {'\n'}
+            Retrying automatically in {retryCountdown}s.
+          </Text>
+          <TouchableOpacity
+            style={{
+              backgroundColor: colors.primary,
+              paddingVertical: 10,
+              paddingHorizontal: 28,
+              borderRadius: 8,
+            }}
+            onPress={() => {
+              clearRetryTimers();
+              handleRefresh();
+            }}>
+            <Text style={{color: '#fff', fontWeight: 'bold'}}>Retry Now</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
     return (
       <View style={{padding: 20, alignItems: 'center'}}>
         <FontAwesome
@@ -126,7 +208,9 @@ const RidesList = ({onRideSelect, mode = 'all', pageSize = 10}) => {
     <FlatList
       data={rides}
       renderItem={renderItem}
-      keyExtractor={(item, index) => item?.generatedRidesId?.toString() || index.toString()}
+      keyExtractor={(item, index) =>
+        item?.generatedRidesId?.toString() || index.toString()
+      }
       ListEmptyComponent={loading && !refreshing ? null : renderEmpty}
       ListFooterComponent={renderFooter}
       contentContainerStyle={{padding: 15}}

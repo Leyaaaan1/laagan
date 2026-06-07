@@ -61,4 +61,8 @@ public class HealthController {
             return ResponseEntity.status(503).body(response);
         }
     }
+    @GetMapping("/ping")
+    public ResponseEntity<String> ping() {
+        return ResponseEntity.ok("pong");
+    }
 }

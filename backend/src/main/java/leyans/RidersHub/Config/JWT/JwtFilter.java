@@ -47,6 +47,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 || path.equals("/riders/register")
                 || path.equals("/riders/refresh")
                 || path.equals("/riders/verify-email")
+                || path.equals("/health/**")
                 || path.equals("/riders/resend-verification")
                 || path.equals("/riders/check-email-verified")
                 || path.startsWith("/facebook/login")
