@@ -259,7 +259,16 @@ const RideRoutesPage = ({route}) => {
       const points = Array.isArray(data) ? data : [];
       setStopPoints(points);
     } catch (err) {
-      setStopPointsError(err.message || 'Failed to load stop points');
+      const msg = err.message || '';
+      if (
+        msg === 'SERVER_ERROR' ||
+        msg === 'AUTH_FORBIDDEN' ||
+        msg === 'AUTH_MISSING'
+      ) {
+        setStopPointsError('join_required');
+      } else {
+        setStopPointsError(msg || 'Failed to load stop points');
+      }
     } finally {
       setStopPointsLoading(false);
     }
@@ -376,19 +385,51 @@ const RideRoutesPage = ({route}) => {
           </View>
         ) : stopPointsError ? (
           <View style={feedback.errorContainer}>
-            <Text style={{fontSize: 32, marginBottom: 12}}>⚠️</Text>
-            <Text style={feedback.errorText}>{stopPointsError}</Text>
-            <TouchableOpacity
-              onPress={fetchStopPoints}
-              style={{
-                marginTop: 16,
-                backgroundColor: '#ffffff',
-                paddingHorizontal: 20,
-                paddingVertical: 12,
-                borderRadius: 8,
-              }}>
-              <Text style={{color: '#fff', fontWeight: '600'}}>Retry</Text>
-            </TouchableOpacity>
+            {stopPointsError === 'join_required' ? (
+              <>
+                <FontAwesome
+                  name="lock"
+                  size={36}
+                  color="#f59e0b"
+                  style={{marginBottom: 12}}
+                />
+                <Text
+                  style={{
+                    color: '#f59e0b',
+                    fontSize: 16,
+                    fontWeight: '700',
+                    marginBottom: 6,
+                    textAlign: 'center',
+                  }}>
+                  Join Required
+                </Text>
+                <Text
+                  style={{
+                    color: '#aaa',
+                    textAlign: 'center',
+                    fontSize: 13,
+                    lineHeight: 20,
+                  }}>
+                  You need to join this ride to view the stop points.
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={{fontSize: 32, marginBottom: 12}}>⚠️</Text>
+                <Text style={feedback.errorText}>{stopPointsError}</Text>
+                <TouchableOpacity
+                  onPress={fetchStopPoints}
+                  style={{
+                    marginTop: 16,
+                    backgroundColor: '#ffffff',
+                    paddingHorizontal: 20,
+                    paddingVertical: 12,
+                    borderRadius: 8,
+                  }}>
+                  <Text style={{color: '#fff', fontWeight: '600'}}>Retry</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         ) : stopPoints.length === 0 ? (
           <View style={rideRoutes.emptyStopsContainer}>

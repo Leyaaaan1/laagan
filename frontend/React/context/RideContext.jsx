@@ -51,7 +51,8 @@ export const RideProvider = ({children}) => {
       }
     } catch (err) {
       const errorMsg = err?.message || String(err);
-      console.warn('⚠️ Failed to fetch active ride:', errorMsg);
+      if (errorMsg === 'NOT_FOUND' || errorMsg.includes('404')) return;
+
 
       // ✅ Check if offline
       const networkStatus = await checkNetworkStatus();
