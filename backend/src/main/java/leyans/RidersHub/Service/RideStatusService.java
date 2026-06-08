@@ -66,9 +66,6 @@ public class RideStatusService {
                 generatedRidesId, riderUsername, RideStatus.RIDER_FINISHED)) {
             AppLogger.info(this.getClass(), "RIDER_FINISHED already recorded — skipping",
                     "rideId", generatedRidesId, "rider", riderUsername);
-            rideStatusRepository
-                    .findCurrentRiderStatus(generatedRidesId, riderUsername)
-                    .orElseThrow();
             return;
         }
 

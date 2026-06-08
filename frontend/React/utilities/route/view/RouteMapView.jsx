@@ -49,22 +49,24 @@ const RouteMapView = forwardRef(
       () => ({
         focusOnRider: (latitude, longitude, username) => {
           if (!webViewRef.current || !webViewReadyRef.current) return;
-          const safeUsername = String(username).replace(/'/g, "\\'");
-          const label = String(username).substring(0, 3).toUpperCase();
+          // JSON.stringify handles all escaping — same pattern used in injectRiderMarkers
+          const safeUsername = JSON.stringify(String(username));
+          const label = JSON.stringify(String(username).substring(0, 3).toUpperCase());
           const script = `
-        (function() {
-          if (window.orientMapToPoint) {
-            window.orientMapToPoint({ lat: ${latitude}, lng: ${longitude}, name: '${safeUsername}' });
-            var label = document.getElementById('compass-label');
-            if (label) label.textContent = '🏍 ${label}';
-          } else {
-            console.warn('orientMapToPoint not ready');
-          }
-        })();
-        true;
-      `;
+    (function() {
+      if (window.orientMapToPoint) {
+        window.orientMapToPoint({ lat: ${latitude}, lng: ${longitude}, name: ${safeUsername} });
+        var label = document.getElementById('compass-label');
+        if (label) label.textContent = '🏍 ' + ${label};
+      } else {
+        console.warn('orientMapToPoint not ready');
+      }
+    })();
+    true;
+  `;
           webViewRef.current.injectJavaScript(script);
         },
+
       }),
       [],
     );

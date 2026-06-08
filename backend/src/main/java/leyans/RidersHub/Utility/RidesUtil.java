@@ -150,7 +150,7 @@ public class RidesUtil {
     }
 
 
-    @Transactional
+    @Transactional(readOnly = true)
     public String getRideMapImageUrlById(String generatedRidesId) {
         Rides ride = findRideEntityByGeneratedId(generatedRidesId);
         return ride.getMapImageUrl();
@@ -259,31 +259,18 @@ public class RidesUtil {
                 .toList();
     }
 
-    public Rides validateAndGetRide(String generatedRidesId, Rider initiator)  {
+    public Rides validateAndGetRide(String generatedRidesId, Rider initiator) {
         Rides ride = riderUtil.findRideById(generatedRidesId);
-
-        if (ride == null) {
-            throw new RuntimeException("Ride not found with ID: " + generatedRidesId);
-        }
 
         if (ride.getUsername() == null) {
             throw new RuntimeException("Ride does not have a valid creator");
         }
-
-        // Check if the ride is already started
         if (startedRideRepository.existsByRide(ride)) {
             throw new IllegalStateException("This ride has already been started");
         }
-
-        // Check if the initiator already has an ongoing ride (either as owner or participant)
-        // Option A: Check if they're the owner
         if (startedRideRepository.existsByUsername(initiator)) {
             throw new IllegalStateException("You already have a ride in progress");
         }
-
-        // Option B: Also check if they're a participant in an active ride (optional)
-        // You'd need another repository method for this
-
         return ride;
     }
 

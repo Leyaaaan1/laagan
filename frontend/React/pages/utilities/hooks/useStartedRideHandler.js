@@ -17,7 +17,8 @@ export const useStartedRideHandler = (
   const navigation = useNavigation();
 
   const handleLeaveRide = useCallback(
-    navigation => {
+    () => {
+      // ← no parameter
       Alert.alert(
         'Leave Ride',
         'Are you sure you want to leave this ride?',
@@ -34,6 +35,7 @@ export const useStartedRideHandler = (
                 stopPolling();
                 const params = buildRideStep4Params(activeRide, username);
                 navigation.reset({
+                  // ← uses useNavigation() from hook scope
                   index: 1,
                   routes: [
                     {name: 'RiderPage', params: {username}},
@@ -56,7 +58,7 @@ export const useStartedRideHandler = (
         {cancelable: true},
       );
     },
-    [activeRide, username, stopPolling, setPollingEnabled],
+    [activeRide, username, stopPolling, setPollingEnabled, navigation], // ← add navigation
   );
 
   return {isLeaving, handleLeaveRide};
