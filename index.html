@@ -3,129 +3,358 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Privacy Policy - laagan</title>
+  <title>Legal - laagan</title>
   <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap');
+
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      :root {
+          --bg: #f5f4f0;
+          --surface: #ffffff;
+          --ink: #1a1a1a;
+          --ink-muted: #555;
+          --accent: #e84c1e;
+          --accent-light: #fff1ed;
+          --border: #e4e2dd;
+          --tab-inactive: #888;
+          --radius: 10px;
+      }
+
       body {
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-          line-height: 1.6;
-          color: #333;
-          max-width: 800px;
+          font-family: 'Inter', -apple-system, sans-serif;
+          background: var(--bg);
+          color: var(--ink);
+          line-height: 1.7;
+          min-height: 100vh;
+      }
+
+      /* ── Header ── */
+      header {
+          background: var(--ink);
+          padding: 20px 24px 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+      }
+
+      .wordmark {
+          font-family: 'Space Grotesk', sans-serif;
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #fff;
+          letter-spacing: -0.03em;
+          margin-bottom: 24px;
+      }
+
+      .wordmark span {
+          color: var(--accent);
+      }
+
+      /* ── Tab switcher ── */
+      .tabs {
+          display: flex;
+          gap: 0;
+          border-bottom: 2px solid #333;
+          width: 100%;
+          max-width: 720px;
+      }
+
+      .tab-btn {
+          flex: 1;
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-family: 'Inter', sans-serif;
+          font-size: 0.85rem;
+          font-weight: 600;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          color: var(--tab-inactive);
+          padding: 12px 0 14px;
+          position: relative;
+          transition: color 0.2s;
+      }
+
+      .tab-btn.active {
+          color: #fff;
+      }
+
+      .tab-btn.active::after {
+          content: '';
+          position: absolute;
+          bottom: -2px;
+          left: 0; right: 0;
+          height: 2px;
+          background: var(--accent);
+      }
+
+      /* ── Main content ── */
+      main {
+          max-width: 720px;
           margin: 0 auto;
-          padding: 20px;
-          background-color: #f9f9f9;
+          padding: 40px 20px 80px;
       }
-      .container {
-          background: #fff;
-          padding: 40px;
-          border-radius: 8px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+      .panel { display: none; }
+      .panel.active { display: block; }
+
+      .doc-title {
+          font-family: 'Space Grotesk', sans-serif;
+          font-size: 2rem;
+          font-weight: 700;
+          letter-spacing: -0.03em;
+          color: var(--ink);
+          margin-bottom: 4px;
       }
-      h1 {
-          color: #111;
-          border-bottom: 2px solid #eaeaea;
-          padding-bottom: 10px;
+
+      .doc-meta {
+          font-size: 0.82rem;
+          color: var(--ink-muted);
+          margin-bottom: 32px;
+          padding-bottom: 24px;
+          border-bottom: 1px solid var(--border);
       }
+
+      .doc-intro {
+          font-size: 1rem;
+          color: var(--ink-muted);
+          margin-bottom: 36px;
+      }
+
       h2 {
-          color: #222;
-          margin-top: 30px;
-          border-bottom: 1px solid #eaeaea;
-          padding-bottom: 5px;
+          font-family: 'Space Grotesk', sans-serif;
+          font-size: 1.1rem;
+          font-weight: 700;
+          color: var(--ink);
+          margin: 36px 0 10px;
+          padding-bottom: 6px;
+          border-bottom: 1px solid var(--border);
       }
+
       h3 {
-          color: #444;
+          font-size: 0.95rem;
+          font-weight: 600;
+          color: var(--ink);
+          margin: 20px 0 6px;
       }
+
+      p { margin-bottom: 12px; font-size: 0.95rem; color: #333; }
+
       ul {
-          padding-left: 20px;
+          padding-left: 18px;
+          margin-bottom: 12px;
       }
+
       li {
+          font-size: 0.95rem;
+          color: #333;
           margin-bottom: 8px;
       }
-      .footer {
-          margin-top: 40px;
-          font-size: 0.9em;
-          color: #666;
+
+      .callout {
+          background: var(--accent-light);
+          border-left: 3px solid var(--accent);
+          border-radius: 0 var(--radius) var(--radius) 0;
+          padding: 14px 18px;
+          margin: 20px 0;
+          font-size: 0.9rem;
+          color: #5a1a05;
+      }
+
+      a { color: var(--accent); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+
+      strong { font-weight: 600; }
+
+      footer {
           text-align: center;
-          border-top: 1px solid #eaeaea;
-          padding-top: 20px;
+          font-size: 0.8rem;
+          color: var(--tab-inactive);
+          padding: 32px 20px;
+          border-top: 1px solid var(--border);
+          max-width: 720px;
+          margin: 0 auto;
       }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <h1>Privacy Policy for laagan</h1>
-  <p><strong>Last updated:</strong> May 17, 2026</p>
+<header>
+  <div class="wordmark">laa<span>g</span>an</div>
+  <nav class="tabs" role="tablist">
+    <button class="tab-btn active" role="tab" aria-selected="true" onclick="switchTab('privacy', this)">Privacy Policy</button>
+    <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('tos', this)">Terms of Service</button>
+  </nav>
+</header>
 
-  <p>This Privacy Policy describes Our policies and procedures on the collection, use and disclosure of Your information when You use the Service and tells You about Your privacy rights and how the law protects You.</p>
+<main>
 
-  <p>We use Your Personal Data to provide and improve the Service. By using the Service, You agree to the collection and use of information in accordance with this Privacy Policy.</p>
+  <!-- ── PRIVACY POLICY ── -->
+  <section class="panel active" id="privacy" role="tabpanel">
+    <h1 class="doc-title">Privacy Policy</h1>
+    <p class="doc-meta">Last updated: May 17, 2026</p>
 
-  <h2>Interpretation and Definitions</h2>
-  <p><strong>Account</strong> means a unique account created for You to access our Service or parts of our Service.</p>
-  <p><strong>Company</strong> refers to laagan.</p>
-  <p><strong>Country</strong> refers to: Philippines</p>
-  <p><strong>Device</strong> means any device that can access the Service such as a computer, a cell phone or a digital tablet.</p>
-  <p><strong>Personal Data</strong> is any information that relates to an identified or identifiable individual.</p>
-  <p><strong>Service</strong> refers to the Application.</p>
+    <p class="doc-intro">This Privacy Policy describes our policies on the collection, use, and disclosure of your information when you use the laagan app, and explains your privacy rights.</p>
 
-  <h2>Collections of Your Personal Data</h2>
-  <h3>Types of Data Collected</h3>
+    <h2>Interpretation and Definitions</h2>
+    <p><strong>Account</strong> — A unique account created for you to access the Service.</p>
+    <p><strong>Company</strong> — Refers to laagan.</p>
+    <p><strong>Country</strong> — Philippines.</p>
+    <p><strong>Device</strong> — Any device that can access the Service (phone, tablet, computer).</p>
+    <p><strong>Personal Data</strong> — Any information that relates to an identified or identifiable individual.</p>
+    <p><strong>Service</strong> — Refers to the laagan application.</p>
 
-  <h4>Personal Data</h4>
-  <p>While using Our Service, We may ask You to provide Us with certain personally identifiable information that can be used to contact or identify You. Personally identifiable information may include, but is not limited to:</p>
-  <ul>
-    <li>Email address</li>
-    <li>Usage Data</li>
-  </ul>
+    <h2>Data We Collect</h2>
+    <h3>Personal Data</h3>
+    <p>When using our Service, we may ask you to provide:</p>
+    <ul>
+      <li>Email address</li>
+      <li>Usage Data (automatically collected)</li>
+    </ul>
 
-  <p>Usage Data is collected automatically when using the Service. Usage Data may include information such as Your Device's Internet Protocol address (e.g. IP address), browser type, browser version, the pages of our Service that You visit, the time and date of Your visit, the time spent on those pages, unique device identifiers and other diagnostic data.</p>
-  <p>When You access the Service by or through a mobile device, We may collect certain information automatically, including, but not limited to, the type of mobile device You use, Your mobile device's unique ID, the IP address of Your mobile device, Your mobile operating system.</p>
+    <p>Usage Data includes your device's IP address, browser type, pages visited, time and date of visits, time spent on pages, and unique device identifiers.</p>
 
-  <h3>Information Collected while Using the Application</h3>
-  <p>While using Our Application, in order to provide features of Our Application, We may collect, with Your prior permission:</p>
-  <ul>
-    <li><strong>Information regarding your location (Foreground Only):</strong> We collect and use your precise location data solely while the application is actively open and running in the foreground to provide relevant service features. Location tracking stops completely whenever the application is minimized, sent to the background, or closed by the user. Tracking resumes exclusively when the user brings the application back into active foreground visibility. You can enable or disable access to this information at any time through Your Device settings.</li>
-    <li><strong>Camera access:</strong> We require access to your device's camera solely to provide the QR code scanning features of the Service. Images and video streams from the camera are processed strictly on-device in real-time to decode QR information and are never recorded, saved, stored, or transmitted to our servers.</li>
-  </ul>
+    <h3>Location</h3>
+    <div class="callout">
+      We collect your precise location <strong>only while the app is open and active in the foreground</strong> — to match you with nearby riders and routes. Location tracking stops completely when the app is minimized or closed.
+    </div>
 
-  <h2>Use of Your Personal Data</h2>
-  <p>The Company may use Personal Data for the following purposes:</p>
-  <ul>
-    <li>To provide and maintain our Service</li>
-    <li>To manage Your Account</li>
-    <li>To contact You regarding updates or informative communications</li>
-    <li>To provide You with news, special offers, and general information</li>
-    <li>To manage Your requests</li>
-  </ul>
+    <h3>Camera</h3>
+    <p>Camera access is used solely for QR code scanning. All image processing happens on-device in real time — nothing is recorded, saved, or sent to our servers.</p>
 
-  <h2>Retention of Your Personal Data</h2>
-  <p>The Company will retain Your Personal Data only for as long as is necessary for the purposes set out in this Privacy Policy. We will retain and use Your Personal Data to the extent necessary to comply with our legal obligations.</p>
-  <ul>
-    <li><strong>Account Information:</strong> retained for the duration of your account relationship plus up to 24 months after account closure.</li>
-    <li><strong>Usage Data:</strong> up to 24 months to understand feature adoption and service improvements.</li>
-    <li><strong>Server logs:</strong> up to 24 months for security monitoring.</li>
-  </ul>
+    <h2>How We Use Your Data</h2>
+    <ul>
+      <li>To provide and maintain the Service</li>
+      <li>To manage your account</li>
+      <li>To contact you with updates or important communications</li>
+      <li>To send news, offers, and general information (with your consent)</li>
+      <li>To manage your requests</li>
+    </ul>
 
-  <h2>Delete Your Personal Data</h2>
-  <p>You have the right to delete or request that We assist in deleting the Personal Data that We have collected about You.</p>
-  <p>You may update, amend, or delete Your information at any time by signing in to Your Account and visiting the account settings section.</p>
+    <h2>Data Retention</h2>
+    <ul>
+      <li><strong>Account information:</strong> Retained for the duration of your account, plus up to 24 months after closure.</li>
+      <li><strong>Usage Data:</strong> Up to 24 months for service improvement.</li>
+      <li><strong>Server logs:</strong> Up to 24 months for security monitoring.</li>
+    </ul>
 
-  <h2>Security of Your Personal Data</h2>
-  <p>The security of Your Personal Data is important to Us, but remember that no method of transmission over the Internet is 100% secure. While We strive to use commercially reasonable means to protect Your Personal Data, We cannot guarantee its absolute security.</p>
+    <h2>Deleting Your Data</h2>
+    <p>You have the right to delete your Personal Data at any time. Sign in to your account, go to account settings, and you can update, amend, or delete your information. You may also contact us directly.</p>
 
-  <h2>Children's Privacy</h2>
-  <p>Our Service does not address anyone under the age of 18. We do not knowingly collect personally identifiable information from anyone under the age of 18. If You are a parent or guardian and You are aware that Your child has provided Us with Personal Data, please contact Us. If We become aware that We have collected Personal Data from anyone under the age of 18 without verification of parental consent, We take steps to remove that information from Our servers.</p>
-  <h2>Changes to this Privacy Policy</h2>
-  <p>We may update Our Privacy Policy from time to time. We will notify You of any changes by posting the new Privacy Policy in the app.</p>
+    <h2>Security</h2>
+    <p>We use commercially reasonable means to protect your data. However, no method of transmission over the Internet is 100% secure, and we cannot guarantee absolute security.</p>
 
-  <h2>Contact Us</h2>
-  <p>If you have any questions about this Privacy Policy, You can contact us at:</p>
-  <p>Email: <a href="mailto:paninsorolean@gmail.com">paninsorolean@gmail.com</a></p>
+    <h2>Children's Privacy</h2>
+    <p>laagan is not directed at anyone under 18. We do not knowingly collect data from minors. If you believe a child has provided us their information, please contact us immediately so we can remove it.</p>
 
-  <div class="footer">
-    <p>&copy; 2026 laagan. All rights reserved.</p>
-  </div>
-</div>
+    <h2>Changes to This Policy</h2>
+    <p>We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new policy in the app.</p>
+
+    <h2>Contact Us</h2>
+    <p>Questions about this Privacy Policy? Reach us at:<br>
+      <a href="mailto:paninsorolean@gmail.com">paninsorolean@gmail.com</a></p>
+  </section>
+
+  <!-- ── TERMS OF SERVICE ── -->
+  <section class="panel" id="tos" role="tabpanel">
+    <h1 class="doc-title">Terms of Service</h1>
+    <p class="doc-meta">Last updated: May 17, 2026</p>
+
+    <p class="doc-intro">These Terms of Service govern your use of the laagan app — a ride-sharing platform for solo and group riders in the Philippines. By using laagan, you agree to these terms.</p>
+
+    <h2>1. Acceptance of Terms</h2>
+    <p>By downloading, installing, or using laagan, you confirm that you are at least 18 years old, have read and understood these Terms, and agree to be bound by them. If you do not agree, please do not use the Service.</p>
+
+    <h2>2. The Service</h2>
+    <p>laagan is a ride-sharing platform that connects solo and group riders for shared commutes and trips within the Philippines. We provide the platform; riders and drivers coordinate through it.</p>
+
+    <div class="callout">
+      laagan facilitates connections between users. We are not a transportation provider and are not responsible for the acts or omissions of any rider or driver on the platform.
+    </div>
+
+    <h2>3. Your Account</h2>
+    <ul>
+      <li>You must provide accurate and complete information when registering.</li>
+      <li>You are responsible for maintaining the confidentiality of your login credentials.</li>
+      <li>You are responsible for all activity that occurs under your account.</li>
+      <li>Notify us immediately at <a href="mailto:paninsorolean@gmail.com">paninsorolean@gmail.com</a> if you suspect unauthorized access.</li>
+    </ul>
+
+    <h2>4. Acceptable Use</h2>
+    <p>You agree not to:</p>
+    <ul>
+      <li>Use the Service for any unlawful purpose or in violation of Philippine law.</li>
+      <li>Impersonate any person, company, or entity.</li>
+      <li>Harass, threaten, or harm other users.</li>
+      <li>Attempt to gain unauthorized access to any part of the platform.</li>
+      <li>Use the app to organize rides for illegal activities.</li>
+      <li>Post false, misleading, or fraudulent ride listings.</li>
+      <li>Interfere with the proper functioning of the Service.</li>
+    </ul>
+
+    <h2>5. Ride Safety and User Responsibility</h2>
+    <p>You are responsible for your conduct during any ride arranged through laagan. All users must:</p>
+    <ul>
+      <li>Treat fellow riders and drivers with respect.</li>
+      <li>Comply with all applicable traffic and road safety laws.</li>
+      <li>Ensure any vehicle used meets legal roadworthiness requirements.</li>
+      <li>Not use the app while driving.</li>
+    </ul>
+
+    <h2>6. Intellectual Property</h2>
+    <p>You are free to use, copy, modify, and build upon the laagan app's software and code. The only thing we ask is that you do not use the <strong>laagan name or logo</strong> to represent your own product or service without our permission, as these identify our brand.</p>
+
+    <h2>7. Disclaimer of Warranties</h2>
+    <p>The Service is provided on an "as is" and "as available" basis without warranties of any kind, express or implied. We do not guarantee that the Service will be uninterrupted, error-free, or free of harmful components.</p>
+
+    <h2>8. Limitation of Liability</h2>
+    <p>To the fullest extent permitted by Philippine law, laagan shall not be liable for any indirect, incidental, special, or consequential damages arising out of your use of the Service, including but not limited to personal injury, property damage, or losses arising from any ride arranged through the platform.</p>
+
+    <h2>9. Termination</h2>
+    <p>We reserve the right to suspend or terminate your account at any time, without notice, for conduct that we reasonably believe violates these Terms or is harmful to other users, the Company, or third parties.</p>
+
+    <h2>10. Governing Law</h2>
+    <p>These Terms are governed by the laws of the Republic of the Philippines. Any disputes arising from these Terms shall be resolved in the competent courts of the Philippines.</p>
+
+    <h2>11. Changes to These Terms</h2>
+    <p>We may update these Terms from time to time. Continued use of the Service after changes are posted constitutes your acceptance of the revised Terms. We will notify you of significant changes in the app.</p>
+
+    <h2>12. Contact Us</h2>
+    <p>Questions about these Terms? Contact us at:<br>
+      <a href="mailto:paninsorolean@gmail.com">paninsorolean@gmail.com</a></p>
+  </section>
+
+</main>
+
+<footer>
+  &copy; 2026 laagan. All rights reserved.
+</footer>
+
+<script>
+  function switchTab(panelId, btn) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.remove('active');
+      b.setAttribute('aria-selected', 'false');
+    });
+    document.getElementById(panelId).classList.add('active');
+    btn.classList.add('active');
+    btn.setAttribute('aria-selected', 'true');
+    window.history.replaceState(null, '', '#' + panelId);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // On load, check the URL hash and open the right tab
+  (function () {
+    const hash = window.location.hash.replace('#', '');
+    const validTabs = { privacy: 0, tos: 1 };
+    if (hash && validTabs[hash] !== undefined) {
+      const btn = document.querySelectorAll('.tab-btn')[validTabs[hash]];
+      switchTab(hash, btn);
+    }
+  })();
+</script>
 
 </body>
 </html>
