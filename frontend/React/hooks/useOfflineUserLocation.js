@@ -5,13 +5,16 @@
  * - Fetches location once on mount, then refreshes every REFRESH_INTERVAL_MS
  * - Stops refreshing when `enabled` is false (i.e. when back online,
  *   RouteMapView / useRideLocationPolling takes over)
+ * - Stops refreshing when the app is backgrounded or closed (AppState listener)
+ *   so GPS never runs outside the foreground — matching the privacy policy.
+ * - Resumes automatically when the app returns to foreground (if still enabled)
  * - No network calls — pure Geolocation only
  * - Returns { lat, lng } to match the shape OfflineMapView's
  *   window.updateUserLocation() expects
  */
 
 import {useState, useEffect, useRef, useCallback} from 'react';
-import {Platform, PermissionsAndroid} from 'react-native';
+import {AppState, Platform, PermissionsAndroid} from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 
 const REFRESH_INTERVAL_MS = 15000; // Re-poll GPS every 15 s (battery-friendly)
@@ -33,6 +36,13 @@ export const useOfflineUserLocation = (enabled = true) => {
   const [locationError, setLocationError] = useState(null);
   const intervalRef = useRef(null);
   const mountedRef = useRef(true);
+  const enabledRef = useRef(enabled);
+  const appStateRef = useRef(AppState.currentState);
+
+  // Keep enabledRef in sync so the AppState handler always sees the latest value
+  useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
 
   const fetchLocation = useCallback(async () => {
     if (!mountedRef.current) return;
@@ -92,32 +102,67 @@ export const useOfflineUserLocation = (enabled = true) => {
     );
   }, []);
 
+  // ── Helpers to start/stop the polling interval ──────────────────────────
+  const startInterval = useCallback(() => {
+    if (intervalRef.current) return; // already running
+    fetchLocation();
+    intervalRef.current = setInterval(fetchLocation, REFRESH_INTERVAL_MS);
+    console.log('▶️ [Offline] GPS polling started');
+  }, [fetchLocation]);
+
+  const stopInterval = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+      console.log('⏹️ [Offline] GPS polling stopped');
+    }
+  }, []);
+
+  // ── AppState listener — pause when backgrounded, resume on foreground ───
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextState => {
+      const wasBackground = appStateRef.current.match(/inactive|background/);
+      const isNowActive = nextState === 'active';
+      const isNowBackground = nextState.match(/inactive|background/);
+
+      if (wasBackground && isNowActive) {
+        // App came back to foreground — resume only if still enabled
+        if (enabledRef.current && mountedRef.current) {
+          console.log('📲 [Offline] App foregrounded — resuming GPS polling');
+          startInterval();
+        }
+      } else if (isNowBackground) {
+        // App went to background — stop GPS immediately
+        console.log('📲 [Offline] App backgrounded — pausing GPS polling');
+        stopInterval();
+      }
+
+      appStateRef.current = nextState;
+    });
+
+    return () => subscription.remove();
+  }, [startInterval, stopInterval]);
+
+  // ── Main effect — respond to enabled flag changes ───────────────────────
   useEffect(() => {
     mountedRef.current = true;
 
     if (!enabled) {
-      // Clear any running interval when disabled (back online)
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      // Back online — hand off to useRideLocationPolling
+      stopInterval();
       return;
     }
 
-    // Fetch immediately on mount / when enabled flips to true
-    fetchLocation();
-
-    // Then refresh on a gentle interval
-    intervalRef.current = setInterval(fetchLocation, REFRESH_INTERVAL_MS);
+    // Only start polling if the app is currently in the foreground
+    if (AppState.currentState === 'active') {
+      startInterval();
+    }
 
     return () => {
       mountedRef.current = false;
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      stopInterval();
     };
-  }, [enabled, fetchLocation]);
+  }, [enabled, startInterval, stopInterval]);
 
   return {userLocation, locationError};
 };
