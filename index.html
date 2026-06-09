@@ -471,9 +471,9 @@
 
       .tour-wrap {
           display: flex;
-          align-items: flex-start;
+          align-items: center;
           justify-content: center;
-          gap: 32px;
+          gap: 48px;
           flex-wrap: wrap;
           width: 100%;
           position: relative;
@@ -482,13 +482,13 @@
 
       /* reuse existing .phone shell — add dynamic-island & tour screen area */
       .tour-phone {
-          width: 200px;
+          width: 280px;
           flex-shrink: 0;
           position: relative;
       }
 
       .tour-phone .phone {
-          width: 200px;
+          width: 280px;
           cursor: default;
       }
 
@@ -535,7 +535,7 @@
 
       /* screen viewport */
       .tour-screens {
-          height: 390px; overflow: hidden; position: relative; background: #000;
+          height: 546px; overflow: hidden; position: relative; background: #000;
       }
 
       /* each tour screen */
@@ -576,204 +576,205 @@
       /* ── mock primitives (scoped to .ts) ── */
       .ts-topbar {
           background: #111; display: flex; justify-content: space-between; align-items: center;
-          padding: 8px 11px; border-bottom: 1px solid #222; flex-shrink: 0;
+          padding: 11px 15px; border-bottom: 1px solid #222; flex-shrink: 0;
       }
-      .ts-tb-title { font-size: 10px; font-weight: 800; color: #fff; letter-spacing: 0.02em; }
-      .ts-tb-sub   { font-size: 7px; color: #888; margin-top: 1px; }
+      .ts-tb-title { font-size: 13px; font-weight: 800; color: #fff; letter-spacing: 0.02em; }
+      .ts-tb-sub   { font-size: 9px; color: #888; margin-top: 1px; }
       .ts-red-btn  {
-          background: #9b2626; border-radius: 20px; padding: 4px 9px;
-          font-size: 8px; font-weight: 700; color: #fff;
+          background: #9b2626; border-radius: 20px; padding: 5px 12px;
+          font-size: 10px; font-weight: 700; color: #fff;
           display: flex; align-items: center; gap: 3px;
       }
       .ts-card {
-          background: #1a1a1a; border-radius: 8px; padding: 9px;
-          margin-bottom: 6px; border: 1px solid #2a2a2a;
+          background: #1a1a1a; border-radius: 10px; padding: 12px;
+          margin-bottom: 8px; border: 1px solid #2a2a2a;
       }
-      .ts-card-title { font-size: 10px; font-weight: 700; color: #fff; margin-bottom: 2px; }
-      .ts-card-sub   { font-size: 7px; color: #666; margin-bottom: 5px; }
-      .ts-input      { background: #f1f5f9; border-radius: 7px; padding: 6px 8px; font-size: 8px; color: #aaa; }
-      .ts-datebox    { background: #e0e0e0; border-radius: 7px; padding: 6px 8px; font-size: 8px; font-weight: 700; color: #111; }
+      .ts-card-title { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+      .ts-card-sub   { font-size: 9px; color: #666; margin-bottom: 6px; }
+      .ts-input      { background: #f1f5f9; border-radius: 8px; padding: 8px 10px; font-size: 10px; color: #aaa; }
+      .ts-datebox    { background: #e0e0e0; border-radius: 8px; padding: 8px 10px; font-size: 10px; font-weight: 700; color: #111; }
       .ts-selectbox  {
-          background: #e0e0e0; border-radius: 7px; padding: 6px 8px; margin-top: 4px;
-          display: flex; justify-content: space-between; align-items: center; font-size: 8px; color: #333;
+          background: #e0e0e0; border-radius: 8px; padding: 8px 10px; margin-top: 5px;
+          display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #333;
       }
       .ts-cta {
-          background: #9b2626; border-radius: 7px; padding: 8px;
+          background: #9b2626; border-radius: 9px; padding: 10px;
           display: flex; justify-content: center; align-items: center;
-          font-size: 9px; font-weight: 700; color: #fff; gap: 4px;
+          font-size: 11px; font-weight: 700; color: #fff; gap: 4px;
       }
-      .ts-scroll { flex: 1; overflow: hidden; padding: 8px 8px 0; display: flex; flex-direction: column; }
+      .ts-scroll { flex: 1; overflow: hidden; padding: 10px 10px 0; display: flex; flex-direction: column; }
       .ts-map-bg {
           flex: 1; background: #e8e4dc; position: relative; overflow: hidden;
       }
-      .ts-map-lbl { position: absolute; font-size: 6px; color: #777; }
+      .ts-map-lbl { position: absolute; font-size: 8px; color: #777; }
       .ts-map-dot {
-          position: absolute; width: 9px; height: 9px; border-radius: 50%;
+          position: absolute; width: 12px; height: 12px; border-radius: 50%;
           background: #4a90d9; border: 1.5px solid #fff;
       }
       .ts-floating-nav {
-          position: absolute; top: 7px; left: 7px; right: 7px; z-index: 5;
+          position: absolute; top: 9px; left: 9px; right: 9px; z-index: 5;
           background: rgba(255,255,255,0.92); display: flex;
           justify-content: space-between; align-items: center;
-          padding: 6px 8px; border-radius: 10px;
+          padding: 8px 10px; border-radius: 12px;
       }
-      .ts-fn-back  { font-size: 7px; font-weight: 700; color: #9b2626; }
-      .ts-fn-title { font-size: 7px; font-weight: 700; color: #333; }
+      .ts-fn-back  { font-size: 9px; font-weight: 700; color: #9b2626; }
+      .ts-fn-title { font-size: 9px; font-weight: 700; color: #333; }
       .ts-searchbar {
-          position: absolute; top: 42px; left: 7px; right: 7px; z-index: 5;
-          background: #fff; border-radius: 8px; padding: 6px 8px;
+          position: absolute; top: 52px; left: 9px; right: 9px; z-index: 5;
+          background: #fff; border-radius: 10px; padding: 8px 10px;
           display: flex; align-items: center; gap: 5px;
           box-shadow: 0 2px 6px rgba(0,0,0,0.12);
-          font-size: 7px; color: #aaa;
+          font-size: 9px; color: #aaa;
       }
       .ts-hint-pill {
-          position: absolute; bottom: 50px; left: 8px; right: 8px; z-index: 5;
-          background: rgba(30,30,30,0.88); border-radius: 8px;
-          padding: 6px 8px; display: flex; align-items: center; gap: 5px;
-          font-size: 7px; color: #fff; font-weight: 500;
+          position: absolute; bottom: 60px; left: 10px; right: 10px; z-index: 5;
+          background: rgba(30,30,30,0.88); border-radius: 10px;
+          padding: 8px 10px; display: flex; align-items: center; gap: 5px;
+          font-size: 9px; color: #fff; font-weight: 500;
       }
       .ts-point-sheet {
-          background: #111; border-radius: 10px; padding: 8px; margin: 7px;
+          background: #111; border-radius: 12px; padding: 10px; margin: 9px;
           border: 1px solid #222; flex-shrink: 0;
       }
-      .ts-sheet-handle { width: 24px; height: 3px; background: #333; border-radius: 2px; margin: 0 auto 6px; }
+      .ts-sheet-handle { width: 30px; height: 3px; background: #333; border-radius: 2px; margin: 0 auto 8px; }
       .ts-point-row {
-          display: flex; align-items: center; gap: 6px; padding: 7px;
-          border-radius: 6px; border: 1.5px solid #333; margin-bottom: 5px;
+          display: flex; align-items: center; gap: 8px; padding: 9px;
+          border-radius: 8px; border: 1.5px solid #333; margin-bottom: 6px;
       }
       .ts-point-row.hi { border-color: #9b2626; }
-      .ts-pdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-      .ts-plabel { font-size: 6px; font-weight: 700; letter-spacing: 0.8px; color: #666; }
-      .ts-pval   { font-size: 8px; font-weight: 700; color: #fff; margin-top: 1px; }
-      .ts-setbtn { font-size: 7px; font-weight: 700; color: #9b2626; margin-left: auto; }
+      .ts-pdot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+      .ts-plabel { font-size: 8px; font-weight: 700; letter-spacing: 0.8px; color: #666; }
+      .ts-pval   { font-size: 10px; font-weight: 700; color: #fff; margin-top: 1px; }
+      .ts-setbtn { font-size: 9px; font-weight: 700; color: #9b2626; margin-left: auto; }
       .ts-p-panel {
-          position: absolute; top: 20px; right: 5px;
-          background: #1a1a1a; border-radius: 9px; padding: 7px; width: 115px;
+          position: absolute; top: 24px; right: 6px;
+          background: #1a1a1a; border-radius: 11px; padding: 9px; width: 150px;
           border: 1px solid #2a2a2a; z-index: 5;
       }
-      .ts-p-panel-title { font-size: 6px; font-weight: 700; color: #888; margin-bottom: 4px; }
+      .ts-p-panel-title { font-size: 8px; font-weight: 700; color: #888; margin-bottom: 5px; }
       .ts-p-card {
-          display: flex; align-items: center; gap: 4px;
-          background: #111; border-radius: 5px; border: 1px solid #2a2a2a;
-          padding: 4px 5px; margin-bottom: 3px;
+          display: flex; align-items: center; gap: 5px;
+          background: #111; border-radius: 6px; border: 1px solid #2a2a2a;
+          padding: 5px 6px; margin-bottom: 4px;
       }
       .ts-p-av {
-          width: 18px; height: 18px; border-radius: 9px;
+          width: 22px; height: 22px; border-radius: 11px;
           background: #534AB7; display: flex; align-items: center; justify-content: center;
-          font-size: 6px; color: #fff; font-weight: 700; flex-shrink: 0;
+          font-size: 8px; color: #fff; font-weight: 700; flex-shrink: 0;
       }
-      .ts-p-name   { font-size: 6px; font-weight: 700; color: #fff; }
-      .ts-p-status { font-size: 5px; color: #22c55e; margin-top: 1px; }
+      .ts-p-name   { font-size: 8px; font-weight: 700; color: #fff; }
+      .ts-p-status { font-size: 6px; color: #22c55e; margin-top: 1px; }
       .ts-p-status.w { color: #888; }
-      .ts-p-dot  { width: 4px; height: 4px; border-radius: 50%; background: #22c55e; margin-left: auto; }
+      .ts-p-dot  { width: 5px; height: 5px; border-radius: 50%; background: #22c55e; margin-left: auto; }
       .ts-action-pill {
-          position: absolute; bottom: 46px; left: 50%; transform: translateX(-50%);
+          position: absolute; bottom: 56px; left: 50%; transform: translateX(-50%);
           background: rgba(28,28,30,0.94); border-radius: 99px;
-          padding: 5px 10px 5px 12px; display: flex; align-items: center; gap: 5px;
+          padding: 6px 12px 6px 14px; display: flex; align-items: center; gap: 6px;
           border: 0.5px solid rgba(255,255,255,0.1); white-space: nowrap; z-index: 5;
       }
-      .ts-pill-label { font-size: 7px; color: rgba(255,255,255,0.75); font-weight: 600; }
-      .ts-pill-sep   { width: 0.5px; height: 12px; background: rgba(255,255,255,0.15); }
+      .ts-pill-label { font-size: 9px; color: rgba(255,255,255,0.75); font-weight: 600; }
+      .ts-pill-sep   { width: 0.5px; height: 14px; background: rgba(255,255,255,0.15); }
       .ts-leave-btn  {
-          background: #9b2626; border-radius: 99px; padding: 3px 8px;
-          font-size: 7px; color: #fff; font-weight: 700;
+          background: #9b2626; border-radius: 99px; padding: 4px 10px;
+          font-size: 9px; color: #fff; font-weight: 700;
       }
       .ts-route-line { position: absolute; top: 52px; left: 40px; width: 75px; height: 2px; background: #3366cc; }
       .ts-emoji-mkr {
-          position: absolute; top: 42px; left: 60px; width: 18px; height: 18px; border-radius: 9px;
+          position: absolute; top: 42px; left: 60px; width: 22px; height: 22px; border-radius: 11px;
           background: #22c55e; border: 1.5px solid #fff;
-          display: flex; align-items: center; justify-content: center; font-size: 8px;
+          display: flex; align-items: center; justify-content: center; font-size: 10px;
       }
       .ts-rider-dot {
-          position: absolute; width: 18px; height: 18px; border-radius: 9px;
-          border: 1.5px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 7px;
+          position: absolute; width: 22px; height: 22px; border-radius: 11px;
+          border: 1.5px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 9px;
       }
       .ts-modal-sheet {
-          background: #1a1a1a; border-radius: 12px 12px 0 0; border-top: 1px solid #2a2a2a;
+          background: #1a1a1a; border-radius: 14px 14px 0 0; border-top: 1px solid #2a2a2a;
           position: absolute; bottom: 0; left: 0; right: 0; z-index: 5;
       }
-      .ts-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 9px 11px 6px; }
-      .ts-modal-title  { font-size: 10px; font-weight: 700; color: #fff; }
-      .ts-modal-close  { width: 18px; height: 18px; border-radius: 9px; background: #2a2a2a; display: flex; align-items: center; justify-content: center; font-size: 7px; color: #888; }
-      .ts-warn-row { display: flex; align-items: flex-start; gap: 4px; padding: 5px 6px; margin: 0 8px 5px; background: rgba(255,59,48,0.1); border-left: 2px solid #ff3b30; border-radius: 0 3px 3px 0; font-size: 6px; color: #ff6b6b; line-height: 1.5; }
-      .ts-arrival-card { display: flex; align-items: center; gap: 5px; padding: 6px 8px; margin: 0 8px 5px; background: #111; border-radius: 6px; border: 1px solid #2a2a2a; }
-      .ts-arrival-av { width: 22px; height: 22px; border-radius: 11px; background: #9b2626; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #fff; font-weight: 700; }
-      .ts-arrival-name { font-size: 7px; font-weight: 700; color: #fff; }
-      .ts-arrival-time { font-size: 5px; color: #888; }
-      .ts-check-circle { width: 13px; height: 13px; border-radius: 50%; background: #22c55e; display: flex; align-items: center; justify-content: center; font-size: 6px; color: #fff; margin-left: auto; }
-      .ts-modal-footer { display: flex; gap: 5px; padding: 6px 8px 8px; border-top: 1px solid #2a2a2a; }
-      .ts-refresh-btn { flex: 1; background: #2a2a2a; border-radius: 99px; padding: 5px; display: flex; align-items: center; justify-content: center; font-size: 6px; color: #ccc; gap: 3px; }
-      .ts-close-btn   { flex: 1; background: #9b2626; border-radius: 99px; padding: 5px; display: flex; align-items: center; justify-content: center; font-size: 6px; color: #fff; font-weight: 700; gap: 3px; }
+      .ts-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 11px 14px 8px; }
+      .ts-modal-title  { font-size: 13px; font-weight: 700; color: #fff; }
+      .ts-modal-close  { width: 22px; height: 22px; border-radius: 11px; background: #2a2a2a; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #888; }
+      .ts-warn-row { display: flex; align-items: flex-start; gap: 5px; padding: 6px 8px; margin: 0 10px 6px; background: rgba(255,59,48,0.1); border-left: 2px solid #ff3b30; border-radius: 0 3px 3px 0; font-size: 8px; color: #ff6b6b; line-height: 1.5; }
+      .ts-arrival-card { display: flex; align-items: center; gap: 6px; padding: 8px 10px; margin: 0 10px 6px; background: #111; border-radius: 7px; border: 1px solid #2a2a2a; }
+      .ts-arrival-av { width: 28px; height: 28px; border-radius: 14px; background: #9b2626; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #fff; font-weight: 700; }
+      .ts-arrival-name { font-size: 9px; font-weight: 700; color: #fff; }
+      .ts-arrival-time { font-size: 7px; color: #888; }
+      .ts-check-circle { width: 16px; height: 16px; border-radius: 50%; background: #22c55e; display: flex; align-items: center; justify-content: center; font-size: 7px; color: #fff; margin-left: auto; }
+      .ts-modal-footer { display: flex; gap: 6px; padding: 8px 10px 10px; border-top: 1px solid #2a2a2a; }
+      .ts-refresh-btn { flex: 1; background: #2a2a2a; border-radius: 99px; padding: 6px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #ccc; gap: 3px; }
+      .ts-close-btn   { flex: 1; background: #9b2626; border-radius: 99px; padding: 6px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #fff; font-weight: 700; gap: 3px; }
 
       /* home screen-specific */
-      .ts-home-header { background: #111; display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-bottom: 1px solid #222; flex-shrink: 0; }
-      .ts-home-av { width: 26px; height: 26px; border-radius: 13px; background: #9b2626; display: flex; align-items: center; justify-content: center; font-size: 10px; }
-      .ts-home-uname { font-size: 9px; font-weight: 800; color: #fff; }
-      .ts-home-usub  { font-size: 6px; color: #888; }
-      .ts-home-actions { display: flex; align-items: center; gap: 4px; }
-      .ts-home-rideid { display: flex; align-items: center; gap: 3px; border: 1.5px solid #9b2626; border-radius: 5px; padding: 3px 6px; font-size: 7px; font-weight: 700; color: #fff; }
-      .ts-home-qr { width: 22px; height: 22px; border-radius: 5px; background: #1e1e1e; border: 1px solid #333; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #fff; }
-      .ts-home-plus { width: 22px; height: 22px; border-radius: 5px; background: #9b2626; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; font-weight: 700; }
-      .ts-home-section { background: #1a1a1a; margin: 6px; border-radius: 7px; padding: 8px; border: 1px solid #2a2a2a; flex-shrink: 0; }
-      .ts-home-stitle { font-size: 8px; font-weight: 700; color: #fff; margin-bottom: 2px; }
-      .ts-home-noride { font-size: 7px; color: #555; }
-      .ts-home-card { background: #1a1a1a; margin: 0 6px; border-radius: 8px; border: 1px solid #2a2a2a; overflow: hidden; flex-shrink: 0; }
-      .ts-home-card-h { padding: 8px 10px; border-bottom: 1px solid #2a2a2a; }
-      .ts-home-card-title { font-size: 9px; font-weight: 900; color: #fff; }
-      .ts-inactive-badge { display: inline-block; border: 1px solid #555; border-radius: 2px; padding: 1px 3px; font-size: 5px; font-weight: 700; color: #888; letter-spacing: 0.4px; margin-left: 4px; }
-      .ts-home-card-meta { padding: 7px 10px 0; }
-      .ts-home-card-name { font-size: 9px; font-weight: 800; color: #fff; margin-bottom: 3px; }
-      .ts-home-card-row  { display: flex; align-items: center; gap: 3px; font-size: 6px; color: #888; margin-bottom: 2px; }
-      .ts-home-map-thumb { height: 60px; margin: 5px 10px; border-radius: 6px; overflow: hidden; background: #d5e8c8; position: relative; }
-      .ts-map-pin { position: absolute; width: 7px; height: 7px; border-radius: 50%; background: #9b2626; border: 1.5px solid #fff; }
-      .ts-home-desc { padding: 7px 10px; background: #1a1a1a; font-size: 7px; color: #ccc; line-height: 1.5; }
+      .ts-home-header { background: #111; display: flex; justify-content: space-between; align-items: center; padding: 10px 13px; border-bottom: 1px solid #222; flex-shrink: 0; }
+      .ts-home-av { width: 34px; height: 34px; border-radius: 17px; background: #9b2626; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+      .ts-home-uname { font-size: 11px; font-weight: 800; color: #fff; }
+      .ts-home-usub  { font-size: 8px; color: #888; }
+      .ts-home-actions { display: flex; align-items: center; gap: 5px; }
+      .ts-home-rideid { display: flex; align-items: center; gap: 3px; border: 1.5px solid #9b2626; border-radius: 6px; padding: 4px 8px; font-size: 9px; font-weight: 700; color: #fff; }
+      .ts-home-qr { width: 28px; height: 28px; border-radius: 6px; background: #1e1e1e; border: 1px solid #333; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; }
+      .ts-home-plus { width: 28px; height: 28px; border-radius: 6px; background: #9b2626; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #fff; font-weight: 700; }
+      .ts-home-section { background: #1a1a1a; margin: 8px; border-radius: 9px; padding: 10px; border: 1px solid #2a2a2a; flex-shrink: 0; }
+      .ts-home-stitle { font-size: 10px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+      .ts-home-noride { font-size: 9px; color: #555; }
+      .ts-home-card { background: #1a1a1a; margin: 0 8px; border-radius: 10px; border: 1px solid #2a2a2a; overflow: hidden; flex-shrink: 0; }
+      .ts-home-card-h { padding: 10px 13px; border-bottom: 1px solid #2a2a2a; }
+      .ts-home-card-title { font-size: 11px; font-weight: 900; color: #fff; }
+      .ts-inactive-badge { display: inline-block; border: 1px solid #555; border-radius: 2px; padding: 1px 3px; font-size: 6px; font-weight: 700; color: #888; letter-spacing: 0.4px; margin-left: 4px; }
+      .ts-home-card-meta { padding: 8px 13px 0; }
+      .ts-home-card-name { font-size: 11px; font-weight: 800; color: #fff; margin-bottom: 3px; }
+      .ts-home-card-row  { display: flex; align-items: center; gap: 3px; font-size: 8px; color: #888; margin-bottom: 2px; }
+      .ts-home-map-thumb { height: 76px; margin: 6px 13px; border-radius: 8px; overflow: hidden; background: #d5e8c8; position: relative; }
+      .ts-map-pin { position: absolute; width: 9px; height: 9px; border-radius: 50%; background: #9b2626; border: 1.5px solid #fff; }
+      .ts-home-desc { padding: 8px 13px; background: #1a1a1a; font-size: 9px; color: #ccc; line-height: 1.5; }
 
       /* ── Right info panel ── */
       .tour-info {
-          flex: 1; min-width: 220px; max-width: 340px;
+          flex: 1; min-width: 260px; max-width: 380px;
           display: flex; flex-direction: column; gap: 0;
           text-align: left; padding-top: 8px;
+          justify-content: center;
       }
 
       .tour-step-label {
-          font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em;
-          text-transform: uppercase; color: var(--primary-light); margin-bottom: 6px;
+          font-size: 0.8rem; font-weight: 700; letter-spacing: 0.12em;
+          text-transform: uppercase; color: var(--primary-light); margin-bottom: 8px;
       }
 
       .tour-step-title {
           font-family: 'Space Grotesk', sans-serif;
-          font-size: clamp(1.3rem, 3vw, 1.7rem);
+          font-size: clamp(1.6rem, 3vw, 2.2rem);
           font-weight: 700; letter-spacing: -0.02em;
-          color: var(--text); line-height: 1.2; margin-bottom: 10px;
+          color: var(--text); line-height: 1.2; margin-bottom: 14px;
       }
 
       .tour-step-desc {
-          font-size: 0.9rem; color: var(--text-muted); line-height: 1.7; margin-bottom: 24px;
+          font-size: 1.05rem; color: var(--text-muted); line-height: 1.7; margin-bottom: 28px;
       }
 
-      .tour-dots { display: flex; gap: 5px; align-items: center; margin-bottom: 28px; }
+      .tour-dots { display: flex; gap: 6px; align-items: center; margin-bottom: 32px; }
 
       .tour-dot {
-          width: 5px; height: 5px; border-radius: 50%; background: #2a2a2a;
+          width: 6px; height: 6px; border-radius: 50%; background: #2a2a2a;
           transition: all 0.25s;
       }
-      .tour-dot.on { width: 18px; border-radius: 3px; background: var(--primary-light); }
+      .tour-dot.on { width: 22px; border-radius: 3px; background: var(--primary-light); }
 
-      .tour-nav { display: flex; align-items: center; gap: 10px; }
+      .tour-nav { display: flex; align-items: center; gap: 12px; }
 
       .tour-btn-prev {
           background: none; border: 1px solid var(--border-light); color: var(--text-muted);
-          border-radius: 50%; width: 38px; height: 38px;
+          border-radius: 50%; width: 46px; height: 46px;
           display: flex; align-items: center; justify-content: center;
-          font-size: 0.95rem; cursor: pointer; transition: all 0.2s;
+          font-size: 1.1rem; cursor: pointer; transition: all 0.2s;
       }
       .tour-btn-prev:hover:not(:disabled) { border-color: var(--text-muted); color: var(--text); }
       .tour-btn-prev:disabled { opacity: 0.2; cursor: default; }
 
       .tour-btn-next {
           background: var(--primary); border: none; color: var(--red50);
-          border-radius: 99px; padding: 9px 20px;
-          font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 700;
+          border-radius: 99px; padding: 12px 28px;
+          font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 700;
           cursor: pointer; display: flex; align-items: center; gap: 6px;
           transition: background 0.2s, transform 0.15s;
       }
@@ -781,19 +782,19 @@
 
       .tour-btn-skip {
           background: none; border: none; color: var(--text-muted);
-          font-size: 0.78rem; cursor: pointer; padding: 5px; transition: color 0.2s;
+          font-size: 0.9rem; cursor: pointer; padding: 5px; transition: color 0.2s;
           margin-left: 2px;
       }
       .tour-btn-skip:hover { color: var(--text); }
 
       /* screen-group chips */
       .tour-chips {
-          display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 22px;
+          display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 26px;
       }
 
       .tour-chip {
           background: var(--surface-alt); border: 1px solid var(--border);
-          border-radius: 99px; padding: 4px 12px; font-size: 0.72rem;
+          border-radius: 99px; padding: 6px 14px; font-size: 0.8rem;
           font-weight: 600; color: var(--text-muted); cursor: pointer;
           transition: all 0.2s; white-space: nowrap;
       }
@@ -1059,9 +1060,59 @@
           text-align: center;
           font-size: 0.8rem;
           color: var(--text-muted);
-          padding: 32px 20px;
+          padding: 40px 24px;
           border-top: 1px solid var(--border);
       }
+
+      .footer-inner {
+          max-width: 720px;
+          margin: 0 auto;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 14px;
+      }
+
+      .footer-dev {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          flex-wrap: wrap;
+          justify-content: center;
+          font-size: 0.8rem;
+      }
+
+      .footer-dev-name { color: var(--text); font-weight: 600; }
+
+      .footer-dev a {
+          color: var(--text-muted);
+          text-decoration: none;
+          transition: color 0.2s;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+      }
+
+      .footer-dev a:hover { color: var(--primary-light); }
+
+      .footer-sep {
+          width: 3px; height: 3px;
+          border-radius: 50%;
+          background: var(--border-light);
+      }
+
+      .footer-about {
+          font-size: 0.76rem;
+          color: #4a4040;
+          line-height: 1.7;
+          max-width: 560px;
+          border-top: 1px solid var(--border);
+          padding-top: 14px;
+      }
+
+      .footer-about span { color: var(--text-muted); font-weight: 500; }
+
+      .footer-copy { font-size: 0.74rem; color: #4a4040; }
       /* ── Responsive: stack hero on smaller screens ── */
       @media (max-width: 900px) {
           .hero {
@@ -1131,7 +1182,7 @@
           <div class="tour-phone-btn-l2"></div>
           <div class="tour-phone-btn-l3"></div>
 
-          <div class="phone" style="width:200px;border-radius:30px;overflow:hidden;cursor:default;">
+          <div class="phone" style="width:280px;border-radius:30px;overflow:hidden;cursor:default;">
             <!-- Dynamic island -->
             <div class="tour-island"></div>
 
@@ -1547,32 +1598,26 @@
 
     <div class="feature-grid">
       <div class="feature-card">
-        <div class="feature-icon"></div>
         <div class="feature-title">Live location sharing</div>
         <div class="feature-desc">See every rider on the map in real time. No more "where are you?" messages — just open the app.</div>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">👥</div>
         <div class="feature-title">Group &amp; solo rides</div>
         <div class="feature-desc">Create a group ride for your crew or join as a solo rider. Flexible for any commute or trip type.</div>
       </div>
       <div class="feature-card">
-        <div class="feature-icon"></div>
         <div class="feature-title">Checkpoint tracking</div>
         <div class="feature-desc">Set checkpoints along your route and track who has passed them. Perfect for long-distance group rides.</div>
       </div>
       <div class="feature-card">
-        <div class="feature-icon"></div>
         <div class="feature-title">Ride summaries</div>
         <div class="feature-desc">After every ride, get a full summary — duration, distance, participants, and checkpoint completion.</div>
       </div>
       <div class="feature-card">
-        <div class="feature-icon"></div>
         <div class="feature-title">Offline support</div>
         <div class="feature-desc">Lost signal? laagan keeps your GPS running and syncs back up automatically when you're reconnected.</div>
       </div>
       <div class="feature-card">
-        <div class="feature-icon"></div>
         <div class="feature-title">Foreground-only location</div>
         <div class="feature-desc">Your location is only ever shared while the app is open. The moment you minimize it, tracking stops.</div>
       </div>
@@ -1597,7 +1642,23 @@
     </div>
   </section>
 
-  <div class="site-footer">&copy; 2026 laagan. All rights reserved. &mdash; Philippines</div>
+  <div class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-dev">
+        <span class="footer-dev-name">Lean Paninsoro</span>
+        <div class="footer-sep"></div>
+        <a href="mailto:paninsorolean@gmail.com">✉ paninsorolean@gmail.com</a>
+        <div class="footer-sep"></div>
+        <a href="https://github.com/Leyaaaan1/laagan" target="_blank" rel="noopener">⌥ github.com/Leyaaaan1/laagan</a>
+      </div>
+      <p class="footer-about">
+        A <span>personal project-based learning</span> app for motorcycle enthusiasts in Davao City,
+        built with <span>React Native</span> and a <span>Spring + PostgreSQL</span> backend
+        following official Spring documentation.
+      </p>
+      <span class="footer-copy">&copy; 2026 laagan. All rights reserved. &mdash; Philippines</span>
+    </div>
+  </div>
 </div>
 
 
