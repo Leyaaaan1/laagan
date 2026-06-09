@@ -22,6 +22,8 @@ export const useLocationPermission = () => {
   const [granted, setGranted] = useState(false);
   const [checked, setChecked] = useState(false);
 
+
+
   useEffect(() => {
     const requestPermission = async () => {
       try {
@@ -78,6 +80,7 @@ export const useRideLocationPolling = ({
   const isPollingRef = useRef(false);
   const isOfflineRef = useRef(false);
   const tokenRef = useRef(token);
+  const jitterTimeoutRef = useRef(null);
 
   useEffect(() => {
     enabledRef.current = enabled;
@@ -97,6 +100,13 @@ export const useRideLocationPolling = ({
 
   const handlePollingError = useCallback(
     err => {
+      // App went to background mid-poll — not an error, just abort silently.
+      // The AppState listener will resume polling when app is foregrounded.
+      if (err.message === 'APP_BACKGROUNDED') {
+        console.log('📵 Poll skipped — app is backgrounded');
+        return; // no retry, no error state, no UI update
+      }
+
       retryCountRef.current += 1;
       const count = retryCountRef.current;
 
@@ -159,14 +169,12 @@ export const useRideLocationPolling = ({
 
       console.log('📍 Location obtained, sharing:', {latitude, longitude});
 
-      // ✅ FIX: Pass token as 4th parameter
+      // ✅ FIX: Pass token as 4th parametconst startPolling = useCallbacker
       const allLocations = await shareLocationAndFetchAll(
         rideId,
         latitude,
         longitude,
-        tokenRef.current,
       );
-
       // ✅ FIXED: Handle null/undefined response
       if (!allLocations || !Array.isArray(allLocations)) {
         console.warn(
@@ -213,6 +221,11 @@ export const useRideLocationPolling = ({
   }, [pollLocationOnce]);
 
   const stopPolling = useCallback(() => {
+    if (jitterTimeoutRef.current) {
+      // ← cancel jitter if still pending
+      clearTimeout(jitterTimeoutRef.current);
+      jitterTimeoutRef.current = null;
+    }
     intervalManager.current.stop();
     timeoutManager.current.clear();
     setIsPolling(false);
@@ -221,12 +234,6 @@ export const useRideLocationPolling = ({
 
   const startPolling = useCallback(() => {
     if (intervalManager.current.isRunning()) return;
-
-    if (!tokenRef.current) {
-      console.warn('Cannot start polling: no access token');
-      setError('AUTH_MISSING - Please login again');
-      return;
-    }
 
     setIsPolling(true);
     isPollingRef.current = true;
@@ -237,7 +244,9 @@ export const useRideLocationPolling = ({
 
     // Add jitter so users don't all hit the server at the same time
     const jitter = Math.floor(Math.random() * 2000);
-    setTimeout(() => {
+    jitterTimeoutRef.current = setTimeout(() => {
+      // ← store it
+      jitterTimeoutRef.current = null;
       intervalManager.current.start(() => {
         pollOnceRef.current();
       }, 8000);
@@ -260,7 +269,8 @@ export const useRideLocationPolling = ({
         setError(null);
         setIsOffline(false);
 
-        if (enabledRef.current && rideId && tokenRef.current) {
+        if (enabledRef.current && rideId) {
+          // token check removed
           startPolling();
         }
       }
@@ -272,15 +282,15 @@ export const useRideLocationPolling = ({
   }, [rideId, stopPolling, startPolling]);
 
   useEffect(() => {
-    if (enabled && rideId && tokenRef.current) {
+    if (enabled && rideId && AppState.currentState === 'active') {
       startPolling();
     } else {
       stopPolling();
     }
 
     return () => stopPolling();
-  }, [enabled, rideId, token, startPolling, stopPolling]);
-
+    // token removed from deps — service reads it internally now
+  }, [enabled, rideId, startPolling, stopPolling]);
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextState => {
       const wasBackground = appStateRef.current.match(/inactive|background/);

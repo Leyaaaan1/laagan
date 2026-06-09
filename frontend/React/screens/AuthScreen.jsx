@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import {
   loginUser,
@@ -96,6 +97,15 @@ const AuthForm = React.memo(
     <KeyboardAvoidingView
       style={layout.center}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <Image
+        source={require('../styles/asset/icon.png')}
+        style={{
+          width: 120,
+          height: 120,
+          marginBottom: 20,
+        }}
+        resizeMode="contain"
+      />
       <Text
         style={[
           text.titleCenter,

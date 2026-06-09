@@ -38,7 +38,7 @@ const StartedRide = ({route, navigation}) => {
   const [showRouteInfo, setShowRouteInfo] = useState(false);
   const [pollingEnabled, setPollingEnabled] = useState(true);
   const mapRef = useRef(null);
-  const {activeRide, setActiveRide, stopPolling, startPolling} =
+  const {activeRide, setActiveRide, stopPolling} =
     useContext(RideContext);
   const {activeRide: initialActiveRide} = route?.params || {};
   const [checkpointModalVisible, setCheckpointModalVisible] = useState(false);
@@ -66,8 +66,11 @@ const StartedRide = ({route, navigation}) => {
     setPollingEnabled,
   );
 
-  const isCreator =
-    username === activeRide?.startedBy || username === activeRide?.username;
+  const isCreator = useMemo(() => {
+    return (
+      username === activeRide?.startedBy || username === activeRide?.username
+    );
+  }, [username, activeRide?.startedBy, activeRide?.username]);
 
 
 
@@ -77,15 +80,7 @@ const StartedRide = ({route, navigation}) => {
     }
   }, [initialActiveRide, activeRide, setActiveRide]);
 
-  useEffect(() => {}, [activeRide, isOffline]);
 
-  useEffect(() => {
-    startPolling();
-
-    return () => {
-      stopPolling();
-    };
-  }, [startPolling, stopPolling]);
 
   const mapData = useMemo(
     () => buildMapData(activeRide, processRideCoordinates),
@@ -97,8 +92,9 @@ const StartedRide = ({route, navigation}) => {
       if (cachedRouteData.routeCoordinates) {
         try {
           const parsed = JSON.parse(cachedRouteData.routeCoordinates);
-          return parsed; // ← This is the fix!
+          return parsed;
         } catch (err) {
+          console.warn('[StartedRide] Failed to parse cached route:', err);
           return null;
         }
       }
@@ -108,7 +104,8 @@ const StartedRide = ({route, navigation}) => {
       return buildRouteDataForMap(activeRide);
     }
     return null;
-  }, [activeRide, isOffline, cachedRouteData]);
+    // Use stable primitive id instead of the whole object reference
+  }, [activeRide?.generatedRidesId, isOffline, cachedRouteData]);
 
   if (!activeRide) {
     return (
@@ -451,7 +448,7 @@ const StartedRide = ({route, navigation}) => {
                 startedRideStyles.actionStopButton,
                 {backgroundColor: 'rgba(255,255,255,0.15)'},
               ]}
-              onPress={() => handleLeaveRide(navigation)}
+              onPress={handleLeaveRide}
               disabled={isLeaving}>
               {isLeaving ? (
                 <ActivityIndicator size="small" color="#fff" />

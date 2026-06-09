@@ -1,16 +1,6 @@
-// hooks/useEndingPointAlert.js
 import {useState, useEffect, useRef} from 'react';
 import {getRideStatus} from '../services/startService';
 
-// FIX: was calling getCheckpointArrivals every 4s — that endpoint loads all
-// checkpoint records + does auth checks, causing the constant log spam:
-//   "getCheckpointArrivalsByRide called [generatedRidesId=...]"
-//
-// Now polls getRideStatus instead, which is lightweight and already polled
-// elsewhere in the app. We detect completion via riderStatuses[].status
-// === 'RIDER_FINISHED' for the current user, which is set by
-// rideStatusService.markRiderFinished() in CheckPointUtility right after
-// the ENDING arrival is saved.
 export const useEndingPointAlert = (
   generatedRidesId,
   username,
@@ -18,6 +8,7 @@ export const useEndingPointAlert = (
 ) => {
   const [showEndingAlert, setShowEndingAlert] = useState(false);
   const hasDetected = useRef(false);
+  const intervalRef = useRef(null); // ← store interval id in a ref
 
   useEffect(() => {
     if (
@@ -28,29 +19,32 @@ export const useEndingPointAlert = (
     )
       return;
 
-    const interval = setInterval(async () => {
+    intervalRef.current = setInterval(async () => {
       try {
         const statusData = await getRideStatus(generatedRidesId);
 
-        // Check via riderStatuses (set by markRiderFinished in CheckPointUtility)
         const riderFinished = statusData?.riderStatuses?.some(
           r => r.riderUsername === username && r.status === 'RIDER_FINISHED',
         );
-
-        // Also handle the case where the whole ride is already FINISHED
         const rideFinished = statusData?.currentStatus === 'FINISHED';
 
         if (riderFinished || rideFinished) {
           hasDetected.current = true;
           setShowEndingAlert(true);
-          clearInterval(interval);
+          // Clear via ref — safe regardless of when this fires
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
         }
       } catch (_) {
         // silently ignore polling errors
       }
     }, 4000);
 
-    return () => clearInterval(interval);
+    // Cleanup always clears the ref — no race condition
+    return () => {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    };
   }, [generatedRidesId, username, pollingEnabled]);
 
   const dismissAlert = () => setShowEndingAlert(false);

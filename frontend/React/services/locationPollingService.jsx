@@ -1,15 +1,24 @@
 // === locationPollingService.jsx ===
 
-import {API_BASE_URL, api} from './Apiclient';
+import { api} from './Apiclient';
 import Geolocation from '@react-native-community/geolocation';
-import {Platform, PermissionsAndroid} from 'react-native';
+import {AppState, Platform, PermissionsAndroid} from 'react-native'; // AppState added
 
-// ✅ NEW: Track last location time to throttle updates
+
 let lastLocationUpdateTime = 0;
 const LOCATION_THROTTLE_MS = 15000; // Minimum 15 seconds between location updates
 
 export const getCurrentPosition = async () => {
   return new Promise(async (resolve, reject) => {
+    // Block GPS entirely if app is not in the foreground.
+    // Avoids background location access which violates Play Store and
+    // App Store background location policies when the app has not
+    // declared background location usage.
+    if (AppState.currentState !== 'active') {
+      reject(new Error('APP_BACKGROUNDED'));
+      return;
+    }
+
     if (Platform.OS === 'android') {
       const granted = await PermissionsAndroid.check(
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
@@ -20,7 +29,6 @@ export const getCurrentPosition = async () => {
       }
     }
 
-    // ✅ FIXED: Try coarse location first (fast, low battery drain)
     Geolocation.getCurrentPosition(
       position =>
         resolve({
@@ -28,7 +36,6 @@ export const getCurrentPosition = async () => {
           longitude: position.coords.longitude,
         }),
       () => {
-        // Coarse location failed — fallback to quick low-accuracy location
         Geolocation.getCurrentPosition(
           position =>
             resolve({
@@ -37,17 +44,16 @@ export const getCurrentPosition = async () => {
             }),
           err => reject(new Error(`GPS Error (${err.code}): ${err.message}`)),
           {
-            enableHighAccuracy: false, // ✅ CHANGED: Don't force GPS
+            enableHighAccuracy: false,
             timeout: 10000,
-            maximumAge: 60000, // ✅ CHANGED: Accept cached location up to 60s
+            maximumAge: 60000,
           },
         );
       },
       {
-        enableHighAccuracy: false, // ✅ FIXED: Use network/wifi location first
-        timeout: 8000, // ✅ REDUCED: Faster timeout
-        maximumAge: 30000, // ✅ INCREASED: Accept cached location
-        // Removed forceRequestLocation and showLocationDialog
+        enableHighAccuracy: false,
+        timeout: 8000,
+        maximumAge: 30000,
       },
     );
   });
@@ -68,7 +74,6 @@ export const shareLocationAndFetchAll = async (
   rideId,
   latitude,
   longitude,
-  authToken,
 ) => {
   if (!rideId) throw new Error('Missing rideId');
 
@@ -85,7 +90,6 @@ export const shareLocationAndFetchAll = async (
     const response = await api.post(
       `/location/${rideId}/share?latitude=${latitude}&longitude=${longitude}`,
       {},
-      authToken,
     );
 
     if (!response.ok) {
@@ -121,7 +125,9 @@ export const shareLocationAndFetchAll = async (
     }
 
     if (errorMsg.includes('AUTH_MISSING')) {
-      throw new Error('AUTH_MISSING - No access token available');
+      const err = new Error('Please log in again.');
+      err.code = 'AUTH_MISSING'; // code used for logic branching in isAuthError()
+      throw err;
     }
 
     // Server errors (retryable)
@@ -174,7 +180,6 @@ export const isFatalError = err => {
     msg.includes('Invalid state')
   );
 };
-
 export const shouldRetryError = retryCount => retryCount <= 3;
 
 export const createIntervalManager = () => {

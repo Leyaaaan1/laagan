@@ -135,10 +135,7 @@ public class StartRideService {
 
         // If creator is leaving but others remain — transfer ownership to a random participant
         if (isCreator) {
-            Rider newCreator = remainingParticipants.stream()
-                    .skip(new Random().nextInt(remainingParticipants.size()))
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalStateException("Failed to select new creator"));
+            Rider newCreator = remainingParticipants.iterator().next();
 
             ride.setUsername(newCreator);
             startedRide.setUsername(newCreator);
