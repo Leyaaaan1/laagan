@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>laagan — How It Works</title>
+  <link rel="stylesheet" href="onboarding.css">
+</head>
+<body>
+
+<!-- ── Global Nav ── -->
+<nav>
+  <a class="nav-logo" href="index.html">laa<span>g</span>an</a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="onboarding.html" class="active">How It Works</a>
+    <a href="index.html#legal">Legal</a>
+  </div>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="ob-hero">
+  <div class="ob-badge">App walkthrough</div>
+  <h1 class="ob-title">Your first ride,<br><em>step by step.</em></h1>
+  <p class="ob-sub">A quick tour of every screen — from creating a ride to tracking your crew in real time.</p>
+
+  <!-- Screen chips -->
+  <div class="ob-step-index">
+    <button class="ob-step-chip active" onclick="jumpToScreen(0,this)">Home</button>
+    <button class="ob-step-chip" onclick="jumpToScreen(1,this)">Create Ride</button>
+    <button class="ob-step-chip" onclick="jumpToScreen(5,this)">Set Location</button>
+    <button class="ob-step-chip" onclick="jumpToScreen(7,this)">Route Points</button>
+    <button class="ob-step-chip" onclick="jumpToScreen(9,this)">Live Tracking</button>
+    <button class="ob-step-chip" onclick="jumpToScreen(11,this)">Checkpoints</button>
+  </div>
+</section>
+
+<!-- ── Main Stage: Phone + Info ── -->
+<div class="ob-stage">
+
+  <!-- ── Phone Shell ── -->
+  <div class="phone-shell">
+    <!-- Side buttons -->
+    <div class="phone-btn-r"></div>
+    <div class="phone-btn-l1"></div>
+    <div class="phone-btn-l2"></div>
+    <div class="phone-btn-l3"></div>
+
+    <div class="phone-frame">
+      <!-- Dynamic island -->
+      <div class="phone-island">
+        <div class="cam"><div class="cam-inner"></div></div>
+      </div>
+
+      <!-- Status bar -->
+      <div class="phone-status">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <span>▪▪▪</span>
+          <span>WiFi</span>
+        </div>
+      </div>
+
+      <!-- Screen area -->
+      <div class="phone-screen-area" id="screenArea">
+
+        <!-- ══ SCREEN 0: Home ══ -->
+        <div class="mock-screen active" id="screen-0">
+          <!-- highlight on plus btn -->
+          <div class="highlight-overlay">
+            <div class="hl-border" style="top:5px; right:5px; width:30px; height:30px; border-radius:7px;"></div>
+          </div>
+          <div class="home-header">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="home-avatar">🏍</div>
+              <div>
+                <div class="home-username">Leanonme</div>
+                <div class="home-usersub">🏍 XRM 125</div>
+              </div>
+            </div>
+            <div class="home-actions">
+              <div class="home-ride-id-btn">Ride ID </div>
+              <div class="home-qr-btn">▦</div>
+              <div class="home-plus-btn">+</div>
+            </div>
+          </div>
+          <div class="home-section">
+            <div class="home-section-title">Active Ride</div>
+            <div class="home-no-ride">No active ride</div>
+          </div>
+          <div class="home-card">
+            <div class="home-card-header">
+              <div class="home-card-title">DAHILAYAN ADVENTURE PARK</div>
+              <div class="home-card-id">ID: #5F74527788F3 <span class="inactive-badge">INACTIVE</span></div>
+            </div>
+            <div class="home-card-meta">
+              <div class="home-card-name">Bukidnon Rides</div>
+              <div class="home-card-row"> <span style="color:#9b2626;font-weight:700;">Toril District</span> → Dahilayan Adventure Pa…</div>
+              <div class="home-card-row"> July 02, 2026 · 11:10 AM</div>
+              <div class="home-card-row"> Created by lean_paninsoro</div>
+            </div>
+            <div class="home-map-thumb">
+              <span class="map-txt" style="top:8px;left:12px;">Mountain Pines</span>
+              <span class="map-txt" style="top:30px;left:40px;">Dahilayan</span>
+              <div class="map-pin-dot" style="top:28px;left:65px;"></div>
+            </div>
+            <div class="home-desc">Bukidnon is home to multiple famous destinations, including Dahilayan Adventure Park.</div>
+          </div>
+        </div>
+
+        <!-- ══ SCREEN 1: Name your ride ══ -->
+        <div class="mock-screen" id="screen-1">
+          <div class="highlight-overlay">
+            <div class="hl-border" style="top:53px; left:8px; right:8px; height:68px; border-radius:10px;"></div>
+          </div>
+          <div class="app-topbar">
+            <div>
+              <div class="app-topbar-title">CREATE RIDE</div>
+              <div class="app-topbar-sub">Step 1 of 3 — Details</div>
+            </div>
+            <div class="red-btn" style="opacity:.4;">Next ›</div>
+          </div>
+          <div class="create-scrollable">
+            <div class="app-card" style="border-color:#9b2626;">
+              <div class="app-card-title">Name Your Ride</div>
+              <div class="app-card-sub">Give your adventure a memorable name</div>
+              <div class="app-input">Epic Bukidnon Adventure</div>
+            </div>
+            <div class="app-card">
+              <div class="app-card-title">When &amp; How</div>
+              <div class="app-card-sub">Select Date &amp; Time</div>
+              <div class="app-date-box">Thursday, June 4, 2026 · 10:57 PM</div>
+            </div>
+            <div class="app-card">
+              <div class="app-card-title">Describe Your Route</div>
+              <div class="app-card-sub">Terrain, highlights, special stops</div>
+              <div class="app-input" style="height:44px;">Tell us about the terrain…</div>
+            </div>
+            <div class="app-cta">Continue to Location ›</div>
+          </div>
+        </div>
+
+        <!-- ══ SCREEN 2: Set date & bike ══ -->
+        <div class="mock-screen" id="screen-2">
+          <div class="highlight-overlay">
+            <div class="hl-border" style="top:121px; left:8px; right:8px; height:72px; border-radius:10px;"></div>
+          </div>
+          <div class="app-topbar">
+            <div>
+              <div class="app-topbar-title">CREATE RIDE</div>
+              <div class="app-topbar-sub">Step 1 of 3 — Details</div>
+            </div>
+            <div class="red-btn" style="opacity:.4;">Next ›</div>
+          </div>
+          <div class="create-scrollable">
+            <div class="app-card">
+              <div class="app-card-title">Name Your Ride</div>
+              <div class="app-card-sub">Give your adventure a memorable name</div>
+              <div class="app-input">Epic Bukidnon Adventure</div>
+            </div>
+            <div class="app-card" style="border-color:#9b2626;">
+              <div class="app-card-title">When &amp; How</div>
+              <div class="app-card-sub">Select Date &amp; Time</div>
+              <div class="app-date-box">Thursday, June 4, 2026 · 10:57 PM</div>
+              <div class="app-card-sub" style="margin-top:6px;">Choose Your Bike</div>
+              <div class="app-select-box">
+                <span>🏍 ADV 160</span>
+                <span style="color:#888;font-size:9px;">▾</span>
+              </div>
+            </div>
+            <div class="app-card">
+              <div class="app-card-title">Describe Your Route</div>
+              <div class="app-input" style="height:36px;font-size:9px;">Tell us about the terrain…</div>
+            </div>
+            <div class="app-cta">Continue to Location ›</div>
+          </div>
+        </div>
+
+        <!-- ══ SCREEN 3: Describe route ══ -->
+        <div class="mock-screen" id="screen-3">
+          <div class="highlight-overlay">
+            <div class="hl-border" style="top:261px; left:8px; right:8px; height:74px; border-radius:10px;"></div>
+          </div>
+          <div class="app-topbar">
+            <div>
+              <div class="app-topbar-title">CREATE RIDE</div>
+              <div class="app-topbar-sub">Step 1 of 3 — Details</div>
+            </div>
+            <div class="red-btn" style="opacity:.4;">Next ›</div>
+          </div>
+          <div class="create-scrollable">
+            <div class="app-card">
+              <div class="app-card-title">Name Your Ride</div>
+              <div class="app-input">Epic Bukidnon Adventure</div>
+            </div>
+            <div class="app-card">
+              <div class="app-card-title">When &amp; How</div>
+              <div class="app-date-box" style="font-size:9px;">Thursday, June 4, 2026 · 10:57 PM</div>
+              <div class="app-select-box"><span>🏍 ADV 160</span></div>
+            </div>
+            <div class="app-card" style="border-color:#9b2626;">
+              <div class="app-card-title">Describe Your Route</div>
+              <div class="app-card-sub">Terrain, highlights, special stops</div>
+              <div class="app-input" style="height:50px;font-size:9px;">Tell us about the terrain, highlights, or any special stops…</div>
+            </div>
+            <div class="app-cta">Continue to Location ›</div>
+          </div>
+        </div>
+
+        <!-- ══ SCREEN 4: CTA ══ -->
+        <div class="mock-screen" id="screen-4">
+          <div class="highlight-overlay">
+            <div class="hl-border" style="top:391px; left:8px; right:8px; height:38px; border-radius:8px;"></div>
+          </div>
+          <div class="app-topbar">
+            <div>
+              <div class="app-topbar-title">CREATE RIDE</div>
+              <div class="app-topbar-sub">Step 1 of 3 — Details</div>
+            </div>
+            <div class="red-btn" style="opacity:.4;">Next ›</div>
+          </div>
+          <div class="create-scrollable">
+            <div class="app-card">
+              <div class="app-card-title">Name Your Ride</div>
+              <div class="app-input">Epic Bukidnon Adventure</div>
+            </div>
+            <div class="app-card">
+              <div class="app-card-title">When &amp; How</div>
+              <div class="app-date-box" style="font-size:9px;">Thursday, June 4, 2026</div>
+              <div class="app-select-box"><span>🏍 ADV 160</span></div>
+            </div>
+            <div class="app-card">
+              <div class="app-card-title">Describe Your Route</div>
+              <div class="app-input" style="height:38px;font-size:9px;">Mountain terrain, forest trails…</div>
+            </div>
+            <div class="app-cta" style="border:2px solid #cf4f4f;">Continue to Location ›</div>
+          </div>
+        </div>
+
+        <!-- ══ SCREEN 5: Set Location – search ══ -->
+        <div class="mock-screen" id="screen-5">
+          <div class="highlight-overlay">
+            <div class="hl-border" style="top:50px; left:6px; right:6px; height:34px; border-radius:10px;"></div>
+          </div>
+          <div style="flex:1;position:relative;display:flex;flex-direction:column;">
+            <div class="floating-nav">
+              <div class="floating-back">‹ Back</div>
+              <div class="floating-title">SET LOCATION</div>
+              <div class="red-btn" style="font-size:8px;padding:4px 8px;">Next ›</div>
+            </div>
+            <div class="search-bar">
+              <span style="font-size:10px;color:#888;"></span>
+              <span class="search-bar-txt">Where do you want to ride?</span>
+            </div>
+            <div class="map-fill">
+              <span class="map-label-txt" style="top:20px;left:20px;">Lubogan</span>
+              <span class="map-label-txt" style="top:40px;left:80px;">Crossing Bayabas</span>
+              <span class="map-label-txt" style="top:65px;left:70px;">Toril</span>
+              <span class="map-label-txt" style="top:85px;left:30px;">Marapangi</span>
+              <span class="map-label-txt" style="top:100px;left:100px;">Daliao</span>
+              <div class="map-dot" style="top:105px;left:110px;"></div>
+            </div>
+            <div class="hint-pill">
+               <span>Tap the map or search above to set your location</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ SCREEN 6: Set Location – hint ══ -->
+        <div class="mock-screen" id="screen-6">
+          <div class="highlight-overlay">
+            <div class="hl-border" style="bottom:56px; left:6px; right:6px; height:40px; border-radius:10px; top:auto;"></div>
+          </div>
+          <div style="flex:1;position:relative;display:flex;flex-direction:column;">
+            <div class="floating-nav">
+              <div class="floating-back">‹ Back</div>
+              <div class="floating-title">SET LOCATION</div>
+              <div class="red-btn" style="font-size:8px;padding:4px 8px;">Next ›</div>
+            </div>
+            <div class="search-bar">
+              <span style="font-size:10px;color:#888;"></span>
+              <span class="search-bar-txt">Where do you want to ride?</span>
+            </div>
+            <div class="map-fill">
+              <span class="map-label-txt" style="top:20px;left:20px;">Lubogan</span>
+              <span class="map-label-txt" style="top:55px;left:80px;">Crossing Bayabas</span>
+              <span class="map-label-txt" style="top:80px;left:70px;">Toril</span>
+              <span class="map-label-txt" style="top:105px;left:30px;">Marapangi</span>
+              <div class="map-dot" style="top:100px;left:110px;background:#9b2626;"></div>
+            </div>
+            <div class="hint-pill" style="border:2px solid #cf4f4f;">
+              📍 <span>Tap the map or search above to set your location</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ SCREEN 7: Start point ══ -->
+        <div class="mock-screen" id="screen-7">
+          <div class="highlight-overlay">
+            <div class="hl-border" style="top:233px; left:8px; right:8px; height:42px; border-radius:7px;"></div>
+          </div>
+          <div style="flex:1;position:relative;display:flex;flex-direction:column;">
+            <div class="floating-nav">
+              <div class="floating-back">‹ Back</div>
+              <div class="floating-title">START POINT</div>
+              <div class="red-btn" style="font-size:8px;padding:4px 8px;opacity:.4;">Create ✓</div>
+            </div>
+            <div class="search-bar">
+              <span style="font-size:10px;color:#888;"></span>
+              <span class="search-bar-txt">Search starting point</span>
+            </div>
+            <div class="map-fill" style="height:160px;flex:none;">
+              <span class="map-label-txt" style="top:15px;left:20px;">Lubogan</span>
+              <span class="map-label-txt" style="top:45px;left:80px;">Crossing Bayabas</span>
+              <span class="map-label-txt" style="top:70px;left:65px;">Toril</span>
+              <div class="map-dot" style="top:85px;left:115px;background:#22c55e;"></div>
+            </div>
+            <div class="point-sheet">
+              <div class="sheet-handle"></div>
+              <div class="point-row active">
+                <div class="point-dot" style="background:#22c55e;"></div>
+                <div>
+                  <div class="point-label">START</div>
+                  <div class="point-val">Toril District</div>
+                </div>
+                <div class="set-btn">SET</div>
+              </div>
+              <div class="point-row">
+                <div class="point-dot" style="background:#ef4444;"></div>
+                <div>
+                  <div class="point-label">END</div>
+                  <div class="point-val" style="color:#666;">Not set</div>
+                </div>
+                <div class="set-btn">SET</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ SCREEN 8: End point ══ -->
+        <div class="mock-screen" id="screen-8">
+          <div class="highlight-overlay">
+            <div class="hl-border" style="top:283px; left:8px; right:8px; height:42px; border-radius:7px;"></div>
+          </div>
+          <div style="flex:1;position:relative;display:flex;flex-direction:column;">
+            <div class="floating-nav">
+              <div class="floating-back">‹ Back</div>
+              <div class="floating-title">END POINT</div>
+              <div class="red-btn" style="font-size:8px;padding:4px 8px;opacity:.4;">Create ✓</div>
+            </div>
+            <div class="search-bar">
+              <span style="font-size:10px;color:#888;"></span>
+              <span class="search-bar-txt">Search end point</span>
+            </div>
+            <div class="map-fill" style="height:160px;flex:none;">
+              <span class="map-label-txt" style="top:15px;left:20px;">Lubogan</span>
+              <span class="map-label-txt" style="top:45px;left:80px;">Crossing Bayabas</span>
+              <span class="map-label-txt" style="top:70px;left:65px;">Toril</span>
+              <div class="map-dot" style="top:50px;left:75px;background:#ef4444;"></div>
+              <div class="map-dot" style="top:85px;left:115px;background:#22c55e;"></div>
+            </div>
+            <div class="point-sheet">
+              <div class="sheet-handle"></div>
+              <div class="point-row">
+                <div class="point-dot" style="background:#22c55e;"></div>
+                <div>
+                  <div class="point-label">START</div>
+                  <div class="point-val">Toril District</div>
+                </div>
+                <div class="set-btn">EDIT</div>
+              </div>
+              <div class="point-row active">
+                <div class="point-dot" style="background:#ef4444;"></div>
+                <div>
+                  <div class="point-label">END</div>
+                  <div class="point-val">Dahilayan Adventure Park</div>
+                </div>
+                <div class="set-btn">SET</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ SCREEN 9: Participants ══ -->
+        <div class="mock-screen" id="screen-9">
+          <div class="highlight-overlay">
+            <div class="hl-border" style="top:22px; right:4px; width:148px; height:128px; border-radius:10px;"></div>
+          </div>
+          <div style="flex:1;position:relative;background:#1a1a1a;">
+            <!-- Live map bg -->
+            <div style="flex:1;height:100%;background:#e8e4dc;position:relative;overflow:hidden;">
+              <span class="map-label-txt" style="top:180px;left:20px;">Toril</span>
+              <span class="map-label-txt" style="top:80px;left:100px;">Crossing Bayabas</span>
+              <div class="route-line"></div>
+              <div class="emoji-marker">🏁</div>
+              <!-- Rider markers -->
+              <div style="position:absolute;top:150px;left:30px;width:22px;height:22px;border-radius:11px;background:#9b2626;border:1.5px solid #fff;display:flex;align-items:center;justify-content:center;font-size:9px;">🏍</div>
+              <div style="position:absolute;top:130px;left:60px;width:22px;height:22px;border-radius:11px;background:#3b5bdb;border:1.5px solid #fff;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700;">A</div>
+            </div>
+            <!-- Participant panel -->
+            <div class="participant-panel">
+              <div class="p-panel-title">👥 PARTICIPANTS</div>
+              <div class="p-card">
+                <div class="p-avatar">L</div>
+                <div>
+                  <div class="p-name">lean_paninsoro</div>
+                  <div class="p-status">Glabaca · 2273m</div>
+                </div>
+                <div class="p-dot"></div>
+              </div>
+              <div class="p-card">
+                <div class="p-avatar" style="background:#3b5bdb;">A</div>
+                <div>
+                  <div class="p-name">alyannnaa </div>
+                  <div class="p-status waiting">Waiting…</div>
+                </div>
+                <div class="p-dot" style="background:#888;"></div>
+              </div>
+              <div class="p-card">
+                <div class="p-avatar" style="background:#059669;">L</div>
+                <div>
+                  <div class="p-name">leandropanin</div>
+                  <div class="p-status">Glabaca · 2274m</div>
+                </div>
+                <div class="p-dot"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ SCREEN 10: Details & Leave pill ══ -->
+        <div class="mock-screen" id="screen-10">
+          <div class="highlight-overlay">
+            <div class="hl-border" style="bottom:52px; left:30px; right:30px; height:36px; border-radius:99px; top:auto;"></div>
+          </div>
+          <div style="flex:1;position:relative;background:#1a1a1a;">
+            <div style="flex:1;height:100%;background:#e8e4dc;position:relative;overflow:hidden;">
+              <span class="map-label-txt" style="top:180px;left:20px;">Toril</span>
+              <span class="map-label-txt" style="top:80px;left:100px;">Crossing Bayabas</span>
+              <div class="route-line"></div>
+              <div class="emoji-marker">🏁</div>
+              <div style="position:absolute;top:150px;left:30px;width:22px;height:22px;border-radius:11px;background:#9b2626;border:1.5px solid #fff;display:flex;align-items:center;justify-content:center;font-size:9px;">🏍</div>
+              <div style="position:absolute;top:130px;left:60px;width:22px;height:22px;border-radius:11px;background:#3b5bdb;border:1.5px solid #fff;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700;">A</div>
+            </div>
+            <div class="action-pill">
+              <span class="pill-label">Details</span>
+              <div class="pill-sep"></div>
+              <div class="leave-btn">Leave ✕</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ SCREEN 11: Checkpoint modal ══ -->
+        <div class="mock-screen" id="screen-11">
+          <div class="highlight-overlay">
+            <div class="hl-border" style="bottom:0; left:0; right:0; height:270px; border-radius:14px 14px 0 0; top:auto;"></div>
+          </div>
+          <div style="flex:1;position:relative;background:#1a1a1a;">
+            <div style="height:210px;background:#e8e4dc;position:relative;overflow:hidden;">
+              <span class="map-label-txt" style="top:80px;left:20px;">Toril</span>
+              <div class="route-line" style="top:55px;left:30px;width:100px;"></div>
+              <div class="emoji-marker" style="top:45px;left:55px;">🏁</div>
+              <div style="position:absolute;top:100px;left:20px;width:22px;height:22px;border-radius:11px;background:#9b2626;border:1.5px solid #fff;display:flex;align-items:center;justify-content:center;font-size:9px;">🏍</div>
+            </div>
+            <div class="modal-sheet">
+              <div class="modal-header">
+                <div class="modal-title">Checkpoint Arrivals</div>
+                <div class="modal-close">✕</div>
+              </div>
+              <div class="warning-row">
+                <span>⚠</span>
+                <div class="warning-txt">Only riders who reached each checkpoint are listed here.</div>
+              </div>
+              <div class="arrival-card">
+                <div class="arrival-avatar">L</div>
+                <div>
+                  <div class="arrival-name">lean_paninsoro</div>
+                  <div class="arrival-time">Arrived 11:23 AM · Checkpoint 1</div>
+                </div>
+                <div class="check-circle">✓</div>
+              </div>
+              <div class="modal-footer">
+                <div class="refresh-btn">↻ Refresh</div>
+                <div class="close-btn">✕ Close</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ SCREEN 12: Arrival record ══ -->
+        <div class="mock-screen" id="screen-12">
+          <div class="highlight-overlay">
+            <div class="hl-border" style="bottom:48px; left:8px; right:8px; height:50px; border-radius:8px; top:auto;"></div>
+          </div>
+          <div style="flex:1;position:relative;background:#1a1a1a;">
+            <div style="height:190px;background:#e8e4dc;position:relative;overflow:hidden;">
+              <span class="map-label-txt" style="top:80px;left:20px;">Toril</span>
+              <div class="route-line" style="top:55px;left:30px;width:100px;"></div>
+              <div class="emoji-marker" style="top:45px;left:55px;">🏁</div>
+            </div>
+            <div class="modal-sheet" style="position:relative;">
+              <div class="modal-header">
+                <div class="modal-title">Checkpoint Arrivals</div>
+                <div class="modal-close">✕</div>
+              </div>
+              <div class="warning-row">
+                <span>⚠️</span>
+                <div class="warning-txt">Only riders who reached each checkpoint are listed.</div>
+              </div>
+              <div class="arrival-card" style="border-color:#9b2626;">
+                <div class="arrival-avatar">L</div>
+                <div>
+                  <div class="arrival-name">lean_paninsoro</div>
+                  <div class="arrival-time">Arrived 11:23 AM · Checkpoint 1</div>
+                </div>
+                <div class="check-circle">✓</div>
+              </div>
+              <div class="modal-footer">
+                <div class="refresh-btn">↻ Refresh</div>
+                <div class="close-btn">✕ Close</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /phone-screen-area -->
+
+      <!-- Home bar -->
+      <div class="phone-home-bar">
+        <div class="phone-home-indicator"></div>
+      </div>
+    </div><!-- /phone-frame -->
+  </div><!-- /phone-shell -->
+
+  <!-- ── Right Info Panel ── -->
+  <div class="ob-info-panel" id="infoPanel">
+    <div class="ob-step-label" id="stepLabel">Step 1 of 13</div>
+    <h2 class="ob-step-title" id="stepTitle">Create a Ride</h2>
+    <p class="ob-step-desc" id="stepDesc">Tap the + button to start creating a new group ride for you and your friends.</p>
+
+    <div class="ob-dots" id="stepDots">
+      <!-- rendered by JS -->
+    </div>
+
+    <div class="ob-nav-controls">
+      <button class="ob-btn-prev" id="prevBtn" onclick="prevStep()" disabled>←</button>
+      <button class="ob-btn-next" id="nextBtn" onclick="nextStep()">Next <span>›</span></button>
+      <button class="ob-btn-skip" onclick="skipToEnd()">Skip tour</button>
+    </div>
+  </div>
+
+</div><!-- /ob-stage -->
+
+<!-- ── Screen Overview Cards ── -->
+<div class="ob-screens-section">
+  <div class="ob-screens-title">All screens at a glance</div>
+  <div class="ob-screen-list">
+    <div class="ob-screen-card active" onclick="jumpToScreen(0, null)" id="card-0">
+      <div class="ob-screen-card-icon"></div>
+      <div class="ob-screen-card-title">Home</div>
+      <div class="ob-screen-card-desc">Your ride dashboard — active ride status and past ride cards.</div>
+    </div>
+    <div class="ob-screen-card" onclick="jumpToScreen(1, null)" id="card-1">
+      <div class="ob-screen-card-icon"></div>
+      <div class="ob-screen-card-title">Create Ride</div>
+      <div class="ob-screen-card-desc">Name, date, bike type, and a route description in one form.</div>
+    </div>
+    <div class="ob-screen-card" onclick="jumpToScreen(5, null)" id="card-5">
+      <div class="ob-screen-card-icon"></div>
+      <div class="ob-screen-card-title">Set Location</div>
+      <div class="ob-screen-card-desc">Search or tap the map to drop a meeting point pin.</div>
+    </div>
+    <div class="ob-screen-card" onclick="jumpToScreen(7, null)" id="card-7">
+      <div class="ob-screen-card-icon"></div>
+      <div class="ob-screen-card-title">Route Points</div>
+      <div class="ob-screen-card-desc">Set a start and end point so your route is locked in.</div>
+    </div>
+    <div class="ob-screen-card" onclick="jumpToScreen(9, null)" id="card-9">
+      <div class="ob-screen-card-icon"></div>
+      <div class="ob-screen-card-title">Live Tracking</div>
+      <div class="ob-screen-card-desc">See every rider on the map in real time while the ride is active.</div>
+    </div>
+    <div class="ob-screen-card" onclick="jumpToScreen(11, null)" id="card-11">
+      <div class="ob-screen-card-icon"></div>
+      <div class="ob-screen-card-title">Checkpoints</div>
+      <div class="ob-screen-card-desc">Track who arrived at each checkpoint and when.</div>
+    </div>
+  </div>
+</div>
+
+<div class="site-footer">&copy; 2026 laagan. All rights reserved. — Philippines</div>
+
+<script>
+  // ── Step data ──────────────────────────────────────────────────────────────
+  const STEPS = [
+    // Screen 0
+    { screen: 0, title: 'Create a Ride',          desc: 'Tap the + button to start creating a new group ride for you and your friends.',           screenGroup: 0 },
+    // Screen 1
+    { screen: 1, title: 'Name your ride',          desc: 'Give your adventure a memorable name that all participants will see.',                    screenGroup: 1 },
+    { screen: 2, title: 'Set date & bike type',    desc: 'Choose when the ride happens and select your bike type from the list.',                   screenGroup: 1 },
+    { screen: 3, title: 'Describe your route',     desc: 'Add terrain notes, highlights, or special stops for your riders.',                        screenGroup: 1 },
+    { screen: 4, title: 'Continue to location',    desc: 'Tap here to open the map and pin your ride location.',                                    screenGroup: 1 },
+    // Screen 2
+    { screen: 5, title: 'Search your location',    desc: 'Type a place name or tap the map to drop a location pin for your meeting point.',          screenGroup: 2 },
+    { screen: 6, title: 'Tap the map',             desc: 'Tap anywhere on the map to set your meeting point and confirm your location.',             screenGroup: 2 },
+    // Screen 3
+    { screen: 7, title: 'Set your start point',    desc: 'Tap SET to drop a pin for where the ride begins. This becomes your group assembly point.', screenGroup: 3 },
+    { screen: 8, title: 'Set your end point',      desc: 'Then set the destination where your group finishes the ride.',                             screenGroup: 3 },
+    // Screen 4
+    { screen: 9, title: 'Live participant tracking', desc: "See each rider's real-time location on the map. Green dot = active, gray = waiting for GPS.", screenGroup: 4 },
+    { screen: 10, title: 'Details & Leave',         desc: '"Details" opens ride info. Tap "Leave" to exit the ride at any time.',                    screenGroup: 4 },
+    // Screen 5
+    { screen: 11, title: 'Checkpoint Arrivals',     desc: 'Tap the checkpoints button to see which riders arrived at each stop along the route.',    screenGroup: 5 },
+    { screen: 12, title: 'Arrival record',          desc: "Each entry shows the rider's name and their exact arrival timestamp.",                     screenGroup: 5 },
+  ];
+
+  // Steps per screen group (for dot rendering)
+  const GROUP_SIZES = [1, 4, 2, 2, 2, 2];
+  // Which overview card corresponds to which screen group
+  const GROUP_CARD_STEP = [0, 1, 5, 7, 9, 11];
+
+  let currentStep = 0;
+
+  // ── Chip labels map to step indices ───────────────────────────────────────
+  const chipSteps = [0, 1, 5, 7, 9, 11];
+
+  function jumpToScreen(stepIdx, chipEl) {
+    currentStep = stepIdx;
+    render();
+    if (chipEl) {
+      document.querySelectorAll('.ob-step-chip').forEach(c => c.classList.remove('active'));
+      chipEl.classList.add('active');
+    }
+    // Smooth scroll to top of stage
+    document.querySelector('.ob-stage').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function nextStep() {
+    if (currentStep < STEPS.length - 1) {
+      currentStep++;
+      render();
+    }
+  }
+
+  function prevStep() {
+    if (currentStep > 0) {
+      currentStep--;
+      render();
+    }
+  }
+
+  function skipToEnd() {
+    currentStep = STEPS.length - 1;
+    render();
+  }
+
+  function render() {
+    const step = STEPS[currentStep];
+
+    // Switch screen
+    document.querySelectorAll('.mock-screen').forEach(s => s.classList.remove('active'));
+    const target = document.getElementById('screen-' + step.screen);
+    if (target) target.classList.add('active');
+
+    // Info panel
+    document.getElementById('stepLabel').textContent = 'Step ' + (currentStep + 1) + ' of ' + STEPS.length;
+    document.getElementById('stepTitle').textContent = step.title;
+    document.getElementById('stepDesc').textContent = step.desc;
+
+    // Dots for current group
+    const group = step.screenGroup;
+    const groupSize = GROUP_SIZES[group];
+    // Find first step index of this group
+    const groupStart = STEPS.findIndex(s => s.screenGroup === group);
+    const groupOffset = currentStep - groupStart;
+
+    const dotsEl = document.getElementById('stepDots');
+    dotsEl.innerHTML = '';
+    for (let i = 0; i < groupSize; i++) {
+      const d = document.createElement('div');
+      d.className = 'ob-dot' + (i === groupOffset ? ' active' : '');
+      dotsEl.appendChild(d);
+    }
+
+    // Prev/next buttons
+    document.getElementById('prevBtn').disabled = currentStep === 0;
+    document.getElementById('nextBtn').textContent = currentStep === STEPS.length - 1 ? 'Done ✓' : 'Next ›';
+
+    // Sync chips
+    const chipGroup = chipSteps.indexOf(GROUP_CARD_STEP[group]);
+    document.querySelectorAll('.ob-step-chip').forEach((c, i) => {
+      c.classList.toggle('active', i === chipGroup);
+    });
+
+    // Sync overview cards
+    const cardId = 'card-' + GROUP_CARD_STEP[group];
+    document.querySelectorAll('.ob-screen-card').forEach(c => c.classList.remove('active'));
+    const card = document.getElementById(cardId);
+    if (card) card.classList.add('active');
+  }
+
+  // Init
+  render();
+</script>
+
+</body>
+</html>
