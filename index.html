@@ -549,18 +549,28 @@
       }
       .ts.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
 
-      /* highlight border */
+      /* highlight border — applied directly to the target element */
       .ts-hl {
-          position: absolute;
-          border: 2px solid #cf4f4f;
-          border-radius: 7px;
-          box-shadow: 0 0 0 9999px rgba(0,0,0,0.52);
+          outline: 2px solid #cf4f4f !important;
+          outline-offset: 2px;
+          border-radius: 8px;
           animation: tsHlPulse 2s ease-in-out infinite;
-          z-index: 20; pointer-events: none;
+          /* create new stacking context so z-index works vs ::before */
+          isolation: isolate;
+          z-index: 1;
+          position: relative;
+      }
+      /* dim overlay behind the highlighted element */
+      .ts.active::before {
+          content: '';
+          position: absolute; inset: 0;
+          background: rgba(0,0,0,0.50);
+          z-index: 0;
+          pointer-events: none;
       }
       @keyframes tsHlPulse {
-          0%,100% { box-shadow: 0 0 0 9999px rgba(0,0,0,0.52), 0 0 0 0 rgba(207,79,79,0.35); }
-          50%      { box-shadow: 0 0 0 9999px rgba(0,0,0,0.52), 0 0 0 4px rgba(207,79,79,0.15); }
+          0%,100% { outline-color: #cf4f4f; box-shadow: 0 0 0 0 rgba(207,79,79,0.35); }
+          50%      { outline-color: #e87070; box-shadow: 0 0 6px 2px rgba(207,79,79,0.20); }
       }
 
       /* home bar */
@@ -1199,7 +1209,6 @@
 
               <!-- ── S0: Home – highlight + btn ── -->
               <div class="ts active" id="ts-0">
-                <div class="ts-hl" style="top:4px;right:4px;width:26px;height:26px;border-radius:6px;"></div>
                 <div class="ts-home-header">
                   <div style="display:flex;align-items:center;gap:7px;">
                     <div class="ts-home-av">🏍</div>
@@ -1211,7 +1220,7 @@
                   <div class="ts-home-actions">
                     <div class="ts-home-rideid">Ride ID 🔍</div>
                     <div class="ts-home-qr">▦</div>
-                    <div class="ts-home-plus">+</div>
+                    <div class="ts-home-plus ts-hl" style="border-radius:6px;">+</div>
                   </div>
                 </div>
                 <div class="ts-home-section">
@@ -1239,13 +1248,12 @@
 
               <!-- ── S1: Create – name ── -->
               <div class="ts" id="ts-1">
-                <div class="ts-hl" style="top:43px;left:7px;right:7px;height:58px;border-radius:8px;"></div>
                 <div class="ts-topbar">
                   <div><div class="ts-tb-title">CREATE RIDE</div><div class="ts-tb-sub">Step 1 of 3 — Details</div></div>
                   <div class="ts-red-btn" style="opacity:.4;">Next ›</div>
                 </div>
                 <div class="ts-scroll">
-                  <div class="ts-card" style="border-color:#9b2626;">
+                  <div class="ts-card ts-hl" style="border-color:#9b2626;">
                     <div class="ts-card-title">Name Your Ride</div>
                     <div class="ts-card-sub">Give your adventure a memorable name</div>
                     <div class="ts-input">Epic Bukidnon Adventure</div>
@@ -1264,7 +1272,6 @@
 
               <!-- ── S2: Create – when & bike ── -->
               <div class="ts" id="ts-2">
-                <div class="ts-hl" style="top:101px;left:7px;right:7px;height:64px;border-radius:8px;"></div>
                 <div class="ts-topbar">
                   <div><div class="ts-tb-title">CREATE RIDE</div><div class="ts-tb-sub">Step 1 of 3 — Details</div></div>
                   <div class="ts-red-btn" style="opacity:.4;">Next ›</div>
@@ -1274,7 +1281,7 @@
                     <div class="ts-card-title">Name Your Ride</div>
                     <div class="ts-input">Epic Bukidnon Adventure</div>
                   </div>
-                  <div class="ts-card" style="border-color:#9b2626;">
+                  <div class="ts-card ts-hl" style="border-color:#9b2626;">
                     <div class="ts-card-title">When &amp; How</div>
                     <div class="ts-datebox">Thursday, June 4, 2026</div>
                     <div class="ts-card-sub" style="margin-top:4px;">Choose Your Bike</div>
@@ -1290,7 +1297,6 @@
 
               <!-- ── S3: Create – describe ── -->
               <div class="ts" id="ts-3">
-                <div class="ts-hl" style="top:222px;left:7px;right:7px;height:62px;border-radius:8px;"></div>
                 <div class="ts-topbar">
                   <div><div class="ts-tb-title">CREATE RIDE</div><div class="ts-tb-sub">Step 1 of 3 — Details</div></div>
                   <div class="ts-red-btn" style="opacity:.4;">Next ›</div>
@@ -1305,7 +1311,7 @@
                     <div class="ts-datebox" style="font-size:7px;">Thursday, June 4, 2026</div>
                     <div class="ts-selectbox"><span>🏍 ADV 160</span></div>
                   </div>
-                  <div class="ts-card" style="border-color:#9b2626;">
+                  <div class="ts-card ts-hl" style="border-color:#9b2626;">
                     <div class="ts-card-title">Describe Your Route</div>
                     <div class="ts-card-sub">Terrain, highlights, special stops</div>
                     <div class="ts-input" style="height:40px;font-size:7px;">Tell us about the terrain, highlights, or any special stops…</div>
@@ -1316,7 +1322,6 @@
 
               <!-- ── S4: Create – CTA ── -->
               <div class="ts" id="ts-4">
-                <div class="ts-hl" style="top:329px;left:7px;right:7px;height:32px;border-radius:7px;"></div>
                 <div class="ts-topbar">
                   <div><div class="ts-tb-title">CREATE RIDE</div><div class="ts-tb-sub">Step 1 of 3 — Details</div></div>
                   <div class="ts-red-btn" style="opacity:.4;">Next ›</div>
@@ -1335,20 +1340,19 @@
                     <div class="ts-card-title">Describe Your Route</div>
                     <div class="ts-input" style="height:32px;font-size:7px;">Mountain terrain, forest trails…</div>
                   </div>
-                  <div class="ts-cta" style="border:2px solid #cf4f4f;">Continue to Location ›</div>
+                  <div class="ts-cta ts-hl">Continue to Location ›</div>
                 </div>
               </div>
 
               <!-- ── S5: Set Location – search ── -->
               <div class="ts" id="ts-5">
-                <div class="ts-hl" style="top:41px;left:5px;right:5px;height:28px;border-radius:8px;"></div>
                 <div style="flex:1;position:relative;display:flex;flex-direction:column;">
                   <div class="ts-floating-nav">
                     <div class="ts-fn-back">‹ Back</div>
                     <div class="ts-fn-title">SET LOCATION</div>
                     <div class="ts-red-btn" style="font-size:7px;padding:3px 7px;">Next ›</div>
                   </div>
-                  <div class="ts-searchbar"> Where do you want to ride?</div>
+                  <div class="ts-searchbar ts-hl"> Where do you want to ride?</div>
                   <div class="ts-map-bg">
                     <span class="ts-map-lbl" style="top:16px;left:16px;">Lubogan</span>
                     <span class="ts-map-lbl" style="top:34px;left:60px;">Crossing Bayabas</span>
@@ -1362,7 +1366,6 @@
 
               <!-- ── S6: Set Location – hint ── -->
               <div class="ts" id="ts-6">
-                <div class="ts-hl" style="bottom:46px;left:5px;right:5px;height:32px;border-radius:8px;top:auto;"></div>
                 <div style="flex:1;position:relative;display:flex;flex-direction:column;">
                   <div class="ts-floating-nav">
                     <div class="ts-fn-back">‹ Back</div>
@@ -1376,13 +1379,12 @@
                     <span class="ts-map-lbl" style="top:68px;left:55px;">Toril</span>
                     <div class="ts-map-dot" style="top:80px;left:90px;background:#9b2626;"></div>
                   </div>
-                  <div class="ts-hint-pill" style="border:1.5px solid #cf4f4f;"> <span>Tap the map or search above</span></div>
+                  <div class="ts-hint-pill ts-hl"> <span>Tap the map or search above</span></div>
                 </div>
               </div>
 
               <!-- ── S7: Point picker – start ── -->
               <div class="ts" id="ts-7">
-                <div class="ts-hl" style="top:193px;left:7px;right:7px;height:36px;border-radius:6px;"></div>
                 <div style="flex:1;position:relative;display:flex;flex-direction:column;">
                   <div class="ts-floating-nav">
                     <div class="ts-fn-back">‹ Back</div>
@@ -1398,7 +1400,7 @@
                   </div>
                   <div class="ts-point-sheet">
                     <div class="ts-sheet-handle"></div>
-                    <div class="ts-point-row hi">
+                    <div class="ts-point-row hi ts-hl">
                       <div class="ts-pdot" style="background:#22c55e;"></div>
                       <div><div class="ts-plabel">START</div><div class="ts-pval">Toril District</div></div>
                       <div class="ts-setbtn">SET</div>
@@ -1414,7 +1416,6 @@
 
               <!-- ── S8: Point picker – end ── -->
               <div class="ts" id="ts-8">
-                <div class="ts-hl" style="top:233px;left:7px;right:7px;height:36px;border-radius:6px;"></div>
                 <div style="flex:1;position:relative;display:flex;flex-direction:column;">
                   <div class="ts-floating-nav">
                     <div class="ts-fn-back">‹ Back</div>
@@ -1435,7 +1436,7 @@
                       <div><div class="ts-plabel">START</div><div class="ts-pval">Toril District</div></div>
                       <div class="ts-setbtn">EDIT</div>
                     </div>
-                    <div class="ts-point-row hi">
+                    <div class="ts-point-row hi ts-hl">
                       <div class="ts-pdot" style="background:#ef4444;"></div>
                       <div><div class="ts-plabel">END</div><div class="ts-pval" style="font-size:7px;">Dahilayan Adventure Park</div></div>
                       <div class="ts-setbtn">SET</div>
@@ -1446,7 +1447,6 @@
 
               <!-- ── S9: Live tracking – participants ── -->
               <div class="ts" id="ts-9">
-                <div class="ts-hl" style="top:18px;right:3px;width:122px;height:106px;border-radius:9px;"></div>
                 <div style="flex:1;position:relative;">
                   <div style="height:100%;background:#e8e4dc;position:relative;overflow:hidden;">
                     <span class="ts-map-lbl" style="top:150px;left:14px;">Toril</span>
@@ -1456,7 +1456,7 @@
                     <div class="ts-rider-dot" style="top:118px;left:22px;background:#9b2626;">🏍</div>
                     <div class="ts-rider-dot" style="top:102px;left:48px;background:#3b5bdb;color:#fff;font-size:6px;font-weight:700;">A</div>
                   </div>
-                  <div class="ts-p-panel">
+                  <div class="ts-p-panel ts-hl">
                     <div class="ts-p-panel-title">👥 PARTICIPANTS</div>
                     <div class="ts-p-card">
                       <div class="ts-p-av">L</div>
@@ -1465,7 +1465,7 @@
                     </div>
                     <div class="ts-p-card">
                       <div class="ts-p-av" style="background:#3b5bdb;">A</div>
-                      <div><div class="ts-p-name">alayon_alyanna</div><div class="ts-p-status w">Waiting…</div></div>
+                      <div><div class="ts-p-name">yanna uyabs</div><div class="ts-p-status w">Waiting…</div></div>
                       <div class="ts-p-dot" style="background:#888;"></div>
                     </div>
                     <div class="ts-p-card">
@@ -1479,7 +1479,6 @@
 
               <!-- ── S10: Live tracking – action pill ── -->
               <div class="ts" id="ts-10">
-                <div class="ts-hl" style="bottom:42px;left:24px;right:24px;height:30px;border-radius:99px;top:auto;"></div>
                 <div style="flex:1;position:relative;">
                   <div style="height:100%;background:#e8e4dc;position:relative;overflow:hidden;">
                     <span class="ts-map-lbl" style="top:150px;left:14px;">Toril</span>
@@ -1489,7 +1488,7 @@
                     <div class="ts-rider-dot" style="top:118px;left:22px;background:#9b2626;">🏍</div>
                     <div class="ts-rider-dot" style="top:102px;left:48px;background:#3b5bdb;color:#fff;font-size:6px;font-weight:700;">A</div>
                   </div>
-                  <div class="ts-action-pill">
+                  <div class="ts-action-pill ts-hl">
                     <span class="ts-pill-label">Details</span>
                     <div class="ts-pill-sep"></div>
                     <div class="ts-leave-btn">Leave ✕</div>
@@ -1499,7 +1498,6 @@
 
               <!-- ── S11: Checkpoints modal ── -->
               <div class="ts" id="ts-11">
-                <div class="ts-hl" style="bottom:0;left:0;right:0;height:220px;border-radius:12px 12px 0 0;top:auto;"></div>
                 <div style="flex:1;position:relative;">
                   <div style="height:170px;background:#e8e4dc;position:relative;overflow:hidden;">
                     <span class="ts-map-lbl" style="top:70px;left:14px;">Toril</span>
@@ -1507,7 +1505,7 @@
                     <div class="ts-emoji-mkr" style="top:34px;left:44px;">🏁</div>
                     <div class="ts-rider-dot" style="top:80px;left:14px;background:#9b2626;">🏍</div>
                   </div>
-                  <div class="ts-modal-sheet">
+                  <div class="ts-modal-sheet ts-hl">
                     <div class="ts-modal-header">
                       <div class="ts-modal-title">Checkpoint Arrivals</div>
                       <div class="ts-modal-close">✕</div>
@@ -1528,7 +1526,6 @@
 
               <!-- ── S12: Arrival record ── -->
               <div class="ts" id="ts-12">
-                <div class="ts-hl" style="bottom:40px;left:6px;right:6px;height:42px;border-radius:6px;top:auto;"></div>
                 <div style="flex:1;position:relative;">
                   <div style="height:160px;background:#e8e4dc;position:relative;overflow:hidden;">
                     <span class="ts-map-lbl" style="top:70px;left:14px;">Toril</span>
@@ -1541,7 +1538,7 @@
                       <div class="ts-modal-close">✕</div>
                     </div>
                     <div class="ts-warn-row"> <span>Only riders who reached each checkpoint are listed.</span></div>
-                    <div class="ts-arrival-card" style="border-color:#9b2626;">
+                    <div class="ts-arrival-card ts-hl" style="border-color:#9b2626;">
                       <div class="ts-arrival-av">L</div>
                       <div><div class="ts-arrival-name">lean_paninsoro</div><div class="ts-arrival-time">Arrived 11:23 AM · Checkpoint 1</div></div>
                       <div class="ts-check-circle">✓</div>
