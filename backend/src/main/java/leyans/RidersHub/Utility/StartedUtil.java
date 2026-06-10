@@ -88,7 +88,6 @@ public class StartedUtil {
 
     @PreAuthorize("isAuthenticated()")
     @Transactional(readOnly = true)
-    // ✅ Removed throws AccessDeniedException — exceptions now propagate to global handler
     public ActiveRideDTO getStartedRideDetails() {
         Rider requester = authenticateAndGetInitiator();
         String username = requester.getUsername();

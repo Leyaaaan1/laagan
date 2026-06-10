@@ -52,35 +52,71 @@ const ProfileAvatar = ({profile, avatarStyle}) => {
 
 const RiderPage = ({navigation}) => {
   const {username, ready} = useAuth();
-  const {setActiveRide: clearActiveRide} = useContext(RideContext);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // CHANGED: also read activeRide from RideContext.
+  //
+  // RideContext now loads the last-known ride from AsyncStorage on mount,
+  // so `contextActiveRide` will be populated even when the device is
+  // offline and the API call below fails.
+  // ─────────────────────────────────────────────────────────────────────────
+  const {
+    activeRide: contextActiveRide,
+    clearActiveRide: clearContextActiveRide,
+  } = useContext(RideContext);
+
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
-  const [activeRide, setActiveRide] = useState(null);
+
+  // Local fetch state — separate from the context so we don't trigger
+  // unnecessary re-renders across the app on every poll tick.
+  const [fetchedActiveRide, setFetchedActiveRide] = useState(null);
   const [activeRideLoading, setActiveRideLoading] = useState(false);
   const [profileRefreshing, setProfileRefreshing] = useState(false);
   const ridesListRefRef = useRef(null);
 
-  useEffect(() => {
-    clearActiveRide(null); // Clear on account switch
-  }, [username, clearActiveRide]);
+  // ─────────────────────────────────────────────────────────────────────────
+  // The ride shown in the banner:
+  //   • Prefer the freshly-fetched value (online).
+  //   • Fall back to whatever the context restored from the cache (offline).
+  // ─────────────────────────────────────────────────────────────────────────
+  const displayActiveRide = fetchedActiveRide ?? contextActiveRide;
 
+  useEffect(() => {
+    clearContextActiveRide(); // Clear on account switch
+  }, [username, clearContextActiveRide]);
 
   // ── Fetch active ride ─────────────────────────────────────────────────────
+  // RiderPage.jsx — fetchActiveRide
   const fetchActiveRide = useCallback(async () => {
     try {
       setActiveRideLoading(true);
       const result = await getActiveRide();
-      setActiveRide(result);
+      setFetchedActiveRide(result);
     } catch (err) {
-      if (err.message !== 'NOT_FOUND') {
-        console.warn('Failed to fetch active ride:', err);
+      const msg = err?.message ?? '';
+
+      if (msg === 'NOT_FOUND') {
+        // Confirmed no active ride on the server — clear stale cache
+        setFetchedActiveRide(null);
+        clearContextActiveRide();
+        return;
       }
-      setActiveRide(null);
+
+      if (msg === 'SERVER_ERROR' || msg.startsWith('5')) {
+        // Server blip — keep whatever is cached, log quietly
+        console.log(
+          '[RiderPage] Server error fetching active ride; using cache',
+        );
+        return;
+      }
+
+      // Any other error (network timeout, etc.) — same: keep cache
+      console.log('[RiderPage] fetchActiveRide error:', msg);
     } finally {
       setActiveRideLoading(false);
     }
-  }, []);
-
+  }, [clearContextActiveRide]);
   // ── Fetch profile ─────────────────────────────────────────────────────────
   const fetchProfile = useCallback(async () => {
     try {
@@ -207,12 +243,19 @@ const RiderPage = ({navigation}) => {
         </View>
       </View>
 
-      {/* Active Ride — passes activeRide object to StartedRide */}
+      {/* ─────────────────────────────────────────────────────────────────
+          Active Ride banner
+          Uses displayActiveRide = fetchedActiveRide ?? contextActiveRide
+          so the cached ride is shown when the API call fails offline.
+      ───────────────────────────────────────────────────────────────── */}
       <TouchableOpacity
         activeOpacity={0.8}
         onPress={() => {
-          if (!activeRide) return;
-          navigation.navigate('StartedRide', {activeRide, username});
+          if (!displayActiveRide) return;
+          navigation.navigate('StartedRide', {
+            activeRide: displayActiveRide,
+            username,
+          });
         }}
         style={{
           marginHorizontal: 16,
@@ -224,12 +267,15 @@ const RiderPage = ({navigation}) => {
         <Text style={{color: '#fff', fontSize: 16, marginBottom: 8}}>
           Active Ride
         </Text>
-        {activeRideLoading ? (
+        {activeRideLoading && !displayActiveRide ? (
+          // Show spinner only on the very first load when there's no
+          // cached data yet.  If we already have the cached ride, render
+          // it straight away to avoid a flash of "No active ride".
           <ActivityIndicator color="#fff" size="small" />
-        ) : activeRide ? (
+        ) : displayActiveRide ? (
           <View>
             <Text style={{color: '#fff', fontSize: 14}}>
-              {activeRide.ridesName ?? '—'}
+              {displayActiveRide.ridesName ?? '—'}
             </Text>
             <View
               style={{
@@ -238,14 +284,14 @@ const RiderPage = ({navigation}) => {
                 justifyContent: 'space-between',
               }}>
               <Text style={{color: '#888', fontSize: 12}}>
-                {activeRide.locationName ?? '—'}
+                {displayActiveRide.locationName ?? '—'}
               </Text>
               <Text style={{color: '#888', fontSize: 12}}>
-                {activeRide.riderType ?? '—'}
+                {displayActiveRide.riderType ?? '—'}
               </Text>
               <Text style={{color: '#888', fontSize: 12}}>
-                {activeRide.distance != null
-                  ? `${activeRide.distance} km`
+                {displayActiveRide.distance != null
+                  ? `${displayActiveRide.distance} km`
                   : '— km'}
               </Text>
             </View>

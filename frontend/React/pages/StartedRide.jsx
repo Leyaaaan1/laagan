@@ -38,10 +38,16 @@ const StartedRide = ({route, navigation}) => {
   const [showRouteInfo, setShowRouteInfo] = useState(false);
   const [pollingEnabled, setPollingEnabled] = useState(true);
   const mapRef = useRef(null);
-  const {activeRide, setActiveRide, stopPolling} =
+  const {activeRide, setActiveRide, stopPolling, fetchActiveRide} =
     useContext(RideContext);
   const {activeRide: initialActiveRide} = route?.params || {};
   const [checkpointModalVisible, setCheckpointModalVisible] = useState(false);
+  // True while fetchActiveRide() is in-flight — prevents the "No ride data"
+  // warning from flashing before the server responds.
+  const [isFetchingRide, setIsFetchingRide] = useState(false);
+  // Track which ride ID we've already synced from nav params so we don't
+  // overwrite live context data on re-renders.
+  const syncedRideIdRef = useRef(null);
 
   const {riderMarkers, pollingError, isPolling, isOffline} =
     useStartedRideMarkers(
@@ -72,15 +78,51 @@ const StartedRide = ({route, navigation}) => {
     );
   }, [username, activeRide?.startedBy, activeRide?.username]);
 
-
-
+  // ── Sync nav params → context ─────────────────────────────────────────────
+  // FIX: The old check `!activeRide` broke when the cache pre-populated context
+  // with a stale ride (no startedRideId). Now we always apply the nav params
+  // for a ride ID we haven't seen yet, while preserving live context data if
+  // it already carries a startedRideId for the same ride.
   useEffect(() => {
-    if (initialActiveRide && !activeRide) {
-      setActiveRide(initialActiveRide);
+    if (!initialActiveRide) return;
+    if (syncedRideIdRef.current === initialActiveRide.generatedRidesId) return;
+    syncedRideIdRef.current = initialActiveRide.generatedRidesId;
+
+    setActiveRide(prev => {
+      // Context already has richer data for this same ride — keep it
+      if (
+        prev?.generatedRidesId === initialActiveRide.generatedRidesId &&
+        prev?.startedRideId
+      ) {
+        return prev;
+      }
+      // Otherwise apply the params (may be stale cache or a fresh start)
+      return initialActiveRide;
+    });
+  }, [initialActiveRide, setActiveRide]);
+
+  // ── Auto-heal: fetch full ride data when startedRideId is missing ─────────
+  // FIX: buildActiveRide() in RideStep4 never includes startedRideId, so
+  // useStartedRideMarkers gets undefined and polling never starts ("Connecting…").
+  // Detect this and re-fetch from the server to get the complete object.
+  useEffect(() => {
+    if (activeRide?.generatedRidesId && !activeRide.startedRideId) {
+      console.log(
+        '[StartedRide] startedRideId missing — fetching active ride for:',
+        activeRide.generatedRidesId,
+      );
+      setIsFetchingRide(true);
+      // Pass generatedRidesId so participants use the correct lookup endpoint
+      // (GET /started-ride/by-ride/{id}) instead of the owner-only endpoint.
+      fetchActiveRide(activeRide.generatedRidesId)
+        .catch(err => {
+          console.warn('[StartedRide] fetchActiveRide failed:', err?.message);
+        })
+        .finally(() => setIsFetchingRide(false));
     }
-  }, [initialActiveRide, activeRide, setActiveRide]);
-
-
+    // Intentionally only re-run when the ride ID changes or startedRideId appears
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeRide?.generatedRidesId, activeRide?.startedRideId]);
 
   const mapData = useMemo(
     () => buildMapData(activeRide, processRideCoordinates),
@@ -107,7 +149,17 @@ const StartedRide = ({route, navigation}) => {
     // Use stable primitive id instead of the whole object reference
   }, [activeRide?.generatedRidesId, isOffline, cachedRouteData]);
 
+  // Show a neutral loading screen while the auto-heal fetch is in-flight.
+  // This prevents the 'No ride data available' warning from flashing for
+  // participants whose nav params don't carry startedRideId yet.
   if (!activeRide) {
+    if (isFetchingRide) {
+      return (
+        <View style={feedback.emptyContainer}>
+          <ActivityIndicator size="large" color="#fff" />
+        </View>
+      );
+    }
     return (
       <View style={feedback.emptyContainer}>
         <Text style={feedback.emptyText}>No ride data available</Text>
