@@ -22,14 +22,9 @@ import {
   StyleSheet,
   SafeAreaView,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import colors from '../styles/tokens/colors';
 import spacing from '../styles/tokens/spacing';
-import {markOnboardingComplete} from '../services/authService';
-import {useAuth} from '../context/AuthContext';
-// ─── Key stored in AsyncStorage ────────────────────────────────────────────
-export const ONBOARDING_KEY = '@rideapp_onboarding_done';
 
 const {width: W, height: H} = Dimensions.get('window');
 
@@ -474,18 +469,32 @@ const MockStartedRide = ({refs}) => (
 const MockCheckpointModal = ({refs}) => (
   <View style={mock.screen}>
     {/* dimmed map behind */}
-    <View style={[mock.liveMapBox,{opacity:0.4}]}>
+    <View style={[mock.liveMapBox, {opacity: 0.4}]}>
       <View style={mock.mapFill}>
-        <Text style={[mock.mapLabel,{top:15,left:40,color:'#777'}]}>CAMP MARY HILL</Text>
-        <Text style={[mock.mapLabel,{top:100,left:70,color:'#888'}]}>Santo Niño</Text>
+        <Text style={[mock.mapLabel, {top: 15, left: 40, color: '#777'}]}>
+          CAMP MARY HILL
+        </Text>
+        <Text style={[mock.mapLabel, {top: 100, left: 70, color: '#888'}]}>
+          Santo Niño
+        </Text>
         <View style={mock.routeLine} />
-        <View style={mock.emojiMarker}><Text style={{fontSize:16}}>🚀</Text></View>
+        <View style={mock.emojiMarker}>
+          <Text style={{fontSize: 16}}>🚀</Text>
+        </View>
       </View>
-      <View style={[mock.participantPanel,{opacity:0.7}]}>
-        {MOCK_PARTICIPANTS.slice(0,2).map(p=>(
+      <View style={[mock.participantPanel, {opacity: 0.7}]}>
+        {MOCK_PARTICIPANTS.slice(0, 2).map(p => (
           <View key={p.id} style={mock.pCard}>
-            <View style={mock.pAvatar}><Text style={{color:'#fff',fontSize:12,fontWeight:'700'}}>{p.name[0].toUpperCase()}</Text></View>
-            <View style={{flex:1}}><Text style={mock.pName} numberOfLines={1}>{p.name}</Text></View>
+            <View style={mock.pAvatar}>
+              <Text style={{color: '#fff', fontSize: 12, fontWeight: '700'}}>
+                {p.name[0].toUpperCase()}
+              </Text>
+            </View>
+            <View style={{flex: 1}}>
+              <Text style={mock.pName} numberOfLines={1}>
+                {p.name}
+              </Text>
+            </View>
           </View>
         ))}
       </View>
@@ -495,13 +504,22 @@ const MockCheckpointModal = ({refs}) => (
     <View ref={refs.modal} style={mock.modal}>
       <View style={mock.modalHeader}>
         <Text style={mock.modalTitle}>Checkpoint Arrivals</Text>
-        <View style={mock.modalClose}><FontAwesome name="times" size={13} color="#fff" /></View>
+        <View style={mock.modalClose}>
+          <FontAwesome name="times" size={13} color="#fff" />
+        </View>
       </View>
 
       {/* warning */}
       <View style={mock.warningRow}>
-        <FontAwesome name="exclamation-triangle" size={14} color="#ff6b6b" style={{marginRight:8,marginTop:1}} />
-        <Text style={mock.warningTxt}>You haven't reached the finish line yet.</Text>
+        <FontAwesome
+          name="exclamation-triangle"
+          size={14}
+          color="#ff6b6b"
+          style={{marginRight: 8, marginTop: 1}}
+        />
+        <Text style={mock.warningTxt}>
+          You haven't reached the finish line yet.
+        </Text>
       </View>
 
       {/* force end */}
@@ -511,35 +529,82 @@ const MockCheckpointModal = ({refs}) => (
       </View>
 
       {/* arrival */}
-      <View ref={refs.arrival} style={{paddingHorizontal:16,paddingBottom:12}}>
-        <View style={{flexDirection:'row',alignItems:'flex-start',gap:8,marginBottom:8}}>
-          <FontAwesome name="map-marker" size={15} color={colors.primary} style={{marginTop:2}} />
+      <View
+        ref={refs.arrival}
+        style={{paddingHorizontal: 16, paddingBottom: 12}}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            gap: 8,
+            marginBottom: 8,
+          }}>
+          <FontAwesome
+            name="map-marker"
+            size={15}
+            color={colors.primary}
+            style={{marginTop: 2}}
+          />
           <View>
-            <Text style={{fontSize:15,fontWeight:'700',color:'#fff'}}>Coronon</Text>
-            <Text style={{fontSize:11,color:'#888',marginTop:1}}>1 rider</Text>
+            <Text style={{fontSize: 15, fontWeight: '700', color: '#fff'}}>
+              Coronon
+            </Text>
+            <Text style={{fontSize: 11, color: '#888', marginTop: 1}}>
+              1 rider
+            </Text>
           </View>
         </View>
         <View style={mock.arrivalCard}>
-          <View style={mock.arrivalAvatar}><Text style={{color:'#fff',fontSize:15,fontWeight:'700'}}>L</Text></View>
-          <View style={{flex:1}}>
-            <Text style={{fontSize:13,fontWeight:'700',color:'#fff'}}>leandropaninsoro</Text>
-            <Text style={{fontSize:11,color:'#888',marginTop:2}}>12:21:16 PM</Text>
+          <View style={mock.arrivalAvatar}>
+            <Text style={{color: '#fff', fontSize: 15, fontWeight: '700'}}>
+              L
+            </Text>
           </View>
-          <View style={mock.checkCircle}><FontAwesome name="check" size={11} color="#fff" /></View>
+          <View style={{flex: 1}}>
+            <Text style={{fontSize: 13, fontWeight: '700', color: '#fff'}}>
+              leandropaninsoro
+            </Text>
+            <Text style={{fontSize: 11, color: '#888', marginTop: 2}}>
+              12:21:16 PM
+            </Text>
+          </View>
+          <View style={mock.checkCircle}>
+            <FontAwesome name="check" size={11} color="#fff" />
+          </View>
         </View>
       </View>
 
       {/* footer */}
       <View style={mock.modalFooter}>
-        <View style={mock.refreshBtn}><FontAwesome name="refresh" size={12} color="#fff" style={{marginRight:5}} /><Text style={{fontSize:13,fontWeight:'600',color:'#fff'}}>Refresh</Text></View>
-        <View style={mock.closeBtn}><FontAwesome name="times" size={12} color="#fff" style={{marginRight:5}} /><Text style={{fontSize:13,fontWeight:'600',color:'#fff'}}>Close</Text></View>
+        <View style={mock.refreshBtn}>
+          <FontAwesome
+            name="refresh"
+            size={12}
+            color="#fff"
+            style={{marginRight: 5}}
+          />
+          <Text style={{fontSize: 13, fontWeight: '600', color: '#fff'}}>
+            Refresh
+          </Text>
+        </View>
+        <View style={mock.closeBtn}>
+          <FontAwesome
+            name="times"
+            size={12}
+            color="#fff"
+            style={{marginRight: 5}}
+          />
+          <Text style={{fontSize: 13, fontWeight: '600', color: '#fff'}}>
+            Close
+          </Text>
+        </View>
       </View>
     </View>
   </View>
 );
 
 // ─── Main OnboardingTour component ───────────────────────────────────────────
-const OnboardingTour = ({navigation}) => {
+const OnboardingTour = ({navigation, route}) => {
   const [stepIdx, setStepIdx]             = useState(0);
   const [targetLayout, setTargetLayout]   = useState(null);
   const fadeAnim                          = useRef(new Animated.Value(1)).current;
@@ -591,15 +656,11 @@ const OnboardingTour = ({navigation}) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepIdx]);
 
-  const {completeOnboarding} = useAuth();
-
-  const finishOnboarding = useCallback(async () => {
-    try {
-      await markOnboardingComplete();  // tell backend
-      completeOnboarding();            // update context locally
-    } catch (_) {}
-    navigation.replace('RiderPage');
-  }, [navigation, completeOnboarding]);
+  const onComplete = route?.params?.onComplete;
+  const finishOnboarding = useCallback(() => {
+    // Signal completion via serializable param instead of a function
+    navigation.setParams({completed: true});
+  }, [navigation]);
 
 
   const handleNext = useCallback(() => {

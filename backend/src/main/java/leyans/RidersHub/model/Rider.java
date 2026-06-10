@@ -43,8 +43,6 @@ public class Rider {
     @Column(name = "email_verified", nullable = false)
     private Boolean emailVerified = false;
 
-    @Column(name = "onboarding_completed", nullable = false)
-    private Boolean onboardingCompleted = false;
 
 
     public Rider(Integer id, String authEmail, String username, String password, Boolean enabled, List<RiderType> riderTypes, String about) {
@@ -57,8 +55,6 @@ public class Rider {
         this.about = about;
     }
 
-    public Boolean getOnboardingCompleted() { return onboardingCompleted; }
-    public void setOnboardingCompleted(Boolean onboardingCompleted) { this.onboardingCompleted = onboardingCompleted; }
 
     public Boolean getEmailVerified() {
         return emailVerified;

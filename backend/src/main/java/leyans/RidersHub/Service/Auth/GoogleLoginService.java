@@ -79,7 +79,7 @@ public class GoogleLoginService {
         String accessToken  = jwtUtil.generateToken(resolvedUsername);
         String refreshToken = refreshTokenService.createRefreshToken(resolvedUsername);
 
-        return new LoginResponse(accessToken, refreshToken, resolvedUsername, rider.getOnboardingCompleted());
+        return new LoginResponse(accessToken, refreshToken, resolvedUsername);
 
     }
     /**

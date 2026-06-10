@@ -139,11 +139,11 @@ const EmailVerificationScreen = ({navigation, route}) => {
                 {marginBottom: spacing.lg, paddingHorizontal: spacing.lg},
               ]}>
               <Text style={[text.bodyMuted, {marginBottom: spacing.sm}]}>
-                📧 Check your inbox and click the verification link to activate
+                 Check your inbox and click the verification link to activate
                 your account.
               </Text>
               <Text style={[text.bodyMuted, {color: '#f59e0b', fontSize: 12}]}>
-                ⏱️ The link expires in 30 minutes.
+                 The link expires in 30 minutes.
               </Text>
             </View>
 
@@ -159,7 +159,6 @@ const EmailVerificationScreen = ({navigation, route}) => {
                 width: '85%',
               }}>
               <Text style={[text.bodySmall, {color: '#e5e7eb'}]}>
-                💡{' '}
                 <Text style={{fontWeight: '600'}}>Didn't get the email?</Text>
               </Text>
               <Text

@@ -94,7 +94,7 @@ const text = StyleSheet.create({
   },
   bodyMuted: {
     fontSize: fontSize.md,
-    color: colors.textSecondary,
+    color: colors.white,
     lineHeight: 20,
   },
   bodyItalic: {
@@ -128,7 +128,7 @@ const text = StyleSheet.create({
     fontSize: fontSize.xxl,
   },
   muted: {
-    color: colors.textMuted,
+    color: colors.white,
     fontSize: fontSize.sm,
     fontStyle: 'italic',
   },

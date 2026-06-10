@@ -161,6 +161,114 @@ const checkpointModalStyles = StyleSheet.create({
     marginVertical: spacing.sm,
   },
 
+  // ── Status banners ────────────────────────────
+  bannerWarning: {
+    margin: spacing.md,
+    marginBottom: 0,
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.25)',
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  bannerSuccess: {
+    margin: spacing.md,
+    marginBottom: 0,
+    backgroundColor: 'rgba(76, 175, 80, 0.08)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.25)',
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  bannerIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  bannerWarningText: {
+    flex: 1,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semi,
+    color: '#ef4444',
+  },
+  bannerSuccessTitle: {
+    flex: 1,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    color: '#4CAF50',
+  },
+  bannerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 50,
+  },
+  bannerButtonSuccess: {
+    backgroundColor: '#4CAF50',
+  },
+  bannerButtonDanger: {
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+  },
+  bannerButtonOutline: {
+    borderWidth: 1,
+    borderColor: '#ef4444',
+    backgroundColor: 'transparent',
+  },
+  bannerButtonDisabled: {
+    opacity: 0.5,
+  },
+  bannerButtonSuccessText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semi,
+    color: colors.white,
+  },
+  bannerButtonDangerText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semi,
+    color: '#ef4444',
+  },
+  bannerDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  bannerDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  bannerDividerText: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+  },
+
+  // ── Forbidden / not-a-participant ─────────────
+  forbiddenContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: spacing.xxl,
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
+  },
+  forbiddenTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+  },
+  forbiddenText: {
+    fontSize: fontSize.md,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+
   // ── Footer pill (matches action bar style) ────
   footer: {
     alignItems: 'center',

@@ -33,6 +33,7 @@ import {
   PASSWORD_RULES,
 } from '../utilities/validator/Authvalidation';
 import {createMemoCompare} from '../utilities/propsComparison';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ValidationChecklist
@@ -93,6 +94,7 @@ const AuthForm = React.memo(
     loading,
     handleFacebookLogin,
     handleGoogleLogin,
+    navigation, // ← now received as a prop
   }) => (
     <KeyboardAvoidingView
       style={layout.center}
@@ -264,10 +266,33 @@ const AuthForm = React.memo(
             ? "Don't have an account? Register"
             : 'Already have an account? Login'}
         </Text>
-        <Text style={text.muted}>
-          First load may take a moment — we're on free tier servers
-        </Text>
+
       </TouchableOpacity>
+      <TouchableOpacity>
+      <Text style={text.muted}>
+        First load may take a moment — we're on free tier servers
+      </Text>
+      </TouchableOpacity>
+
+      {/* ── Legal Links ── */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingVertical: spacing.md,
+          gap: spacing.md,
+        }}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('LegalScreen', {tab: 'privacy'})}>
+          <Text style={{color: colors.primary}}>Privacy Policy</Text>
+        </TouchableOpacity>
+        <Text style={{color: colors.primary}}>·</Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('LegalScreen', {tab: 'terms'})}>
+          <Text style={{color: colors.primary}}>Terms of Service</Text>
+        </TouchableOpacity>
+      </View>
     </KeyboardAvoidingView>
   ),
   createMemoCompare([
@@ -279,6 +304,7 @@ const AuthForm = React.memo(
     'toggleMode',
     'handleFacebookLogin',
     'handleGoogleLogin',
+    'navigation', // ← include navigation in the memo comparison skip list
   ]),
 );
 
@@ -321,16 +347,13 @@ const AuthScreen = ({navigation}) => {
             accessToken,
             refreshToken,
             username ?? email.trim(),
-            result.data.onboardingCompleted ?? false,  // ← pass it
           );
         } else if (!isLogin) {
-          // 📧 Registration successful but email not verified
           Alert.alert(
             '✅ Account Created',
             'Check your email to verify your account.',
             [{text: 'OK'}],
           );
-          // ✅ Navigate to email verification screen
           navigation.replace('EmailVerification', {email: email.trim()});
         }
       } else {
@@ -414,6 +437,7 @@ const AuthScreen = ({navigation}) => {
         loading={loading}
         handleFacebookLogin={handleFacebookLogin}
         handleGoogleLogin={handleGoogleLogin}
+        navigation={navigation} // ← pass it down
       />
     </View>
   );

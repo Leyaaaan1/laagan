@@ -21,7 +21,6 @@ CREATE TABLE public.rider (
                               enabled BOOLEAN NOT NULL DEFAULT true,
                               email_verified BOOLEAN NOT NULL DEFAULT false,
                               about VARCHAR(500),
-                              onboarding_completed BOOLEAN NOT NULL DEFAULT false,
                               rider_type INTEGER REFERENCES public.rider_type(rider_type_id) ON DELETE SET NULL
 );
 

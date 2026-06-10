@@ -84,8 +84,8 @@ const TimelineStopCard = ({
   onLoadImages,
 }) => {
   const getStopLabel = () => {
-    if (type === 'START') return 'Starting Point';
-    if (type === 'END') return 'Ending Point';
+    if (type === 'START') {return 'Starting Point';}
+    if (type === 'END') {return 'Ending Point';}
     return `Stop ${stopIndex}`;
   };
 
@@ -258,18 +258,9 @@ const RideRoutesPage = ({route}) => {
       const data = await getStopPointsByRideId(generatedRidesId, token);
       const points = Array.isArray(data) ? data : [];
       setStopPoints(points);
-    } catch (err) {
-      const msg = err.message || '';
-      if (
-        msg === 'SERVER_ERROR' ||
-        msg === 'AUTH_FORBIDDEN' ||
-        msg === 'AUTH_MISSING'
-      ) {
-        setStopPointsError('join_required');
-      } else {
-        setStopPointsError(msg || 'Failed to load stop points');
-      }
-    } finally {
+    }  catch (err) {
+    setStopPointsError(err.message || 'Failed to load stop points');
+  } finally {
       setStopPointsLoading(false);
     }
   }, [generatedRidesId, token]);

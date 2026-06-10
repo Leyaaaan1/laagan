@@ -28,7 +28,6 @@ export const AuthProvider = ({children}) => {
   const [ready, setReady] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const [showStayLoggedInDialog, setShowStayLoggedInDialog] = useState(false);
   const [userPreferAutoLogin, setUserPreferAutoLogin] = useState(true);
 
   const refreshTokenRef = useRef(null);
@@ -55,7 +54,6 @@ export const AuthProvider = ({children}) => {
       if (storedUsername) {
         usernameRef.current = storedUsername;
         setUsername(storedUsername);
-        console.log('✅ Username loaded:', storedUsername);
       }
       const storedOnboarding = await AsyncStorage.getItem(
         'onboardingCompleted',
