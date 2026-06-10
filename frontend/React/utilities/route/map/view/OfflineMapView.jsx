@@ -1,32 +1,4 @@
-/**
- * OfflineMapView.jsx
- *
- * WebView wrapper that renders the offline Leaflet map.
- * Intentionally mirrors the public API of RouteMapView so that
- * AdaptiveMapView can treat both components identically:
- *
- *   Props accepted:
- *     startingPoint   { lat, lng, name? }
- *     endingPoint     { lat, lng, name? }
- *     stopPoints      Array<{ lat, lng, name? }>
- *     riderMarkers    { [username]: { latitude, longitude, locationName, distanceMeters } }
- *     currentUsername string
- *     userLocation    { lat, lng } | null  (injected by parent if available)
- *     style           ViewStyle
- *     isDark          boolean
- *
- *   Ref methods (same surface as RouteMapView):
- *     focusOnRider(latitude, longitude, username)
- *
- * Lifecycle:
- *   1. WebView loads createOfflineMapHTML() — bundled Leaflet + offlineMapScript
- *   2. mapInitScript posts { type: 'mapReady' } → onWebViewMessage fires
- *   3. We call window.loadOfflineData() with startPoint / endPoint / stopPoints
- *   4. offlineLoaderScript calls initMap(), centres view, calls addRouteMarkers()
- *   5. Any riderMarkers already in props are injected immediately after step 4
- *   6. Subsequent riderMarkers changes → injectRiderMarkers() via useEffect
- *   7. userLocation changes → updateUserLocation() via useEffect
- */
+
 
 import React, {
   useRef,
@@ -57,13 +29,13 @@ const OfflineMapView = forwardRef(
     const webViewRef = useRef(null);
     const mapReadyRef = useRef(false); // true after 'mapReady' is received
     const routeDataRef = useRef(routeData); // always holds latest routeData
-
+    const offlineReadyRef = useRef(false);
     // Keep routeDataRef in sync
+    routeDataRef.current = routeData;
+
     useEffect(() => {
       routeDataRef.current = routeData;
     }, [routeData]);
-
-    // ─── Helpers ────────────────────────────────────────────────────────────
 
     /** Fire-and-forget JS injection. Always appends `; true;` to satisfy WebView. */
     const inject = useCallback(js => {
@@ -74,20 +46,23 @@ const OfflineMapView = forwardRef(
     const injectRouteData = useCallback(() => {
       if (!webViewRef.current || !mapReadyRef.current) return;
       const currentRouteData = routeDataRef.current;
-      if (!currentRouteData) return; // Only inject if we have route data
+      if (!currentRouteData) return;
 
-      inject(`        if (typeof window.displayOfflineRoute === 'function') {
-          window.displayOfflineRoute(${JSON.stringify(currentRouteData)});
-          console.log('✅ Offline route polygon injected');
-        } else {
-          console.warn('displayOfflineRoute not available yet');
-        }
-      `);
-    }, [inject]); // no longer depends on routeData prop — reads from ref
+      inject(`
+    if (typeof window.displayOfflineRoute === 'function') {
+      window.displayOfflineRoute(${JSON.stringify(currentRouteData)});
+      console.log('✅ Offline route polygon injected');
+    } else {
+      console.warn('displayOfflineRoute not available yet');
+    }
+  `);
+    }, [inject]);
+ // no longer depends on routeData prop — reads from ref
 
     // ✅ NEW: Inject route data when routeData changes
     useEffect(() => {
-      if (mapReadyRef.current) {
+      // Only inject after BOTH mapReady AND offlineMapReady have fired
+      if (mapReadyRef.current && offlineReadyRef.current) {
         injectRouteData();
       }
     }, [routeData, injectRouteData]);
@@ -134,31 +109,20 @@ const OfflineMapView = forwardRef(
 
     // ─── Core injection functions ────────────────────────────────────────────
 
-    /**
-     * injectOfflineData
-     * Calls window.loadOfflineData() inside the WebView, which:
-     *   - writes window.startingPoint / endingPoint / stopPoints
-     *   - centres the map view on startingPoint
-     *   - calls addRouteMarkers() after 200 ms (same delay as mainLoaderScript)
-     *   - optionally calls updateUserLocation()
-     */
     const injectOfflineData = useCallback(() => {
       if (!webViewRef.current || !mapReadyRef.current) return;
 
       inject(`
-            if (typeof window.loadOfflineData === 'function') {
-                window.loadOfflineData(
-                    ${JSON.stringify(startingPoint)},
-                    ${JSON.stringify(endingPoint)},
-                    ${JSON.stringify(stopPoints)},
-                    ${JSON.stringify(userLocation)}
-                );
-            } else {
-                console.error('loadOfflineData not available yet');
-            }
-        `);
-    }, [startingPoint, endingPoint, stopPoints, userLocation, inject]);
-
+    if (typeof window.loadOfflineData === 'function') {
+      window.loadOfflineData(
+        ${JSON.stringify(startingPoint)},
+        ${JSON.stringify(endingPoint)},
+        ${JSON.stringify(stopPoints)},
+        null   // userLocation handled separately via injectUserLocation
+      );
+    }
+  `);
+    }, [startingPoint, endingPoint, stopPoints, inject]);
     /**
      * injectRiderMarkers
      * Calls window.updateRiderMarkers() — the same function from riderMarkersScript.js
@@ -213,6 +177,7 @@ const OfflineMapView = forwardRef(
 
           if (message.type === 'mapReady') {
             mapReadyRef.current = true;
+            offlineReadyRef.current = false;
             // Small delay mirrors RouteMapView's 500 ms onLoadEnd timeout
             setTimeout(() => {
               injectOfflineData();
@@ -220,12 +185,23 @@ const OfflineMapView = forwardRef(
           }
 
           if (message.type === 'offlineMapReady') {
-            // Map data is loaded — inject rider markers AND cached route
+            offlineReadyRef.current = true;
             injectRiderMarkers();
-            // Small delay so addRouteMarkers() finishes before we draw the polyline
-            setTimeout(() => {
-              injectRouteData();
-            }, 300);
+            // Route data may not have arrived yet — retry a few times
+            let attempts = 0;
+            const tryInjectRoute = () => {
+              if (routeDataRef.current) {
+                injectRouteData();
+              } else if (attempts < 5) {
+                attempts++;
+                setTimeout(tryInjectRoute, 600);
+              } else {
+                console.warn(
+                  '⚠️ OfflineMapView: routeData never arrived after 5 attempts',
+                );
+              }
+            };
+            setTimeout(tryInjectRoute, 300);
           }
         } catch (err) {
           console.warn('OfflineMapView message parse error:', err);
@@ -284,7 +260,7 @@ const OfflineMapView = forwardRef(
             */}
         <View style={styles.offlineBanner} pointerEvents="none">
           <Text style={styles.offlineBannerText}>
-            📡 Offline — route hidden · last-known rider positions shown
+            📡 Offline —  last-known rider positions shown
           </Text>
         </View>
       </View>

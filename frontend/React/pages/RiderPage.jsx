@@ -82,8 +82,18 @@ const RiderPage = ({navigation}) => {
   // ─────────────────────────────────────────────────────────────────────────
   const displayActiveRide = fetchedActiveRide ?? contextActiveRide;
 
+  const prevUsernameRef = useRef(null);
   useEffect(() => {
-    clearContextActiveRide(); // Clear on account switch
+    if (
+      prevUsernameRef.current !== null &&
+      prevUsernameRef.current !== username
+    ) {
+      // Only clear when switching from one real user to a different one
+      clearContextActiveRide();
+    }
+    if (username) {
+      prevUsernameRef.current = username;
+    }
   }, [username, clearContextActiveRide]);
 
   // ── Fetch active ride ─────────────────────────────────────────────────────

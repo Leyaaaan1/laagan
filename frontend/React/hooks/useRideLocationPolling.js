@@ -15,7 +15,7 @@ import NetInfo from '@react-native-community/netinfo';
 import {
   getCurrentPosition,
   shareLocationAndFetchAll,
-  fetchAllLocations,
+  fetchAllLocations, // ← new: GET-only, see note below
   calculateBackoffDelay,
   shouldRetryError,
   isFatalError,
@@ -305,7 +305,6 @@ export const useRideLocationPolling = ({
 
       _handleLocationsResponse(allLocations);
     } catch (err) {
-      console.error('❌ Poll error:', err.message);
       handlePollingError(err);
     } finally {
       pollLock.current.release();

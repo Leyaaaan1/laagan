@@ -150,10 +150,7 @@ export const apiFetch = async (
       error.message === 'Network request failed' ||
       error.message.includes('Network')
     ) {
-      console.error(
-        `🌐 [NETWORK ERROR] ${options.method || 'GET'} ${path}:`,
-        error.message,
-      );
+
       const networkError = new Error('NETWORK_ERROR');
       networkError.originalError = error;
       throw networkError;

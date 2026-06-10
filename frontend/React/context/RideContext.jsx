@@ -84,8 +84,14 @@ export const RideProvider = ({children}) => {
       if (!networkStatus.isConnected) {
         return;
       }
-      if (!errorMsg.includes('timeout') && !errorMsg.includes('10000ms')) {
-        setActiveRide(null); // also clears cache
+      if (
+        !errorMsg.includes('timeout') &&
+        !errorMsg.includes('10000ms') &&
+        errorMsg !== 'SERVER_ERROR' &&
+        !errorMsg.includes('500') &&
+        !errorMsg.includes('network')
+      ) {
+        setActiveRide(null);
       }
     } finally {
       setIsRefreshing(false);

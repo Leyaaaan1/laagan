@@ -6,8 +6,8 @@
 // ── Default Coordinates ────────────────────────────────────────────────────
 // Philippines center as fallback (used only when current location cannot be fetched)
 export const DEFAULT_COORDS = {
-  latitude: '12.8797',
-  longitude: '121.7740',
+  latitude: 12.8797,   // number
+  longitude: 121.7740, // number
   name: 'Philippines',
 };
 

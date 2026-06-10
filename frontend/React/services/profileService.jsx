@@ -8,7 +8,6 @@ export const getMyProfile = async () => {
     const result = await response.json();
     return {success: true, data: result};
   } catch (error) {
-    console.error('getMyProfile error:', error);
     return {success: false, message: error.message};
   }
 };

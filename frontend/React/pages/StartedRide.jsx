@@ -131,13 +131,31 @@ const StartedRide = ({route, navigation}) => {
 
   const routeDataForMap = useMemo(() => {
     if (isOffline && cachedRouteData) {
+      // Case 1: already a parsed GeoJSON object (type: 'FeatureCollection')
+      if (
+        cachedRouteData.type === 'FeatureCollection' ||
+        cachedRouteData.features
+      ) {
+        return cachedRouteData;
+      }
+      // Case 2: GeoJSON is stringified inside routeCoordinates key
       if (cachedRouteData.routeCoordinates) {
         try {
           const parsed = JSON.parse(cachedRouteData.routeCoordinates);
           return parsed;
         } catch (err) {
           console.warn('[StartedRide] Failed to parse cached route:', err);
-          return null;
+        }
+      }
+      // Case 3: the whole thing is a JSON string
+      if (typeof cachedRouteData === 'string') {
+        try {
+          return JSON.parse(cachedRouteData);
+        } catch (err) {
+          console.warn(
+            '[StartedRide] Failed to parse string cachedRouteData:',
+            err,
+          );
         }
       }
       return null;
@@ -146,7 +164,6 @@ const StartedRide = ({route, navigation}) => {
       return buildRouteDataForMap(activeRide);
     }
     return null;
-    // Use stable primitive id instead of the whole object reference
   }, [activeRide?.generatedRidesId, isOffline, cachedRouteData]);
 
   // Show a neutral loading screen while the auto-heal fetch is in-flight.
