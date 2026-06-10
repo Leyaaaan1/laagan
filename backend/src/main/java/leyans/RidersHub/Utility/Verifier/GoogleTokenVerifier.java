@@ -17,7 +17,7 @@ public class GoogleTokenVerifier {
 
     private static final Logger log = LoggerFactory.getLogger(GoogleTokenVerifier.class);
 
-    @Value("${GOOGLE_CLIENT_ID}")
+    @Value("${google.client-id}")
     private String googleClientId;
 
     /**
