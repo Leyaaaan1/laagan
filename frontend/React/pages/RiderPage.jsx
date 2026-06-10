@@ -50,7 +50,7 @@ const ProfileAvatar = ({profile, avatarStyle}) => {
   return <FontAwesome name="user" size={20} color="#fff" />;
 };
 
-const RiderPage = ({navigation, route}) => {
+const RiderPage = ({navigation}) => {
   const {username, ready} = useAuth();
   const {setActiveRide: clearActiveRide} = useContext(RideContext);
   const [loading, setLoading] = useState(true);
@@ -163,11 +163,11 @@ const RiderPage = ({navigation, route}) => {
 
           <View style={{flex: 1}}>
             <Text
-              style={[header.username, {flexShrink: 1}]}
+              style={[header.username, {flexShrink: 1, fontSize: 14}]}
               numberOfLines={1}
               adjustsFontSizeToFit
               minimumFontScale={0.6}>
-              {username ? username.toUpperCase() : ''}
+              {username ?? 'Rider'}
             </Text>
             {loading ? (
               <ActivityIndicator

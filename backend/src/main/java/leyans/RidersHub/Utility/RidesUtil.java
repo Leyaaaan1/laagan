@@ -139,13 +139,6 @@ public class RidesUtil {
     @Transactional(readOnly = true)
     public List<StopPointDTO> getStopPointsDTOByGeneratedRideId(String generatedRidesId) {
         Rides ride = findRideEntityByGeneratedId(generatedRidesId);
-        String currentUsername = riderUtil.getCurrentUsername();
-        boolean isOwner = ride.getUsername().getUsername().equals(currentUsername);
-        boolean isParticipant = ride.getParticipants().stream()
-                .anyMatch(rider -> rider.getUsername().equals(currentUsername));
-        if (!isOwner && !isParticipant) {
-            throw new org.springframework.security.access.AccessDeniedException("Access denied: not owner or participant");
-        }
         return mapStopPointsToDTOs(ride.getStopPoints());
     }
 

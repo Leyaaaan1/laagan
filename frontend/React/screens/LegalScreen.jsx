@@ -1,4 +1,4 @@
-import React, {} from 'react';
+import React, {useState} from 'react';
 import {View, Text, ScrollView, TouchableOpacity} from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import layout from '../styles/base/layout';
@@ -93,7 +93,86 @@ Contact Us
 If you have any questions about this Privacy Policy, You can contact us at:
 paninsorolean@gmail.com`;
 
-export default function LegalScreen({navigation}) {
+const TERMS_OF_SERVICE = `Terms of Service for laagan
+
+Last updated: May 17, 2026
+
+These Terms of Service govern your use of the laagan app — a ride-sharing platform for solo and group riders in the Philippines. By using laagan, you agree to these terms.
+
+1. Acceptance of Terms
+
+By downloading, installing, or using laagan, you confirm that you are at least 18 years old, have read and understood these Terms, and agree to be bound by them. If you do not agree, please do not use the Service.
+
+2. The Service
+
+laagan is a ride-sharing platform that connects solo and group riders for shared commutes and trips within the Philippines. We provide the platform; riders and drivers coordinate through it.
+
+laagan facilitates connections between users. We are not a transportation provider and are not responsible for the acts or omissions of any rider or driver on the platform.
+
+3. Your Account
+
+• You must provide accurate and complete information when registering.
+• You are responsible for maintaining the confidentiality of your login credentials.
+• You are responsible for all activity that occurs under your account.
+• Notify us immediately at paninsorolean@gmail.com if you suspect unauthorized access.
+
+4. Acceptable Use
+
+You agree not to:
+
+• Use the Service for any unlawful purpose or in violation of Philippine law.
+• Impersonate any person, company, or entity.
+• Harass, threaten, or harm other users.
+• Attempt to gain unauthorized access to any part of the platform.
+• Use the app to organize rides for illegal activities.
+• Post false, misleading, or fraudulent ride listings.
+• Interfere with the proper functioning of the Service.
+
+5. Ride Safety and User Responsibility
+
+You are responsible for your conduct during any ride arranged through laagan. All users must:
+
+• Treat fellow riders and drivers with respect.
+• Comply with all applicable traffic and road safety laws.
+• Ensure any vehicle used meets legal roadworthiness requirements.
+• Not use the app while driving.
+
+6. Intellectual Property
+
+You are free to use, copy, modify, and build upon the laagan app's software and code. The only thing we ask is that you do not use the laagan name or logo to represent your own product or service without our permission, as these identify our brand.
+
+7. Disclaimer of Warranties
+
+The Service is provided on an "as is" and "as available" basis without warranties of any kind, express or implied. We do not guarantee that the Service will be uninterrupted, error-free, or free of harmful components.
+
+8. Limitation of Liability
+
+To the fullest extent permitted by Philippine law, laagan shall not be liable for any indirect, incidental, special, or consequential damages arising out of your use of the Service, including but not limited to personal injury, property damage, or losses arising from any ride arranged through the platform.
+
+9. Termination
+
+We reserve the right to suspend or terminate your account at any time, without notice, for conduct that we reasonably believe violates these Terms or is harmful to other users, the Company, or third parties.
+
+10. Governing Law
+
+These Terms are governed by the laws of the Republic of the Philippines. Any disputes arising from these Terms shall be resolved in the competent courts of the Philippines.
+
+11. Changes to These Terms
+
+We may update these Terms from time to time. Continued use of the Service after changes are posted constitutes your acceptance of the revised Terms. We will notify you of significant changes in the app.
+
+12. Contact Us
+
+Questions about these Terms? Contact us at:
+paninsorolean@gmail.com`;
+
+export default function LegalScreen({navigation, route}) {
+  // Allow deep-linking to a specific tab via route.params.tab
+  const initialTab = route?.params?.tab === 'terms' ? 'terms' : 'privacy';
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  const isPrivacy = activeTab === 'privacy';
+
   return (
     <View style={layout.screen}>
       {/* Header */}
@@ -117,13 +196,61 @@ export default function LegalScreen({navigation}) {
             fontSize: 18,
             fontWeight: '600',
           }}>
-          Privacy Policy
+          Legal
         </Text>
         <View style={{width: 20}} />
       </View>
 
+      {/* Tab Switcher */}
+      <View
+        style={{
+          flexDirection: 'row',
+          marginHorizontal: spacing.md,
+          marginTop: spacing.md,
+          borderRadius: 8,
+          overflow: 'hidden',
+          borderWidth: 1,
+          borderColor: colors.border,
+        }}>
+        <TouchableOpacity
+          onPress={() => setActiveTab('privacy')}
+          style={{
+            flex: 1,
+            paddingVertical: spacing.sm,
+            alignItems: 'center',
+            backgroundColor: isPrivacy ? colors.primary : 'transparent',
+          }}>
+          <Text
+            style={{
+              color: isPrivacy ? colors.white : colors.primary,
+              fontWeight: '600',
+              fontSize: fontSize.body,
+            }}>
+            Privacy Policy
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setActiveTab('terms')}
+          style={{
+            flex: 1,
+            paddingVertical: spacing.sm,
+            alignItems: 'center',
+            backgroundColor: !isPrivacy ? colors.primary : 'transparent',
+          }}>
+          <Text
+            style={{
+              color: !isPrivacy ? colors.white : colors.primary,
+              fontWeight: '600',
+              fontSize: fontSize.body,
+            }}>
+            Terms of Service
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Content */}
       <ScrollView
+        key={activeTab}
         style={{flex: 1}}
         contentContainerStyle={{
           paddingHorizontal: spacing.md,
@@ -135,7 +262,7 @@ export default function LegalScreen({navigation}) {
             fontSize: fontSize.body,
             lineHeight: 24,
           }}>
-          {PRIVACY_POLICY}
+          {isPrivacy ? PRIVACY_POLICY : TERMS_OF_SERVICE}
         </Text>
       </ScrollView>
     </View>

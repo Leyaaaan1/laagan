@@ -23,14 +23,18 @@ import {useDeepLinking} from './React/utilities/deepLinking';
 import EmailVerificationScreen from './React/screens/EmailVerificationScreen';
 import VerifyEmailLinkScreen from './React/screens/VerifyEmailLinkScreen';
 // ─── ADD these two imports ───────────────────────────────────────────────────
-import OnboardingTour, {ONBOARDING_KEY} from './React/screens/OnboardingTour';
+import OnboardingTour from './React/screens/OnboardingTour';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface AuthContextValue {
   token: string | null;
   ready: boolean;
-  onboardingCompleted: boolean;
 }
+interface OnboardingParams {
+  completed?: boolean;
+}
+
+
 
 const Stack = createNativeStackNavigator();
 export const googleclientid = GOOGLE_CLIENT_ID;
@@ -43,14 +47,13 @@ const AuthStack = () => (
       component={EmailVerificationScreen}
     />
     <Stack.Screen name="VerifyEmailLink" component={VerifyEmailLinkScreen} />
+    <Stack.Screen name="LegalScreen" component={LegalScreen} />
   </Stack.Navigator>
 );
 
-const AppStack = ({initialRoute = 'OnboardingTour'}) => (
+const AppStack = () => (
   <Stack.Navigator
-    screenOptions={{headerShown: false}}
-    initialRouteName={initialRoute}>
-    <Stack.Screen name="OnboardingTour" component={OnboardingTour} />
+    screenOptions={{headerShown: false}}>
     <Stack.Screen name="RiderPage" component={RiderPage} />
     <Stack.Screen name="Home" component={HomeScreen} />
     <Stack.Screen name="CreateRide" component={CreateRide} />
@@ -66,22 +69,43 @@ const AppStack = ({initialRoute = 'OnboardingTour'}) => (
 
 const NavigationContent = () => {
   const auth = useAuth() as unknown as AuthContextValue;
+  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
 
   useDeepLinking();
   setAuthContextRef(auth);
   GoogleSignin.configure({webClientId: googleclientid, offlineAccess: false});
 
-  if (!auth.ready) {return <LoadingScreen />;}
-  if (!auth.token) {return <AuthStack />;}
+  useEffect(() => {
+    AsyncStorage.getItem('@rideapp_onboarding_done').then(val => {
+      setOnboardingDone(val === 'true');
+    });
+  }, []);
 
-  // No more AsyncStorage! Reads directly from context
-  return (
-    <AppStack
-      initialRoute={auth.onboardingCompleted ? 'RiderPage' : 'OnboardingTour'}
-    />
-  );
+  if (!auth.ready || onboardingDone === null) return <LoadingScreen />;
+
+  if (!onboardingDone) {
+    return (
+      <Stack.Navigator
+        screenOptions={{headerShown: false}}
+        screenListeners={{
+          state: async e => {
+            // OnboardingTour fires a 'onboardingComplete' event when done
+            const route = e.data?.state?.routes?.find(
+              r => r.name === 'OnboardingTour',
+            );
+            if ((route?.params as OnboardingParams)?.completed) {
+              await AsyncStorage.setItem('@rideapp_onboarding_done', 'true');
+              setOnboardingDone(true);
+            }
+          },
+        }}>
+        <Stack.Screen name="OnboardingTour" component={OnboardingTour} />
+      </Stack.Navigator>
+    );
+  }
+  if (!auth.token) return <AuthStack />;
+  return <AppStack />;
 };
-
 export default function App() {
   return (
     <AuthProvider>

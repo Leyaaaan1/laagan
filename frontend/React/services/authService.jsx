@@ -329,14 +329,7 @@ export const loginWithGoogle = async () => {
   }
 };
 
-export const markOnboardingComplete = async () => {
-  try {
-    const response = await api.patch('/riders/onboarding-complete');
-    return {success: response.ok};
-  } catch (err) {
-    return {success: false};
-  }
-};
+
 
 export const loginUser = authService.login;
 export const registerUser = authService.register;

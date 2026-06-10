@@ -48,12 +48,14 @@ const SearchHeader = ({navigation}) => {
         <View style={{position: 'relative'}}>
           <TextInput
             style={{
-              width: 100,
+              width: 120,
               borderWidth: 1,
               borderColor: colors.primary,
               borderRadius: 5,
               padding: 8,
               paddingRight: 36,
+              paddingVertical: 4,
+              paddingHorizontal: 8,
               color: '#fff',
               fontSize: 14,
             }}
@@ -84,7 +86,7 @@ const SearchHeader = ({navigation}) => {
             {loading ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <FontAwesome name="search" size={16} color="#fff" />
+              <FontAwesome name="search" size={12} color="#fff" />
             )}
           </TouchableOpacity>
         </View>
