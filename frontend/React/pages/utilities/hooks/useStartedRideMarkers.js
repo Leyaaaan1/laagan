@@ -79,7 +79,6 @@ export const useStartedRideMarkers = (rideId, pollingEnabled, onRiderFinished) =
 
   const handlePollingError = useCallback(err => {
     setPollingError(err.message);
-    console.error('Location polling failed:', err);
   }, []);
 
   const {isPolling, isOffline, retryCount} = useRideLocationPolling({

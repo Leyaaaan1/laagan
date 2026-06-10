@@ -1,12 +1,11 @@
 // === locationPollingService.jsx ===
 
-import { api} from './Apiclient';
+import {api} from './Apiclient';
 import Geolocation from '@react-native-community/geolocation';
 import {AppState, Platform, PermissionsAndroid} from 'react-native'; // AppState added
 
-
-let lastLocationUpdateTime = 0;
-const LOCATION_THROTTLE_MS = 15000; // Minimum 15 seconds between location updates
+// Movement-based skip logic lives in useRideLocationPolling (hook layer).
+// The service layer is intentionally stateless — it just executes what it's told.
 
 export const getCurrentPosition = async () => {
   return new Promise(async (resolve, reject) => {
@@ -59,30 +58,8 @@ export const getCurrentPosition = async () => {
   });
 };
 
-// ✅ NEW: Throttle location updates to prevent overload
-export const shouldThrottleLocationUpdate = () => {
-  const now = Date.now();
-  if (now - lastLocationUpdateTime < LOCATION_THROTTLE_MS) {
-    return true; // Skip this update
-  }
-  lastLocationUpdateTime = now;
-  return false;
-};
-
-// ✅ UPDATED: Better error mapping
-export const shareLocationAndFetchAll = async (
-  rideId,
-  latitude,
-  longitude,
-) => {
+export const shareLocationAndFetchAll = async (rideId, latitude, longitude) => {
   if (!rideId) throw new Error('Missing rideId');
-
-  // ✅ NEW: Check if we should throttle this update
-  if (shouldThrottleLocationUpdate() && latitude && longitude) {
-    console.log('⏱️ Location update throttled — using last good location');
-    // Return previous locations without updating
-    return null; // Handle in calling code
-  }
 
   console.log('🌍 Sharing location:', {rideId, latitude, longitude});
 
@@ -153,6 +130,64 @@ export const shareLocationAndFetchAll = async (
   }
 };
 
+/**
+ * GET-only fetch — used by the hook when the rider hasn't moved enough to
+ * warrant uploading their own position, but we still want to refresh other
+ * participants' locations on the map.
+ *
+ * Maps to: GET /location/{rideId}/all  →  RideLocationService.getAllRiderLocations()
+ */
+export const fetchAllLocations = async rideId => {
+  if (!rideId) throw new Error('Missing rideId');
+
+  try {
+    const response = await api.get(`/location/${rideId}/all-riders`);
+
+    if (!response.ok) {
+      let errorMsg = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData.message || errorData.error || errorMsg;
+      } catch (e) {
+        /* not JSON */
+      }
+      throw new Error(errorMsg);
+    }
+
+    return response.json();
+  } catch (error) {
+    const errorMsg = error.message || String(error);
+
+    if (
+      errorMsg.includes('401') ||
+      errorMsg.includes('AUTH_EXPIRED') ||
+      errorMsg.includes('Session expired')
+    ) {
+      throw new Error('Session expired. Please log in again.');
+    }
+    if (
+      errorMsg.includes('403') ||
+      errorMsg.includes('AUTH_FORBIDDEN') ||
+      errorMsg.includes('Unauthorized')
+    ) {
+      throw new Error('Unauthorized to view locations.');
+    }
+    if (errorMsg.includes('404') || errorMsg.includes('not found')) {
+      throw new Error(`FATAL_ERROR - ${errorMsg}`);
+    }
+    if (
+      errorMsg.includes('500') ||
+      errorMsg.includes('502') ||
+      errorMsg.includes('503') ||
+      errorMsg.includes('504')
+    ) {
+      throw new Error(`SERVER_ERROR - ${errorMsg}`);
+    }
+
+    throw error;
+  }
+};
+
 export const calculateBackoffDelay = retryCount =>
   Math.min(Math.pow(2, retryCount - 1) * 1000, 30000);
 
@@ -187,8 +222,7 @@ export const createIntervalManager = () => {
   return {
     start: (callback, intervalMs = 8000) => {
       if (intervalId) return;
-      // ✅ CHANGED: Use 15-20 second interval instead of 8
-      intervalId = setInterval(callback, Math.max(intervalMs, 15000));
+      intervalId = setInterval(callback, intervalMs);
     },
     stop: () => {
       if (intervalId) {

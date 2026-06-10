@@ -22,7 +22,7 @@ const REFRESH_INTERVAL_MS = 15000; // Re-poll GPS every 15 s (battery-friendly)
 const GPS_OPTIONS_FAST = {
   enableHighAccuracy: false,
   timeout: 8000,
-  maximumAge: 30000, // Accept a 30-second-old cached fix
+  maximumAge: 30000,
 };
 
 const GPS_OPTIONS_ACCURATE = {
@@ -30,7 +30,6 @@ const GPS_OPTIONS_ACCURATE = {
   timeout: 15000,
   maximumAge: 10000,
 };
-
 export const useOfflineUserLocation = (enabled = true) => {
   const [userLocation, setUserLocation] = useState(null);
   const [locationError, setLocationError] = useState(null);

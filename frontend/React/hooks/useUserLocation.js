@@ -47,7 +47,7 @@ export const useUserLocation = () => {
                 latitude,
                 longitude,
                 isDefault: false,
-              });;
+              });
               setError(null);
               resolve();
             },

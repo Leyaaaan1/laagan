@@ -1,12 +1,26 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {View, Text, TouchableOpacity, ScrollView, StatusBar, Alert,} from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StatusBar,
+  Alert,
+} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import {fetchRideMapImage, getRideDetails, getLocationImage,} from '../../services/rideService';
+import {
+  fetchRideMapImage,
+  getRideDetails,
+  getLocationImage,
+} from '../../services/rideService';
 import ParticipantList from './modal/ParticipantList';
 import {startService} from '../../services/startService';
 import RouteMapView from '../../utilities/route/view/RouteMapView';
-import { isValidCoordinate, processRideCoordinates,} from '../../utilities/CoordinateUtils';
+import {
+  isValidCoordinate,
+  processRideCoordinates,
+} from '../../utilities/CoordinateUtils';
 import buttons from '../../styles/base/buttons';
 import header from '../../styles/base/header';
 import rideStep4Styles from '../../styles/screens/rideStep4';
@@ -14,15 +28,24 @@ import mapStyles from '../../styles/components/mapStyles';
 import {getLocationDisplayName} from './utilities/RideStepUtils';
 import useJoinRide from './utilities/RideHandler';
 import {useAuth} from '../../context/AuthContext';
+import {RideContext} from '../../context/RideContext';
 import useRideStatus, {RIDE_STATUS} from './hooks/useRideStatus';
-import {   RideActionButton, RideStatusCenterButton,} from './utilities/RideActionButton';
+import {
+  RideActionButton,
+  RideStatusCenterButton,
+} from './utilities/RideActionButton';
 import CheckpointArrivalsModal from '../../pages/utilities/CheckpointArrivalsModal';
 import RideHeroCard from './utilities/RideHeroCard';
-
 
 const RideStep4 = props => {
   const navigation = useNavigation();
   const {username: authUsername} = useAuth();
+  // Pull fetchActiveRide so we can populate context with startedRideId
+  // immediately after starting a ride (fixes "Connecting…" on first open).
+  const {
+    fetchActiveRide: fetchActiveRideCtx,
+    setActiveRide: setContextActiveRide,
+  } = React.useContext(RideContext);
 
   const routeParams = props.route?.params || {};
   const merged = {...props, ...routeParams};
@@ -258,15 +281,27 @@ const RideStep4 = props => {
     try {
       await startService.startRide(generatedRidesId);
       await refreshStatus();
+
+      const activeRideData = {
+        ...buildActiveRide(),
+        startingPointName:
+          mapCoords.startingPoint?.name ||
+          getLocationDisplayName(startingPoint),
+        endingPointName:
+          mapCoords.endingPoint?.name || getLocationDisplayName(endingPoint),
+      };
+
+      // Pre-populate context so StartedRide renders immediately with what we have,
+      // then kick off a background fetch to fill in startedRideId.
+      // StartedRide's auto-heal effect will detect the missing startedRideId and
+      // call fetchActiveRide() itself — but doing it here too means the context
+      // update races the navigation, giving us the best chance of having the
+      // full data by the time useStartedRideMarkers first reads it.
+      setContextActiveRide(activeRideData);
+      fetchActiveRideCtx(); // fire-and-forget — updates context with startedRideId
+
       navigation.navigate('StartedRide', {
-        activeRide: {
-          ...buildActiveRide(),
-          startingPointName:
-            mapCoords.startingPoint?.name ||
-            getLocationDisplayName(startingPoint),
-          endingPointName:
-            mapCoords.endingPoint?.name || getLocationDisplayName(endingPoint),
-        },
+        activeRide: activeRideData,
         username: resolvedCurrentUsername,
       });
     } catch (error) {
