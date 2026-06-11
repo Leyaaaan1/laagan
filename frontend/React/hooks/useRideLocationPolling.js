@@ -1,4 +1,3 @@
-/* global EventSource */
 // frontend/React/hooks/useRideLocationPolling.js
 //
 // OPTIMIZATION: Dual-threshold polling strategy + SSE receive
@@ -15,6 +14,7 @@ import {useEffect, useRef, useState, useCallback} from 'react';
 import {AppState, Platform, PermissionsAndroid} from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import NetInfo from '@react-native-community/netinfo';
+import EventSource from 'react-native-sse';
 import {
   getCurrentPosition,
   shareLocationAndFetchAll,
@@ -31,10 +31,10 @@ import {useAuth} from '../context/AuthContext';
 import {API_BASE_URL} from '../services/Apiclient';
 
 // ─── tuneable constants ────────────────────────────────────────────────────
-const POLL_INTERVAL_MS = 8_000; // upload cadence (send side)
-const MOVEMENT_THRESHOLD_M = 15; // skip upload below this distance
-const MAX_SKIP_COUNT = 3; // force upload after N consecutive skips
-const MAX_SKIP_MS = 30_000; // …or after this many ms since last upload
+const POLL_INTERVAL_MS = 8_000;       // upload cadence (send side)
+const MOVEMENT_THRESHOLD_M = 15;      // skip upload below this distance
+const MAX_SKIP_COUNT = 3;             // force upload after N consecutive skips
+const MAX_SKIP_MS = 30_000;           // …or after this many ms since last upload
 // ──────────────────────────────────────────────────────────────────────────
 
 /**
@@ -53,20 +53,12 @@ function haversineMeters(lat1, lng1, lat2, lng2) {
 
 /**
  * Opens an SSE stream for the given rideId.
- * Token is passed in from the hook's tokenRef (via useAuth) — EventSource
- * can't go through apiFetch because it's a persistent connection, not a
- * one-shot fetch, so the token is threaded through explicitly here.
- * Requires 'react-native-event-source' polyfill (npm i react-native-event-source).
- *
- * Returns the EventSource instance, or null if EventSource is unavailable.
+ * Uses react-native-sse — a direct import, no global polyfill needed.
+ * Token comes from the hook's tokenRef (via useAuth()).
  */
 export const openLocationStream = (rideId, token, onLocations, onError) => {
-  if (typeof EventSource === 'undefined') {
-    console.warn('[SSE] EventSource not available — falling back to polling');
-    return null;
-  }
-
   const url = `${API_BASE_URL}/location/${rideId}/stream`;
+
   const es = new EventSource(url, {
     headers: {Authorization: `Bearer ${token}`},
   });
@@ -80,10 +72,11 @@ export const openLocationStream = (rideId, token, onLocations, onError) => {
     }
   });
 
-  es.onerror = err => {
+  // react-native-sse uses addEventListener('error') not es.onerror
+  es.addEventListener('error', err => {
     console.warn('[SSE] Connection error:', err);
     onError?.(err);
-  };
+  });
 
   return es;
 };
@@ -130,11 +123,11 @@ export const useLocationPermission = () => {
 // ─── useRideLocationPolling ────────────────────────────────────────────────
 
 export const useRideLocationPolling = ({
-  rideId,
-  enabled = true,
-  onLocationsUpdate,
-  onError,
-}) => {
+                                         rideId,
+                                         enabled = true,
+                                         onLocationsUpdate,
+                                         onError,
+                                       }) => {
   const {token} = useAuth();
 
   // ── exposed state ────────────────────────────────────────────────────────
@@ -168,18 +161,11 @@ export const useRideLocationPolling = ({
   const isFirstPollRef = useRef(true);
 
   // ── sync mutable refs ─────────────────────────────────────────────────────
-  useEffect(() => {
-    enabledRef.current = enabled;
-  }, [enabled]);
-  useEffect(() => {
-    isOfflineRef.current = isOffline;
-  }, [isOffline]);
+  useEffect(() => { enabledRef.current = enabled; }, [enabled]);
+  useEffect(() => { isOfflineRef.current = isOffline; }, [isOffline]);
   useEffect(() => {
     tokenRef.current = token;
-    console.log(
-      '🔐 Auth token updated:',
-      token ? '✅ Available' : '❌ Missing',
-    );
+    console.log('🔐 Auth token updated:', token ? '✅ Available' : '❌ Missing');
   }, [token]);
 
   // ── reset position tracking + close stale SSE when ride changes ──────────
@@ -214,14 +200,12 @@ export const useRideLocationPolling = ({
     console.log('[SSE] Opening location stream for ride', rideId);
     esRef.current = openLocationStream(
       rideId,
-      tokenRef.current, // ← from useAuth(), same source as the rest of the app
+      tokenRef.current,  // ← from useAuth(), same source as the rest of the app
       locations => {
         _handleLocationsResponse(locations);
       },
       () => {
-        console.warn(
-          '[SSE] Stream error; receive falls back to fetchAllLocations',
-        );
+        console.warn('[SSE] Stream error; receive falls back to fetchAllLocations');
         esRef.current = null;
       },
     );
@@ -304,12 +288,7 @@ export const useRideLocationPolling = ({
       const lastUpload = lastUploadTimestampRef.current;
 
       const distanceMoved = lastPos
-        ? haversineMeters(
-            lastPos.latitude,
-            lastPos.longitude,
-            latitude,
-            longitude,
-          )
+        ? haversineMeters(lastPos.latitude, lastPos.longitude, latitude, longitude)
         : Infinity;
 
       const timeElapsedMs = lastUpload ? Date.now() - lastUpload : Infinity;
@@ -317,25 +296,22 @@ export const useRideLocationPolling = ({
       const hasMovedEnough = distanceMoved >= MOVEMENT_THRESHOLD_M;
       const skipLimitHit = skipCount >= MAX_SKIP_COUNT;
       const timeLimitHit = timeElapsedMs >= MAX_SKIP_MS;
-      const mustUpload =
-        isFirst || hasMovedEnough || skipLimitHit || timeLimitHit;
+      const mustUpload = isFirst || hasMovedEnough || skipLimitHit || timeLimitHit;
 
       console.log('📍 Poll tick', {
-        distanceMoved:
-          distanceMoved === Infinity ? 'n/a' : `${distanceMoved.toFixed(1)}m`,
-        timeElapsedMs:
-          timeElapsedMs === Infinity ? 'n/a' : `${timeElapsedMs}ms`,
+        distanceMoved: distanceMoved === Infinity ? 'n/a' : `${distanceMoved.toFixed(1)}m`,
+        timeElapsedMs: timeElapsedMs === Infinity ? 'n/a' : `${timeElapsedMs}ms`,
         consecutiveSkipCount: skipCount,
         mustUpload,
         reason: isFirst
           ? 'first_poll'
           : hasMovedEnough
-          ? 'movement'
-          : skipLimitHit
-          ? 'skip_count_ceiling'
-          : timeLimitHit
-          ? 'time_ceiling'
-          : 'skip',
+            ? 'movement'
+            : skipLimitHit
+              ? 'skip_count_ceiling'
+              : timeLimitHit
+                ? 'time_ceiling'
+                : 'skip',
       });
 
       // ── branch: skip upload ─────────────────────────────────────────────
@@ -346,9 +322,7 @@ export const useRideLocationPolling = ({
         console.log(
           `⏭️ Upload skipped (moved ${distanceMoved.toFixed(1)}m)`,
           `[skip ${consecutiveSkipCountRef.current}/${MAX_SKIP_COUNT}]`,
-          esRef.current
-            ? '— SSE covering receive'
-            : '— fetching others via GET',
+          esRef.current ? '— SSE covering receive' : '— fetching others via GET',
         );
 
         // Only hit the GET endpoint if SSE is not open
@@ -363,11 +337,7 @@ export const useRideLocationPolling = ({
       isFirstPollRef.current = false;
 
       console.log('📤 Uploading location + fetching all riders');
-      const allLocations = await shareLocationAndFetchAll(
-        rideId,
-        latitude,
-        longitude,
-      );
+      const allLocations = await shareLocationAndFetchAll(rideId, latitude, longitude);
 
       lastSentPositionRef.current = {latitude, longitude};
       consecutiveSkipCountRef.current = 0;
@@ -389,11 +359,7 @@ export const useRideLocationPolling = ({
    */
   function _handleLocationsResponse(allLocations) {
     if (!allLocations || !Array.isArray(allLocations)) {
-      console.warn(
-        '⚠️ Invalid locations response:',
-        allLocations,
-        '— using empty array',
-      );
+      console.warn('⚠️ Invalid locations response:', allLocations, '— using empty array');
       retryCountRef.current = 0;
       setRetryCount(0);
       setNextRetryDelay(1000);
