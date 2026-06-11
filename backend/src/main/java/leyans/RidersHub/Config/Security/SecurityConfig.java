@@ -1,5 +1,6 @@
 package leyans.RidersHub.Config.Security;
 
+import jakarta.servlet.DispatcherType;
 import leyans.RidersHub.Config.JWT.JwtFilter;
 import leyans.RidersHub.Service.UserDetailsManager;
 import org.springframework.context.annotation.Bean;
@@ -36,6 +37,7 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll() //
                         .requestMatchers(
                                 "/riders/login",
                                 "/riders/register",
