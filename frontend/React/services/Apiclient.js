@@ -137,9 +137,7 @@ export const apiFetch = async (
   } catch (error) {
     // Handle timeout errors specifically
     if (error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
-      console.error(
-        `⏱️ [API TIMEOUT] ${options.method || 'GET'} ${path}: ${error.message}`,
-      );
+
       const timeoutError = new Error('REQUEST_TIMEOUT');
       timeoutError.originalError = error;
       throw timeoutError;

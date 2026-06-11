@@ -30,6 +30,7 @@ import {
   getFinishedRideSummary,
   getPersonalSummary,
 } from '../services/startService';
+import {routeCache} from '../services/cache/routeCache';
 
 const StartedRide = ({route, navigation}) => {
   const {username: routeUsername} = route?.params || {};
@@ -38,8 +39,14 @@ const StartedRide = ({route, navigation}) => {
   const [showRouteInfo, setShowRouteInfo] = useState(false);
   const [pollingEnabled, setPollingEnabled] = useState(true);
   const mapRef = useRef(null);
-  const {activeRide, setActiveRide, stopPolling, fetchActiveRide} =
-    useContext(RideContext);
+  const {
+    activeRide,
+    setActiveRide,
+    stopPolling,
+    fetchActiveRide,
+    clearActiveRide,
+  } = useContext(RideContext);
+
   const {activeRide: initialActiveRide} = route?.params || {};
   const [checkpointModalVisible, setCheckpointModalVisible] = useState(false);
   // True while fetchActiveRide() is in-flight — prevents the "No ride data"
@@ -211,6 +218,8 @@ const StartedRide = ({route, navigation}) => {
   // ── Participant: fetch their personal summary (ride may still be active) ──
   const handleNavigateToPersonalSummary = async rideId => {
     handleCloseModal();
+    clearActiveRide(); // ← ADD
+    await routeCache.clear(rideId); // ← ADD
     try {
       const data = await getPersonalSummary(rideId);
       navigation.navigate('FinishedRideView', {
@@ -542,17 +551,20 @@ const StartedRide = ({route, navigation}) => {
         activeRide={activeRide}
         stopPolling={stopPolling}
         setPollingEnabled={setPollingEnabled}
-        onRideFinished={data => {
+        onRideFinished={async data => {
           handleCloseModal();
+          clearActiveRide(); // ← ADD
+          await routeCache.clear(activeRide?.generatedRidesId); // ← ADD
           navigation.navigate('FinishedRideView', {finishedRideData: data});
         }}
         onNavigateToSummary={async generatedRidesId => {
           handleCloseModal();
+          clearActiveRide(); // ← ADD
+          await routeCache.clear(activeRide?.generatedRidesId); // ← ADD
           try {
             const data = await getFinishedRideSummary(generatedRidesId);
             navigation.navigate('FinishedRideView', {finishedRideData: data});
           } catch (e) {
-            // fallback: let FinishedRideView fetch it on its own
             navigation.navigate('FinishedRideView', {generatedRidesId});
           }
         }}

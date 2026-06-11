@@ -31,22 +31,26 @@ public class RideLocationService {
     private final RiderUtil riderUtil;
     private final ParticipantLocationRepository participantLocationRepository;
     private final CheckPointUtility checkPointUtility;
+    private final RideLocationEmitterRegistry rideLocationEmitterRegistry;
 
 
 
 
+    private static final double MOVEMENT_THRESHOLD_METERS = 15.0;
 
     public RideLocationService(RiderLocationRepository locationRepo,
                                PsgcDataRepository psgcDataRepository,
                                LocationService locationService,
-                               RiderUtil riderUtil, ParticipantLocationRepository participantLocationRepository, CheckPointUtility checkPointUtility) {
+                               RiderUtil riderUtil, ParticipantLocationRepository participantLocationRepository, CheckPointUtility checkPointUtility, RideLocationEmitterRegistry rideLocationEmitterRegistry) {
         this.locationRepo = locationRepo;
         this.psgcDataRepository = psgcDataRepository;
         this.locationService = locationService;
         this.riderUtil = riderUtil;
         this.participantLocationRepository = participantLocationRepository;
         this.checkPointUtility = checkPointUtility;
+        this.rideLocationEmitterRegistry = rideLocationEmitterRegistry;
     }
+
     @Transactional(readOnly = true)
     public List<LocationUpdateRequestDTO> getAllRiderLocations(Integer startedRideId) {
             StartedRide started = riderUtil.findStartedRideById(startedRideId);
@@ -120,10 +124,15 @@ public class RideLocationService {
                 .orElse(new RiderLocation());
 
         if (loc.getId() != null && loc.getLocation() != null) {
-            double delta = locationRepo.getDistanceBetweenPoints(loc.getLocation(), userPoint);
-            if (delta < 10.0) {
+            Point lastPoint = loc.getLocation();
+            double delta = haversineMeters(
+                    lastPoint.getY(), lastPoint.getX(),   // last lat, lng
+                    latitude, longitude                    // new lat, lng
+            );
+            if (delta < MOVEMENT_THRESHOLD_METERS) {
                 AppLogger.debug(this.getClass(), "Skipping update — rider has not moved",
-                        "username", username, "delta", delta);
+                        "username", username, "deltaMeters", delta);
+                // Return the existing record without touching the DB
                 return new LocationUpdateRequestDTO(
                         startedRideId, username, latitude, longitude,
                         loc.getLocationName(), loc.getDistanceMeters(),
@@ -131,7 +140,6 @@ public class RideLocationService {
                 );
             }
         }
-
         loc.setStartedRide(started);
         loc.setUsername(rider);
         loc.setLocation(userPoint);
@@ -264,7 +272,6 @@ public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer star
             double latitude,
             double longitude) {
 
-        // updateLocation() already fetches StartedRide — capture username here once
         String currentUsername = riderUtil.getCurrentUsername();
 
         updateLocation(startedRideId, latitude, longitude);
@@ -272,30 +279,63 @@ public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer star
         List<RiderLocation> locations =
                 locationRepo.findLatestLocationPerParticipantOptimized(startedRideId);
 
-        // Reuse the already-loaded ride via the first location's startedRide reference
-        // to avoid a second DB call for the generatedRidesId
         boolean currentUserFinished = locations.stream()
                 .findFirst()
                 .map(loc -> checkPointUtility.isRiderFinished(
-                        loc.getStartedRide().getRide().getGeneratedRidesId(), currentUsername))
+                        loc.getStartedRide().getRide().getGeneratedRidesId(),
+                        currentUsername))
                 .orElse(false);
 
-        return locations.stream().map(loc -> {
-            Point p = loc.getLocation();
-            String locUsername = loc.getUsername().getUsername();
-            return new LocationUpdateRequestDTO(
-                    startedRideId,
-                    locUsername,
-                    p.getY(),
-                    p.getX(),
-                    loc.getLocationName(),
-                    loc.getDistanceMeters(),
-                    loc.getTimestamp(),
-                    locUsername.equals(currentUsername) && currentUserFinished
-                            ? "RIDER_FINISHED"
-                            : null
-            );
-        }).collect(Collectors.toList());
+        List<LocationUpdateRequestDTO> result = locations.stream()
+                .map(loc -> {
+                    Point p = loc.getLocation();
+                    String locUsername = loc.getUsername().getUsername();
+
+                    return new LocationUpdateRequestDTO(
+                            startedRideId,
+                            locUsername,
+                            p.getY(),
+                            p.getX(),
+                            loc.getLocationName(),
+                            loc.getDistanceMeters(),
+                            loc.getTimestamp(),
+                            locUsername.equals(currentUsername) && currentUserFinished
+                                    ? "RIDER_FINISHED"
+                                    : null
+                    );
+                })
+                .collect(Collectors.toList());
+
+        rideLocationEmitterRegistry.broadcast(startedRideId, result);
+
+        return result;
+    }
+    @Transactional
+    public void clearRiderLocation(Integer startedRideId, String username) {
+        try {
+            StartedRide started = riderUtil.findStartedRideById(startedRideId);
+            Rider rider = riderUtil.findRiderByUsername(username);
+            locationRepo.deleteByStartedRideAndRider(started, rider);
+            // Also broadcast the updated list so SSE clients see the removal immediately
+            List<LocationUpdateRequestDTO> updated =
+                    getAllRiderLocations(startedRideId);
+            rideLocationEmitterRegistry.broadcast(startedRideId, updated);
+            AppLogger.info(this.getClass(), "Cleared rider location on leave/logout",
+                    "username", username, "startedRideId", startedRideId);
+        } catch (Exception e) {
+            // Non-fatal — log and continue, don't block the leave/logout flow
+            AppLogger.warn(this.getClass(), "Failed to clear rider location",
+                    "username", username, "error", e.getMessage());
+        }
+    }
+    private static double haversineMeters(double lat1, double lng1, double lat2, double lng2) {
+        final double R = 6_371_000;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        return 2 * R * Math.asin(Math.sqrt(a));
     }
 
 }

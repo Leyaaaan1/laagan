@@ -1,14 +1,18 @@
 package leyans.RidersHub.Controller;
 
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import leyans.RidersHub.DTO.Request.LocationDTO.LocationUpdateRequestDTO;
 import leyans.RidersHub.ExceptionHandler.UnauthorizedAccessException;
+import leyans.RidersHub.Service.RideLocationEmitterRegistry;
 import leyans.RidersHub.Service.RideLocationService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.HashMap;
 import java.util.List;
@@ -19,9 +23,12 @@ import java.util.Map;
 public class LocationUpdateController {
 
     final private RideLocationService rideLocationService;
+    private final RideLocationEmitterRegistry emitterRegistry;
 
-    public LocationUpdateController(RideLocationService rideLocationService) {
+
+    public LocationUpdateController(RideLocationService rideLocationService, RideLocationEmitterRegistry emitterRegistry) {
         this.rideLocationService = rideLocationService;
+        this.emitterRegistry = emitterRegistry;
     }
 
     @GetMapping("/{startedRideId}/all-riders")  // ← Update path variable name
@@ -38,6 +45,16 @@ public class LocationUpdateController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+    @GetMapping(value = "/{startedRideId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamLocations(
+            @PathVariable Integer startedRideId,
+            HttpServletResponse response) {
+        // Disable buffering so events flush immediately
+        response.setHeader("X-Accel-Buffering", "no");
+        response.setHeader("Cache-Control", "no-cache");
+        return emitterRegistry.subscribe(startedRideId);
+    }
+
 
     @GetMapping("/{startedRideId}/locations")  // ← Update path variable name
     public ResponseEntity<List<LocationUpdateRequestDTO>> getParticipantsLocations(
