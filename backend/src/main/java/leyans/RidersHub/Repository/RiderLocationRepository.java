@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +25,12 @@ public interface RiderLocationRepository extends JpaRepository<RiderLocation, In
     @Query(value = "SELECT ST_DistanceSphere(:pointA, :pointB)", nativeQuery = true)
     double getDistanceBetweenPoints(@Param("pointA") Point pointA,
                                     @Param("pointB") Point pointB);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM RiderLocation rl WHERE rl.startedRide = :startedRide AND rl.username = :rider")
+    void deleteByStartedRideAndRider(@Param("startedRide") StartedRide startedRide,
+                                     @Param("rider") Rider rider);
 
     // -------------------------------------------------------------------------
     // Used by updateLocation() for the UPSERT logic.

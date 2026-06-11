@@ -32,6 +32,8 @@ export const authService = {
   // ───────────────────────────────────────────────────────────────────────────
   login: async (email, password) => {
     try {
+      console.log('>>> API_BASE_URL:', API_BASE_URL);
+      console.log('>>> Full URL:', `${API_BASE_URL}/riders/login`);
       const response = await fetch(`${API_BASE_URL}/riders/login`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -97,13 +99,15 @@ export const authService = {
     }
   },
 
-
-  verifyEmail: async (token) => {
+  verifyEmail: async token => {
     try {
-      const response = await fetch(`${API_BASE_URL}/riders/verify-email?token=${token}`, {
-        method: 'GET',
-        headers: {'Content-Type': 'application/json'},
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/riders/verify-email?token=${token}`,
+        {
+          method: 'GET',
+          headers: {'Content-Type': 'application/json'},
+        },
+      );
       const data = await safeJson(response);
       if (!response.ok) {
         const message = data?.message || 'Email verification failed';
@@ -122,13 +126,16 @@ export const authService = {
   //
   // Resend verification email to user's email address
   // ───────────────────────────────────────────────────────────────────────────
-  resendVerificationEmail: async (email) => {
+  resendVerificationEmail: async email => {
     try {
-      const response = await fetch(`${API_BASE_URL}/riders/resend-verification`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({email}),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/riders/resend-verification`,
+        {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({email}),
+        },
+      );
       const data = await safeJson(response);
       if (!response.ok) {
         const message = data?.message || 'Failed to resend verification email';
@@ -142,19 +149,20 @@ export const authService = {
     }
   },
 
-
-
   // ───────────────────────────────────────────────────────────────────────────
   // checkEmailVerified
   //
   // Check if an email has been verified
   // ───────────────────────────────────────────────────────────────────────────
-  checkEmailVerified: async (email) => {
+  checkEmailVerified: async email => {
     try {
-      const response = await fetch(`${API_BASE_URL}/riders/check-email-verified?email=${email}`, {
-        method: 'GET',
-        headers: {'Content-Type': 'application/json'},
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/riders/check-email-verified?email=${email}`,
+        {
+          method: 'GET',
+          headers: {'Content-Type': 'application/json'},
+        },
+      );
       const data = await safeJson(response);
       if (!response.ok) {
         return {success: false, verified: false};
@@ -165,7 +173,6 @@ export const authService = {
       return {success: false, verified: false};
     }
   },
-
 
   deleteAccount: async token => {
     try {
@@ -188,7 +195,6 @@ export const authService = {
       return {success: false, error: err.message || 'Network error'};
     }
   },
-
 
   // ───────────────────────────────────────────────────────────────────────────
   // logout

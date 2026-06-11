@@ -1,12 +1,15 @@
+/* global EventSource */
 // frontend/React/hooks/useRideLocationPolling.js
 //
-// OPTIMIZATION: Dual-threshold polling strategy
+// OPTIMIZATION: Dual-threshold polling strategy + SSE receive
 //
-// The hook now tracks the device's last sent position and avoids the
-// expensive shareLocationAndFetchAll() call when the rider hasn't moved.
-// On a skip it falls back to a GET-only fetch so other riders' positions
-// still update.  A hard ceiling (MAX_SKIP_COUNT or MAX_SKIP_MS) forces a
-// full upload even when the rider is idle, preventing permanent stale data.
+// ARCHITECTURE:
+//   SEND side  — setInterval still runs; device uploads its own GPS position
+//                via shareLocationAndFetchAll() only when Haversine says it moved.
+//   RECEIVE side — SSE (EventSource) listens for server-pushed location-update
+//                events so other riders' markers refresh instantly without polling.
+//                fetchAllLocations() is kept as the degraded fallback when SSE
+//                is unavailable (e.g. no EventSource polyfill installed yet).
 
 import {useEffect, useRef, useState, useCallback} from 'react';
 import {AppState, Platform, PermissionsAndroid} from 'react-native';
@@ -15,7 +18,7 @@ import NetInfo from '@react-native-community/netinfo';
 import {
   getCurrentPosition,
   shareLocationAndFetchAll,
-  fetchAllLocations, // ← new: GET-only, see note below
+  fetchAllLocations,
   calculateBackoffDelay,
   shouldRetryError,
   isFatalError,
@@ -25,21 +28,20 @@ import {
   createPollLock,
 } from '../services/locationPollingService';
 import {useAuth} from '../context/AuthContext';
+import {API_BASE_URL} from '../services/Apiclient';
 
 // ─── tuneable constants ────────────────────────────────────────────────────
-const POLL_INTERVAL_MS = 8_000; // regular polling cadence
+const POLL_INTERVAL_MS = 8_000; // upload cadence (send side)
 const MOVEMENT_THRESHOLD_M = 15; // skip upload below this distance
 const MAX_SKIP_COUNT = 3; // force upload after N consecutive skips
 const MAX_SKIP_MS = 30_000; // …or after this many ms since last upload
-//                                          (whichever fires first)
 // ──────────────────────────────────────────────────────────────────────────
 
 /**
  * Haversine formula — returns distance in metres between two lat/lng pairs.
- * Cheap enough to run on every poll tick without impacting battery.
  */
 function haversineMeters(lat1, lng1, lat2, lng2) {
-  const R = 6_371_000; // Earth radius in metres
+  const R = 6_371_000;
   const toRad = deg => (deg * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
   const dLng = toRad(lng2 - lng1);
@@ -48,6 +50,43 @@ function haversineMeters(lat1, lng1, lat2, lng2) {
     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(a));
 }
+
+/**
+ * Opens an SSE stream for the given rideId.
+ * Token is passed in from the hook's tokenRef (via useAuth) — EventSource
+ * can't go through apiFetch because it's a persistent connection, not a
+ * one-shot fetch, so the token is threaded through explicitly here.
+ * Requires 'react-native-event-source' polyfill (npm i react-native-event-source).
+ *
+ * Returns the EventSource instance, or null if EventSource is unavailable.
+ */
+export const openLocationStream = (rideId, token, onLocations, onError) => {
+  if (typeof EventSource === 'undefined') {
+    console.warn('[SSE] EventSource not available — falling back to polling');
+    return null;
+  }
+
+  const url = `${API_BASE_URL}/location/${rideId}/stream`;
+  const es = new EventSource(url, {
+    headers: {Authorization: `Bearer ${token}`},
+  });
+
+  es.addEventListener('location-update', event => {
+    try {
+      const locations = JSON.parse(event.data);
+      onLocations(locations);
+    } catch (e) {
+      console.warn('[SSE] Failed to parse location-update event:', e);
+    }
+  });
+
+  es.onerror = err => {
+    console.warn('[SSE] Connection error:', err);
+    onError?.(err);
+  };
+
+  return es;
+};
 
 // ─── useLocationPermission ────────────────────────────────────────────────
 
@@ -105,12 +144,15 @@ export const useRideLocationPolling = ({
   const [nextRetryDelay, setNextRetryDelay] = useState(1000);
   const [isOffline, setIsOffline] = useState(false);
 
-  // ── infrastructure refs (stable across renders) ──────────────────────────
+  // ── infrastructure refs ───────────────────────────────────────────────────
   const intervalManager = useRef(createIntervalManager());
   const timeoutManager = useRef(createTimeoutManager());
   const pollLock = useRef(createPollLock());
 
-  // ── mutable state refs (readable inside async callbacks without stale closure) ─
+  // ── SSE ref — holds the active EventSource (or null when closed/unavailable)
+  const esRef = useRef(null);
+
+  // ── mutable state refs ───────────────────────────────────────────────────
   const retryCountRef = useRef(0);
   const appStateRef = useRef(AppState.currentState);
   const enabledRef = useRef(enabled);
@@ -120,33 +162,12 @@ export const useRideLocationPolling = ({
   const jitterTimeoutRef = useRef(null);
 
   // ── movement-tracking refs ───────────────────────────────────────────────
-  /**
-   * lastSentPosition: the coords of the most recent successful HTTP upload.
-   * Intentionally NOT reset on stopPolling so the distance check still works
-   * when polling resumes after backgrounding or network reconnect.
-   * Set to null only on hook unmount or when rideId changes.
-   */
-  const lastSentPositionRef = useRef(null); // {latitude, longitude}
-
-  /**
-   * consecutiveSkipCount: how many consecutive poll ticks were skipped because
-   * the rider hadn't moved enough.  Resets to 0 after every real HTTP upload.
-   */
+  const lastSentPositionRef = useRef(null);
   const consecutiveSkipCountRef = useRef(0);
-
-  /**
-   * lastUploadTimestampRef: Date.now() of the last successful upload.
-   * Used for the time-based forced-refresh ceiling (MAX_SKIP_MS).
-   */
   const lastUploadTimestampRef = useRef(null);
-
-  /**
-   * isFirstPollRef: guards the very first poll so it always does a full upload
-   * regardless of distance, then is set to false for the lifetime of the hook.
-   */
   const isFirstPollRef = useRef(true);
 
-  // ── sync mutable refs to latest prop/state values ────────────────────────
+  // ── sync mutable refs ─────────────────────────────────────────────────────
   useEffect(() => {
     enabledRef.current = enabled;
   }, [enabled]);
@@ -161,14 +182,59 @@ export const useRideLocationPolling = ({
     );
   }, [token]);
 
-  // ── reset position tracking when ride changes ────────────────────────────
+  // ── reset position tracking + close stale SSE when ride changes ──────────
   useEffect(() => {
     lastSentPositionRef.current = null;
     consecutiveSkipCountRef.current = 0;
     lastUploadTimestampRef.current = null;
     isFirstPollRef.current = true;
+
+    // Close any stream opened for the previous ride
+    if (esRef.current) {
+      esRef.current.close();
+      esRef.current = null;
+      console.log('[SSE] Closed stale stream on ride change');
+    }
+
     console.log('🗺️ Ride changed — position tracking reset');
   }, [rideId]);
+
+  // =========================================================================
+  // HELPERS
+  // =========================================================================
+
+  /**
+   * Open the SSE stream (receive side).
+   * Safe to call multiple times — skips if already open.
+   */
+  const openStream = useCallback(() => {
+    if (esRef.current) return; // already open
+    if (!tokenRef.current || !rideId) return;
+
+    console.log('[SSE] Opening location stream for ride', rideId);
+    esRef.current = openLocationStream(
+      rideId,
+      tokenRef.current, // ← from useAuth(), same source as the rest of the app
+      locations => {
+        _handleLocationsResponse(locations);
+      },
+      () => {
+        console.warn(
+          '[SSE] Stream error; receive falls back to fetchAllLocations',
+        );
+        esRef.current = null;
+      },
+    );
+  }, [rideId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Close the SSE stream (receive side). */
+  const closeStream = useCallback(() => {
+    if (esRef.current) {
+      esRef.current.close();
+      esRef.current = null;
+      console.log('[SSE] Stream closed');
+    }
+  }, []);
 
   // =========================================================================
   // ERROR HANDLER
@@ -217,7 +283,7 @@ export const useRideLocationPolling = ({
   );
 
   // =========================================================================
-  // CORE POLL FUNCTION
+  // CORE POLL FUNCTION  (send side — uploads OUR position)
   // =========================================================================
   const pollOnceRef = useRef(null);
 
@@ -244,7 +310,7 @@ export const useRideLocationPolling = ({
             latitude,
             longitude,
           )
-        : Infinity; // no previous position → treat as "moved"
+        : Infinity;
 
       const timeElapsedMs = lastUpload ? Date.now() - lastUpload : Infinity;
 
@@ -272,19 +338,24 @@ export const useRideLocationPolling = ({
           : 'skip',
       });
 
-      // ── branch: skip upload, fetch-only ────────────────────────────────
+      // ── branch: skip upload ─────────────────────────────────────────────
+      // SSE handles the receive side so we only need fetchAllLocations when
+      // the SSE stream is down (esRef.current === null).
       if (!mustUpload) {
         consecutiveSkipCountRef.current += 1;
         console.log(
-          `⏭️ Upload skipped (moved ${distanceMoved.toFixed(
-            1,
-          )}m) — fetching others only`,
+          `⏭️ Upload skipped (moved ${distanceMoved.toFixed(1)}m)`,
           `[skip ${consecutiveSkipCountRef.current}/${MAX_SKIP_COUNT}]`,
+          esRef.current
+            ? '— SSE covering receive'
+            : '— fetching others via GET',
         );
 
-        // Still refresh the map so other riders' positions update
-        const allLocations = await fetchAllLocations(rideId);
-        _handleLocationsResponse(allLocations);
+        // Only hit the GET endpoint if SSE is not open
+        if (!esRef.current) {
+          const allLocations = await fetchAllLocations(rideId);
+          _handleLocationsResponse(allLocations);
+        }
         return;
       }
 
@@ -298,11 +369,13 @@ export const useRideLocationPolling = ({
         longitude,
       );
 
-      // ✅ On success: update position tracking
       lastSentPositionRef.current = {latitude, longitude};
       consecutiveSkipCountRef.current = 0;
       lastUploadTimestampRef.current = Date.now();
 
+      // The server will also broadcast via SSE after this update,
+      // but we apply the response here immediately so our own marker
+      // updates without waiting for the event round-trip.
       _handleLocationsResponse(allLocations);
     } catch (err) {
       handlePollingError(err);
@@ -312,8 +385,7 @@ export const useRideLocationPolling = ({
   }, [rideId, handlePollingError, onLocationsUpdate]); // eslint-disable-line
 
   /**
-   * Shared response normalisation used by both the upload and skip paths.
-   * Extracted to avoid duplicating the null-guard and success-state resets.
+   * Shared response normalisation used by both the upload and SSE event paths.
    */
   function _handleLocationsResponse(allLocations) {
     if (!allLocations || !Array.isArray(allLocations)) {
@@ -354,10 +426,12 @@ export const useRideLocationPolling = ({
     timeoutManager.current.clear();
     setIsPolling(false);
     isPollingRef.current = false;
+
+    // Close SSE receive stream
+    closeStream();
+
     // NOTE: intentionally do NOT reset lastSentPositionRef here.
-    // When polling resumes (foreground / reconnect) we still want the
-    // distance comparison against the last known uploaded position.
-  }, []);
+  }, [closeStream]);
 
   const startPolling = useCallback(() => {
     if (intervalManager.current.isRunning()) return;
@@ -366,12 +440,12 @@ export const useRideLocationPolling = ({
     isPollingRef.current = true;
     setError(null);
 
-    // Force an immediate upload on resume so we don't wait up to 8s
-    // for the first tick.  Reset the skip counter so the forced-refresh
-    // ceiling is measured from this point, not from before backgrounding.
     consecutiveSkipCountRef.current = 0;
-    // Do NOT reset lastSentPositionRef — see note in stopPolling above.
 
+    // Open SSE stream for the receive side first
+    openStream();
+
+    // Kick off an immediate upload tick
     pollOnceRef.current();
 
     const jitter = Math.floor(Math.random() * 2000);
@@ -382,7 +456,7 @@ export const useRideLocationPolling = ({
         POLL_INTERVAL_MS,
       );
     }, jitter);
-  }, []);
+  }, [openStream]);
 
   // =========================================================================
   // NETWORK LISTENER
@@ -395,7 +469,7 @@ export const useRideLocationPolling = ({
       });
 
       if (!state.isConnected) {
-        stopPolling();
+        stopPolling(); // also closes SSE via closeStream()
         setIsOffline(true);
       } else if (state.isConnected && isOfflineRef.current) {
         retryCountRef.current = 0;
@@ -404,7 +478,7 @@ export const useRideLocationPolling = ({
         setIsOffline(false);
 
         if (enabledRef.current && rideId) {
-          startPolling();
+          startPolling(); // also reopens SSE via openStream()
         }
       }
     });
@@ -435,14 +509,12 @@ export const useRideLocationPolling = ({
       const isNowBackground = nextState.match(/inactive|background/);
 
       if (wasBackground && isNowActive) {
-        console.log('📲 App foregrounded — resuming polling');
+        console.log('📲 App foregrounded — resuming polling + SSE');
         if (enabledRef.current && !isPollingRef.current && tokenRef.current) {
-          // startPolling() already resets consecutiveSkipCount and does an
-          // immediate poll, so map data is never stale after foreground resume.
           startPolling();
         }
       } else if (isNowBackground) {
-        console.log('📲 App backgrounded — pausing polling');
+        console.log('📲 App backgrounded — pausing polling + closing SSE');
         stopPolling();
       }
 
@@ -462,6 +534,11 @@ export const useRideLocationPolling = ({
     return () => {
       interval.clear();
       timeout.clear();
+      // Close SSE stream on unmount
+      if (esRef.current) {
+        esRef.current.close();
+        esRef.current = null;
+      }
       console.log('🧹 Location polling cleanup completed');
     };
   }, []);

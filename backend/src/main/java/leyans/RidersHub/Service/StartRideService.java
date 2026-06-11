@@ -26,15 +26,17 @@ public class StartRideService {
 
     private final StartedUtil startedUtil;
     private final RidesUtil ridesUtil;
+    private final RideLocationService rideLocationService;
 
     private final RideStatusService rideStatusService;
 
     public StartRideService(StartedRideRepository startedRideRepository, RidesRepository ridesRepository,
-                            StartedUtil startedUtil, RidesUtil ridesUtil, RideStatusService rideStatusService) {
+                            StartedUtil startedUtil, RidesUtil ridesUtil, RideLocationService rideLocationService, RideStatusService rideStatusService) {
         this.startedRideRepository = startedRideRepository;
         this.ridesRepository = ridesRepository;
         this.startedUtil = startedUtil;
         this.ridesUtil = ridesUtil;
+        this.rideLocationService = rideLocationService;
         this.rideStatusService = rideStatusService;
     }
 
@@ -96,7 +98,10 @@ public class StartRideService {
         StartedRide startedRide = startedRideRepository
                 .findByRideGeneratedRidesId(generatedRidesId)
                 .orElseThrow(() -> new IllegalArgumentException("No active ride found: " + generatedRidesId));
-
+        rideLocationService.clearRiderLocation(
+                startedRide.getId(),
+                rider.getUsername()
+        );
         Rides ride = startedRide.getRide();
 
         // Check if caller is actually a participant
@@ -163,6 +168,8 @@ public class StartRideService {
                     AppLogger.warn(this.getClass(), "Ride not found for deactivation", "rideId", generatedRidesId);
                     return new IllegalArgumentException("Ride not found: " + generatedRidesId);
                 });
+
+
 
         boolean isCreator = ride.getUsername().getUsername().equals(initiator.getUsername());
         if (!isCreator) {
