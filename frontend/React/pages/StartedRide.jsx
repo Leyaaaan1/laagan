@@ -208,9 +208,9 @@ const StartedRide = ({route, navigation}) => {
   };
 
   const handleViewModal = () => {
+    if (!activeRide?.generatedRidesId) return; // ← ADD
     setCheckpointModalVisible(true);
   };
-
   const handleCloseModal = () => {
     setCheckpointModalVisible(false);
   };
@@ -291,7 +291,7 @@ const StartedRide = ({route, navigation}) => {
             left: 0,
             top: '50%',
             transform: [{translateY: -20}],
-            backgroundColor: 'rgba(30,64,175,0.9)',
+            backgroundColor: '#8c2323',
             paddingVertical: 12,
             paddingHorizontal: 8,
             borderTopRightRadius: 12,

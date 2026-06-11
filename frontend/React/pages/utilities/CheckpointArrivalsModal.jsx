@@ -138,36 +138,35 @@ const CheckpointArrivalsModal = ({
   );
   const fetchCheckpointArrivals =
     useCallback(async () => {
+      console.log('[Modal] generatedRidesId:', generatedRidesId);
+      if (!generatedRidesId || generatedRidesId === 'undefined') return; // ← ADD
       try {
         setLoading(true);
         setError(null);
 
-        const [data, statusData] =
-          await Promise.all([
-            getCheckpointArrivals(
-              generatedRidesId,
-            ),
-            getRideStatusDetailed(
-              generatedRidesId,
-            ),
-          ]);
+        const [arrivalsResult, statusResult] = await Promise.allSettled([
+          getCheckpointArrivals(generatedRidesId),
+          getRideStatusDetailed(generatedRidesId),
+        ]);
+
+        const data =
+          arrivalsResult.status === 'fulfilled' ? arrivalsResult.value : [];
+        const statusData =
+          statusResult.status === 'fulfilled' ? statusResult.value : null;
+
+        // Only throw (set error state) if arrivals themselves failed
+        if (arrivalsResult.status === 'rejected') {
+          throw arrivalsResult.reason;
+        }
 
         setArrivals(data);
         setRideStatus(statusData);
 
-        if (
-          statusData.currentStatus ===
-          'FINISHED'
-        ) {
-          onNavigateToSummary?.(
-            generatedRidesId,
-          );
+        if (statusData?.currentStatus === 'FINISHED') {
+          onNavigateToSummary?.(generatedRidesId);
           return;
         }
-        if (
-          statusData.currentStatus ===
-          'STOPPED'
-        ) {
+        if (statusData?.currentStatus === 'STOPPED') {
           onClose?.();
           Alert.alert(
             'Ride Stopped',
@@ -178,15 +177,9 @@ const CheckpointArrivalsModal = ({
       } catch (err) {
         setError(err.message);
         const isForbidden =
-          err.message
-            ?.toLowerCase()
-            .includes('auth_forbidden') ||
-          err.message
-            ?.toLowerCase()
-            .includes('forbidden') ||
-          err.message
-            ?.toLowerCase()
-            .includes('not a participant');
+          err.message?.toLowerCase().includes('auth_forbidden') ||
+          err.message?.toLowerCase().includes('forbidden') ||
+          err.message?.toLowerCase().includes('not a participant');
         if (!isForbidden) {
           Alert.alert('Error', err.message);
         }
@@ -200,7 +193,8 @@ const CheckpointArrivalsModal = ({
     ]); // ← explicit deps
 
   useEffect(() => {
-    if (!visible || !generatedRidesId) return;
+    if (!visible || !generatedRidesId || generatedRidesId === 'undefined')
+      return;
     if (activeRide?.active === false) {
       onNavigateToSummary?.(generatedRidesId);
       return;

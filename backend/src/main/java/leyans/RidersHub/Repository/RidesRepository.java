@@ -23,6 +23,14 @@ public interface RidesRepository extends JpaRepository<Rides, Integer> {
     @Query("SELECT r.routeCoordinates FROM Rides r WHERE r.generatedRidesId = :generatedRidesId")
     String findRouteCoordinatesByGeneratedRidesId(@Param("generatedRidesId") String generatedRidesId);
 
+    // RidesRepository.java
+    @EntityGraph(attributePaths = {
+            "username",
+            "participants"
+    })
+    @Query("SELECT r FROM Rides r WHERE r.generatedRidesId = :generatedRidesId")
+    Optional<Rides> findByGeneratedRidesIdWithParticipants(@Param("generatedRidesId") String generatedRidesId);
+
     Page<Rides> findAll(Pageable pageable);
 
     @Query("SELECT r FROM Rides r " +

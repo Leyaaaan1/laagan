@@ -131,7 +131,7 @@ export const apiFetch = async (
     if (response.status === 401) throw new Error('AUTH_EXPIRED');
     if (response.status === 403) throw new Error('AUTH_FORBIDDEN');
     if (response.status === 429) throw new Error('RATE_LIMITED');
-    if (response.status >= 500) throw new Error('SERVER_ERROR');
+
 
     return response;
   } catch (error) {
