@@ -12,6 +12,7 @@ import leyans.RidersHub.model.*;
 import leyans.RidersHub.model.participant.RideCheckpointArrival;
 import org.locationtech.jts.geom.Point;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -126,13 +127,14 @@ public class CheckPointUtility {
                 );
     }
 
+    @Transactional(readOnly = true)
     public List<CheckpointArrivalResponse> getCheckpointArrivalsByRide(String generatedRidesId) {
         AppLogger.info(this.getClass(), "getCheckpointArrivalsByRide called", "generatedRidesId", generatedRidesId);
 
-        Rides ride = ridesRepository.findByGeneratedRidesId(generatedRidesId)
-                .orElseThrow(() -> new EntityNotFoundException("Ride not found: " + generatedRidesId));
+        Rider currentUser = startedUtil.authenticateAndGetInitiator(); // ← auth first
 
-        Rider currentUser = startedUtil.authenticateAndGetInitiator();
+        Rides ride = ridesRepository.findByGeneratedRidesIdWithDetails(generatedRidesId)
+                .orElseThrow(() -> new EntityNotFoundException("Ride not found: " + generatedRidesId));
 
         boolean isRideOwner = ride.getUsername().getUsername().equals(currentUser.getUsername());
 
@@ -150,5 +152,4 @@ public class CheckPointUtility {
         return rideCheckpointArrivalRepository.findByRideGeneratedRidesId(generatedRidesId).stream()
                 .map(CheckpointArrivalResponse::new)
                 .toList();
-    }
-}
+    }}

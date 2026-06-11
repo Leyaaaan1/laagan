@@ -125,16 +125,12 @@ export const getCheckpointArrivals = async generatedRidesId => {
   const response = await api.get(
     `/ride/${generatedRidesId}/checkpoint-arrivals`,
   );
-  if (!response.ok) {
-    const messages = {
-      404: 'Ride not found.',
-      401: 'Unauthorized. Please log in again.',
-    };
-    throw new Error(
-      messages[response.status] ||
-      'Failed to fetch checkpoint arrivals. Please try again.',
-    );
-  }
+  // Backend returns 404 or 5xx when no arrivals exist yet — treat both as empty
+  if (response.status === 404 || response.status >= 500) return [];
+  if (response.status === 401)
+    throw new Error('Unauthorized. Please log in again.');
+  if (!response.ok)
+    throw new Error('Failed to fetch checkpoint arrivals. Please try again.');
   return response.json();
 };
 
