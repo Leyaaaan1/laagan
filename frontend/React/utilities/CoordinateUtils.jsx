@@ -1,6 +1,5 @@
 export const processRideCoordinates = rideData => {
   if (!rideData) {
-    console.warn('No ride data provided to processRideCoordinates');
     return {startingPoint: null, endingPoint: null, stopPoints: []};
   }
 
@@ -69,12 +68,10 @@ export const processRideCoordinates = rideData => {
         return {lat, lng, name};
       }
 
-      console.warn(`Stop point ${index + 1} missing coordinates:`, stop);
       return null;
     })
     .filter(Boolean); // Remove null values
 
-  // ✅ REMOVED: console.log('Processed coordinates:', ...) — was called on every render
 
   return {startingPoint, endingPoint, stopPoints};
 };

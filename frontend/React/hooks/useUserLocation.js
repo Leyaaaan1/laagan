@@ -56,7 +56,6 @@ export const useUserLocation = () => {
           );
         });
       } catch (err) {
-        console.warn('Fast location failed, trying accurate GPS:', err.message);
 
         // Try accurate GPS as fallback
         try {
@@ -77,10 +76,6 @@ export const useUserLocation = () => {
             );
           });
         } catch (err2) {
-          console.warn(
-            'Accurate GPS also failed, using default coordinates:',
-            err2.message,
-          );
           setError(err2.message);
           // Keep the default coordinates that were set in useState
         }

@@ -22,7 +22,6 @@ export const compassScript = () => `
         if (!map) return;
         const origin = window.userCurrentLocation || window.startingPoint;
         if (!origin || !targetPoint) {
-            console.warn('orientMapToPoint: missing origin or target');
             return;
         }
 
@@ -36,7 +35,6 @@ export const compassScript = () => `
         const needle = document.getElementById('compass-needle');
         if (needle) needle.style.transform = \`rotate(\${bearingDeg}deg)\`;
 
-        console.log('Map focused on point, bearing:', bearingDeg);
     }
 
     function resetMapOrientation() {
@@ -94,8 +92,7 @@ export const compassScript = () => `
         }
 
         compassTargets = points.filter(p => p.point && p.point.lat && p.point.lng);
-        console.log(\`🧭 Compass targets updated: \${compassTargets.length} points\`, 
-            compassTargets.map(t => t.label).join(' → '));
+
         
         return compassTargets;
     }
@@ -105,7 +102,6 @@ export const compassScript = () => `
         const targets = buildCompassTargets();
 
         if (targets.length === 0) {
-            console.warn('No compass targets available (routes or riders)');
             return;
         }
 
@@ -121,11 +117,9 @@ export const compassScript = () => `
         const targetData = targets[compassTargetIndex];
         const target = targetData.point;
         
-        console.log(\`🧭 Navigating to: \${targetData.label} (Type: \${targetData.type})\`);
         
         orientMapToPoint(target);
 
-        // ✅ UPDATED: Set label based on target type
         const label = document.getElementById('compass-label');
         if (label) {
             if (targetData.type === 'rider') {
@@ -136,10 +130,8 @@ export const compassScript = () => `
         }
     }
 
-    // ✅ NEW: Function to notify compass when rider markers change
     function updateCompassRiderMarkers(riderMarkers) {
         window.riderMarkersData = riderMarkers;
-        console.log('🧭 Compass rider markers updated');
         // Reset index so next compass press rebuilds the target list
         compassTargetIndex = -1;
     }

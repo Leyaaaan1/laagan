@@ -9,10 +9,6 @@ export const useOfflineRouteCache = (generatedRidesId, isOffline) => {
 
   const loadFromCache = useCallback(async () => {
     if (!isOffline || !generatedRidesId) {
-      console.log('⏭️ Not loading from cache:', {
-        isOffline,
-        hasId: !!generatedRidesId,
-      });
       return;
     }
 
@@ -20,18 +16,14 @@ export const useOfflineRouteCache = (generatedRidesId, isOffline) => {
     setCacheError(null);
 
     try {
-      console.log('📦 Loading route from cache:', generatedRidesId);
       const cached = await routeCache.get(generatedRidesId);
 
       if (cached) {
-        console.log('✅ Route loaded from cache:', cached);
         setCachedRouteData(cached);
       } else {
-        console.warn('❌ No cached route found for:', generatedRidesId);
         setCacheError('No cached route available');
       }
     } catch (err) {
-      console.error('❌ Cache load error:', err);
       setCacheError(err.message);
     } finally {
       setCacheLoading(false);

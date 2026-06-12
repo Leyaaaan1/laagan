@@ -44,7 +44,6 @@ export const drawRoadRoute = async ({
     );
 
     if (cached?.features?.length) {
-      console.log('[drawRoadRoute] cache hit — skipping GraphHopper call');
       webViewRef.current?.injectJavaScript(
         buildDrawRouteScript({
           routeGeoJSON: cached,
@@ -84,7 +83,6 @@ export const drawRoadRoute = async ({
       }),
     );
   } catch (e) {
-    console.error('Route draw error:', e);
   } finally {
     setRouteLoading(false);
   }
@@ -202,7 +200,6 @@ export const handleSelectLocationAndUpdateMap = async ({
       resolvedName = parentName;
     }
   } catch (e) {
-    console.warn('handleLocationSelect error:', e);
   }
 
   if (mapMode === 'starting') {
@@ -266,7 +263,6 @@ export const routeWebViewMessage = ({
         }
         break;
       case 'mapError':
-        console.error('Map error:', data.error);
         break;
       default:
         if (mapMode === 'stop' && isAddingStop) {
@@ -276,7 +272,6 @@ export const routeWebViewMessage = ({
         }
     }
   } catch (e) {
-    console.error(e);
   }
 };
 

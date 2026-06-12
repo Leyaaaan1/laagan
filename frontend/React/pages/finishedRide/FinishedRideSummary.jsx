@@ -45,7 +45,6 @@ const FinishedRideSummary = ({rideData}) => {
       unit: '',
     },
   ];
-console.log('ridedata',rideData);
   return (
     <View style={finishedRideStyles.heroCard}>
       {/* Top accent line */}

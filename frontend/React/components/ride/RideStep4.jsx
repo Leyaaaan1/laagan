@@ -211,7 +211,6 @@ const RideStep4 = props => {
         }));
       })
       .catch(err => {
-        console.warn('Ride details fetch error:', err.message);
         patchState({imageLoading: false});
       });
   }, [generatedRidesId]);

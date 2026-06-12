@@ -68,13 +68,11 @@ export const openLocationStream = (rideId, token, onLocations, onError) => {
       const locations = JSON.parse(event.data);
       onLocations(locations);
     } catch (e) {
-      console.warn('[SSE] Failed to parse location-update event:', e);
     }
   });
 
   // react-native-sse uses addEventListener('error') not es.onerror
   es.addEventListener('error', err => {
-    console.warn('[SSE] Connection error:', err);
     onError?.(err);
   });
 
@@ -107,7 +105,6 @@ export const useLocationPermission = () => {
           setGranted(true);
         }
       } catch (err) {
-        console.warn('Location permission error:', err);
         setGranted(false);
       } finally {
         setChecked(true);
@@ -165,7 +162,6 @@ export const useRideLocationPolling = ({
   useEffect(() => { isOfflineRef.current = isOffline; }, [isOffline]);
   useEffect(() => {
     tokenRef.current = token;
-    console.log('🔐 Auth token updated:', token ? '✅ Available' : '❌ Missing');
   }, [token]);
 
   // ── reset position tracking + close stale SSE when ride changes ──────────
@@ -179,10 +175,8 @@ export const useRideLocationPolling = ({
     if (esRef.current) {
       esRef.current.close();
       esRef.current = null;
-      console.log('[SSE] Closed stale stream on ride change');
     }
 
-    console.log('🗺️ Ride changed — position tracking reset');
   }, [rideId]);
 
   // =========================================================================
@@ -197,7 +191,6 @@ export const useRideLocationPolling = ({
     if (esRef.current) return; // already open
     if (!tokenRef.current || !rideId) return;
 
-    console.log('[SSE] Opening location stream for ride', rideId);
     esRef.current = openLocationStream(
       rideId,
       tokenRef.current,  // ← from useAuth(), same source as the rest of the app
@@ -205,7 +198,6 @@ export const useRideLocationPolling = ({
         _handleLocationsResponse(locations);
       },
       () => {
-        console.warn('[SSE] Stream error; receive falls back to fetchAllLocations');
         esRef.current = null;
       },
     );
@@ -216,7 +208,6 @@ export const useRideLocationPolling = ({
     if (esRef.current) {
       esRef.current.close();
       esRef.current = null;
-      console.log('[SSE] Stream closed');
     }
   }, []);
 
@@ -226,7 +217,6 @@ export const useRideLocationPolling = ({
   const handlePollingError = useCallback(
     err => {
       if (err.message === 'APP_BACKGROUNDED') {
-        console.log('📵 Poll skipped — app is backgrounded');
         return;
       }
 
@@ -234,7 +224,6 @@ export const useRideLocationPolling = ({
       const count = retryCountRef.current;
 
       if (isFatalError(err)) {
-        console.error('⛔ Fatal error (no retry):', err.message);
         setError(`Fatal: ${err.message}`);
         setIsPolling(false);
         isPollingRef.current = false;
@@ -298,32 +287,12 @@ export const useRideLocationPolling = ({
       const timeLimitHit = timeElapsedMs >= MAX_SKIP_MS;
       const mustUpload = isFirst || hasMovedEnough || skipLimitHit || timeLimitHit;
 
-      console.log('📍 Poll tick', {
-        distanceMoved: distanceMoved === Infinity ? 'n/a' : `${distanceMoved.toFixed(1)}m`,
-        timeElapsedMs: timeElapsedMs === Infinity ? 'n/a' : `${timeElapsedMs}ms`,
-        consecutiveSkipCount: skipCount,
-        mustUpload,
-        reason: isFirst
-          ? 'first_poll'
-          : hasMovedEnough
-            ? 'movement'
-            : skipLimitHit
-              ? 'skip_count_ceiling'
-              : timeLimitHit
-                ? 'time_ceiling'
-                : 'skip',
-      });
 
       // ── branch: skip upload ─────────────────────────────────────────────
       // SSE handles the receive side so we only need fetchAllLocations when
       // the SSE stream is down (esRef.current === null).
       if (!mustUpload) {
         consecutiveSkipCountRef.current += 1;
-        console.log(
-          `⏭️ Upload skipped (moved ${distanceMoved.toFixed(1)}m)`,
-          `[skip ${consecutiveSkipCountRef.current}/${MAX_SKIP_COUNT}]`,
-          esRef.current ? '— SSE covering receive' : '— fetching others via GET',
-        );
 
         // Only hit the GET endpoint if SSE is not open
         if (!esRef.current) {
@@ -336,7 +305,6 @@ export const useRideLocationPolling = ({
       // ── branch: full upload + fetch ─────────────────────────────────────
       isFirstPollRef.current = false;
 
-      console.log('📤 Uploading location + fetching all riders');
       const allLocations = await shareLocationAndFetchAll(rideId, latitude, longitude);
 
       lastSentPositionRef.current = {latitude, longitude};
@@ -359,7 +327,6 @@ export const useRideLocationPolling = ({
    */
   function _handleLocationsResponse(allLocations) {
     if (!allLocations || !Array.isArray(allLocations)) {
-      console.warn('⚠️ Invalid locations response:', allLocations, '— using empty array');
       retryCountRef.current = 0;
       setRetryCount(0);
       setNextRetryDelay(1000);
@@ -368,7 +335,6 @@ export const useRideLocationPolling = ({
       return;
     }
 
-    console.log('✅ Locations received:', allLocations.length, 'participants');
     retryCountRef.current = 0;
     setRetryCount(0);
     setNextRetryDelay(1000);
@@ -429,10 +395,6 @@ export const useRideLocationPolling = ({
   // =========================================================================
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
-      console.log('📡 Network state changed:', {
-        isConnected: state.isConnected,
-        isInternetReachable: state.isInternetReachable,
-      });
 
       if (!state.isConnected) {
         stopPolling(); // also closes SSE via closeStream()
@@ -475,12 +437,10 @@ export const useRideLocationPolling = ({
       const isNowBackground = nextState.match(/inactive|background/);
 
       if (wasBackground && isNowActive) {
-        console.log('📲 App foregrounded — resuming polling + SSE');
         if (enabledRef.current && !isPollingRef.current && tokenRef.current) {
           startPolling();
         }
       } else if (isNowBackground) {
-        console.log('📲 App backgrounded — pausing polling + closing SSE');
         stopPolling();
       }
 
@@ -505,7 +465,6 @@ export const useRideLocationPolling = ({
         esRef.current.close();
         esRef.current = null;
       }
-      console.log('🧹 Location polling cleanup completed');
     };
   }, []);
 

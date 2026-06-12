@@ -79,7 +79,6 @@ const useRideStatus = ({
           effectiveStatus === RIDE_STATUS.PERSONAL_FINISHED,
       });
     } catch (_err) {
-      console.warn('[useRideStatus] fetch error:', _err?.message);
       const {isOwner, hasJoined} = deriveLocalFlags();
       setActionStatus({
         isOwner,

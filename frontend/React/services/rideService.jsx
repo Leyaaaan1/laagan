@@ -30,7 +30,6 @@ export const reverseGeocode = async (lat, lon = null) => {
       throw new Error(`Failed to reverse geocode: ${response.status}`);
     return response.text();
   } catch (err) {
-    console.error('Reverse geocode fetch failed:', err);
     return null;
   }
 };
@@ -42,7 +41,6 @@ export const reverseGeocodeLandmark = async (lat, lon = null) => {
       throw new Error(`Failed to reverse geocode landmark: ${response.status}`);
     return response.text();
   } catch (err) {
-    console.error('Reverse geocode landmark failed:', err);
     return null;
   }
 };
@@ -99,7 +97,6 @@ export const fetchRides = async (page = 0, size = 10) => {
     throw new Error(`Failed to fetch rides: ${response.status}`);
 
   const data = await response.json();
-  console.log('[fetchRides] data:', JSON.stringify(data, null, 2));
 
   return data;
 };
@@ -108,7 +105,6 @@ export const fetchMyRides = async (page = 0, size = 10) => {
   // My-rides are user-specific so cached separately under mode 'my'
   const cached = await ridesListCache.get(page, size, 'my');
   if (cached) {
-    console.log(`[fetchMyRides] Cache hit — page ${page}`);
     return cached;
   }
 
@@ -131,7 +127,6 @@ export const getAllRiderTypes = async () => {
     }
     return response.json();
   } catch (err) {
-    console.error('Error fetching rider types:', err);
     throw err;
   }
 };

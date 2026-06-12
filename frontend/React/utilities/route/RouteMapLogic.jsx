@@ -38,14 +38,8 @@ export const useRouteMapLogic = generatedRidesId => {
           position => {
             const {latitude, longitude} = position.coords;
             setUserLocation({lat: latitude, lng: longitude});
-            console.log(
-              'High accuracy location acquired:',
-              latitude,
-              longitude,
-            );
           },
           err =>
-            console.warn('High accuracy location also failed:', err.message),
           accurateOptions,
         );
       },
@@ -71,14 +65,12 @@ export const useRouteMapLogic = generatedRidesId => {
         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
           getUserLocationOnce();
         } else {
-          console.log('Location permission denied');
         }
       } else {
         // iOS — permissions handled via Info.plist
         getUserLocationOnce();
       }
     } catch (err) {
-      console.warn('Error requesting location permission:', err);
     }
   }, [getUserLocationOnce]);
 
@@ -94,9 +86,6 @@ export const useRouteMapLogic = generatedRidesId => {
       setIsOfflineMode(!networkStatus.isConnected);
 
       if (!networkStatus.isConnected) {
-        console.log(
-          '📵 Offline mode detected — fetching route from cache only',
-        );
       }
 
       const data = await getRouteCoordinates(generatedRidesId);
@@ -128,7 +117,6 @@ export const useRouteMapLogic = generatedRidesId => {
         (message.includes('Network request failed') ||
           message.includes('NETWORK_ERROR'))
       ) {
-        console.warn('📵 Offline: using cached route if available');
         setRouteError('Offline — showing cached route');
         setError(null);
         setIsLoading(false);
@@ -141,7 +129,6 @@ export const useRouteMapLogic = generatedRidesId => {
         message.includes('API error') ||
         message.includes('Network request failed')
       ) {
-        console.warn('⚠️ Route unavailable (non-fatal):', message);
         setRouteError(message);
         setRouteData(null);
         setError(null);
@@ -177,7 +164,6 @@ export const useRouteMapLogic = generatedRidesId => {
     if (generatedRidesId) {
       fetchRouteData();
     } else {
-      console.warn('No generatedRidesId provided');
       setIsLoading(false);
       setError('No route ID provided');
     }
@@ -212,18 +198,16 @@ export const useRouteMapLogic = generatedRidesId => {
     ) => {
       if (!webViewRef.current) return;
 
-      const script = `      if (typeof window.loadRouteData === 'function') {
+      const script = `
+      if (typeof window.loadRouteData === 'function') {
         window.loadRouteData(
           ${JSON.stringify(routeData)},
           ${JSON.stringify(startingPoint)},
           ${JSON.stringify(endingPoint)},
           ${JSON.stringify(stopPoints)},
-          ${JSON.stringify(userLocation)}        );
-        console.log('loadRouteData called with routeData: ' + (${JSON.stringify(
-          routeData,
-        )} ? 'present' : 'null'));
+          ${JSON.stringify(userLocation)}
+        );
       } else {
-        console.error('loadRouteData function not available');
       }
       true;
     `;
@@ -231,7 +215,6 @@ export const useRouteMapLogic = generatedRidesId => {
     },
     [],
   );
-
   // ── handleWebViewMessage ──────────────────────────────────────────────────
   const routeDataRef = useRef(routeData);
   useEffect(() => {
@@ -248,7 +231,6 @@ export const useRouteMapLogic = generatedRidesId => {
           }
         }
       } catch (err) {
-        console.warn('WebView message parse error:', err);
       }
     },
     [],

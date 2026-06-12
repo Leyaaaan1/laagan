@@ -158,7 +158,6 @@ const useCreateRide = ({}) => {
           setRiderType(types[0].riderType);
         }
       } catch (error) {
-        console.error('Failed to load rider types:', error);
         setRiderType('ADV 160');
       } finally {
         setRiderTypeLoading(false);
@@ -262,11 +261,6 @@ const useCreateRide = ({}) => {
     // STEP 1: INPUT VALIDATION
     // ────────────────────────────────────────────────────────────────────────────
 
-    console.log('FLAGS:', {
-      isStartingPointFromSearch: isStartingPointFromSearchRef.current,
-      isEndingPointFromSearch: isEndingPointFromSearchRef.current,
-      stopPointsFromSearch: stopPoints.map(s => s.isFromSearch),
-    });
 
     const nameError = validateRideName(rideName);
     if (nameError) {
@@ -363,17 +357,6 @@ const useCreateRide = ({}) => {
     // ────────────────────────────────────────────────────────────────────────────
 
     try {
-      console.log('🚀 Creating ride with data:', {
-        name: rideData.ridesName,
-        route: `${rideData.startingPoint} → ${rideData.endingPoint}`,
-        coords: `[${rideData.startLat}, ${rideData.startLng}] → [${rideData.endLat}, ${rideData.endLng}]`,
-        date: rideData.date,
-        // verify these are true when a location was selected from search:
-        isLocationFromSearch: rideData.isLocationFromSearch,
-        isStartingPointFromSearch: rideData.isStartingPointFromSearch,
-        isEndingPointFromSearch: rideData.isEndingPointFromSearch,
-        stopPointsFromSearch: rideData.stopPointsFromSearch,
-      });
 
       const result = await createRide(rideData);
 
@@ -391,7 +374,6 @@ const useCreateRide = ({}) => {
 
       if (!generatedId) {
         const msg = ERROR_MESSAGES.RIDE_CREATION.RIDE_CREATION_NO_ID;
-        console.error('⚠️ Ride created but no ID returned:', result);
         setError(msg);
         Alert.alert('Warning', msg, [
           {
@@ -419,7 +401,6 @@ const useCreateRide = ({}) => {
       };
 
       await routeCache.save(generatedId, routeCoordinates).catch(e => {
-        console.warn('[handleCreateRide] Route cache save (non-fatal):', e);
       });
 
       setGeneratedRidesId(generatedId);
@@ -431,7 +412,6 @@ const useCreateRide = ({}) => {
       // STEP 7: ERROR HANDLING
       // ────────────────────────────────────────────────────────────────────────
 
-      console.error('❌ Ride creation failed:', err);
 
       const errorMsg = resolveErrorMessage(
         err,

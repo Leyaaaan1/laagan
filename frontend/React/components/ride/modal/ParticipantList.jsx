@@ -63,7 +63,6 @@ const ParticipantList = ({
         });
       }
     } catch (err) {
-      console.error('Error sharing:', err);
     }
   };
 
@@ -78,7 +77,6 @@ const ParticipantList = ({
       // ✅ Also update context
       updateRideParticipants(freshParticipants);
     } catch (err) {
-      console.error('Error fetching fresh participants:', err);
     }
   }, [generatedRidesId, updateRideParticipants]);
 
@@ -93,7 +91,6 @@ const ParticipantList = ({
         inviteLink: inviteData.inviteLink || '',
       }));
     } catch (err) {
-      console.error('Error loading QR code:', err);
     } finally {
       setState(prev => ({...prev, loadingQr: false}));
     }

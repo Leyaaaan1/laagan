@@ -67,11 +67,6 @@ export const useOfflineUserLocation = (enabled = true) => {
           lng: position.coords.longitude,
         });
         setLocationError(null);
-        console.log(
-          '📍 [Offline] User location (fast):',
-          position.coords.latitude,
-          position.coords.longitude,
-        );
       },
       () => {
         // Fast fix failed — fall back to GPS
@@ -83,15 +78,9 @@ export const useOfflineUserLocation = (enabled = true) => {
               lng: position.coords.longitude,
             });
             setLocationError(null);
-            console.log(
-              '📍 [Offline] User location (GPS):',
-              position.coords.latitude,
-              position.coords.longitude,
-            );
           },
           err => {
             if (!mountedRef.current) return;
-            console.warn('⚠️ [Offline] GPS fallback failed:', err.message);
             setLocationError(err.message);
           },
           GPS_OPTIONS_ACCURATE,
@@ -106,14 +95,12 @@ export const useOfflineUserLocation = (enabled = true) => {
     if (intervalRef.current) return; // already running
     fetchLocation();
     intervalRef.current = setInterval(fetchLocation, REFRESH_INTERVAL_MS);
-    console.log('▶️ [Offline] GPS polling started');
   }, [fetchLocation]);
 
   const stopInterval = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
-      console.log('⏹️ [Offline] GPS polling stopped');
     }
   }, []);
 
@@ -127,12 +114,10 @@ export const useOfflineUserLocation = (enabled = true) => {
       if (wasBackground && isNowActive) {
         // App came back to foreground — resume only if still enabled
         if (enabledRef.current && mountedRef.current) {
-          console.log('📲 [Offline] App foregrounded — resuming GPS polling');
           startInterval();
         }
       } else if (isNowBackground) {
         // App went to background — stop GPS immediately
-        console.log('📲 [Offline] App backgrounded — pausing GPS polling');
         stopInterval();
       }
 

@@ -239,7 +239,6 @@ const RideRoutesPage = ({route}) => {
     token: paramToken,
   } = route.params;
 
-  console.log('params', route);
 
   const token = paramToken || authToken;
   const [stopPoints, setStopPoints] = useState([]);
@@ -281,7 +280,6 @@ const RideRoutesPage = ({route}) => {
           [stopName]: Array.isArray(imgs) ? imgs : [],
         }));
       } catch (error) {
-        console.error(`Error fetching images for ${stopName}:`, error);
         setStopPointImages(prev => ({
           ...prev,
           [stopName]: [],

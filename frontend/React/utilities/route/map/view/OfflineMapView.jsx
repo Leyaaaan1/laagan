@@ -51,9 +51,7 @@ const OfflineMapView = forwardRef(
       inject(`
     if (typeof window.displayOfflineRoute === 'function') {
       window.displayOfflineRoute(${JSON.stringify(currentRouteData)});
-      console.log('✅ Offline route polygon injected');
     } else {
-      console.warn('displayOfflineRoute not available yet');
     }
   `);
     }, [inject]);
@@ -139,7 +137,6 @@ const OfflineMapView = forwardRef(
                     ${JSON.stringify(currentUsername)}
                 );
             } else {
-                console.warn('updateRiderMarkers not ready yet');
             }
         `);
     }, [riderMarkers, currentUsername, inject]);
@@ -196,25 +193,17 @@ const OfflineMapView = forwardRef(
                 attempts++;
                 setTimeout(tryInjectRoute, 600);
               } else {
-                console.warn(
-                  '⚠️ OfflineMapView: routeData never arrived after 5 attempts',
-                );
               }
             };
             setTimeout(tryInjectRoute, 300);
           }
         } catch (err) {
-          console.warn('OfflineMapView message parse error:', err);
         }
       },
       [injectOfflineData, injectRiderMarkers, injectRouteData],
     );
 
     const onWebViewError = useCallback(syntheticEvent => {
-      console.error(
-        'OfflineMapView WebView error:',
-        syntheticEvent.nativeEvent,
-      );
     }, []);
 
     // ─── Reactive effects ────────────────────────────────────────────────────

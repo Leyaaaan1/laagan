@@ -16,7 +16,6 @@ export const routeCache = {
         JSON.stringify(entry),
       );
     } catch (e) {
-      console.warn('[routeCache] save failed:', e);
     }
   },
 
@@ -34,10 +33,6 @@ export const routeCache = {
         parsed = JSON.parse(raw);
       } catch {
         // Corrupted — discard silently
-        console.warn(
-          '[routeCache] corrupted entry cleared for',
-          generatedRidesId,
-        );
         await routeCache.clear(generatedRidesId);
         return null;
       }
@@ -46,7 +41,6 @@ export const routeCache = {
       if (parsed && typeof parsed === 'object' && 'savedAt' in parsed) {
         const age = Date.now() - parsed.savedAt;
         if (age > CACHE_TTL_MS) {
-          console.log('[routeCache] stale entry cleared for', generatedRidesId);
           await routeCache.clear(generatedRidesId);
           return null;
         }
@@ -58,7 +52,6 @@ export const routeCache = {
       // successful getRideDetails() call.
       return parsed;
     } catch (e) {
-      console.warn('[routeCache] get failed:', e);
       return null;
     }
   },
@@ -68,7 +61,6 @@ export const routeCache = {
     try {
       await AsyncStorage.removeItem(`${PREFIX}${generatedRidesId}`);
     } catch (e) {
-      console.warn('[routeCache] clear failed:', e);
     }
   },
 };

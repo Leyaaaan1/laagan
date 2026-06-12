@@ -115,14 +115,10 @@ const RiderPage = ({navigation}) => {
 
       if (msg === 'SERVER_ERROR' || msg.startsWith('5')) {
         // Server blip — keep whatever is cached, log quietly
-        console.log(
-          '[RiderPage] Server error fetching active ride; using cache',
-        );
         return;
       }
 
       // Any other error (network timeout, etc.) — same: keep cache
-      console.log('[RiderPage] fetchActiveRide error:', msg);
     } finally {
       setActiveRideLoading(false);
     }
@@ -135,7 +131,6 @@ const RiderPage = ({navigation}) => {
         setProfile(result.data);
       }
     } catch (err) {
-      console.warn('Failed to fetch profile:', err);
     } finally {
       setLoading(false);
       setProfileRefreshing(false);

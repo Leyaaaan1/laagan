@@ -3,11 +3,8 @@ export const riderMarkersScript = () => `
 
     function updateRiderMarkers(riderMarkers, currentUsername) {
         try {
-            console.log('=== UPDATING RIDER MARKERS ===');
-            console.log('Riders to display:', Object.keys(riderMarkers));
             
             if (!riderMarkers || Object.keys(riderMarkers).length === 0) {
-                console.log('No rider markers to display');
                 return;
             }
 
@@ -16,7 +13,6 @@ export const riderMarkersScript = () => `
                     const { latitude, longitude, locationName, distanceMeters } = location;
                     
                     if (!latitude || !longitude) {
-                        console.warn(\`Skipping rider \${riderId}: missing coordinates\`);
                         return;
                     }
 
@@ -45,7 +41,6 @@ export const riderMarkersScript = () => `
                         \`;
                         existingMarker.setPopupContent(popupText);
                         
-                        console.log(\`✓ Rider marker moved: \${riderId} to [\${latitude}, \${longitude}]\`);
                     } else {
                         // Create new marker
                         const riderIcon = L.divIcon({
@@ -107,10 +102,8 @@ export const riderMarkersScript = () => `
                         // Store the marker instance
                         riderMarkerInstances[riderId] = marker;
                         
-                        console.log(\`✓ Rider marker created: \${riderId} at [\${latitude}, \${longitude}]\`);
                     }
                 } catch (err) {
-                    console.error(\`Error updating rider marker for \${riderId}:\`, err);
                 }
             });
 
@@ -120,13 +113,10 @@ export const riderMarkersScript = () => `
                     const marker = riderMarkerInstances[riderId];
                     riderMarkersGroup.removeLayer(marker);
                     delete riderMarkerInstances[riderId];
-                    console.log(\`✓ Rider marker removed: \${riderId}\`);
                 }
             });
 
-            console.log(\`=== RIDER MARKERS UPDATE COMPLETE ===\`);
         } catch (error) {
-            console.error('Error updating rider markers:', error);
         }
     }
 

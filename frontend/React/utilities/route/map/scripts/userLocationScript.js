@@ -3,7 +3,6 @@ export const userLocationScript = () => `
     function updateUserLocation(location) {
         try {
             if (!location || !location.lat || !location.lng) {
-                console.log('Invalid user location data');
                 return;
             }
 
@@ -42,9 +41,7 @@ export const userLocationScript = () => `
                     </div>
                 \`);
 
-            console.log('User location updated on map:', location);
         } catch (error) {
-            console.error('Error updating user location:', error);
         }
     }
 

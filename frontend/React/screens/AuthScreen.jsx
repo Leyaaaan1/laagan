@@ -365,7 +365,6 @@ const AuthScreen = ({navigation}) => {
         Alert.alert('Error', errorMessage);
       }
     } catch (error) {
-      console.error('Auth error:', error);
       Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);

@@ -19,14 +19,11 @@ export const saveActiveRide = async ride => {
   try {
     if (ride) {
       await AsyncStorage.setItem(ACTIVE_RIDE_KEY, JSON.stringify(ride));
-      console.log('💾 [Storage] Active ride saved:', ride.generatedRidesId);
     } else {
       await AsyncStorage.removeItem(ACTIVE_RIDE_KEY);
-      console.log('🗑️ [Storage] Active ride cleared');
     }
   } catch (err) {
     // Storage failures are non-fatal — log and continue
-    console.warn('⚠️ [Storage] Failed to save active ride:', err.message);
   }
 };
 
@@ -39,16 +36,8 @@ export const loadCachedActiveRide = async () => {
     const raw = await AsyncStorage.getItem(ACTIVE_RIDE_KEY);
     if (!raw) return null;
     const ride = JSON.parse(raw);
-    console.log(
-      '📂 [Storage] Cached active ride loaded:',
-      ride?.generatedRidesId,
-    );
     return ride;
   } catch (err) {
-    console.warn(
-      '⚠️ [Storage] Failed to load cached active ride:',
-      err.message,
-    );
     return null;
   }
 };
@@ -59,11 +48,6 @@ export const loadCachedActiveRide = async () => {
 export const clearCachedActiveRide = async () => {
   try {
     await AsyncStorage.removeItem(ACTIVE_RIDE_KEY);
-    console.log('🗑️ [Storage] Active ride cache cleared');
   } catch (err) {
-    console.warn(
-      '⚠️ [Storage] Failed to clear active ride cache:',
-      err.message,
-    );
   }
 };

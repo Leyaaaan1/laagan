@@ -2,8 +2,6 @@
 export const routeDisplayScript = () => `
     function displayRoute(routeData) {
         try {
-            console.log('=== DISPLAYING ROUTE ===');
-            console.log('Route data type:', typeof routeData);
 
             const map = window.getMap();
 
@@ -28,14 +26,11 @@ export const routeDisplayScript = () => `
             }
 
             if (routeData.features && Array.isArray(routeData.features) && routeData.features.length > 0) {
-                console.log('Processing as GeoJSON route data');
                 return displayGeoJsonRoute(routeData);
             } else {
-                console.log('Processing as coordinate array route data');
                 return displayCoordinateRoute(routeData);
             }
         } catch (error) {
-            console.error('Error in displayRoute:', error);
             window.showError('Failed to display route: ' + error.message);
             return false;
         }
@@ -43,8 +38,6 @@ export const routeDisplayScript = () => `
 
     function displayGeoJsonRoute(geoJsonData) {
         try {
-            console.log('=== DISPLAYING GEOJSON ROUTE ===');
-            console.log('GeoJSON features:', geoJsonData.features.length);
 
             const map = window.getMap();
 
@@ -114,7 +107,6 @@ export const routeDisplayScript = () => `
                 }
             });
 
-            console.log('GeoJSON route displayed successfully');
 
             window.ReactNativeWebView?.postMessage(JSON.stringify({
                 type: 'routeLoaded',
@@ -126,7 +118,6 @@ export const routeDisplayScript = () => `
 
             return true;
         } catch (error) {
-            console.error('Error displaying GeoJSON route:', error);
             window.showError('Failed to display GeoJSON route: ' + error.message);
             return false;
         }
@@ -134,7 +125,6 @@ export const routeDisplayScript = () => `
 
     function displayCoordinateRoute(routeData) {
         try {
-            console.log('=== DISPLAYING COORDINATE ROUTE ===');
 
             const map = window.getMap();
             let routeCoordinates = [];
@@ -174,7 +164,6 @@ export const routeDisplayScript = () => `
                 map.fitBounds(group.getBounds().pad(0.1));
             }
 
-            console.log('Coordinate route displayed successfully');
 
             window.ReactNativeWebView?.postMessage(JSON.stringify({
                 type: 'routeLoaded',
@@ -184,7 +173,6 @@ export const routeDisplayScript = () => `
 
             return true;
         } catch (error) {
-            console.error('Error displaying coordinate route:', error);
             window.showError('Failed to display coordinate route: ' + error.message);
             return false;
         }
