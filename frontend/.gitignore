@@ -16,6 +16,10 @@ build/
 *.keystore
 
 
+frontend/android/.gradle/
+frontend/android/build/
+frontend/android/app/build/
+
 # build output
 dist/
 
