@@ -32,13 +32,16 @@ export const RideProvider = ({children}) => {
     const initFromCache = async () => {
       const cached = await loadCachedActiveRide();
       if (cached) {
-
-        setActiveRideState(cached);
+        setActiveRideState(cached); // show instantly while server confirms
+      }
+      try {
+        await fetchActiveRide(); // always validate against server
+      } catch {
+        // fetchActiveRide handles its own errors
       }
     };
     initFromCache();
-  }, []); // runs once on mount
-
+  }, []);
   // ─────────────────────────────────────────────────────────────────────────
   // NEW: Wrap the state setter so every change is automatically persisted.
   //      Components that call setActiveRide(ride) or setActiveRide(null)
@@ -56,44 +59,47 @@ export const RideProvider = ({children}) => {
     });
   }, []);
 
-  const fetchActiveRide = useCallback(async (generatedRidesId) => {
-    if (isRefreshing) return;
-    try {
-      setIsRefreshing(true);
-      // Pass id through to getActiveRide so it can hit the participant endpoint
-      const ride = await Promise.race([
-        getActiveRide(generatedRidesId),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Fetch timeout after 8s')), 8000),
-        ),
-      ]);
-      setActiveRide(ride);
-    } catch (err) {
-      const errorMsg = err?.message || String(err);
-      if (errorMsg === 'NOT_FOUND' || errorMsg.includes('404')) {
-        // No active ride on the server — clear storage too
-        setActiveRide(null); // clears cache via the wrapper
-        return;
-      }
+  const fetchActiveRide = useCallback(
+    async generatedRidesId => {
+      if (isRefreshing) return;
+      try {
+        setIsRefreshing(true);
+        // Pass id through to getActiveRide so it can hit the participant endpoint
+        const ride = await Promise.race([
+          getActiveRide(generatedRidesId),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Fetch timeout after 8s')), 8000),
+          ),
+        ]);
+        setActiveRide(ride);
+      } catch (err) {
+        const errorMsg = err?.message || String(err);
+        if (errorMsg === 'NOT_FOUND' || errorMsg.includes('404')) {
+          // No active ride on the server — clear storage too
+          setActiveRide(null); // clears cache via the wrapper
+          return;
+        }
 
-      const networkStatus = await checkNetworkStatus();
+        const networkStatus = await checkNetworkStatus();
 
-      if (!networkStatus.isConnected) {
-        return;
+        if (!networkStatus.isConnected) {
+          return;
+        }
+        if (
+          !errorMsg.includes('timeout') &&
+          !errorMsg.includes('10000ms') &&
+          errorMsg !== 'SERVER_ERROR' &&
+          !errorMsg.includes('500') &&
+          !errorMsg.includes('network')
+        ) {
+          setActiveRide(null);
+        }
+      } finally {
+        setIsRefreshing(false);
       }
-      if (
-        !errorMsg.includes('timeout') &&
-        !errorMsg.includes('10000ms') &&
-        errorMsg !== 'SERVER_ERROR' &&
-        !errorMsg.includes('500') &&
-        !errorMsg.includes('network')
-      ) {
-        setActiveRide(null);
-      }
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [activeRide, isRefreshing, setActiveRide]);
+    },
+    [activeRide, isRefreshing, setActiveRide],
+  );
 
   const startPolling = useCallback(() => {
     if (isPollingRef.current) {

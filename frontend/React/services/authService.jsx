@@ -1,6 +1,8 @@
 import {API_BASE_URL} from './Apiclient';
 import {AccessToken, LoginManager} from 'react-native-fbsdk-next';
 import {GoogleSignin} from '@react-native-google-signin/google-signin';
+import {clearCachedActiveRide} from '../utilities/activeRideStorage';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // safeJson
 //
@@ -32,6 +34,7 @@ export const authService = {
   // ───────────────────────────────────────────────────────────────────────────
   login: async (email, password) => {
     try {
+      await clearCachedActiveRide();
       const response = await fetch(`${API_BASE_URL}/riders/login`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -70,6 +73,7 @@ export const authService = {
   // ───────────────────────────────────────────────────────────────────────────
   register: async (email, password) => {
     try {
+      await clearCachedActiveRide();
       const response = await fetch(`${API_BASE_URL}/riders/register`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -190,6 +194,7 @@ export const authService = {
   // ───────────────────────────────────────────────────────────────────────────
   logout: async token => {
     try {
+      await clearCachedActiveRide();
       await fetch(`${API_BASE_URL}/riders/logout`, {
         method: 'POST',
         headers: {
