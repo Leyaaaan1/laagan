@@ -12,6 +12,7 @@ import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.auth.GoogleAccount;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +32,8 @@ public class GoogleLoginService {
     private final GoogleAccountRepository googleAccountRepository;
 
     private final RiderRepository riderRepository;
-
+    @Value("${app.registration.max-users:50}")
+    private int maxUsers;
 
     public GoogleLoginService(GoogleTokenVerifier googleTokenVerifier,
                               RiderService riderService,
@@ -57,37 +59,40 @@ public class GoogleLoginService {
             throw new IllegalArgumentException("idToken must not be blank");
         }
 
-        // 2. IP-level rate check — reuses your existing register IP limiter
-        int ipAttempts = accountLockoutService.getRegisterAttempts(clientIp);
-        if (ipAttempts >= 20) {
-            throw new RuntimeException("Too many requests from this IP. Try again later.");
+        // 2. IP-level rate check
+        accountLockoutService.checkIpLoginRate(clientIp);
+
+        // 3. Global user cap
+        long totalUsers = riderRepository.count();
+        if (totalUsers >= maxUsers) {
+            throw new RuntimeException("Registration closed. Limit reached.");
         }
 
-        // 3. Verify token with Google — throws SecurityException if invalid or expired
+        // 4. Verify token with Google
         GoogleIdToken.Payload payload = googleTokenVerifier.verify(rawIdToken);
 
-        String googleId = payload.getSubject();   // stable unique Google user ID — never changes
+        String googleId = payload.getSubject();
         String email    = payload.getEmail();
         String name     = (String) payload.get("name");
+        Boolean emailVerified = (Boolean) payload.get("email_verified"); // ← ADD
 
+        // 5. Find or create Rider + GoogleAccount
+        String resolvedUsername = findOrCreateRider(googleId, email, name, Boolean.TRUE.equals(emailVerified)); // ← ADD param
 
-        // 4. Find or create Rider + GoogleAccount
-        String resolvedUsername = findOrCreateRider(googleId, email, name);
         Rider rider = riderUtil.findRiderByUsername(resolvedUsername);
 
-        // 5. Issue your own tokens — same as email/Facebook login
+        // 6. Issue tokens
         String accessToken  = jwtUtil.generateToken(resolvedUsername);
         String refreshToken = refreshTokenService.createRefreshToken(resolvedUsername);
 
         return new LoginResponse(accessToken, refreshToken, resolvedUsername);
-
     }
     /**
      * Returns the username of the existing rider if found by email,
      * or creates a new rider (Google-only, no password) and returns their username.
      */
     @Transactional
-    protected String findOrCreateRider(String googleId, String email, String googleDisplayName) {
+    protected String findOrCreateRider(String googleId, String email, String googleDisplayName, boolean emailVerified) { // ← ADD param
 
         // 1. Check if this Google account already exists
         Optional<GoogleAccount> existingAccount = googleAccountRepository.findByGoogleId(googleId);
@@ -96,7 +101,7 @@ public class GoogleLoginService {
             return existingAccount.get().getRider().getUsername();
         }
 
-        // 2. Check if a rider exists with this email (registered via email/password or Facebook)
+        // 2. Check if a rider exists with this email
         Optional<Rider> existingRider = riderUtil.findByAuthEmail(email);
         Rider rider;
 
@@ -115,8 +120,9 @@ public class GoogleLoginService {
             rider = new Rider();
             rider.setUsername(username);
             rider.setAuthEmail(email);
-            rider.setPassword(null);      // no password for social accounts
-            rider.setEnabled(true);       // ← required
+            rider.setPassword(null);
+            rider.setEnabled(true);
+            rider.setEmailVerified(emailVerified); // ← replaces hardcoded true
             riderRepository.save(rider);
 
             log.info("🆕 New rider created via Google: {} ({})", username, email);
@@ -131,7 +137,6 @@ public class GoogleLoginService {
 
         return rider.getUsername();
     }
-
     // Same helper as LoginService — later extract both into a shared UsernameGenerator utility
     private String ensureUniqueUsername(String base) {
         String candidate = base;

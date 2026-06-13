@@ -37,8 +37,8 @@ android {
         applicationId "com.laagan"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 9
-        versionName "1.0.9"
+        versionCode 16
+        versionName "1.0.16"
 
         // ── Inject Facebook credentials from .env ──
         resValue "string", "facebook_app_id", envVars["FACEBOOK_APP_ID"] ?: ""
