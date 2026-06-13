@@ -33,14 +33,18 @@ const getMapHTML = (lat, lng, isDark = false) => {
                 border-radius: 4px;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.2);
             }
-            ${isDark ? `
+            ${
+              isDark
+                ? `
             .leaflet-tile-pane { 
                 filter: invert(1) hue-rotate(180deg); 
             }
             .leaflet-marker-icon, .custom-marker {
                 filter: invert(1) hue-rotate(180deg);
             }
-            ` : ''}
+            `
+                : ''
+            }
         </style>
     </head>
     <body>
@@ -241,26 +245,21 @@ const getMapHTML = (lat, lng, isDark = false) => {
                             const lat = parseFloat(coord[0]);
                             const lng = parseFloat(coord[1]);
                             
-                            // Check if coordinates are valid numbers and within reasonable bounds
                             if (!isNaN(lat) && !isNaN(lng) && isFinite(lat) && isFinite(lng) &&
                                 lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
                                 validatedCoords.push([lat, lng]);
                             } else {
                                 invalidCount++;
-                                if (invalidCount <= 5)                             }
+                            }
                         } else {
                             invalidCount++;
-                            if (invalidCount <= 5) {
-                            }
                         }
                     });
-
-                    if (invalidCount > 0) {
-                    }
-
+                    
                     if (validatedCoords.length < 2) {
                         return false;
                     }
+
 
 
                     // Clear existing routes

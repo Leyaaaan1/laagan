@@ -15,11 +15,9 @@ import getMapHTML from '../../utilities/mapHTML';
 import {buildSearchHandlers} from './utilities/RideStepUtils';
 import LocationSuggestionModal from './utilities/LocationSuggestionModal';
 import {
-  getInitialMapCoords,
   drawRoadRoute,
   confirmStopPoint,
   removeStopPoint,
-  finalizePointSelection,
   handleSelectLocationAndUpdateMap,
   routeWebViewMessage,
   getBottomSheetHeight,
