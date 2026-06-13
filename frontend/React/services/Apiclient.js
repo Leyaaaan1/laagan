@@ -116,7 +116,6 @@ export const apiFetch = async (
 
     // Handle 401: attempt token refresh exactly once, using the shared queue
     if (response.status === 401 && !isPublic && retryCount < MAX_RETRIES) {
-      console.log('[API] Token expired, attempting refresh...');
 
       if (authContextRef?.refreshAccessToken) {
         const newToken = await refreshOnce();

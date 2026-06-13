@@ -9,7 +9,6 @@ export const mainLoaderScript = () => `
         window.stopPoints = stopPoints || [];
 
         if (!map) {
-            console.error('❌ Map not ready!');
             initMap(startPoint);
             window.showError('Map not ready for route data');
             return;
@@ -20,7 +19,6 @@ export const mainLoaderScript = () => `
         if (routeData) {
             routeDisplayed = window.displayRoute(routeData);
         } else {
-            console.warn('⚠️ No route data provided, skipping route display');
         }
 
         // Always add markers (start, end, stops) regardless of route availability
@@ -34,7 +32,6 @@ export const mainLoaderScript = () => `
     };
 
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('DOM Content Loaded - Initializing map...');
         initMap();
     });
 `;

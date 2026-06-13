@@ -32,7 +32,6 @@ export const checkNetworkStatus = async () => {
 
     return result;
   } catch (err) {
-    console.error('❌ Network check failed:', err);
     return {isConnected: false, type: 'unknown'};
   }
 };
@@ -60,7 +59,6 @@ export const isCachedTokenValid = async () => {
 
     return {isValid, timeRemaining};
   } catch (err) {
-    console.error('❌ Token validity check failed:', err);
     return {isValid: false, timeRemaining: 0};
   }
 };
@@ -79,7 +77,6 @@ export const attemptOfflineRestore = async () => {
       };
     }
 
-    console.log('ℹ️ Device is offline — checking cached token validity');
 
     const tokenValidity = await isCachedTokenValid();
 
@@ -105,12 +102,7 @@ export const attemptOfflineRestore = async () => {
       };
     }
 
-    console.log('✅ Offline restore successful — using cached token');
-    console.log(
-      `⏱️ Token valid for ${(tokenValidity.timeRemaining / 1000 / 60).toFixed(
-        1,
-      )} more minutes`,
-    );
+
 
     return {
       success: true,
@@ -118,7 +110,6 @@ export const attemptOfflineRestore = async () => {
       reason: 'Restored from cache (offline)',
     };
   } catch (err) {
-    console.error('❌ Offline restore error:', err);
     return {success: false, token: null, reason: err.message};
   }
 };
@@ -131,7 +122,6 @@ export const getStoredCredentials = async () => {
     });
     return credentials;
   } catch (err) {
-    console.error('❌ Failed to get stored credentials:', err);
     return null;
   }
 };

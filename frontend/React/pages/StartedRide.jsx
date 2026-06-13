@@ -114,16 +114,11 @@ const StartedRide = ({route, navigation}) => {
   // Detect this and re-fetch from the server to get the complete object.
   useEffect(() => {
     if (activeRide?.generatedRidesId && !activeRide.startedRideId) {
-      console.log(
-        '[StartedRide] startedRideId missing — fetching active ride for:',
-        activeRide.generatedRidesId,
-      );
       setIsFetchingRide(true);
       // Pass generatedRidesId so participants use the correct lookup endpoint
       // (GET /started-ride/by-ride/{id}) instead of the owner-only endpoint.
       fetchActiveRide(activeRide.generatedRidesId)
         .catch(err => {
-          console.warn('[StartedRide] fetchActiveRide failed:', err?.message);
         })
         .finally(() => setIsFetchingRide(false));
     }
@@ -151,7 +146,6 @@ const StartedRide = ({route, navigation}) => {
           const parsed = JSON.parse(cachedRouteData.routeCoordinates);
           return parsed;
         } catch (err) {
-          console.warn('[StartedRide] Failed to parse cached route:', err);
         }
       }
       // Case 3: the whole thing is a JSON string
@@ -159,10 +153,6 @@ const StartedRide = ({route, navigation}) => {
         try {
           return JSON.parse(cachedRouteData);
         } catch (err) {
-          console.warn(
-            '[StartedRide] Failed to parse string cachedRouteData:',
-            err,
-          );
         }
       }
       return null;

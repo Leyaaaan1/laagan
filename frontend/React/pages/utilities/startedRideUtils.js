@@ -11,7 +11,6 @@ export const parseRouteData = routeCoordinates => {
   try {
     return JSON.parse(routeCoordinates);
   } catch (e) {
-    console.warn('Failed to parse routeCoordinates:', e);
     return null;
   }
 };

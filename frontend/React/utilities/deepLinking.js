@@ -8,7 +8,6 @@ export const useDeepLinking = () => {
   useEffect(() => {
     // Handle deep link when app is running
     const handleDeepLink = ({url}) => {
-      console.log('🔗 Deep link received:', url);
 
 
       if (url.includes('verify-email')) {

@@ -4,7 +4,6 @@ import {parseCoordinateSafely} from './validator/CoordinateValidator';
 
 export const buildRideStep4Params = (rideData, currentUsername) => {
   if (!rideData) {
-    console.warn('buildRideStep4Params: rideData is empty');
     return {};
   }
 

@@ -20,18 +20,13 @@ const offlineDisplayScript = () => `    window.currentGeoJsonRoute = null;
      */
     window.displayOfflineRoute = function(routeData) {
         try {
-            console.log('=== DISPLAYING OFFLINE ROUTE ===');
-            console.log('Route data type:', typeof routeData);
-            console.log('Route data:', routeData);
 
             if (!routeData) {
-                console.warn('⚠️ No route data to display');
                 return false;
             }
 
             const map = window.getMap();
             if (!map) {
-                console.error('❌ Map not initialized');
                 return false;
             }
 
@@ -39,17 +34,14 @@ const offlineDisplayScript = () => `    window.currentGeoJsonRoute = null;
             if (window.currentGeoJsonRoute) {
                 map.removeLayer(window.currentGeoJsonRoute);
                 window.currentGeoJsonRoute = null;
-                console.log('Cleared previous GeoJSON route');
             }
             if (window.currentRoute) {
                 map.removeLayer(window.currentRoute);
                 window.currentRoute = null;
-                console.log('Cleared previous coordinate route');
             }
 
             // ✅ Priority 1: Handle GeoJSON features
             if (routeData.features && Array.isArray(routeData.features) && routeData.features.length > 0) {
-                console.log('📍 Drawing GeoJSON route with', routeData.features.length, 'features');
                 
                 try {
                     window.currentGeoJsonRoute = L.geoJSON(routeData, {
@@ -79,7 +71,6 @@ const offlineDisplayScript = () => `    window.currentGeoJsonRoute = null;
                         map.fitBounds(bounds.pad(0.1), { animate: false });
                     }
 
-                    console.log('✅ GeoJSON route displayed successfully');
                     window.ReactNativeWebView?.postMessage(JSON.stringify({
                         type: 'routeLoaded',
                         message: 'Offline GeoJSON route displayed',
@@ -87,7 +78,6 @@ const offlineDisplayScript = () => `    window.currentGeoJsonRoute = null;
                     }));
                     return true;
                 } catch (e) {
-                    console.error('❌ Error displaying GeoJSON route:', e);
                 }
             }
 
@@ -108,7 +98,6 @@ const offlineDisplayScript = () => `    window.currentGeoJsonRoute = null;
                     .filter(c => c && c[0] !== undefined && c[1] !== undefined);
 
                 if (coords.length > 0) {
-                    console.log('📍 Drawing coordinate route with', coords.length, 'points');
                     
                     try {
                         window.currentRoute = L.polyline(coords, {
@@ -126,7 +115,6 @@ const offlineDisplayScript = () => `    window.currentGeoJsonRoute = null;
                             map.fitBounds(bounds.pad(0.1), { animate: false });
                         }
 
-                        console.log('✅ Coordinate route displayed successfully');
                         window.ReactNativeWebView?.postMessage(JSON.stringify({
                             type: 'routeLoaded',
                             message: 'Offline coordinate route displayed',
@@ -134,7 +122,6 @@ const offlineDisplayScript = () => `    window.currentGeoJsonRoute = null;
                         }));
                         return true;
                     } catch (e) {
-                        console.error('❌ Error displaying coordinate route:', e);
                     }
                 }
             }
@@ -143,7 +130,6 @@ const offlineDisplayScript = () => `    window.currentGeoJsonRoute = null;
             if (routeData.routeCoordinates && typeof routeData.routeCoordinates === 'string') {
                 try {
                     const parsed = JSON.parse(routeData.routeCoordinates);
-                    console.log('📍 Parsed stringified route');
                     
                     // Recursively call with parsed data
                     return window.displayOfflineRoute({
@@ -151,11 +137,9 @@ const offlineDisplayScript = () => `    window.currentGeoJsonRoute = null;
                         coordinates: parsed.coordinates || parsed
                     });
                 } catch (e) {
-                    console.error('❌ Failed to parse routeCoordinates string:', e);
                 }
             }
 
-            console.warn('⚠️ No valid route data format found');
             window.ReactNativeWebView?.postMessage(JSON.stringify({
                 type: 'routeError',
                 message: 'No valid route data format'
@@ -163,7 +147,6 @@ const offlineDisplayScript = () => `    window.currentGeoJsonRoute = null;
             return false;
 
         } catch (error) {
-            console.error('❌ Error displaying offline route:', error);
             window.ReactNativeWebView?.postMessage(JSON.stringify({
                 type: 'routeError',
                 error: error.message

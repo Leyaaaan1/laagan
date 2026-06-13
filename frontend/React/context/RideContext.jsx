@@ -32,10 +32,7 @@ export const RideProvider = ({children}) => {
     const initFromCache = async () => {
       const cached = await loadCachedActiveRide();
       if (cached) {
-        console.log(
-          '📂 [RideContext] Restored active ride from cache:',
-          cached.generatedRidesId,
-        );
+
         setActiveRideState(cached);
       }
     };
@@ -100,11 +97,9 @@ export const RideProvider = ({children}) => {
 
   const startPolling = useCallback(() => {
     if (isPollingRef.current) {
-      console.log('ℹ️ Polling already active');
       return;
     }
 
-    console.log('▶️ Starting active ride polling...');
     isPollingRef.current = true;
 
     fetchActiveRide();
@@ -122,7 +117,6 @@ export const RideProvider = ({children}) => {
       clearInterval(pollingIntervalRef.current);
       pollingIntervalRef.current = null;
       isPollingRef.current = false;
-      console.log('⏹️ Stopped active ride polling');
     }
   }, []);
 

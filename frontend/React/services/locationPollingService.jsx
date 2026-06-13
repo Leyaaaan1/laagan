@@ -61,7 +61,6 @@ export const getCurrentPosition = async () => {
 export const shareLocationAndFetchAll = async (rideId, latitude, longitude) => {
   if (!rideId) throw new Error('Missing rideId');
 
-  console.log('🌍 Sharing location:', {rideId, latitude, longitude});
 
   try {
     const response = await api.post(

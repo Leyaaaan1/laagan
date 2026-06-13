@@ -5,7 +5,6 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {AuthProvider, useAuth} from './React/context/AuthContext';
 import {RideProvider} from './React/context/RideContext';
 import {setAuthContextRef} from './React/services/Apiclient';
-
 import AuthScreen from './React/screens/AuthScreen';
 import RiderPage from './React/pages/RiderPage';
 import CreateRide from './React/pages/CreateRide';
@@ -23,7 +22,6 @@ import PersonalSummaryView from './React/pages/finishedRide/PersonalSummaryView'
 import {useDeepLinking} from './React/utilities/deepLinking';
 import EmailVerificationScreen from './React/screens/EmailVerificationScreen';
 import VerifyEmailLinkScreen from './React/screens/VerifyEmailLinkScreen';
-// ─── ADD these two imports ───────────────────────────────────────────────────
 import OnboardingTour from './React/screens/OnboardingTour';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -34,8 +32,6 @@ interface AuthContextValue {
 interface OnboardingParams {
   completed?: boolean;
 }
-
-
 
 const Stack = createNativeStackNavigator();
 export const googleclientid = GOOGLE_CLIENT_ID;
@@ -90,7 +86,6 @@ const NavigationContent = () => {
         screenOptions={{headerShown: false}}
         screenListeners={{
           state: async e => {
-            // OnboardingTour fires a 'onboardingComplete' event when done
             const route = e.data?.state?.routes?.find(
               r => r.name === 'OnboardingTour',
             );

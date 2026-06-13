@@ -70,20 +70,15 @@ export const getRouteCoordinates = async generatedRidesId => {
 
     // ✅ NEW: Cache the successful response for offline use
     await routeCache.save(generatedRidesId, data).catch(e => {
-      console.warn('[getRouteCoordinates] Cache save (non-fatal):', e);
     });
 
-    console.log('✅ Route fetched from server and cached:', generatedRidesId);
     return data;
   } catch (err) {
     // ✅ NEW: If server fetch fails, try offline cache
-    console.warn('⚠️ Server route fetch failed:', err.message);
-    console.log('📵 Attempting to use cached route...');
 
     const cachedData = await routeCache.get(generatedRidesId);
 
     if (cachedData) {
-      console.log('✅ Using cached route for:', generatedRidesId);
       return cachedData; // Return cached data if available
     }
 

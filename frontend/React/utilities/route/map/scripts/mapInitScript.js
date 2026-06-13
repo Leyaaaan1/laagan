@@ -40,7 +40,6 @@ export const mapInitScript = () => `
 
             return true;
         } catch (error) {
-            console.error('Error initializing map:', error);
             return false;
         }
     }

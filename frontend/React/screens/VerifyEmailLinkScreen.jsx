@@ -31,7 +31,6 @@ const VerifyEmailLinkScreen = ({navigation, route}) => {
         }
       } catch (err) {
         setError('An error occurred during verification');
-        console.error('Verification error:', err);
       } finally {
         setLoading(false);
       }

@@ -39,9 +39,7 @@ export const useStartedRideRouteCache = activeRide => {
       lastCachedIdRef.current = activeRide.generatedRidesId;
       lastCachedCoordinatesRef.current = activeRide.routeCoordinates;
 
-      console.log('✅ Active ride route cached:', activeRide.generatedRidesId);
     } catch (err) {
-      console.warn('[useStartedRideRouteCache] Cache error:', err);
     }
   }, [activeRide]);
 

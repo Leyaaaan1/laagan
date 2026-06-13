@@ -20,7 +20,6 @@ export const updateProfile = async updates => {
     const result = await response.json();
     return {success: true, data: result};
   } catch (error) {
-    console.error('updateProfile error:', error);
     return {success: false, message: error.message};
   }
 };
@@ -35,7 +34,6 @@ export const getProfileByUsername = async (username) => {
       message: result.message || 'Failed to fetch profile',
     };
   } catch (error) {
-    console.error('getProfileByUsername error:', error);
     return {success: false, message: error.message};
   }
 };
@@ -51,7 +49,6 @@ export const updateMyProfile = async (updates) => {
       message: result.message || 'Failed to update profile',
     };
   } catch (error) {
-    console.error('updateMyProfile error:', error);
     return {success: false, message: error.message};
   }
 };
@@ -69,7 +66,6 @@ export const addRiderType = async (typeName) => {
       message: result.message || 'Failed to add rider type',
     };
   } catch (error) {
-    console.error('addRiderType error:', error);
     return {success: false, message: error.message};
   }
 };
@@ -86,7 +82,6 @@ export const removeRiderType = async (typeName) => {
       message: result.message || 'Failed to remove rider type',
     };
   } catch (error) {
-    console.error('removeRiderType error:', error);
     return {success: false, message: error.message};
   }
 };

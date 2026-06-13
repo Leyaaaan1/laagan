@@ -80,10 +80,8 @@ export const routePreviewCache = {
         makeKey(sLat, sLng, eLat, eLng, stopPoints),
         JSON.stringify(entry),
       );
-      console.log('[routePreviewCache] saved for route', `${sLat},${sLng} → ${eLat},${eLng}`);
     } catch (e) {
       // Non-fatal — the live API result is still used even if caching fails
-      console.warn('[routePreviewCache] save failed:', e);
     }
   },
 
@@ -105,21 +103,17 @@ export const routePreviewCache = {
       } catch {
         // Corrupted entry — silently discard so the live API is used instead
         await AsyncStorage.removeItem(key);
-        console.warn('[routePreviewCache] corrupted entry cleared');
         return null;
       }
 
       const age = Date.now() - (entry.savedAt ?? 0);
       if (age > CACHE_TTL_MS) {
         await AsyncStorage.removeItem(key);
-        console.log('[routePreviewCache] stale entry cleared (age:', Math.round(age / 86400000), 'days)');
         return null;
       }
 
-      console.log('[routePreviewCache] cache hit ✓');
       return entry.data;
     } catch (e) {
-      console.warn('[routePreviewCache] get failed:', e);
       return null;
     }
   },
@@ -134,7 +128,6 @@ export const routePreviewCache = {
     try {
       await AsyncStorage.removeItem(makeKey(sLat, sLng, eLat, eLng, stopPoints));
     } catch (e) {
-      console.warn('[routePreviewCache] clear failed:', e);
     }
   },
 
@@ -151,9 +144,7 @@ export const routePreviewCache = {
       if (preview.length > 0) {
         await AsyncStorage.multiRemove(preview);
       }
-      console.log('[routePreviewCache] all entries cleared:', preview.length);
     } catch (e) {
-      console.warn('[routePreviewCache] clearAll failed:', e);
     }
   },
 };

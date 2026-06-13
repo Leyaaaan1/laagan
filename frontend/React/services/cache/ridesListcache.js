@@ -23,7 +23,6 @@ export const ridesListCache = {
         JSON.stringify(entry),
       );
     } catch (e) {
-      console.warn('[ridesListCache] save failed:', e);
     }
   },
 
@@ -50,7 +49,6 @@ export const ridesListCache = {
 
       return entry.data;
     } catch (e) {
-      console.warn('[ridesListCache] get failed:', e);
       return null;
     }
   },
@@ -60,7 +58,6 @@ export const ridesListCache = {
     try {
       await AsyncStorage.removeItem(makeKey(page, size, mode));
     } catch (e) {
-      console.warn('[ridesListCache] clearPage failed:', e);
     }
   },
 
@@ -72,9 +69,7 @@ export const ridesListCache = {
       if (rideKeys.length > 0) {
         await AsyncStorage.multiRemove(rideKeys);
       }
-      console.log('[ridesListCache] All entries cleared');
     } catch (e) {
-      console.warn('[ridesListCache] clearAll failed:', e);
     }
   },
 };

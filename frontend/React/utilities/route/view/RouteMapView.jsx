@@ -59,7 +59,6 @@ const RouteMapView = forwardRef(
         var label = document.getElementById('compass-label');
         if (label) label.textContent = '🏍 ' + ${label};
       } else {
-        console.warn('orientMapToPoint not ready');
       }
     })();
     true;
@@ -79,7 +78,6 @@ const RouteMapView = forwardRef(
         user,
       )});
       } else {
-        console.warn('updateRiderMarkers not ready yet');
       }
       true;
     `;
@@ -88,10 +86,6 @@ const RouteMapView = forwardRef(
 
     useEffect(() => {
       if (!webViewReadyRef.current) return;
-      console.log(
-        '🗺️ riderMarkers changed, injecting:',
-        Object.keys(riderMarkers),
-      );
       injectRiderMarkers(riderMarkers, currentUsername);
     }, [riderMarkers, currentUsername, injectRiderMarkers]);
 
@@ -113,11 +107,6 @@ const RouteMapView = forwardRef(
           userLocation,
         );
         if (Object.keys(riderMarkers).length > 0) {
-          console.log(
-            '🗺️ WebView ready — injecting',
-            Object.keys(riderMarkers).length,
-            'pending rider markers',
-          );
           injectRiderMarkers(riderMarkers, currentUsername);
         }
       }, 500);

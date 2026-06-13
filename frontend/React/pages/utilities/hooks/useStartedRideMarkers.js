@@ -14,7 +14,6 @@ export const useStartedRideMarkers = (rideId, pollingEnabled, onRiderFinished) =
 
   const handleLocationsUpdate = useCallback(locations => {
     if (!locations || !Array.isArray(locations)) {
-      console.warn('⚠️ Invalid locations received:', locations);
       return;
     }
 
@@ -29,7 +28,6 @@ export const useStartedRideMarkers = (rideId, pollingEnabled, onRiderFinished) =
 
     const now = Date.now();
     if (now - lastMarkersUpdateRef.current < MARKERS_UPDATE_THROTTLE_MS) {
-      console.log('⏱️ Markers update throttled');
       return;
     }
 
@@ -69,7 +67,6 @@ export const useStartedRideMarkers = (rideId, pollingEnabled, onRiderFinished) =
     }
 
     if (hasChanged) {
-      console.log('🔄 Rider markers updated:', Object.keys(markers).length);
       setRiderMarkers(markers);
       prevMarkersRef.current = markers;
     }

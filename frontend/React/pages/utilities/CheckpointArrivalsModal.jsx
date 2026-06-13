@@ -138,7 +138,6 @@ const CheckpointArrivalsModal = ({
   );
   const fetchCheckpointArrivals =
     useCallback(async () => {
-      console.log('[Modal] generatedRidesId:', generatedRidesId);
       if (!generatedRidesId || generatedRidesId === 'undefined') return; // ← ADD
       try {
         setLoading(true);
@@ -229,6 +228,7 @@ const CheckpointArrivalsModal = ({
       endingPointName,
     );
   const s = checkpointModalStyles;
+
 
   // ─── Status banner ────────────────────────────────────────────
   const renderStatusBanner = () => {
@@ -520,61 +520,53 @@ const CheckpointArrivalsModal = ({
                     <View
                       style={[
                         s.timelineIconWrap,
-                        hasArrivers &&
-                        s.timelineIconWrapActive,
+                        hasArrivers && s.timelineIconWrapActive,
                       ]}>
                       <FontAwesome
-                        name={getCheckpointIconName(
-                          checkpoint.type,
-                        )}
+                        name={getCheckpointIconName(checkpoint.type)}
                         size={14}
                         color={
-                          hasArrivers
-                            ? colors.primary
-                            : colors.textSecondary
+                          hasArrivers ? colors.primary : colors.textSecondary
                         }
                       />
+                      <Text
+                        style={{
+                          fontSize: 9,
+                          color: hasArrivers
+                            ? colors.white
+                            : colors.textSecondary,
+                          textAlign: 'center',
+                          marginTop: 2,
+                          fontWeight: '600',
+                        }}>
+                        {checkpoint.type === 'STOP_POINT'
+                          ? `Stop ${(checkpoint.index ?? 0) + 1}`
+                          : checkpoint.type === 'ENDING'
+                          ? 'End'
+                          : 'Start'}
+                      </Text>
                     </View>
                     {!isLast && (
                       <View
                         style={[
                           s.timelineLine,
-                          hasArrivers &&
-                          s.timelineLineActive,
+                          hasArrivers && s.timelineLineActive,
                         ]}
                       />
                     )}
                   </View>
-
                   {/* Right content */}
-                  <View
-                    style={s.timelineContent}>
+                  <View style={s.timelineContent}>
                     <View
                       style={[
                         s.checkpointHeader,
-                        hasArrivers &&
-                        s.checkpointHeaderActive,
+                        hasArrivers && s.checkpointHeaderActive,
                       ]}>
-                      <View
-                        style={
-                          s.checkpointTitleContainer
-                        }>
-                        <Text
-                          style={
-                            s.checkpointTitle
-                          }>
-                          {checkpoint.name}
-                        </Text>
-                        <Text
-                          style={
-                            s.checkpointCount
-                          }>
-                          {
-                            checkpoint.arrivers
-                              .length
-                          }{' '}
-                          {checkpoint.arrivers
-                            .length !== 1
+                      <View style={s.checkpointTitleContainer}>
+                        <Text style={s.checkpointTitle}>{checkpoint.name}</Text>
+                        <Text style={s.checkpointCount}>
+                          {checkpoint.arrivers.length}{' '}
+                          {checkpoint.arrivers.length !== 1
                             ? 'riders'
                             : 'rider'}
                         </Text>
@@ -582,64 +574,33 @@ const CheckpointArrivalsModal = ({
                     </View>
 
                     {hasArrivers && (
-                      <View
-                        style={s.arriversList}>
-                        {checkpoint.arrivers.map(
-                          (
-                            arriver,
-                            arriverIdx,
-                          ) => (
-                            <View
-                              key={`arriver-${
-                                checkpoint.type
-                              }-${
-                                checkpoint.index ??
-                                'null'
-                              }-${arriverIdx}`}
-                              style={
-                                s.arriverItem
-                              }>
-                              <View
-                                style={
-                                  s.arriverAvatar
-                                }>
-                                <Text
-                                  style={
-                                    s.arriverInitial
-                                  }>
-                                  {(arriver.username ||
-                                    'U')[0].toUpperCase()}
-                                </Text>
-                              </View>
-                              <View
-                                style={
-                                  s.arriverInfo
-                                }>
-                                <Text
-                                  style={
-                                    s.arriverUsername
-                                  }>
-                                  {
-                                    arriver.username
-                                  }
-                                </Text>
-                                <Text
-                                  style={
-                                    s.arriverTime
-                                  }>
-                                  {formatArrivalTime(
-                                    arriver.arrivedAt,
-                                  )}
-                                </Text>
-                              </View>
-                              <FontAwesome
-                                name="check-circle"
-                                size={16}
-                                color="#10b981"
-                              />
+                      <View style={s.arriversList}>
+                        {checkpoint.arrivers.map((arriver, arriverIdx) => (
+                          <View
+                            key={`arriver-${checkpoint.type}-${
+                              checkpoint.index ?? 'null'
+                            }-${arriverIdx}`}
+                            style={s.arriverItem}>
+                            <View style={s.arriverAvatar}>
+                              <Text style={s.arriverInitial}>
+                                {(arriver.username || 'U')[0].toUpperCase()}
+                              </Text>
                             </View>
-                          ),
-                        )}
+                            <View style={s.arriverInfo}>
+                              <Text style={s.arriverUsername}>
+                                {arriver.username}
+                              </Text>
+                              <Text style={s.arriverTime}>
+                                {formatArrivalTime(arriver.arrivedAt)}
+                              </Text>
+                            </View>
+                            <FontAwesome
+                              name="check-circle"
+                              size={16}
+                              color="#10b981"
+                            />
+                          </View>
+                        ))}
                       </View>
                     )}
                   </View>

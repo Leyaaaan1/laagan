@@ -32,8 +32,6 @@ export const authService = {
   // ───────────────────────────────────────────────────────────────────────────
   login: async (email, password) => {
     try {
-      console.log('>>> API_BASE_URL:', API_BASE_URL);
-      console.log('>>> Full URL:', `${API_BASE_URL}/riders/login`);
       const response = await fetch(`${API_BASE_URL}/riders/login`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -42,7 +40,6 @@ export const authService = {
       const data = await safeJson(response);
       if (!response.ok) {
         const message = data?.message || 'Login failed';
-        console.error('❌ Login failed:', response.status, message);
         return {success: false, error: message};
       }
       return {
@@ -54,7 +51,6 @@ export const authService = {
         },
       };
     } catch (err) {
-      console.error('❌ Login network error:', err);
       return {success: false, error: err.message || 'Network error'};
     }
   },
@@ -82,7 +78,6 @@ export const authService = {
       const data = await safeJson(response);
       if (!response.ok) {
         const message = data?.message || 'Registration failed';
-        console.error('❌ Register failed:', response.status, message);
         return {success: false, error: message};
       }
       return {
@@ -94,7 +89,6 @@ export const authService = {
         },
       };
     } catch (err) {
-      console.error('❌ Register network error:', err);
       return {success: false, error: err.message || 'Network error'};
     }
   },
@@ -111,12 +105,10 @@ export const authService = {
       const data = await safeJson(response);
       if (!response.ok) {
         const message = data?.message || 'Email verification failed';
-        console.error('❌ Verification failed:', response.status, message);
         return {success: false, error: message};
       }
       return {success: true, message: data?.message};
     } catch (err) {
-      console.error('❌ Verification network error:', err);
       return {success: false, error: err.message || 'Network error'};
     }
   },
@@ -139,12 +131,10 @@ export const authService = {
       const data = await safeJson(response);
       if (!response.ok) {
         const message = data?.message || 'Failed to resend verification email';
-        console.error('❌ Resend failed:', response.status, message);
         return {success: false, error: message};
       }
       return {success: true, message: data?.message};
     } catch (err) {
-      console.error('❌ Resend network error:', err);
       return {success: false, error: err.message || 'Network error'};
     }
   },
@@ -169,7 +159,6 @@ export const authService = {
       }
       return {success: true, verified: data?.verified};
     } catch (err) {
-      console.error('❌ Check verification network error:', err);
       return {success: false, verified: false};
     }
   },
@@ -186,12 +175,10 @@ export const authService = {
       const data = await safeJson(response);
       if (!response.ok) {
         const message = data?.message || 'Failed to delete account';
-        console.error('❌ Delete account failed:', response.status, message);
         return {success: false, error: message};
       }
       return {success: true};
     } catch (err) {
-      console.error('❌ Delete account network error:', err);
       return {success: false, error: err.message || 'Network error'};
     }
   },
@@ -212,7 +199,6 @@ export const authService = {
       });
       return {success: true};
     } catch (err) {
-      console.error('Logout error:', err);
       return {success: false, error: err.message};
     }
   },
@@ -255,7 +241,6 @@ export const loginWithFacebook = async () => {
     const data = await safeJson(response);
 
     if (!response.ok) {
-      console.error('❌ Facebook login backend error:', data);
       return {success: false, error: data?.message || 'Facebook login failed'};
     }
 
@@ -268,7 +253,6 @@ export const loginWithFacebook = async () => {
       },
     };
   } catch (err) {
-    console.error('❌ Facebook login error:', err);
     return {success: false, error: err.message || 'Facebook login failed'};
   }
 };
@@ -285,12 +269,10 @@ const verifyEmail = async token => {
     const data = await safeJson(response);
     if (!response.ok) {
       const message = data?.message || 'Email verification failed';
-      console.error('❌ Verification failed:', response.status, message);
       return {success: false, error: message};
     }
     return {success: true, message: data?.message};
   } catch (err) {
-    console.error('❌ Verification network error:', err);
     return {success: false, error: err.message || 'Network error'};
   }
 };
@@ -301,17 +283,12 @@ const verifyEmail = async token => {
 
 export const loginWithGoogle = async () => {
   try {
-    console.log('📱 [GoogleSignIn] Starting...');
 
     const hasPlayServices = await GoogleSignin.hasPlayServices();
-    console.log('📱 [GoogleSignIn] Play Services:', hasPlayServices);
 
-    console.log('📱 [GoogleSignIn] Calling signIn()...');
     const userInfo = await GoogleSignin.signIn();
-    console.log('📱 [GoogleSignIn] Success:', userInfo);
     const idToken = userInfo.data?.idToken;
     if (!idToken) {
-      console.log('❌ [GoogleSignIn] No ID token received');
       return {success: false, error: 'No ID token from Google'};
     }
 

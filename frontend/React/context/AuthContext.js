@@ -70,26 +70,19 @@ export const AuthProvider = ({children}) => {
 
       // 3. Check network status
       const networkStatus = await checkNetworkStatus();
-      console.log(
-        `📡 Network status: ${
-          networkStatus.isConnected ? 'ONLINE' : 'OFFLINE'
-        } (${networkStatus.type})`,
-      );
+
 
       // 4. Load refresh token from Keychain
       const credentials = await getStoredCredentials();
 
       if (credentials?.password && userPreferAutoLogin) {
         refreshTokenRef.current = credentials.password;
-        console.log('✅ Refresh token found');
 
         // 5. ONLINE PATH: Exchange refresh token for fresh access token
         if (networkStatus.isConnected) {
-          console.log('🌐 Online — attempting session refresh from server');
           syncApiclientRef();
           const restored = await restoreSession(credentials.password);
           if (!restored) {
-            console.log('⚠️ Session restore failed — trying offline restore');
             // Fallback: Try offline restore even though we're online (in case API is down)
             const offlineResult = await attemptOfflineRestore();
             if (offlineResult.success) {
@@ -99,36 +92,23 @@ export const AuthProvider = ({children}) => {
           }
         } else {
           // 6. OFFLINE PATH: Try to restore from cached token
-          console.log(
-            '📵 Offline detected — attempting offline session restore',
-          );
           const offlineResult = await attemptOfflineRestore();
 
           if (offlineResult.success) {
             // Use cached token
             tokenRef.current = offlineResult.token;
             setToken(offlineResult.token);
-            console.log(
-              `✅ Offline session restored (${offlineResult.reason})`,
-            );
           } else {
             // Can't restore offline, will need to login
-            console.log(
-              `ℹ️ Offline restore failed: ${offlineResult.reason} — showing login screen`,
-            );
           }
         }
       } else if (credentials?.password && !userPreferAutoLogin) {
-        console.log('ℹ️ User chose not to auto-login — showing login screen');
       } else {
-        console.log('ℹ️ No stored session — showing login screen');
       }
     } catch (err) {
-      console.error('Failed to initialize auth:', err);
     } finally {
       syncApiclientRef();
       setReady(true);
-      console.log('✅ Auth initialization complete');
     }
   };
   // Silently exchange the stored refresh token for a new access token.
@@ -144,9 +124,7 @@ export const AuthProvider = ({children}) => {
       if (!response.ok) {
         // 401 here is expected when the user previously logged out — the server
         // already invalidated the token. Clear stale Keychain/storage silently.
-        console.log(
-          `ℹ️ Session restore: server rejected token (${response.status}) — clearing stale credentials`,
-        );
+
         await _clearStorage();
         return false;
       }
@@ -163,10 +141,8 @@ export const AuthProvider = ({children}) => {
         service: 'com.ridershub.auth',
       });
 
-      console.log('✅ Session restored successfully');
       return true;
     } catch (err) {
-      console.error('❌ Session restore network error:', err);
       return false;
     }
   };
@@ -219,20 +195,17 @@ export const AuthProvider = ({children}) => {
 
       return newAccessToken;
     } catch (error) {
-      console.error('Failed to save auth:', error);
       throw error;
     }
   };
   // REPLACE refreshAccessToken function (lines 146-188):
   const refreshAccessToken = async () => {
     if (isRefreshing || !refreshTokenRef.current) {
-      console.warn('⚠️ Cannot refresh: already refreshing or no refresh token');
       return null;
     }
 
     setIsRefreshing(true);
     try {
-      console.log('🔄 Refreshing access token...');
 
       const response = await fetch(`${API_BASE_URL}/riders/refresh`, {
         method: 'POST',
@@ -241,7 +214,6 @@ export const AuthProvider = ({children}) => {
       });
 
       if (!response.ok) {
-        console.error('❌ Token refresh failed:', response.status);
 
         // NEW: Handle token refresh failure
         if (response.status === 401 || response.status === 403) {
@@ -269,10 +241,8 @@ export const AuthProvider = ({children}) => {
         service: 'com.ridershub.auth',
       });
 
-      console.log('✅ Access token refreshed');
       return data.accessToken;
     } catch (error) {
-      console.error('❌ Token refresh error:', error);
       await onTokenRefreshFailed(
         'Network error while refreshing session. Please try again.',
       );
@@ -286,7 +256,6 @@ export const AuthProvider = ({children}) => {
 
   const onTokenRefreshFailed = async message => {
     try {
-      console.error('❌ Token refresh failed:', message);
 
       // Clear token metadata
       await clearTokenExpiry();
@@ -298,7 +267,6 @@ export const AuthProvider = ({children}) => {
       // Re-export this in context so screens can call it
       return {shouldRedirectToAuth: true, message};
     } catch (err) {
-      console.error('Failed to handle token refresh failure:', err);
     }
   };
   useEffect(() => {
@@ -308,7 +276,6 @@ export const AuthProvider = ({children}) => {
       const timeUntilExpiry = await getTimeUntilExpiry();
       if (timeUntilExpiry !== null && timeUntilExpiry < 5 * 60 * 1000) {
         // Token expiring in less than 5 minutes
-        console.warn('⚠️ Token expiring soon, auto-refreshing...');
         await refreshAccessToken();
       }
     };
@@ -326,19 +293,16 @@ export const AuthProvider = ({children}) => {
     try {
       await Keychain.resetGenericPassword({service: 'com.ridershub.auth'});
     } catch (err) {
-      console.warn('⚠️ Keychain reset warning:', err.message);
     }
     try {
       await AsyncStorage.removeItem('username');
       await AsyncStorage.removeItem('onboardingCompleted');
     } catch (err) {
-      console.warn('⚠️ AsyncStorage remove warning:', err.message);
     }
     try {
       await clearTokenExpiry();
       // ✅ clearTokenExpiry already clears cachedAccessToken
     } catch (err) {
-      console.warn('⚠️ Token expiry clear warning:', err.message);
     }
   };
   // ─── Public: reset all auth state + persisted storage ───
@@ -361,7 +325,6 @@ export const AuthProvider = ({children}) => {
     }
 
     await _clearStorage();
-    console.log('✅ Auth cleared');
   };
   const setAutoLoginPreference = async prefer => {
     setUserPreferAutoLogin(prefer);
@@ -370,9 +333,7 @@ export const AuthProvider = ({children}) => {
         'autoLoginPreference',
         prefer ? 'true' : 'false',
       );
-      console.log(`✅ Auto-login preference set to: ${prefer}`);
     } catch (err) {
-      console.error('Failed to save auto-login preference:', err);
     }
   };
 
@@ -391,10 +352,6 @@ export const AuthProvider = ({children}) => {
           'Content-Type': 'application/json',
         },
       }).catch(err => {
-        console.warn(
-          '⚠️ Logout notification to server failed (non-fatal):',
-          err.message,
-        );
       });
     }
   };
@@ -411,10 +368,6 @@ export const AuthProvider = ({children}) => {
           'Content-Type': 'application/json',
         },
       }).catch(err => {
-        console.warn(
-          '⚠️ Delete account server call failed (non-fatal):',
-          err.message,
-        );
       });
     }
   };

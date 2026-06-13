@@ -41,7 +41,6 @@ const offlineLoaderScript = () => `
      * then schedules addRouteMarkers() and optionally updateUserLocation().
      */
     window.loadOfflineData = function(startPoint, endPoint, stopPoints, userLocation) {
-        console.log('📴 loadOfflineData called', { startPoint, endPoint, stopPoints });
 
         // Write globals so markerScript / compassScript can read them
         window.startingPoint = startPoint;
@@ -50,7 +49,6 @@ const offlineLoaderScript = () => `
 
         const map = window.getMap();
         if (!map) {
-            console.error('❌ Offline map not ready — calling initMap() first');
             initMap(startPoint);
         }
 
@@ -81,7 +79,6 @@ const offlineLoaderScript = () => `
     // Boot the map as soon as the DOM is ready.
     // initMap() is defined in mapInitScript; it posts 'mapReady' when done.
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('📴 Offline map DOM ready — initialising map');
         initMap(); // no startPoint yet; OfflineMapView calls loadOfflineData() after mapReady
     });
 `;
