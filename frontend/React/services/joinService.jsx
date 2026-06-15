@@ -52,6 +52,14 @@ export const joinService = {
     return response.json();
   },
 
+  getPendingJoinCount: async (generatedRidesId) => {
+    const response = await api.get(`/join-request/${generatedRidesId}`);
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    const joiners = await response.json();
+    // Count only PENDING ones
+    return joiners.filter(j => j.status === 'PENDING').length;
+  },
+
   getJoinersByRide: async (generatedRidesId, status = null, ) => {
     const query = status ? `?status=${status}` : '';
     const response = await api.get(

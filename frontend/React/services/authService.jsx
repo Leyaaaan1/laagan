@@ -1,7 +1,7 @@
 import {API_BASE_URL} from './Apiclient';
 import {AccessToken, LoginManager} from 'react-native-fbsdk-next';
 import {GoogleSignin} from '@react-native-google-signin/google-signin';
-import {clearCachedActiveRide} from '../utilities/activeRideStorage';
+import {clearCachedActiveRide} from '../context/activeRideStorage';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // safeJson
@@ -322,5 +322,5 @@ export const loginWithGoogle = async () => {
 export const loginUser = authService.login;
 export const registerUser = authService.register;
 export const verifyEmailToken = verifyEmail;
-export const resendVerificationEmail = resendVerificationEmail;
-export const checkEmailVerified = checkEmailVerified;
+export const resendVerificationEmail = authService.resendVerificationEmail;
+export const checkEmailVerified = authService.checkEmailVerified;

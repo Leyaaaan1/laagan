@@ -1,5 +1,7 @@
 package com.laagan
 
+import android.os.Bundle
+import androidx.activity.enableEdgeToEdge
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
@@ -19,4 +21,9 @@ class MainActivity : ReactActivity() {
    */
   override fun createReactActivityDelegate(): ReactActivityDelegate =
       DefaultReactActivityDelegate(this, mainComponentName, fabricEnabled)
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()   // ← must be BEFORE super.onCreate()
+        super.onCreate(savedInstanceState)
+    }
 }

@@ -25,6 +25,7 @@ import spacing from '../../styles/tokens/spacing';
 import {buildSearchHandlers} from './utilities/RideStepUtils';
 import {DEFAULT_COORDS} from '../../utilities/route/map/appDefaults';
 import {createMemoCompare} from '../../utilities/propsComparison';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 // Philippines centre — safe default when no coords are available yet
 const DEFAULT_LAT = parseFloat(DEFAULT_COORDS.latitude);
@@ -62,9 +63,16 @@ const SelectedLocationPanel = ({
   images: locationImages,
   imageLoading,
   onConfirm,
+  bottomInset,
 }) => (
   <View
-    style={{position: 'absolute', bottom: 24, left: 12, right: 12, zIndex: 40}}>
+    style={{
+      position: 'absolute',
+      bottom: 24 + bottomInset,
+      left: 12,
+      right: 12,
+      zIndex: 40,
+    }}>
     <View
       style={{
         backgroundColor: '#fff',
@@ -122,11 +130,11 @@ const SelectedLocationPanel = ({
 );
 
 /** Prompt shown when no location is selected yet. */
-const NoSelectionHint = () => (
+const NoSelectionHint = ({bottomInset}) => (
   <View
     style={{
       position: 'absolute',
-      bottom: 28,
+      bottom: 28 + bottomInset,
       left: 20,
       right: 20,
       zIndex: 40,
@@ -177,6 +185,7 @@ const RideStep2 = ({
   // ── Local search buffer with debounce ─────────────────────────────────────
   const [localQuery, setLocalQuery] = useState(searchQuery || '');
   const debounceRef = useRef(null);
+  const insets = useSafeAreaInsets();
 
   const {handleLocalChange, handleClearSearch} = buildSearchHandlers({
     debounceRef,
@@ -247,7 +256,7 @@ const RideStep2 = ({
       <View
         style={[
           rideCreation.floatingNav,
-          {backgroundColor: 'rgba(255,255,255,0.95)', top: 16},
+          {backgroundColor: 'rgba(255,255,255,0.95)', top: insets.top + 8},
         ]}>
         <TouchableOpacity
           style={buttons.back}
@@ -277,7 +286,7 @@ const RideStep2 = ({
       </View>
 
       {/* ── Search card ── */}
-      <View style={rideCreation.searchContainer}>
+      <View style={[rideCreation.searchContainer, {top: insets.top + 75}]}>
         <View
           style={[
             inputs.searchRow,
@@ -369,9 +378,10 @@ const RideStep2 = ({
           images={locationImages}
           imageLoading={locationImageLoading}
           onConfirm={nextStep}
+          bottomInset={insets.bottom}
         />
       ) : (
-        <NoSelectionHint />
+        <NoSelectionHint bottomInset={insets.bottom} />
       )}
     </View>
   );

@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lean Paninsoro — Backend Developer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+<nav>
+  <span class="nav-logo">lean@paninsoro:~$</span>
+  <ul class="nav-links">
+    <li><a href="#about">about</a></li>
+    <li><a href="#projects">projects</a></li>
+    <li><a href="#stack">stack</a></li>
+    <li><a href="#contact">contact</a></li>
+  </ul>
+</nav>
+
+<main>
+
+  <section id="hero">
+    <div class="hero-pre">
+      <span id="typed-line"></span><span class="cursor-blink"></span>
+    </div>
+    <h1>Lean Paninsoro</h1>
+    <p class="hero-title">// Backend Developer &nbsp;·&nbsp; Davao, PH</p>
+    <p class="hero-tagline">
+      Backend Developer — APIs, real-time systems, and tools that ship.
+    </p>
+    <div class="cta-row">
+      <a href="#projects" class="btn-primary">View Projects</a>
+      <a href="#contact" class="btn-ghost">Contact</a>
+    </div>
+  </section>
+
+  <section id="about">
+    <div class="label">[about]</div>
+    <div class="about-grid fade-in">
+      <div class="about-text">
+        <p>
+          <strong>Backend-first developer</strong> who takes full feature ownership —
+          from database schema to API contracts to production deployment.
+        </p>
+        <p>
+          Not afraid of messy domains: <strong>government HR systems</strong>,
+          real-time geolocation, offline-resilient mobile backends, and
+          Philippine-specific geographic data pipelines.
+        </p>
+        <p>
+          Comfortable as the <strong>sole technical voice</strong> in a room of
+          non-technical stakeholders — translating operational needs into
+          shipped systems without a safety net.
+        </p>
+      </div>
+      <ul class="trait-list">
+        <li>Requirements → architecture → delivery</li>
+        <li>REST API design &amp; contract definition</li>
+        <li>Real-time systems (WebSocket, async)</li>
+        <li>Auth: OAuth 2.0, RBAC, token rotation</li>
+        <li>Offline-resilient backend design</li>
+        <li>Solo developer in production environments</li>
+        <li>BS Computer Science — Univ. of Mindanao (Aug 2026)</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="projects">
+    <div class="label">[projects]</div>
+
+    <div class="project-card fade-in">
+      <div class="project-header">
+        <div>
+          <div class="project-name">Employee Management System</div>
+          <div class="project-sub">Bureau of the Treasury — Davao Regional Office</div>
+        </div>
+        <div class="project-badges">
+          <span class="badge badge-accent">Internship</span>
+          <span class="badge badge-muted">Jul–Aug 2025</span>
+          <span class="badge badge-muted">Solo Dev</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <p class="project-role">
+          Sole developer responsible for the entire build — from requirements gathering with admin staff
+          through to production deployment. No technical team, no handoffs.
+          The system now manages <strong>115+ sensitive employee records</strong> for a government office.
+        </p>
+        <ul class="feature-list">
+          <li><span>Secure internal platform with <strong>Spring Boot</strong> + Role-Based Access Control</span></li>
+          <li><span>Automated logic for <strong>increment calculation and loyalty pay awards</strong> — eliminated manual errors</span></li>
+          <li><span>Facilitated requirement-gathering sessions; iterated on real user feedback</span></li>
+          <li><span><strong>30% increase in operational efficiency</strong> by replacing manual paperwork workflows and automating performance tracking</span></li>
+          <li><span>Handled architecture, database design, and delivery independently</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="project-card fade-in">
+      <div class="project-header">
+        <div>
+          <div class="project-name">OnlyJobsWeb</div>
+          <div class="project-sub">Full-Stack Job Board Platform</div>
+        </div>
+        <div class="project-badges">
+          <span class="badge badge-accent">Full Stack</span>
+          <span class="badge badge-muted">Laravel · React</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <p class="project-role">
+          Co-developed an end-to-end Admin Dashboard and core infrastructure features, splitting workload across Laravel backend routing and modular frontend UI development.
+        </p>
+        <ul class="feature-list">
+          <li><span>Developed and tested 10+ RESTful API endpoints using <strong>Laravel</strong> for core features including authentication, application tracking, and secure job posting management.</span></li>
+          <li><span>Led full-stack implementation of the Admin Dashboard contributing 50% of the <strong>React</strong> frontend and 50% of the backend execution.</span></li>
+          <li><span>Containerized the application ecosystem using <strong>Docker</strong> to ensure consistent development environments and seamless deployment workflows.</span></li>
+        </ul>
+        <div class="project-links">
+          <a href="https://github.com/Leyaaaan1/OnlyJobsWeb" class="project-link" target="_blank" rel="noopener">github →</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="project-card fade-in">
+      <div class="project-header">
+        <div>
+          <div class="project-name">Laagan — Real-Time Group Ride Tracker</div>
+          <div class="project-sub">Personal · Closed Testing for Android </div>
+        </div>
+        <div class="project-badges">
+          <span class="badge badge-accent">Sole Dev</span>
+          <span class="badge badge-muted">Java · React Native</span>
+        </div>
+      </div>
+      <div class="project-body">
+
+        <style>
+            /* Scoped to .lg-tour-wrap — no conflicts with portfolio styles */
+            .lg-tour-wrap {
+                display: flex; align-items: center; justify-content: center;
+                gap: 40px; flex-wrap: wrap; width: 100%;
+                padding: 28px 0 32px;
+                background: #0d0d0d;
+                border: 1px solid #222;
+                margin-bottom: 24px;
+            }
+            .lg-phone-shell {
+                width: 240px; flex-shrink: 0; position: relative;
+            }
+            .lg-phone {
+                width: 240px; background: #151515;
+                border: 1px solid #333; border-radius: 28px;
+                overflow: hidden; box-shadow: 0 24px 48px rgba(0,0,0,0.6);
+            }
+            .lg-btn-r  { position:absolute; right:-3px; top:62px; width:3px; height:44px; background:#333; border-radius:0 3px 3px 0; }
+            .lg-btn-l1 { position:absolute; left:-3px; top:54px; width:3px; height:22px; background:#333; border-radius:3px 0 0 3px; }
+            .lg-btn-l2 { position:absolute; left:-3px; top:86px; width:3px; height:34px; background:#333; border-radius:3px 0 0 3px; }
+            .lg-btn-l3 { position:absolute; left:-3px; top:128px; width:3px; height:34px; background:#333; border-radius:3px 0 0 3px; }
+            .lg-island {
+                position:absolute; top:9px; left:50%; transform:translateX(-50%);
+                width:68px; height:19px; background:#000; border-radius:99px; z-index:12;
+            }
+            .lg-status {
+                height:32px; background:#111;
+                display:flex; align-items:flex-end; justify-content:space-between;
+                padding:0 14px 4px; font-size:8px; font-weight:700; color:#fff; position:relative; z-index:5;
+            }
+            .lg-screens {
+                height:468px; overflow:hidden; position:relative; background:#000;
+            }
+            .lg-ts {
+                position:absolute; inset:0; display:flex; flex-direction:column;
+                opacity:0; transform:translateX(14px);
+                transition:opacity 0.25s ease, transform 0.25s ease;
+                pointer-events:none; font-family:'Inter',-apple-system,sans-serif;
+            }
+            .lg-ts.active { opacity:1; transform:translateX(0); pointer-events:auto; }
+            .lg-ts.active::before {
+                content:''; position:absolute; inset:0;
+                background:rgba(0,0,0,0.48); z-index:0; pointer-events:none;
+            }
+            .lg-hl {
+                outline:2px solid #cf4f4f !important; outline-offset:2px;
+                border-radius:8px; isolation:isolate; z-index:1; position:relative;
+                animation:lgHlPulse 2s ease-in-out infinite;
+            }
+            @keyframes lgHlPulse {
+                0%,100%{outline-color:#cf4f4f;box-shadow:0 0 0 0 rgba(207,79,79,.35);}
+                50%    {outline-color:#e87070;box-shadow:0 0 6px 2px rgba(207,79,79,.2);}
+            }
+            .lg-homebar { height:19px; background:#000; display:flex; align-items:center; justify-content:center; }
+            .lg-homebar-pill { width:68px; height:3px; background:#2a2a2a; border-radius:99px; }
+
+            /* — Screen primitives — */
+            .lg-topbar { background:#111; display:flex; justify-content:space-between; align-items:center; padding:9px 13px; border-bottom:1px solid #222; flex-shrink:0; }
+            .lg-tb-title { font-size:11px; font-weight:800; color:#fff; letter-spacing:.02em; }
+            .lg-tb-sub   { font-size:8px; color:#888; margin-top:1px; }
+            .lg-red-btn  { background:#9b2626; border-radius:20px; padding:4px 10px; font-size:9px; font-weight:700; color:#fff; display:flex; align-items:center; gap:3px; }
+            .lg-card     { background:#1a1a1a; border-radius:10px; padding:10px; margin-bottom:7px; border:1px solid #2a2a2a; }
+            .lg-card-title{ font-size:11px; font-weight:700; color:#fff; margin-bottom:2px; }
+            .lg-card-sub  { font-size:8px; color:#666; margin-bottom:5px; }
+            .lg-input     { background:#f1f5f9; border-radius:7px; padding:7px 9px; font-size:9px; color:#aaa; }
+            .lg-datebox   { background:#e0e0e0; border-radius:7px; padding:7px 9px; font-size:9px; font-weight:700; color:#111; }
+            .lg-selectbox { background:#e0e0e0; border-radius:7px; padding:7px 9px; margin-top:4px; display:flex; justify-content:space-between; align-items:center; font-size:9px; color:#333; }
+            .lg-cta       { background:#9b2626; border-radius:8px; padding:9px; display:flex; justify-content:center; align-items:center; font-size:10px; font-weight:700; color:#fff; gap:4px; }
+            .lg-scroll    { flex:1; overflow:hidden; padding:9px 9px 0; display:flex; flex-direction:column; }
+            .lg-map-bg    { flex:1; background:#e8e4dc; position:relative; overflow:hidden; }
+            .lg-map-lbl   { position:absolute; font-size:7px; color:#777; }
+            .lg-map-dot   { position:absolute; width:10px; height:10px; border-radius:50%; background:#4a90d9; border:1.5px solid #fff; }
+            .lg-floating-nav { position:absolute; top:8px; left:8px; right:8px; z-index:5; background:rgba(255,255,255,.92); display:flex; justify-content:space-between; align-items:center; padding:7px 9px; border-radius:11px; }
+            .lg-fn-back  { font-size:8px; font-weight:700; color:#9b2626; }
+            .lg-fn-title { font-size:8px; font-weight:700; color:#333; }
+            .lg-searchbar { position:absolute; top:46px; left:8px; right:8px; z-index:5; background:#fff; border-radius:9px; padding:7px 9px; display:flex; align-items:center; gap:4px; box-shadow:0 2px 5px rgba(0,0,0,.12); font-size:8px; color:#aaa; }
+            .lg-hint-pill { position:absolute; bottom:52px; left:8px; right:8px; z-index:5; background:rgba(30,30,30,.88); border-radius:9px; padding:7px 9px; display:flex; align-items:center; gap:4px; font-size:8px; color:#fff; font-weight:500; }
+            .lg-point-sheet { background:#111; border-radius:11px; padding:9px; margin:8px; border:1px solid #222; flex-shrink:0; }
+            .lg-sheet-handle { width:26px; height:3px; background:#333; border-radius:2px; margin:0 auto 7px; }
+            .lg-point-row { display:flex; align-items:center; gap:7px; padding:8px; border-radius:7px; border:1.5px solid #333; margin-bottom:5px; }
+            .lg-point-row.hi { border-color:#9b2626; }
+            .lg-pdot  { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+            .lg-plabel{ font-size:7px; font-weight:700; letter-spacing:.7px; color:#666; }
+            .lg-pval  { font-size:9px; font-weight:700; color:#fff; margin-top:1px; }
+            .lg-setbtn{ font-size:8px; font-weight:700; color:#9b2626; margin-left:auto; }
+            .lg-p-panel { position:absolute; top:20px; right:5px; background:#1a1a1a; border-radius:10px; padding:8px; width:130px; border:1px solid #2a2a2a; z-index:5; }
+            .lg-p-panel-title { font-size:7px; font-weight:700; color:#888; margin-bottom:4px; }
+            .lg-p-card { display:flex; align-items:center; gap:4px; background:#111; border-radius:5px; border:1px solid #2a2a2a; padding:4px 5px; margin-bottom:3px; }
+            .lg-p-av   { width:19px; height:19px; border-radius:50%; background:#534AB7; display:flex; align-items:center; justify-content:center; font-size:7px; color:#fff; font-weight:700; flex-shrink:0; }
+            .lg-p-name { font-size:7px; font-weight:700; color:#fff; }
+            .lg-p-status { font-size:5px; color:#22c55e; margin-top:1px; }
+            .lg-p-status.w { color:#888; }
+            .lg-p-dot  { width:5px; height:5px; border-radius:50%; background:#22c55e; margin-left:auto; }
+            .lg-action-pill { position:absolute; bottom:48px; left:50%; transform:translateX(-50%); background:rgba(28,28,30,.94); border-radius:99px; padding:5px 11px 5px 13px; display:flex; align-items:center; gap:5px; border:.5px solid rgba(255,255,255,.1); white-space:nowrap; z-index:5; }
+            .lg-pill-label { font-size:8px; color:rgba(255,255,255,.75); font-weight:600; }
+            .lg-pill-sep   { width:.5px; height:12px; background:rgba(255,255,255,.15); }
+            .lg-leave-btn  { background:#9b2626; border-radius:99px; padding:3px 9px; font-size:8px; color:#fff; font-weight:700; }
+            .lg-route-line { position:absolute; top:44px; left:34px; width:64px; height:2px; background:#3366cc; }
+            .lg-emoji-mkr  { position:absolute; top:36px; left:52px; width:19px; height:19px; border-radius:50%; background:#22c55e; border:1.5px solid #fff; display:flex; align-items:center; justify-content:center; font-size:9px; }
+            .lg-rider-dot  { position:absolute; width:19px; height:19px; border-radius:50%; border:1.5px solid #fff; display:flex; align-items:center; justify-content:center; font-size:8px; }
+            .lg-modal-sheet { background:#1a1a1a; border-radius:13px 13px 0 0; border-top:1px solid #2a2a2a; position:absolute; bottom:0; left:0; right:0; z-index:5; }
+            .lg-modal-header{ display:flex; justify-content:space-between; align-items:center; padding:10px 13px 7px; }
+            .lg-modal-title { font-size:12px; font-weight:700; color:#fff; }
+            .lg-modal-close { width:20px; height:20px; border-radius:50%; background:#2a2a2a; display:flex; align-items:center; justify-content:center; font-size:8px; color:#888; }
+            .lg-warn-row { display:flex; align-items:flex-start; gap:4px; padding:5px 7px; margin:0 9px 5px; background:rgba(255,59,48,.1); border-left:2px solid #ff3b30; border-radius:0 3px 3px 0; font-size:7px; color:#ff6b6b; line-height:1.5; }
+            .lg-arrival-card { display:flex; align-items:center; gap:5px; padding:7px 9px; margin:0 9px 5px; background:#111; border-radius:6px; border:1px solid #2a2a2a; }
+            .lg-arrival-av   { width:24px; height:24px; border-radius:50%; background:#9b2626; display:flex; align-items:center; justify-content:center; font-size:9px; color:#fff; font-weight:700; }
+            .lg-arrival-name { font-size:8px; font-weight:700; color:#fff; }
+            .lg-arrival-time { font-size:6px; color:#888; }
+            .lg-check-circle { width:14px; height:14px; border-radius:50%; background:#22c55e; display:flex; align-items:center; justify-content:center; font-size:6px; color:#fff; margin-left:auto; }
+            .lg-modal-footer { display:flex; gap:5px; padding:7px 9px 9px; border-top:1px solid #2a2a2a; }
+            .lg-refresh-btn  { flex:1; background:#2a2a2a; border-radius:99px; padding:5px; display:flex; align-items:center; justify-content:center; font-size:7px; color:#ccc; gap:3px; }
+            .lg-close-btn    { flex:1; background:#9b2626; border-radius:99px; padding:5px; display:flex; align-items:center; justify-content:center; font-size:7px; color:#fff; font-weight:700; gap:3px; }
+            /* home screen */
+            .lg-hdr       { background:#111; display:flex; justify-content:space-between; align-items:center; padding:9px 11px; border-bottom:1px solid #222; flex-shrink:0; }
+            .lg-hdr-av    { width:29px; height:29px; border-radius:50%; background:#9b2626; display:flex; align-items:center; justify-content:center; font-size:12px; }
+            .lg-hdr-uname { font-size:10px; font-weight:800; color:#fff; }
+            .lg-hdr-usub  { font-size:7px; color:#888; }
+            .lg-hdr-acts  { display:flex; align-items:center; gap:4px; }
+            .lg-hdr-rideid{ display:flex; align-items:center; gap:3px; border:1.5px solid #9b2626; border-radius:5px; padding:3px 7px; font-size:8px; font-weight:700; color:#fff; }
+            .lg-hdr-qr    { width:24px; height:24px; border-radius:5px; background:#1e1e1e; border:1px solid #333; display:flex; align-items:center; justify-content:center; font-size:10px; }
+            .lg-hdr-plus  { width:24px; height:24px; border-radius:5px; background:#9b2626; display:flex; align-items:center; justify-content:center; font-size:13px; color:#fff; font-weight:700; }
+            .lg-home-sec  { background:#1a1a1a; margin:7px; border-radius:8px; padding:9px; border:1px solid #2a2a2a; flex-shrink:0; }
+            .lg-home-stitle{ font-size:9px; font-weight:700; color:#fff; margin-bottom:2px; }
+            .lg-home-noride{ font-size:8px; color:#555; }
+            .lg-home-card  { background:#1a1a1a; margin:0 7px; border-radius:9px; border:1px solid #2a2a2a; overflow:hidden; flex-shrink:0; }
+            .lg-home-card-h{ padding:9px 11px; border-bottom:1px solid #2a2a2a; }
+            .lg-home-card-title{ font-size:10px; font-weight:900; color:#fff; }
+            .lg-inactive-badge{ display:inline-block; border:1px solid #555; border-radius:2px; padding:1px 3px; font-size:5px; font-weight:700; color:#888; letter-spacing:.4px; margin-left:3px; }
+            .lg-home-card-meta{ padding:7px 11px 0; }
+            .lg-home-card-name{ font-size:10px; font-weight:800; color:#fff; margin-bottom:2px; }
+            .lg-home-card-row { display:flex; align-items:center; gap:3px; font-size:7px; color:#888; margin-bottom:2px; }
+            .lg-map-thumb  { height:65px; margin:5px 11px; border-radius:7px; overflow:hidden; background:#d5e8c8; position:relative; }
+            .lg-map-pin    { position:absolute; width:8px; height:8px; border-radius:50%; background:#9b2626; border:1.5px solid #fff; }
+            .lg-home-desc  { padding:7px 11px; background:#1a1a1a; font-size:8px; color:#ccc; line-height:1.5; }
+
+            /* — Info panel — */
+            .lg-info { flex:1; min-width:220px; max-width:340px; display:flex; flex-direction:column; gap:0; padding-top:6px; }
+            .lg-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px; }
+            .lg-chip  { background:#1a1a1a; border:1px solid #2a2a2a; border-radius:99px; padding:5px 12px; font-size:12px; font-weight:600; color:#666; cursor:pointer; transition:all .2s; white-space:nowrap; font-family:'JetBrains Mono',monospace; }
+            .lg-chip:hover { border-color:#cf4f4f; color:#e89898; }
+            .lg-chip.on    { background:#6f1c1c; border-color:#cf4f4f; color:#fbe9e9; }
+            .lg-step-label { font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#cf4f4f; margin-bottom:7px; font-family:'JetBrains Mono',monospace; }
+            .lg-step-title { font-size:clamp(1.1rem,2vw,1.5rem); font-weight:700; letter-spacing:-.02em; color:#e2e2e2; line-height:1.2; margin-bottom:10px; }
+            .lg-step-desc  { font-size:14px; color:#777; line-height:1.65; margin-bottom:22px; }
+            .lg-dots { display:flex; gap:5px; align-items:center; margin-bottom:22px; }
+            .lg-dot  { width:5px; height:5px; border-radius:50%; background:#2a2a2a; transition:all .22s; }
+            .lg-dot.on { width:18px; border-radius:3px; background:#cf4f4f; }
+            .lg-nav  { display:flex; align-items:center; gap:10px; }
+            .lg-btn-prev { background:none; border:1px solid #2a2a2a; color:#666; border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; font-size:1rem; cursor:pointer; transition:all .2s; }
+            .lg-btn-prev:hover:not(:disabled) { border-color:#666; color:#ccc; }
+            .lg-btn-prev:disabled { opacity:.2; cursor:default; }
+            .lg-btn-next { background:#9b2626; border:none; color:#fbe9e9; border-radius:99px; padding:10px 24px; font-size:14px; font-weight:700; cursor:pointer; transition:background .2s,transform .15s; }
+            .lg-btn-next:hover { background:#cf4f4f; transform:translateY(-1px); }
+            .lg-btn-skip { background:none; border:none; color:#555; font-size:13px; cursor:pointer; padding:4px; transition:color .2s; }
+            .lg-btn-skip:hover { color:#999; }
+        </style>
+
+        <div class="lg-tour-wrap">
+
+          <div class="lg-phone-shell">
+            <div class="lg-btn-r"></div><div class="lg-btn-l1"></div><div class="lg-btn-l2"></div><div class="lg-btn-l3"></div>
+            <div class="lg-phone">
+              <div class="lg-island"></div>
+              <div class="lg-status">
+                <span>9:41</span>
+                <div style="display:flex;align-items:center;gap:3px;font-size:6px;"><span>▪▪▪</span><span>WiFi</span><span>🔋</span></div>
+              </div>
+              <div class="lg-screens" id="lgScreens">
+
+                <div class="lg-ts active" id="lg-ts-0">
+                  <div class="lg-hdr">
+                    <div style="display:flex;align-items:center;gap:6px;">
+                      <div class="lg-hdr-av">🏍</div>
+                      <div><div class="lg-hdr-uname">YAWELS123</div><div class="lg-hdr-usub">🏍 No type</div></div>
+                    </div>
+                    <div class="lg-hdr-acts">
+                      <div class="lg-hdr-rideid">Ride ID 🔍</div>
+                      <div class="lg-hdr-qr">▦</div>
+                      <div class="lg-hdr-plus lg-hl" style="border-radius:5px;">+</div>
+                    </div>
+                  </div>
+                  <div class="lg-home-sec"><div class="lg-home-stitle">Active Ride</div><div class="lg-home-noride">No active ride</div></div>
+                  <div class="lg-home-card">
+                    <div class="lg-home-card-h"><div class="lg-home-card-title">DAHILAYAN ADVENTURE PARK<span class="lg-inactive-badge">INACTIVE</span></div><div style="font-size:5px;color:#888;margin-top:2px;">ID: #5F74527788F3</div></div>
+                    <div class="lg-home-card-meta">
+                      <div class="lg-home-card-name">Bukidnon Rides</div>
+                      <div class="lg-home-card-row">📍 <span style="color:#9b2626;font-weight:700;">Toril District</span> → Dahilayan…</div>
+                      <div class="lg-home-card-row">📅 July 02, 2026 · 11:10 AM</div>
+                    </div>
+                    <div class="lg-map-thumb">
+                      <span class="lg-map-lbl" style="top:5px;left:7px;">Mountain Pines</span>
+                      <span class="lg-map-lbl" style="top:20px;left:26px;">Dahilayan</span>
+                      <div class="lg-map-pin" style="top:18px;left:48px;"></div>
+                    </div>
+                    <div class="lg-home-desc">Bukidnon is home to multiple famous destinations, including Dahilayan Adventure Park.</div>
+                  </div>
+                </div>
+
+                <div class="lg-ts" id="lg-ts-1">
+                  <div class="lg-topbar"><div><div class="lg-tb-title">CREATE RIDE</div><div class="lg-tb-sub">Step 1 of 3 — Details</div></div><div class="lg-red-btn" style="opacity:.4;">Next ›</div></div>
+                  <div class="lg-scroll">
+                    <div class="lg-card lg-hl" style="border-color:#9b2626;"><div class="lg-card-title">Name Your Ride</div><div class="lg-card-sub">Give your adventure a memorable name</div><div class="lg-input">Epic Bukidnon Adventure</div></div>
+                    <div class="lg-card"><div class="lg-card-title">When &amp; How</div><div class="lg-datebox">Thursday, June 4, 2026 · 10:57 PM</div></div>
+                    <div class="lg-card"><div class="lg-card-title">Describe Your Route</div><div class="lg-input" style="height:30px;">Tell us about the terrain…</div></div>
+                    <div class="lg-cta">Continue to Location ›</div>
+                  </div>
+                </div>
+
+                <div class="lg-ts" id="lg-ts-2">
+                  <div class="lg-topbar"><div><div class="lg-tb-title">CREATE RIDE</div><div class="lg-tb-sub">Step 1 of 3 — Details</div></div><div class="lg-red-btn" style="opacity:.4;">Next ›</div></div>
+                  <div class="lg-scroll">
+                    <div class="lg-card"><div class="lg-card-title">Name Your Ride</div><div class="lg-input">Epic Bukidnon Adventure</div></div>
+                    <div class="lg-card lg-hl" style="border-color:#9b2626;"><div class="lg-card-title">When &amp; How</div><div class="lg-datebox">Thursday, June 4, 2026</div><div class="lg-card-sub" style="margin-top:4px;">Choose Your Bike</div><div class="lg-selectbox"><span>🏍 ADV 160</span><span style="color:#888;">▾</span></div></div>
+                    <div class="lg-card"><div class="lg-card-title">Describe Your Route</div><div class="lg-input" style="height:24px;font-size:7px;">Tell us about the terrain…</div></div>
+                    <div class="lg-cta">Continue to Location ›</div>
+                  </div>
+                </div>
+
+                <div class="lg-ts" id="lg-ts-3">
+                  <div class="lg-topbar"><div><div class="lg-tb-title">CREATE RIDE</div><div class="lg-tb-sub">Step 1 of 3 — Details</div></div><div class="lg-red-btn" style="opacity:.4;">Next ›</div></div>
+                  <div class="lg-scroll">
+                    <div class="lg-card"><div class="lg-card-title">Name Your Ride</div><div class="lg-input">Epic Bukidnon Adventure</div></div>
+                    <div class="lg-card"><div class="lg-card-title">When &amp; How</div><div class="lg-datebox" style="font-size:7px;">Thursday, June 4, 2026</div><div class="lg-selectbox"><span>🏍 ADV 160</span></div></div>
+                    <div class="lg-card lg-hl" style="border-color:#9b2626;"><div class="lg-card-title">Describe Your Route</div><div class="lg-card-sub">Terrain, highlights, special stops</div><div class="lg-input" style="height:34px;font-size:7px;">Tell us about the terrain, highlights, or any special stops…</div></div>
+                    <div class="lg-cta">Continue to Location ›</div>
+                  </div>
+                </div>
+
+                <div class="lg-ts" id="lg-ts-4">
+                  <div class="lg-topbar"><div><div class="lg-tb-title">CREATE RIDE</div><div class="lg-tb-sub">Step 1 of 3 — Details</div></div><div class="lg-red-btn" style="opacity:.4;">Next ›</div></div>
+                  <div class="lg-scroll">
+                    <div class="lg-card"><div class="lg-card-title">Name Your Ride</div><div class="lg-input">Epic Bukidnon Adventure</div></div>
+                    <div class="lg-card"><div class="lg-card-title">When &amp; How</div><div class="lg-datebox" style="font-size:7px;">Thursday, June 4, 2026</div><div class="lg-selectbox"><span>🏍 ADV 160</span></div></div>
+                    <div class="lg-card"><div class="lg-card-title">Describe Your Route</div><div class="lg-input" style="height:27px;font-size:7px;">Mountain terrain, forest trails…</div></div>
+                    <div class="lg-cta lg-hl">Continue to Location ›</div>
+                  </div>
+                </div>
+
+                <div class="lg-ts" id="lg-ts-5">
+                  <div style="flex:1;position:relative;display:flex;flex-direction:column;">
+                    <div class="lg-floating-nav"><div class="lg-fn-back">‹ Back</div><div class="lg-fn-title">SET LOCATION</div><div class="lg-red-btn" style="font-size:7px;padding:3px 7px;">Next ›</div></div>
+                    <div class="lg-searchbar lg-hl"> Where do you want to ride?</div>
+                    <div class="lg-map-bg">
+                      <span class="lg-map-lbl" style="top:14px;left:14px;">Lubogan</span>
+                      <span class="lg-map-lbl" style="top:30px;left:52px;">Crossing Bayabas</span>
+                      <span class="lg-map-lbl" style="top:46px;left:48px;">Toril</span>
+                      <div class="lg-map-dot" style="top:70px;left:78px;"></div>
+                    </div>
+                    <div class="lg-hint-pill"> Tap the map or search above</div>
+                  </div>
+                </div>
+
+                <div class="lg-ts" id="lg-ts-6">
+                  <div style="flex:1;position:relative;display:flex;flex-direction:column;">
+                    <div class="lg-floating-nav"><div class="lg-fn-back">‹ Back</div><div class="lg-fn-title">SET LOCATION</div><div class="lg-red-btn" style="font-size:7px;padding:3px 7px;">Next ›</div></div>
+                    <div class="lg-searchbar"> Where do you want to ride?</div>
+                    <div class="lg-map-bg">
+                      <span class="lg-map-lbl" style="top:14px;left:14px;">Lubogan</span>
+                      <span class="lg-map-lbl" style="top:44px;left:52px;">Crossing Bayabas</span>
+                      <span class="lg-map-lbl" style="top:60px;left:48px;">Toril</span>
+                      <div class="lg-map-dot" style="top:68px;left:78px;background:#9b2626;"></div>
+                    </div>
+                    <div class="lg-hint-pill lg-hl"> Tap the map or search above</div>
+                  </div>
+                </div>
+
+                <div class="lg-ts" id="lg-ts-7">
+                  <div style="flex:1;position:relative;display:flex;flex-direction:column;">
+                    <div class="lg-floating-nav"><div class="lg-fn-back">‹ Back</div><div class="lg-fn-title">START POINT</div><div class="lg-red-btn" style="font-size:7px;padding:3px 7px;opacity:.4;">Create ✓</div></div>
+                    <div class="lg-searchbar"> Search starting point</div>
+                    <div class="lg-map-bg" style="height:112px;flex:none;">
+                      <span class="lg-map-lbl" style="top:10px;left:12px;">Lubogan</span>
+                      <span class="lg-map-lbl" style="top:30px;left:52px;">Crossing Bayabas</span>
+                      <span class="lg-map-lbl" style="top:48px;left:44px;">Toril</span>
+                      <div class="lg-map-dot" style="top:58px;left:78px;background:#22c55e;"></div>
+                    </div>
+                    <div class="lg-point-sheet">
+                      <div class="lg-sheet-handle"></div>
+                      <div class="lg-point-row hi lg-hl"><div class="lg-pdot" style="background:#22c55e;"></div><div><div class="lg-plabel">START</div><div class="lg-pval">Toril District</div></div><div class="lg-setbtn">SET</div></div>
+                      <div class="lg-point-row"><div class="lg-pdot" style="background:#ef4444;"></div><div><div class="lg-plabel">END</div><div class="lg-pval" style="color:#666;">Not set</div></div><div class="lg-setbtn">SET</div></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="lg-ts" id="lg-ts-8">
+                  <div style="flex:1;position:relative;display:flex;flex-direction:column;">
+                    <div class="lg-floating-nav"><div class="lg-fn-back">‹ Back</div><div class="lg-fn-title">END POINT</div><div class="lg-red-btn" style="font-size:7px;padding:3px 7px;opacity:.4;">Create ✓</div></div>
+                    <div class="lg-searchbar">Search end point</div>
+                    <div class="lg-map-bg" style="height:112px;flex:none;">
+                      <span class="lg-map-lbl" style="top:10px;left:12px;">Lubogan</span>
+                      <span class="lg-map-lbl" style="top:30px;left:52px;">Crossing Bayabas</span>
+                      <div class="lg-map-dot" style="top:34px;left:52px;background:#ef4444;"></div>
+                      <div class="lg-map-dot" style="top:58px;left:78px;background:#22c55e;"></div>
+                    </div>
+                    <div class="lg-point-sheet">
+                      <div class="lg-sheet-handle"></div>
+                      <div class="lg-point-row"><div class="lg-pdot" style="background:#22c55e;"></div><div><div class="lg-plabel">START</div><div class="lg-pval">Toril District</div></div><div class="lg-setbtn">EDIT</div></div>
+                      <div class="lg-point-row hi lg-hl"><div class="lg-pdot" style="background:#ef4444;"></div><div><div class="lg-plabel">END</div><div class="lg-pval" style="font-size:7px;">Dahilayan Adventure Park</div></div><div class="lg-setbtn">SET</div></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="lg-ts" id="lg-ts-9">
+                  <div style="flex:1;position:relative;">
+                    <div style="height:100%;background:#e8e4dc;position:relative;overflow:hidden;">
+                      <span class="lg-map-lbl" style="top:128px;left:12px;">Toril</span>
+                      <span class="lg-map-lbl" style="top:55px;left:68px;">Crossing Bayabas</span>
+                      <div class="lg-route-line"></div>
+                      <div class="lg-emoji-mkr">🏁</div>
+                      <div class="lg-rider-dot" style="top:100px;left:19px;background:#9b2626;">🏍</div>
+                      <div class="lg-rider-dot" style="top:87px;left:41px;background:#3b5bdb;color:#fff;font-size:6px;font-weight:700;">A</div>
+                    </div>
+                    <div class="lg-p-panel lg-hl">
+                      <div class="lg-p-panel-title">👥 PARTICIPANTS</div>
+                      <div class="lg-p-card"><div class="lg-p-av">L</div><div><div class="lg-p-name">lean_paninsoro</div><div class="lg-p-status">Glabaca · 2273m</div></div><div class="lg-p-dot"></div></div>
+                      <div class="lg-p-card"><div class="lg-p-av" style="background:#3b5bdb;">A</div><div><div class="lg-p-name">yanna uyabs</div><div class="lg-p-status w">Waiting…</div></div><div class="lg-p-dot" style="background:#888;"></div></div>
+                      <div class="lg-p-card"><div class="lg-p-av" style="background:#059669;">L</div><div><div class="lg-p-name">leandropanin</div><div class="lg-p-status">Glabaca · 2274m</div></div><div class="lg-p-dot"></div></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="lg-ts" id="lg-ts-10">
+                  <div style="flex:1;position:relative;">
+                    <div style="height:100%;background:#e8e4dc;position:relative;overflow:hidden;">
+                      <span class="lg-map-lbl" style="top:128px;left:12px;">Toril</span>
+                      <span class="lg-map-lbl" style="top:55px;left:68px;">Crossing Bayabas</span>
+                      <div class="lg-route-line"></div>
+                      <div class="lg-emoji-mkr">🏁</div>
+                      <div class="lg-rider-dot" style="top:100px;left:19px;background:#9b2626;">🏍</div>
+                      <div class="lg-rider-dot" style="top:87px;left:41px;background:#3b5bdb;color:#fff;font-size:6px;font-weight:700;">A</div>
+                    </div>
+                    <div class="lg-action-pill lg-hl"><span class="lg-pill-label">Details</span><div class="lg-pill-sep"></div><div class="lg-leave-btn">Leave ✕</div></div>
+                  </div>
+                </div>
+
+                <div class="lg-ts" id="lg-ts-11">
+                  <div style="flex:1;position:relative;">
+                    <div style="height:145px;background:#e8e4dc;position:relative;overflow:hidden;">
+                      <span class="lg-map-lbl" style="top:60px;left:12px;">Toril</span>
+                      <div class="lg-route-line" style="top:37px;left:28px;width:54px;"></div>
+                      <div class="lg-emoji-mkr" style="top:28px;left:37px;">🏁</div>
+                      <div class="lg-rider-dot" style="top:68px;left:12px;background:#9b2626;">🏍</div>
+                    </div>
+                    <div class="lg-modal-sheet lg-hl">
+                      <div class="lg-modal-header"><div class="lg-modal-title">Checkpoint Arrivals</div><div class="lg-modal-close">✕</div></div>
+                      <div class="lg-warn-row">⚠️ <span>Only riders who reached each checkpoint are listed.</span></div>
+                      <div class="lg-arrival-card"><div class="lg-arrival-av">L</div><div><div class="lg-arrival-name">lean_paninsoro</div><div class="lg-arrival-time">Arrived 11:23 AM · Checkpoint 1</div></div><div class="lg-check-circle">✓</div></div>
+                      <div class="lg-modal-footer"><div class="lg-refresh-btn">↻ Refresh</div><div class="lg-close-btn">✕ Close</div></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="lg-ts" id="lg-ts-12">
+                  <div style="flex:1;position:relative;">
+                    <div style="height:136px;background:#e8e4dc;position:relative;overflow:hidden;">
+                      <span class="lg-map-lbl" style="top:60px;left:12px;">Toril</span>
+                      <div class="lg-route-line" style="top:37px;left:28px;width:54px;"></div>
+                      <div class="lg-emoji-mkr" style="top:28px;left:37px;">🏁</div>
+                    </div>
+                    <div class="lg-modal-sheet" style="position:relative;">
+                      <div class="lg-modal-header"><div class="lg-modal-title">Checkpoint Arrivals</div><div class="lg-modal-close">✕</div></div>
+                      <div class="lg-warn-row"> <span>Only riders who reached each checkpoint are listed.</span></div>
+                      <div class="lg-arrival-card lg-hl" style="border-color:#9b2626;"><div class="lg-arrival-av">L</div><div><div class="lg-arrival-name">lean_paninsoro</div><div class="lg-arrival-time">Arrived 11:23 AM · Checkpoint 1</div></div><div class="lg-check-circle">✓</div></div>
+                      <div class="lg-modal-footer"><div class="lg-refresh-btn">↻ Refresh</div><div class="lg-close-btn">✕ Close</div></div>
+                    </div>
+                  </div>
+                </div>
+
+              </div><div class="lg-homebar"><div class="lg-homebar-pill"></div></div>
+            </div>
+          </div><div class="lg-info">
+          <div class="lg-chips">
+            <button class="lg-chip on"  onclick="lgJump(0,this)">Home</button>
+            <button class="lg-chip"     onclick="lgJump(1,this)">Create Ride</button>
+            <button class="lg-chip"     onclick="lgJump(5,this)">Set Location</button>
+            <button class="lg-chip"     onclick="lgJump(7,this)">Route Points</button>
+            <button class="lg-chip"     onclick="lgJump(9,this)">Live Tracking</button>
+            <button class="lg-chip"     onclick="lgJump(11,this)">Checkpoints</button>
+          </div>
+          <div class="lg-step-label" id="lgLabel">Step 1 of 13</div>
+          <div class="lg-step-title"  id="lgTitle">Create a Ride</div>
+          <p   class="lg-step-desc"   id="lgDesc">Tap the + button to start creating a new group ride for you and your friends.</p>
+          <div class="lg-dots" id="lgDots"></div>
+          <div class="lg-nav">
+            <button class="lg-btn-prev" id="lgPrev" onclick="lgPrev()" disabled>←</button>
+            <button class="lg-btn-next" id="lgNext" onclick="lgNext()">Next ›</button>
+            <button class="lg-btn-skip" onclick="lgSkip()">Skip</button>
+          </div>
+        </div>
+
+        </div><script>
+        const LG_STEPS = [
+          { s:0,  title:'Create a Ride',            desc:'Tap the + button to start creating a new group ride for you and your friends.',             g:0 },
+          { s:1,  title:'Name your ride',            desc:'Give your adventure a memorable name that all participants will see.',                      g:1 },
+          { s:2,  title:'Set date & bike type',      desc:'Choose when the ride happens and select your bike type.',                                   g:1 },
+          { s:3,  title:'Describe your route',       desc:'Add terrain notes, highlights, or special stops for your riders.',                          g:1 },
+          { s:4,  title:'Continue to location',      desc:'Tap here to open the map and pin your ride location.',                                      g:1 },
+          { s:5,  title:'Search your location',      desc:'Type a place name or tap the map to drop a pin for your meeting point.',                    g:2 },
+          { s:6,  title:'Tap the map',               desc:'Tap anywhere on the map to set your meeting point.',                                        g:2 },
+          { s:7,  title:'Set your start point',      desc:'Tap SET to drop a pin for where the ride begins.',                                          g:3 },
+          { s:8,  title:'Set your end point',        desc:'Then set the destination where your group finishes the ride.',                              g:3 },
+          { s:9,  title:'Live participant tracking', desc:"See each rider's real-time location. Green = active, gray = waiting for GPS.",              g:4 },
+          { s:10, title:'Details & Leave',           desc:'"Details" opens ride info. Tap "Leave" to exit the ride at any time.',                      g:4 },
+          { s:11, title:'Checkpoint Arrivals',       desc:'Tap the checkpoints button to see which riders arrived at each stop.',                      g:5 },
+          { s:12, title:'Arrival record',            desc:"Each entry shows the rider's name and exact arrival timestamp.",                            g:5 },
+        ];
+        const LG_GROUP_SIZES = [1,4,2,2,2,2];
+        const LG_CHIP_STEPS  = [0,1,5,7,9,11];
+        let lgStep = 0;
+
+        function lgRender() {
+          const step = LG_STEPS[lgStep];
+          document.querySelectorAll('.lg-ts').forEach(el => el.classList.remove('active'));
+          document.getElementById('lg-ts-' + step.s).classList.add('active');
+          document.getElementById('lgLabel').textContent = 'Step ' + (lgStep+1) + ' of ' + LG_STEPS.length;
+          document.getElementById('lgTitle').textContent = step.title;
+          document.getElementById('lgDesc').textContent  = step.desc;
+          // dots
+          const gStart = LG_STEPS.findIndex(x => x.g === step.g);
+          const gOff   = lgStep - gStart;
+          const dotsEl = document.getElementById('lgDots');
+          dotsEl.innerHTML = '';
+          for (let i = 0; i < LG_GROUP_SIZES[step.g]; i++) {
+            const d = document.createElement('div');
+            d.className = 'lg-dot' + (i === gOff ? ' on' : '');
+            dotsEl.appendChild(d);
+          }
+          // prev/next
+          document.getElementById('lgPrev').disabled = lgStep === 0;
+          document.getElementById('lgNext').textContent = lgStep === LG_STEPS.length - 1 ? 'Done ✓' : 'Next ›';
+          // chips
+          const chipIdx = LG_CHIP_STEPS.indexOf(LG_CHIP_STEPS.find((v,i) => {
+            const nextV = LG_CHIP_STEPS[i+1] ?? Infinity;
+            return lgStep >= v && lgStep < nextV;
+          }));
+          document.querySelectorAll('.lg-chip').forEach((c,i) => c.classList.toggle('on', i === chipIdx));
+        }
+
+        function lgNext() { if (lgStep < LG_STEPS.length-1) { lgStep++; lgRender(); } }
+        function lgPrev() { if (lgStep > 0) { lgStep--; lgRender(); } }
+        function lgSkip() { lgStep = LG_STEPS.length-1; lgRender(); }
+        function lgJump(idx) { lgStep = idx; lgRender(); }
+
+        lgRender();
+      </script>
+
+        <div class="callout">
+          <div class="callout-label">// The Hard Problem</div>
+          <p>
+            Reverse geocoding in Mindanao requires <strong>barangay-level precision</strong> —
+            not just city names. Commercial APIs don't support it or charge at scale.
+            Built a <strong>custom geocoding pipeline</strong>: Nominatim coordinates matched against
+            the official <strong>PSGC dataset</strong> via <code>correspondence_code</code>.
+            Real barangay names from raw GPS. Offline-capable, cached. <strong>Zero paid API dependency.</strong>
+          </p>
+        </div>
+
+        <ul class="feature-list">
+          <li><span>Real-time location broadcasting to ride participants via WebSocket connection logic</span></li>
+          <li><span>Checkpoint tracking — records each rider's arrival, sequenced dynamically from route data</span></li>
+          <li><span>Ride lifecycle execution: start, pause, force-finish, and <strong>ownership transfer</strong> on creator exit</span></li>
+          <li><span>Offline GPS buffering with automatic server sync modules on system reconnect</span></li>
+          <li><span>Auth: <strong>Google OAuth + email/password</strong>, rate-limited login profiles, token rotation &amp; blacklisting leveraging <strong>Redis</strong></span></li>
+          <li><span>Route planning — distance calc, checkpoint sequencing, and full route vector generation at ride creation</span></li>
+          <li><span>Built explicitly for Mindanao road conditions and connectivity gaps</span></li>
+        </ul>
+
+        <div class="project-links">
+          <a href="https://www.leanpaninsoro.dev/laagan/homepage/" class="project-link" target="_blank" rel="noopener">homepage →</a>
+          <a href="https://github.com/Leyaaaan1" class="project-link" target="_blank" rel="noopener">github →</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="project-card fade-in">
+      <div class="project-header">
+        <div>
+          <div class="project-name">Reddit Analytics Platform</div>
+          <div class="project-sub">AI-powered sentiment analysis · Next.js + Google Gemini</div>
+        </div>
+        <div class="project-badges">
+          <span class="badge badge-muted">Live</span>
+          <span class="badge badge-muted">TypeScript</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <ul class="feature-list">
+          <li><span>Scrapes Reddit posts and runs them through <strong>Google Gemini AI</strong> — sentiment, summaries, keyword extraction</span></li>
+          <li><span>Built with <strong>Next.js and TypeScript</strong>, operating inside a unified full-stack single repository environment</span></li>
+        </ul>
+        <div class="project-links">
+          <a href="https://reddit-something.vercel.app/" class="project-link" target="_blank" rel="noopener">Site →</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="project-card fade-in">
+      <div class="project-header">
+        <div>
+          <div class="project-name">FreeFall Simulations</div>
+          <div class="project-sub">Interactive physics simulation · Python + Flask</div>
+        </div>
+        <div class="project-badges">
+          <span class="badge badge-muted">Live</span>
+          <span class="badge badge-muted">Python</span>
+          <span class="badge badge-muted">Physics</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <p class="project-role">
+          Visualizes free-fall motion across nine planets with real-time kinematic equations,
+          velocity charts, and impact metrics — powered by a <strong>Flask backend</strong> and an interactive JavaScript UI.
+        </p>
+        <ul class="feature-list">
+          <li><span>Models gravity, atmospheric drag, and numerical physics integration variants per planet</span></li>
+          <li><span>Real-time simulation computations of velocity, acceleration, and kinetic energy metrics at impact</span></li>
+          <li><span>Flask architecture serving backend data simulation engine logic directly to a JavaScript frontend interface</span></li>
+        </ul>
+        <div class="project-links">
+          <a href="https://free-fall-ten.vercel.app/" class="project-link" target="_blank" rel="noopener">Site →</a>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <section id="stack">
+    <div class="label">[stack]</div>
+    <div class="stack-grid fade-in">
+      <div class="stack-group">
+        <div class="stack-group-label">languages</div>
+        <div class="stack-items">
+          <span class="stack-item">Java</span>
+          <span class="stack-item">PHP</span>
+          <span class="stack-item">JavaScript</span>
+          <span class="stack-item">TypeScript</span>
+          <span class="stack-item">Python</span>
+          <span class="stack-item">HTML / CSS</span>
+          <span class="stack-item">SQL</span>
+        </div>
+      </div>
+      <div class="stack-group">
+        <div class="stack-group-label">backend</div>
+        <div class="stack-items">
+          <span class="stack-item">Spring Boot</span>
+          <span class="stack-item">Laravel</span>
+          <span class="stack-item">Flask</span>
+          <span class="stack-item">REST APIs</span>
+          <span class="stack-item">WebSockets</span>
+        </div>
+      </div>
+      <div class="stack-group">
+        <div class="stack-group-label">auth &amp; security</div>
+        <div class="stack-items">
+          <span class="stack-item">OAuth 2.0</span>
+          <span class="stack-item">RBAC</span>
+          <span class="stack-item">Token Rotation</span>
+          <span class="stack-item">Rate Limiting</span>
+        </div>
+      </div>
+      <div class="stack-group">
+        <div class="stack-group-label">frontend</div>
+        <div class="stack-items">
+          <span class="stack-item">React / Next.js</span>
+          <span class="stack-item">React Native</span>
+        </div>
+      </div>
+      <div class="stack-group">
+        <div class="stack-group-label">tools &amp; databases</div>
+        <div class="stack-items">
+          <span class="stack-item">MySQL / PostgreSQL</span>
+          <span class="stack-item">Redis</span>
+          <span class="stack-item">Docker</span>
+          <span class="stack-item">Git</span>
+          <span class="stack-item">Postman</span>
+        </div>
+      </div>
+      <div class="stack-group">
+        <div class="stack-group-label">geo / data</div>
+        <div class="stack-items">
+          <span class="stack-item">PSGC Dataset</span>
+          <span class="stack-item">Nominatim</span>
+          <span class="stack-item">Google Gemini AI</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact">
+    <div class="label">[contact]</div>
+    <div class="contact-grid fade-in">
+      <a class="contact-row" href="mailto:paninsorolean@gmail.com">
+        <span class="contact-key">email</span>
+        <span class="contact-val">paninsorolean@gmail.com</span>
+      </a>
+      <a class="contact-row" href="https://github.com/Leyaaaan1" target="_blank" rel="noopener">
+        <span class="contact-key">github</span>
+        <span class="contact-val">github.com/Leyaaaan1</span>
+      </a>
+      <a class="contact-row" href="https://linkedin.com/in/lean-paninsoro-587b89267" target="_blank" rel="noopener">
+        <span class="contact-key">linkedin</span>
+        <span class="contact-val">linkedin.com/in/lean-paninsoro-587b89267</span>
+      </a>
+      <a class="contact-row" href="tel:+639692020569">
+        <span class="contact-key">phone</span>
+        <span class="contact-val">+63 969 202 0569</span>
+      </a>
+    </div>
+  </section>
+  https://play.google.com/apps/testing/com.laagan/join?hl=en-US
+
+</main>
+
+<footer>
+  <span class="footer-copy">© 2026 <span>Lean Paninsoro</span></span>
+  <span class="footer-copy">lean@paninsoro:~$ <span>■</span></span>
+</footer>
+
+<script type="module" src="/main.js"></script>
+
+</body>
+</html>

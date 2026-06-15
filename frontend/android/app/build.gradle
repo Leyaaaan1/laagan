@@ -22,7 +22,7 @@ react {
     autolinkLibrariesWithApp()
 }
 
-def enableProguardInReleaseBuilds = false
+def enableProguardInReleaseBuilds = true
 
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
@@ -37,8 +37,10 @@ android {
         applicationId "com.laagan"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 16
-        versionName "1.0.16"
+        versionCode 20
+        versionName "1.0.20"
+
+
 
         // ── Inject Facebook credentials from .env ──
         resValue "string", "facebook_app_id", envVars["FACEBOOK_APP_ID"] ?: ""
@@ -69,6 +71,12 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
+
 }
 
 dependencies {
@@ -77,6 +85,10 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:1.8.0"
     implementation 'com.facebook.android:facebook-login:16.3.0'
     implementation 'com.google.android.gms:play-services-auth:20.7.0'
+
+    implementation "androidx.activity:activity-ktx:1.9.0"
+    implementation "androidx.core:core-ktx:1.13.1"
+
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")

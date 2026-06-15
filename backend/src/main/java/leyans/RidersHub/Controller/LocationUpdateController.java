@@ -8,6 +8,7 @@ import leyans.RidersHub.DTO.Request.LocationDTO.LocationUpdateRequestDTO;
 import leyans.RidersHub.ExceptionHandler.UnauthorizedAccessException;
 import leyans.RidersHub.Service.RideLocationEmitterRegistry;
 import leyans.RidersHub.Service.RideLocationService;
+import leyans.RidersHub.Utility.AppLogger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -35,13 +36,11 @@ public class LocationUpdateController {
     public ResponseEntity<List<LocationUpdateRequestDTO>> getAllRiderLocations(
             @PathVariable Integer startedRideId) {  // ← Changed to Integer
 
-        System.out.println("\n📍 [GET /{startedRideId}/all-riders] Fetching all rider locations for Ride: " + startedRideId);
+        System.out.println("\n [GET /{startedRideId}/all-riders] Fetching all rider locations for Ride: " + startedRideId);
         try {
             List<LocationUpdateRequestDTO> locations = rideLocationService.getAllRiderLocations(startedRideId);
-            System.out.println("✅ Returning " + locations.size() + " locations\n");
             return ResponseEntity.ok(locations);
         } catch (Exception e) {
-            System.err.println("❌ [ERROR] " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -49,9 +48,13 @@ public class LocationUpdateController {
     public SseEmitter streamLocations(
             @PathVariable Integer startedRideId,
             HttpServletResponse response) {
-        // Disable buffering so events flush immediately
+
+        rideLocationService.validateRideAccess(startedRideId);
+
         response.setHeader("X-Accel-Buffering", "no");
         response.setHeader("Cache-Control", "no-cache");
+        AppLogger.info(this.getClass(), "New SSE connection for ride: " + startedRideId);
+
         return emitterRegistry.subscribe(startedRideId);
     }
 
@@ -59,18 +62,17 @@ public class LocationUpdateController {
     @GetMapping("/{startedRideId}/locations")  // ← Update path variable name
     public ResponseEntity<List<LocationUpdateRequestDTO>> getParticipantsLocations(
             @PathVariable Integer startedRideId) {  // ← Changed to Integer
-
-        System.out.println("\n📍 [GET /locations] Called for Ride: " + startedRideId);
-
+        AppLogger.info(this.getClass(), "GET /{startedRideId}/locations called");
         try {
             List<LocationUpdateRequestDTO> locations =
                     rideLocationService.getLatestParticipantLocations(startedRideId);
-            System.out.println("✅ Returning " + locations.size() + " locations\n");
+            AppLogger.info(this.getClass(), "Fetched participant locations");
             return ResponseEntity.ok(locations);
 
         } catch (Exception e) {
-            System.err.println("❌ [ERROR] " + e.getMessage());
             e.printStackTrace();
+            AppLogger.error(this.getClass(), "Error fetching participant locations");
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -84,7 +86,6 @@ public class LocationUpdateController {
             @RequestParam double longitude) {
 
         try {
-            // ✅ OPTIMIZED: Single operation combines update + fetch
             List<LocationUpdateRequestDTO> allLocations =
                     rideLocationService.updateLocationAndFetchAll(
                             startedRideId, latitude, longitude);
