@@ -5,6 +5,7 @@ import layout from '../styles/base/layout';
 import colors from '../styles/tokens/colors';
 import spacing from '../styles/tokens/spacing';
 import {fontSize} from '../styles/tokens/typography';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 const PRIVACY_POLICY = `Privacy Policy for laagan
 
@@ -170,6 +171,7 @@ export default function LegalScreen({navigation, route}) {
   // Allow deep-linking to a specific tab via route.params.tab
   const initialTab = route?.params?.tab === 'terms' ? 'terms' : 'privacy';
   const [activeTab, setActiveTab] = useState(initialTab);
+  const insets = useSafeAreaInsets();
 
   const isPrivacy = activeTab === 'privacy';
 
@@ -184,6 +186,7 @@ export default function LegalScreen({navigation, route}) {
           paddingVertical: spacing.md,
           borderBottomWidth: 1,
           borderBottomColor: colors.border,
+          paddingTop: insets.top + spacing.md,
         }}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <FontAwesome name="chevron-left" size={20} color={colors.primary} />

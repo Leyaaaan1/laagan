@@ -24,6 +24,10 @@ import EmailVerificationScreen from './React/screens/EmailVerificationScreen';
 import VerifyEmailLinkScreen from './React/screens/VerifyEmailLinkScreen';
 import OnboardingTour from './React/screens/OnboardingTour';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  initialWindowMetrics,
+  SafeAreaProvider,
+} from 'react-native-safe-area-context';
 
 interface AuthContextValue {
   token: string | null;
@@ -104,12 +108,14 @@ const NavigationContent = () => {
 };
 export default function App() {
   return (
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
     <AuthProvider>
-      <RideProvider>
-        <NavigationContainer>
-          <NavigationContent />
-        </NavigationContainer>
-      </RideProvider>
-    </AuthProvider>
+        <RideProvider>
+          <NavigationContainer>
+            <NavigationContent />
+          </NavigationContainer>
+        </RideProvider>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }

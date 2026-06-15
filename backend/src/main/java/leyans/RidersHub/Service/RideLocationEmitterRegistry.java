@@ -19,7 +19,6 @@ public class RideLocationEmitterRegistry {
     private final Map<Integer, List<SseEmitter>> emitters = new ConcurrentHashMap<>();
 
     public SseEmitter subscribe(Integer rideId) {
-        // 5-minute timeout — client reconnects automatically on timeout
         SseEmitter emitter = new SseEmitter(300_000L);
 
         emitters.computeIfAbsent(rideId, k -> new CopyOnWriteArrayList<>()).add(emitter);
@@ -29,8 +28,15 @@ public class RideLocationEmitterRegistry {
         emitter.onTimeout(cleanup);
         emitter.onError(e -> cleanup.run());
 
+        try {
+            emitter.send(SseEmitter.event().name("ping").data("connected"));
+        } catch (Exception e) {
+            cleanup.run();
+        }
+
         return emitter;
     }
+
 
     public void broadcast(Integer rideId, Object payload) {
         List<SseEmitter> rideEmitters = emitters.getOrDefault(rideId, Collections.emptyList());

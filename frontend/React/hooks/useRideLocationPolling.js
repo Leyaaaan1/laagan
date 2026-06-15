@@ -31,10 +31,10 @@ import {useAuth} from '../context/AuthContext';
 import {API_BASE_URL} from '../services/Apiclient';
 
 // ─── tuneable constants ────────────────────────────────────────────────────
-const POLL_INTERVAL_MS = 8_000;       // upload cadence (send side)
-const MOVEMENT_THRESHOLD_M = 15;      // skip upload below this distance
-const MAX_SKIP_COUNT = 3;             // force upload after N consecutive skips
-const MAX_SKIP_MS = 30_000;           // …or after this many ms since last upload
+const POLL_INTERVAL_MS    = 8_000;   // GPS read cadence (unchanged)
+const MOVEMENT_THRESHOLD_M = 15;     // skip upload below this (unchanged)
+const MAX_SKIP_COUNT      = 10;      // ↑ raised: ~80s before forced heartbeat
+const MAX_SKIP_MS         = 120_000; // ↑ raised: 2 min heartbeat when idle
 // ──────────────────────────────────────────────────────────────────────────
 
 /**
@@ -183,22 +183,24 @@ export const useRideLocationPolling = ({
   // HELPERS
   // =========================================================================
 
-  /**
-   * Open the SSE stream (receive side).
-   * Safe to call multiple times — skips if already open.
-   */
   const openStream = useCallback(() => {
-    if (esRef.current) return; // already open
+    if (esRef.current) return;
     if (!tokenRef.current || !rideId) return;
 
     esRef.current = openLocationStream(
       rideId,
-      tokenRef.current,  // ← from useAuth(), same source as the rest of the app
+      tokenRef.current,
       locations => {
         _handleLocationsResponse(locations);
       },
       () => {
         esRef.current = null;
+        // ✅ Auto-reconnect after 5s if polling is still active
+        if (isPollingRef.current) {
+          setTimeout(() => {
+            if (isPollingRef.current) openStream();
+          }, 5_000);
+        }
       },
     );
   }, [rideId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -285,7 +287,9 @@ export const useRideLocationPolling = ({
       const hasMovedEnough = distanceMoved >= MOVEMENT_THRESHOLD_M;
       const skipLimitHit = skipCount >= MAX_SKIP_COUNT;
       const timeLimitHit = timeElapsedMs >= MAX_SKIP_MS;
-      const mustUpload = isFirst || hasMovedEnough || skipLimitHit || timeLimitHit;
+      const mustUpload =
+        isFirst || hasMovedEnough || skipLimitHit || timeLimitHit;
+
 
 
       // ── branch: skip upload ─────────────────────────────────────────────

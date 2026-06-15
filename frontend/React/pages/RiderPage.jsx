@@ -28,6 +28,7 @@ import {getRideTypeIcon} from '../utilities/rideTypes';
 import {buildRideStep4Params} from '../utilities/NavigationParamsBuilder';
 import {useAuth} from '../context/AuthContext';
 import {RideContext} from '../context/RideContext';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 const ProfileAvatar = ({profile, avatarStyle}) => {
   if (profile?.profilePictureUrl) {
@@ -81,6 +82,9 @@ const RiderPage = ({navigation}) => {
   //   • Fall back to whatever the context restored from the cache (offline).
   // ─────────────────────────────────────────────────────────────────────────
   const displayActiveRide = fetchedActiveRide ?? contextActiveRide;
+
+  const insets = useSafeAreaInsets();
+
 
   const prevUsernameRef = useRef(null);
   useEffect(() => {
@@ -192,7 +196,7 @@ const RiderPage = ({navigation}) => {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: 5,
+          paddingTop: insets.top + 5,
         }}>
         <View style={{flex: 1, flexDirection: 'row', alignItems: 'center'}}>
           <TouchableOpacity

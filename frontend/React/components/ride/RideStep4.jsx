@@ -8,6 +8,8 @@ import {
   Alert,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import {
   fetchRideMapImage,
@@ -36,6 +38,8 @@ import {
 } from './utilities/RideActionButton';
 import CheckpointArrivalsModal from '../../pages/utilities/CheckpointArrivalsModal';
 import RideHeroCard from './utilities/RideHeroCard';
+import {joinService} from '../../services/joinService';
+
 
 const RideStep4 = props => {
   const navigation = useNavigation();
@@ -86,8 +90,9 @@ const RideStep4 = props => {
   const resolvedCurrentUsername = currentUsername || authUsername;
   const hasFetchedRef = useRef(skipCoordsFetch && !!passedRideDetails);
   const {joinRide} = useJoinRide();
+  const insets = useSafeAreaInsets();
+  const [pendingJoinCount, setPendingJoinCount] = useState(0);
 
-  // ── Ride status (replaces old manual actionStatus) ────────────────────────
   const {
     actionStatus,
     loading: actionStatusLoading,
@@ -170,6 +175,7 @@ const RideStep4 = props => {
 
   // ── Effects ───────────────────────────────────────────────────────────────
 
+
   useEffect(() => {
     if (!locationName) return;
     patchState({rideNameImageLoading: true, rideNameImageError: null});
@@ -214,6 +220,30 @@ const RideStep4 = props => {
         patchState({imageLoading: false});
       });
   }, [generatedRidesId]);
+
+
+  useEffect(() => {
+    if (!generatedRidesId ) return;
+
+    let interval;
+
+    const fetchPendingCount = async () => {
+      try {
+        const count = await joinService.getPendingJoinCount(generatedRidesId);
+        setPendingJoinCount(count);
+
+        const nextInterval = count > 0 ? 15_000 : 60_000;
+        clearInterval(interval);
+        interval = setInterval(fetchPendingCount, nextInterval);
+      } catch (_) {}
+    };
+
+    fetchPendingCount();
+    interval = setInterval(fetchPendingCount, 60_000);
+    return () => clearInterval(interval);
+  }, [generatedRidesId]);
+
+
 
   // ── Shared active-ride object (used by StartedRide + CheckpointArrivalsModal)
   const buildActiveRide = () => {
@@ -341,7 +371,7 @@ const RideStep4 = props => {
       />
 
       {/* Header */}
-      <View style={header.bar}>
+      <View style={[header.bar, {paddingTop: insets.top}]}>
         <TouchableOpacity
           style={header.backButton}
           onPress={() => navigation.goBack()}>
@@ -417,14 +447,35 @@ const RideStep4 = props => {
           />
 
           {/* Bottom nav */}
-          <View style={header.bottomNav}>
+          <View style={[header.bottomNav, {paddingBottom: insets.bottom + 8}]}>
             <TouchableOpacity
               style={buttons.bottomNav}
               onPress={() => patchState({showParticipantsModal: true})}>
-              <FontAwesome name="users" size={18} color="#fff" />
+              <View style={{position: 'relative'}}>
+                <FontAwesome name="users" size={18} color="#fff" />
+                {pendingJoinCount > 0 && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: -6,
+                      right: -8,
+                      backgroundColor: '#e53935',
+                      borderRadius: 8,
+                      minWidth: 16,
+                      height: 16,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      paddingHorizontal: 3,
+                    }}>
+                    <Text
+                      style={{color: '#fff', fontSize: 9, fontWeight: 'bold'}}>
+                      {pendingJoinCount > 99 ? '99+' : pendingJoinCount}
+                    </Text>
+                  </View>
+                )}
+              </View>
               <Text style={buttons.textNav}>Riders</Text>
             </TouchableOpacity>
-
             <View style={header.bottomNavDivider} />
 
             <TouchableOpacity

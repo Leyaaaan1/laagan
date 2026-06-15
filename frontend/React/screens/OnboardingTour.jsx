@@ -25,6 +25,7 @@ import {
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import colors from '../styles/tokens/colors';
 import spacing from '../styles/tokens/spacing';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 const {width: W, height: H} = Dimensions.get('window');
 
@@ -110,16 +111,23 @@ const STEPS = [
 const SCREEN_STEP_COUNTS = [1, 4, 2, 2, 2, 2];
 
 // ─── Highlight + Tooltip overlay ────────────────────────────────────────────
-const StepOverlay = ({targetLayout, tipTitle, tipDesc, tipPos, stepLabel}) => {
+const StepOverlay = ({
+  targetLayout,
+  tipTitle,
+  tipDesc,
+  tipPos,
+  stepLabel,
+  onNext,
+}) => {
   if (!targetLayout) return null;
 
   const {x, y, width, height} = targetLayout;
   const PAD = 8;
 
-  const hlTop  = y - PAD;
+  const hlTop = y - PAD;
   const hlLeft = x - PAD;
-  const hlW    = width  + PAD * 2;
-  const hlH    = height + PAD * 2;
+  const hlW = width + PAD * 2;
+  const hlH = height + PAD * 2;
 
   const TIP_W = 220;
   let tipLeft = hlLeft + (hlW - TIP_W) / 2;
@@ -127,30 +135,59 @@ const StepOverlay = ({targetLayout, tipTitle, tipDesc, tipPos, stepLabel}) => {
   if (tipLeft + TIP_W > W - 8) tipLeft = W - 8 - TIP_W;
 
   const TIP_H_APPROX = 110;
-  let tipTop = tipPos === 'below'
-    ? hlTop + hlH + 10
-    : hlTop - TIP_H_APPROX - 10;
-  if (tipTop < 40)           tipTop = hlTop + hlH + 10;
+  let tipTop =
+    tipPos === 'below' ? hlTop + hlH + 10 : hlTop - TIP_H_APPROX - 10;
+  if (tipTop < 40) tipTop = hlTop + hlH + 10;
   if (tipTop + TIP_H_APPROX > H - 80) tipTop = hlTop - TIP_H_APPROX - 10;
 
   return (
     <>
+      {/* Tap anywhere to advance */}
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={onNext}
+        style={StyleSheet.absoluteFill}
+      />
       {/* Dim everything */}
       <View pointerEvents="none" style={StyleSheet.absoluteFill}>
         {/* Top */}
-        <View style={[styles.dimBlock, {top:0, left:0, right:0, height: hlTop}]} />
+        <View
+          style={[styles.dimBlock, {top: 0, left: 0, right: 0, height: hlTop}]}
+        />
         {/* Bottom */}
-        <View style={[styles.dimBlock, {top: hlTop + hlH, left:0, right:0, bottom:0}]} />
+        <View
+          style={[
+            styles.dimBlock,
+            {top: hlTop + hlH, left: 0, right: 0, bottom: 0},
+          ]}
+        />
         {/* Left */}
-        <View style={[styles.dimBlock, {top: hlTop, left:0, width: hlLeft, height: hlH}]} />
+        <View
+          style={[
+            styles.dimBlock,
+            {top: hlTop, left: 0, width: hlLeft, height: hlH},
+          ]}
+        />
         {/* Right */}
-        <View style={[styles.dimBlock, {top: hlTop, left: hlLeft + hlW, right:0, height: hlH}]} />
+        <View
+          style={[
+            styles.dimBlock,
+            {top: hlTop, left: hlLeft + hlW, right: 0, height: hlH},
+          ]}
+        />
         {/* Highlight border */}
-        <View style={[styles.hlBorder, {top: hlTop, left: hlLeft, width: hlW, height: hlH}]} />
+        <View
+          style={[
+            styles.hlBorder,
+            {top: hlTop, left: hlLeft, width: hlW, height: hlH},
+          ]}
+        />
       </View>
 
       {/* Tooltip */}
-      <View pointerEvents="none" style={[styles.tooltip, {top: tipTop, left: tipLeft, width: TIP_W}]}>
+      <View
+        pointerEvents="none"
+        style={[styles.tooltip, {top: tipTop, left: tipLeft, width: TIP_W}]}>
         <Text style={styles.tipStep}>{stepLabel}</Text>
         <Text style={styles.tipTitle}>{tipTitle}</Text>
         <Text style={styles.tipDesc}>{tipDesc}</Text>
@@ -163,6 +200,7 @@ const StepOverlay = ({targetLayout, tipTitle, tipDesc, tipPos, stepLabel}) => {
 
 /** Screen 0 — Home (RiderPage) — highlights the + button */
 const MockHomePage = ({refs}) => (
+
   <View style={mock.screen}>
     {/* ── Header ── */}
     <View style={mock.homeHeader}>
@@ -606,6 +644,7 @@ const MockCheckpointModal = ({refs}) => (
 // ─── Main OnboardingTour component ───────────────────────────────────────────
 const OnboardingTour = ({navigation, route}) => {
   const [stepIdx, setStepIdx]             = useState(0);
+
   const [targetLayout, setTargetLayout]   = useState(null);
   const fadeAnim                          = useRef(new Animated.Value(1)).current;
 
@@ -636,6 +675,8 @@ const OnboardingTour = ({navigation, route}) => {
 
   const currentStep  = STEPS[stepIdx];
   const totalSteps   = STEPS.length;
+  const insets = useSafeAreaInsets();
+
 
   // Measure target element relative to container each time step changes
   useEffect(() => {
@@ -712,7 +753,7 @@ const OnboardingTour = ({navigation, route}) => {
       </View>
 
       {/* ── Bottom nav bar ── */}
-      <View style={styles.navBar}>
+      <View style={[styles.navBar, {paddingBottom: insets.bottom + 12}]}>
         <TouchableOpacity onPress={finishOnboarding} style={styles.skipBtn}>
           <Text style={styles.skipTxt}>Skip tour</Text>
         </TouchableOpacity>
@@ -727,7 +768,10 @@ const OnboardingTour = ({navigation, route}) => {
           ))}
         </View>
 
-        <TouchableOpacity onPress={handleNext} style={styles.nextBtn} activeOpacity={0.85}>
+        <TouchableOpacity
+          onPress={handleNext}
+          style={styles.nextBtn}
+          activeOpacity={0.85}>
           <Text style={styles.nextTxt}>
             {stepIdx >= totalSteps - 1 ? 'Start' : 'Next'}
           </Text>

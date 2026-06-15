@@ -338,4 +338,19 @@ public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer star
         return 2 * R * Math.asin(Math.sqrt(a));
     }
 
+    @Transactional(readOnly = true)
+    public void validateRideAccess(Integer startedRideId) {
+        StartedRide started = riderUtil.findStartedRideById(startedRideId);
+        String currentUsername = riderUtil.getCurrentUsername();
+
+        boolean isOwner = started.getUsername().getUsername().equals(currentUsername);
+        boolean isParticipant = started.getParticipants().stream()
+                .anyMatch(p -> p.getUsername().equals(currentUsername));
+
+        if (!isOwner && !isParticipant) {
+            throw new UnauthorizedAccessException.UnauthorizedException(
+                    "User is not authorised for this ride");
+        }
+    }
+
 }

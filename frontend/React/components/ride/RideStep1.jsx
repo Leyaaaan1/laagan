@@ -19,7 +19,7 @@ import spacing from '../../styles/tokens/spacing';
 import {splitDateTime} from './utilities/RideStepUtils';
 import RideTypeSelector from '../../commons/RideTypeSelector';
 import {createMemoCompare} from '../../utilities/propsComparison';
-
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 /** Shows the currently selected date/time or a placeholder prompt. */
@@ -73,6 +73,7 @@ const RideStep1 = ({
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [dateError, setDateError] = useState('');
   const [focusedInput, setFocusedInput] = useState(null);
+  const insets = useSafeAreaInsets();
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -92,7 +93,7 @@ const RideStep1 = ({
       <StatusBar barStyle="light-content" />
 
       {/* ── Header ── */}
-      <View style={header.bar}>
+      <View style={[header.bar, {paddingTop: insets.top}]}>
         <View style={header.left}>
           <Text style={header.title}>CREATE RIDE</Text>
           <Text style={header.subtitle}>Step 1 of 3 — Details</Text>
@@ -113,7 +114,10 @@ const RideStep1 = ({
 
       <ScrollView
         style={layout.flex1}
-        contentContainerStyle={{padding: spacing.md, paddingBottom: 40}}
+        contentContainerStyle={{
+          padding: spacing.md,
+          paddingBottom: 40 + insets.bottom,
+        }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled">
         {/* ── Error banner ── */}
