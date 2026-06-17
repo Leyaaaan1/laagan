@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import colors from '../../styles/tokens/colors';
@@ -19,8 +20,13 @@ import {
 import FinishedRideSummary from './FinishedRideSummary';
 import FinishedRideParticipants from './FinishedRideParticipants';
 import FinishedRideCheckpoints from './FinishedRideCheckpoints';
-
-// ─── Helpers ────────────────────────────────────────────────────
+import RouteMapView from '../../utilities/route/view/RouteMapView';
+import {
+  isValidCoordinate,
+  processRideCoordinates,
+} from '../../utilities/CoordinateUtils';
+import {useAuth} from '../../context/AuthContext';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 const enrichParticipants = (
   participants = [],
@@ -38,14 +44,14 @@ const enrichParticipants = (
 
 const safe = val => (Array.isArray(val) ? val : []);
 
-// ─── Component ──────────────────────────────────────────────────
-
 const FinishedRideView = ({route, navigation}) => {
+  const {username: currentUsername} = useAuth();
   const {
     finishedRideData: passedData,
     generatedRidesId,
     isRideActive,
     isPersonalSummary,
+    hideQuickActions,
     rideName,
     startingPointName: passedStartingPointName,
     endingPointName: passedEndingPointName,
@@ -56,12 +62,11 @@ const FinishedRideView = ({route, navigation}) => {
   } = route.params || {};
 
   const [finishedRideData, setFinishedRideData] = useState(passedData || null);
+  const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(!passedData && !!generatedRidesId);
   const [error, setError] = useState(null);
 
-  // FIX: wrap load() in useEffect so it only runs once on mount,
-  // not on every render. The original code called load() directly
-  // in the render body, causing an infinite re-render + request loop.
+  // ── Load finished ride data ──────────────────────────────────────
   useEffect(() => {
     if (passedData || !generatedRidesId) return;
 
@@ -76,12 +81,14 @@ const FinishedRideView = ({route, navigation}) => {
         }
 
         if (statusData.currentStatus === 'FINISHED') {
+          // getFinishedRideSummary now returns routeCoordinates + averageSpeedKph + photos
           const data = await getFinishedRideSummary(generatedRidesId);
           setFinishedRideData(data);
+          setPhotos(safe(data.photos));
           return;
         }
 
-        // Still active — load live arrivals
+        // Still active — load live arrivals (no route stats yet)
         const arrivals = await getCheckpointArrivals(generatedRidesId);
         setFinishedRideData({
           rideName,
@@ -103,9 +110,23 @@ const FinishedRideView = ({route, navigation}) => {
     };
 
     load();
-  }, [generatedRidesId]); // only re-run if the ride ID changes
+  }, [generatedRidesId]);
 
-  // ── Loading ───────────────────────────────────────────────────
+  const insets = useSafeAreaInsets();
+
+  // ── Derive map coordinates from the finished ride data ───────────
+  const mapCoords = (() => {
+    if (!finishedRideData) return null;
+    return processRideCoordinates(finishedRideData);
+  })();
+
+  const hasRoute = !!(
+    finishedRideData?.routeCoordinates ||
+    isValidCoordinate(mapCoords?.startingPoint) ||
+    isValidCoordinate(mapCoords?.endingPoint)
+  );
+
+  // ── Loading / error states ───────────────────────────────────────
   if (loading) {
     return (
       <SafeAreaView style={finishedRideStyles.container}>
@@ -114,7 +135,6 @@ const FinishedRideView = ({route, navigation}) => {
     );
   }
 
-  // ── Error / no data ───────────────────────────────────────────
   if (!finishedRideData) {
     return (
       <SafeAreaView style={finishedRideStyles.container}>
@@ -137,7 +157,6 @@ const FinishedRideView = ({route, navigation}) => {
     );
   }
 
-  // ── Render ────────────────────────────────────────────────────
   const {
     participantCount,
     completedParticipants,
@@ -145,12 +164,15 @@ const FinishedRideView = ({route, navigation}) => {
     startingPointName,
     endingPointName,
     stopPoints,
+    distance,
+    durationMinutes,
+    averageSpeedKph,
+    routeCoordinates,
   } = finishedRideData;
 
   const safeParticipants = safe(completedParticipants);
   const safeArrivals = safe(checkpointArrivals);
   const safeStopPoints = safe(stopPoints);
-
   const enrichedParticipants = enrichParticipants(
     safeParticipants,
     safeArrivals,
@@ -163,8 +185,13 @@ const FinishedRideView = ({route, navigation}) => {
     ? 'Live Arrivals'
     : 'Ride Summary';
 
+  const isParticipant = safeParticipants.some(
+    p => p.username === currentUsername,
+  );
+  const canUploadPhotos = isParticipant || !isPersonalSummary;
+
   return (
-    <SafeAreaView style={finishedRideStyles.container}>
+    <View style={[finishedRideStyles.container, {paddingTop: insets.top}]}>
       {/* Header */}
       <View style={finishedRideStyles.header}>
         <TouchableOpacity
@@ -172,10 +199,21 @@ const FinishedRideView = ({route, navigation}) => {
           onPress={() => navigation.goBack()}>
           <FontAwesome name="arrow-left" size={16} color={colors.primary} />
         </TouchableOpacity>
-
         <Text style={finishedRideStyles.headerTitle}>{headerTitle}</Text>
 
-        {!isPersonalSummary && generatedRidesId ? (
+        {/* Right-side action buttons */}
+        {!hideQuickActions && (
+          <View style={localStyles.headerActions}>
+          {/* Ride Detail */}
+          <TouchableOpacity
+            style={finishedRideStyles.headerActionButton}
+            onPress={() =>
+              navigation.navigate('RideDetailView', {generatedRidesId})
+            }>
+            <FontAwesome name="bar-chart" size={15} color={colors.primary} />
+          </TouchableOpacity>
+
+          {/* My Summary */}
           <TouchableOpacity
             style={finishedRideStyles.headerActionButton}
             onPress={() =>
@@ -183,14 +221,26 @@ const FinishedRideView = ({route, navigation}) => {
             }>
             <FontAwesome name="user" size={16} color={colors.primary} />
           </TouchableOpacity>
-        ) : (
-          <View style={{width: 36}} />
-        )}
+        </View>
+          )}
       </View>
 
       <ScrollView
         contentContainerStyle={finishedRideStyles.scrollContent}
         showsVerticalScrollIndicator={false}>
+        {hasRoute && (
+          <View style={localStyles.mapWrapper}>
+            <RouteMapView
+              generatedRidesId={generatedRidesId}
+              startingPoint={mapCoords?.startingPoint}
+              endingPoint={mapCoords?.endingPoint}
+              stopPoints={mapCoords?.stopPoints || []}
+              isDark={false}
+              style={{flex: 1}}
+            />
+          </View>
+        )}
+
         <FinishedRideSummary rideData={finishedRideData} />
 
         {!isPersonalSummary && (
@@ -207,8 +257,21 @@ const FinishedRideView = ({route, navigation}) => {
           stopPoints={safeStopPoints}
         />
       </ScrollView>
-    </SafeAreaView>
-  );
-};
+    </View>
+  );};
+
+const localStyles = StyleSheet.create({
+  mapWrapper: {
+    height: 240,
+    marginHorizontal: 0,
+    marginBottom: 4,
+    overflow: 'hidden',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+});
 
 export default FinishedRideView;

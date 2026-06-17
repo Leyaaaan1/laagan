@@ -4,7 +4,6 @@ import React from 'react';
 import {View, Text} from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import colors from '../../styles/tokens/colors';
-import spacing from '../../styles/tokens/spacing';
 import finishedRideStyles from '../../styles/screens/finishedRideStyles';
 
 const FinishedRideSummary = ({rideData}) => {

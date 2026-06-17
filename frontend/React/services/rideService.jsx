@@ -130,3 +130,7 @@ export const getAllRiderTypes = async () => {
     throw err;
   }
 };
+
+
+
+

@@ -21,10 +21,24 @@ public class PersonalFinishedRideDTO {
     private List<StopPointDTO> stopPoints;
     private String startingPointName;
     private String endingPointName;
+    private Integer distanceMeters;
 
+    private Double averageSpeedKph;
     public PersonalFinishedRideDTO() {}
 
-    public PersonalFinishedRideDTO(Integer id, String riderUsername, String generatedRidesId, LocalDateTime startTime, LocalDateTime endTime, Integer durationMinutes, LocalDateTime createdAt, List<CheckpointArrivalResponse> checkpointArrivals, List<StopPointDTO> stopPoints, String startingPointName, String endingPointName) {
+    public PersonalFinishedRideDTO(Integer id,
+                                   String riderUsername,
+                                   String generatedRidesId,
+                                   LocalDateTime startTime,
+                                   LocalDateTime endTime,
+                                   Integer durationMinutes,
+                                   LocalDateTime createdAt,
+                                   List<CheckpointArrivalResponse> checkpointArrivals,
+                                   List<StopPointDTO> stopPoints,
+                                   String startingPointName,
+                                   String endingPointName,
+                                   Integer distanceMeters,
+                                   Double averageSpeedKph) {
         this.id = id;
         this.riderUsername = riderUsername;
         this.generatedRidesId = generatedRidesId;
@@ -36,6 +50,41 @@ public class PersonalFinishedRideDTO {
         this.stopPoints = stopPoints;
         this.startingPointName = startingPointName;
         this.endingPointName = endingPointName;
+        this.distanceMeters = distanceMeters;
+        this.averageSpeedKph = averageSpeedKph;
+    }
+
+    public PersonalFinishedRideDTO(Integer id,
+                                   String riderUsername,
+                                   String generatedRidesId,
+                                   LocalDateTime startTime,
+                                   LocalDateTime endTime,
+                                   Integer durationMinutes,
+                                   LocalDateTime createdAt,
+                                   List<CheckpointArrivalResponse> checkpointArrivals,
+                                   List<StopPointDTO> stopPoints,
+                                   String startingPointName,
+                                   String endingPointName) {
+        this(id, riderUsername, generatedRidesId, startTime, endTime,
+                durationMinutes, createdAt, checkpointArrivals, stopPoints,
+                startingPointName, endingPointName, null, null);
+    }
+
+
+    public Integer getDistanceMeters() {
+        return distanceMeters;
+    }
+
+    public void setDistanceMeters(Integer distanceMeters) {
+        this.distanceMeters = distanceMeters;
+    }
+
+    public Double getAverageSpeedKph() {
+        return averageSpeedKph;
+    }
+
+    public void setAverageSpeedKph(Double averageSpeedKph) {
+        this.averageSpeedKph = averageSpeedKph;
     }
 
     public List<CheckpointArrivalResponse> getCheckpointArrivals() {

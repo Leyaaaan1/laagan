@@ -49,6 +49,41 @@ public class CheckPointUtility {
         Rides ride = startedRide.getRide();
         if (ride == null) return;
 
+        // Check starting point
+        Point startingLocation = ride.getStartingLocation();
+        if (startingLocation != null) {
+            boolean startingAlreadyMarked = rideCheckpointArrivalRepository
+                    .existsByRideGeneratedRidesIdAndRiderUsernameAndCheckpointType(
+                            ride.getGeneratedRidesId(),
+                            rider.getUsername(),
+                            RideCheckpointArrival.CheckpointType.STARTING_POINT
+                    );
+
+            if (!startingAlreadyMarked) {
+                double startingDistanceMeters = locationRepo.getDistanceBetweenPoints(
+                        riderPoint, startingLocation
+                );
+
+                if (startingDistanceMeters <= ARRIVAL_THRESHOLD_METERS) {
+                    RideCheckpointArrival arrival = new RideCheckpointArrival(
+                            ride,
+                            rider,
+                            RideCheckpointArrival.CheckpointType.STARTING_POINT,
+                            null,
+                            LocalDateTime.now()
+                    );
+
+                    rideCheckpointArrivalRepository.save(arrival);
+
+                    AppLogger.info(this.getClass(), "Auto-marked starting arrival",
+                            "rider", rider.getUsername(),
+                            "startingPoint", ride.getStartingPointName(),
+                            "distanceMeters", startingDistanceMeters);
+                }
+            }
+        }
+
+        // Check stop points
         List<StopPoint> stopPoints = ride.getStopPoints();
         for (int i = 0; i < stopPoints.size(); i++) {
             StopPoint stop = stopPoints.get(i);
@@ -73,7 +108,9 @@ public class CheckPointUtility {
                         i,
                         LocalDateTime.now()
                 );
+
                 rideCheckpointArrivalRepository.save(arrival);
+
                 AppLogger.info(this.getClass(), "Auto-marked stop point arrival",
                         "rider", rider.getUsername(),
                         "stopName", stop.getStopName(),
@@ -82,6 +119,7 @@ public class CheckPointUtility {
             }
         }
 
+        // Check ending point
         Point endingLocation = ride.getEndingLocation();
         if (endingLocation == null) return;
 
@@ -91,9 +129,13 @@ public class CheckPointUtility {
                         rider.getUsername(),
                         RideCheckpointArrival.CheckpointType.ENDING
                 );
+
         if (endingAlreadyMarked) return;
 
-        double endingDistanceMeters = locationRepo.getDistanceBetweenPoints(riderPoint, endingLocation);
+        double endingDistanceMeters = locationRepo.getDistanceBetweenPoints(
+                riderPoint, endingLocation
+        );
+
         if (endingDistanceMeters <= ARRIVAL_THRESHOLD_METERS) {
             LocalDateTime endTime = LocalDateTime.now();
 
@@ -104,6 +146,7 @@ public class CheckPointUtility {
                     null,
                     endTime
             );
+
             rideCheckpointArrivalRepository.save(arrival);
 
             AppLogger.info(this.getClass(), "Auto-marked ending arrival",
@@ -111,11 +154,14 @@ public class CheckPointUtility {
                     "endingPoint", ride.getEndingPointName(),
                     "distanceMeters", endingDistanceMeters);
 
-            // Delegate to PersonalFinishedRideService — a separate Spring bean,
-            // so its @Transactional proxy is properly invoked (no self-invocation issue)
-            personalFinishedRideService.createPersonalSummaryOnArrival(rider, ride, endTime);
+            personalFinishedRideService.createPersonalSummaryOnArrival(
+                    rider, ride, endTime
+            );
 
-            rideStatusService.markRiderFinished(ride.getGeneratedRidesId(), rider.getUsername());
+            rideStatusService.markRiderFinished(
+                    ride.getGeneratedRidesId(),
+                    rider.getUsername()
+            );
         }
     }
     public boolean isRiderFinished(String generatedRidesId, String username) {

@@ -1,17 +1,59 @@
-// File: frontend/React/services/finishedRideService.js
-
 import {api} from './Apiclient';
 
 export const finishedRideService = {
-  // Finish ride and get comprehensive data in one call
-  finishRide: async generatedRidesId => {
-    const response = await api.post('/ride/finish', {
-      generatedRidesId,
-    });
+  // ── Existing ─────────────────────────────────────────────────────────────
+
+  getRideDetail: async generatedRidesId => {
+    const response = await api.get(`/view/${generatedRidesId}/detail`);
     if (!response.ok) {
-      throw new Error('Failed to finish ride');
+      // Backend throws when neither a personal nor a group finish record
+      // exists yet — that's an expected "nothing to show yet" state, not
+      // a real failure, so it gets its own sentinel.
+      if (response.status === 404) {
+        throw new Error('NOT_YET_AVAILABLE');
+      }
+      throw new Error('Failed to load ride detail');
     }
     return response.json();
   },
 
+  uploadPhoto: async (generatedRidesId, file, caption = '') => {
+    const form = new FormData();
+    form.append('file', {
+      uri: file.uri,
+      name: file.fileName ?? 'photo.jpg',
+      type: file.type ?? 'image/jpeg',
+    });
+    if (caption) form.append('caption', caption);
+
+    const response = await api.postForm(
+      `/view/${generatedRidesId}/photo`,
+      form,
+    );
+    if (!response.ok) throw new Error('Failed to upload photo');
+    return response.json(); // returns PhotoDTO
+  },
+
+  uploadVideo: async (generatedRidesId, file) => {
+    const form = new FormData();
+    form.append('file', {
+      uri: file.uri,
+      name: file.fileName ?? 'video.mp4',
+      type: file.type ?? 'video/mp4',
+    });
+
+    const response = await api.postForm(
+      `/view/${generatedRidesId}/video`,
+      form,
+    );
+    if (!response.ok) throw new Error('Failed to upload video');
+    return response.json();
+  },
+
+  deletePhoto: async (generatedRidesId, photoId) => {
+    const response = await api.delete(
+      `/view/${generatedRidesId}/photo/${photoId}`,
+    );
+    if (!response.ok) throw new Error('Failed to delete photo');
+  },
 };

@@ -40,6 +40,7 @@ public class RideCheckpointArrival {
     private LocalDateTime arrivedAt;
 
     public enum CheckpointType {
+        STARTING_POINT,
         STOP_POINT,
         ENDING
     }

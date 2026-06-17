@@ -8,11 +8,17 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import {getPersonalSummary, getRideStatus} from '../../services/startService';
+import {getPersonalSummary} from '../../services/startService';
 import finishedRideStyles from '../../styles/screens/finishedRideStyles';
 import colors from '../../styles/tokens/colors';
 import FinishedRideSummary from './FinishedRideSummary';
 import FinishedRideCheckpoints from './FinishedRideCheckpoints';
+import {
+  isValidCoordinate,
+  processRideCoordinates,
+} from '../../utilities/CoordinateUtils';
+import RouteMapView from '../../utilities/route/view/RouteMapView';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 const PersonalSummaryView = ({route, navigation}) => {
   const {
@@ -34,18 +40,8 @@ const PersonalSummaryView = ({route, navigation}) => {
     const load = async () => {
       try {
         // Only check riderStatus if we have a username to check against
-        if (username) {
-          const statusData = await getRideStatus(generatedRidesId);
-          const riderDone = statusData.riderStatuses?.some(
-            r => r.riderUsername === username && r.status === 'RIDER_FINISHED',
-          );
-          if (!riderDone && statusData.currentStatus !== 'FINISHED') {
-            setError("You haven't completed this ride yet.");
-            return;
-          }
-        }
-
         const data = await getPersonalSummary(generatedRidesId);
+
         setRideData(data);
       } catch (err) {
         setError(err.message);
@@ -56,6 +52,8 @@ const PersonalSummaryView = ({route, navigation}) => {
 
     load();
   }, [generatedRidesId]); // only re-run if the ride ID changes
+
+  const insets = useSafeAreaInsets();
 
   // ── Loading ───────────────────────────────────────────────────
   if (loading) {
@@ -77,7 +75,8 @@ const PersonalSummaryView = ({route, navigation}) => {
             color={colors.error}
           />
           <Text style={finishedRideStyles.errorText}>
-            {error || 'No summary data available'}
+            {error ||
+              'Your Personal Summary will be available after the ride is completed.'}
           </Text>
           <TouchableOpacity
             style={finishedRideStyles.backButton}
@@ -96,14 +95,20 @@ const PersonalSummaryView = ({route, navigation}) => {
   return (
     <SafeAreaView style={finishedRideStyles.container}>
       {/* Header */}
-      <View style={finishedRideStyles.header}>
+      <View style={[finishedRideStyles.header, {paddingTop: insets.top + 5}]}>
         <TouchableOpacity
           style={finishedRideStyles.backButtonSmall}
           onPress={() => navigation.goBack()}>
           <FontAwesome name="arrow-left" size={16} color={colors.primary} />
         </TouchableOpacity>
         <Text style={finishedRideStyles.headerTitle}>My Summary</Text>
-        <View style={{width: 36}} />
+        <TouchableOpacity
+          style={finishedRideStyles.headerActionButton}
+          onPress={() =>
+            navigation.navigate('RideDetailView', {generatedRidesId})
+          }>
+          <FontAwesome name="bar-chart" size={15} color={colors.primary} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -115,6 +120,18 @@ const PersonalSummaryView = ({route, navigation}) => {
             Your personal checkpoint records
           </Text>
         </View>
+        {isValidCoordinate(processRideCoordinates(rideData)?.startingPoint) && (
+          <View style={{height: 200, marginBottom: 4}}>
+            <RouteMapView
+              generatedRidesId={generatedRidesId}
+              startingPoint={processRideCoordinates(rideData).startingPoint}
+              endingPoint={processRideCoordinates(rideData).endingPoint}
+              stopPoints={processRideCoordinates(rideData).stopPoints}
+              isDark={false}
+              style={{flex: 1}}
+            />
+          </View>
+        )}
 
         <FinishedRideSummary rideData={rideData} />
 
@@ -124,7 +141,6 @@ const PersonalSummaryView = ({route, navigation}) => {
           endingPointName={rideData.endingPointName}
           stopPoints={safeStopPoints}
         />
-
       </ScrollView>
     </SafeAreaView>
   );

@@ -221,6 +221,14 @@ const CheckpointArrivalsModal = ({
           r.status === 'RIDER_FINISHED',
       ));
 
+  const finishedRiderCount =
+    rideStatus?.riderStatuses?.filter(r => r.status === 'RIDER_FINISHED').length ?? 0;
+  const totalRiderCount = rideStatus?.riderStatuses?.length ?? 0;
+  const allParticipantsFinished =
+    totalRiderCount > 0 && finishedRiderCount >= totalRiderCount;
+  const waitingCount = totalRiderCount - finishedRiderCount;
+
+
   const sortedCheckpoints =
     groupAndSortArrivals(
       arrivals,
@@ -286,57 +294,23 @@ const CheckpointArrivalsModal = ({
       return (
         <View style={s.bannerSuccess}>
           <View style={s.bannerIconRow}>
-            <FontAwesome
-              name="flag-checkered"
-              size={20}
-              color="#4CAF50"
-            />
-            <Text style={s.bannerSuccessTitle}>
-              Finish line reached!
-            </Text>
+            <FontAwesome name="flag-checkered" size={20} color="#4CAF50" />
+            <Text style={s.bannerSuccessTitle}>Finish line reached!</Text>
           </View>
 
-          <TouchableOpacity
-            disabled={isFinishing}
-            onPress={handleFinishRide}
-            style={[
-              s.bannerButton,
-              s.bannerButtonSuccess,
-              isFinishing &&
-              s.bannerButtonDisabled,
-            ]}>
-            {isFinishing ? (
-              <ActivityIndicator
-                size="small"
-                color="#fff"
-              />
-            ) : (
-              <FontAwesome
-                name="bar-chart"
-                size={13}
-                color="#fff"
-              />
-            )}
-            <Text
-              style={
-                s.bannerButtonSuccessText
-              }>
-              {isFinishing
-                ? 'Finishing…'
-                : 'View Ride Summary'}
-            </Text>
-          </TouchableOpacity>
+          {onNavigateToPersonalSummary && (
+            <TouchableOpacity
+              onPress={() => onNavigateToPersonalSummary(generatedRidesId)}
+              style={[s.bannerButton, s.bannerButtonSuccess]}>
+              <FontAwesome name="user" size={13} color="#fff" />
+              <Text style={s.bannerButtonSuccessText}>View My Summary</Text>
+            </TouchableOpacity>
+          )}
 
           <View style={s.bannerDivider}>
-            <View
-              style={s.bannerDividerLine}
-            />
-            <Text style={s.bannerDividerText}>
-              or
-            </Text>
-            <View
-              style={s.bannerDividerLine}
-            />
+            <View style={s.bannerDividerLine} />
+            <Text style={s.bannerDividerText}>or</Text>
+            <View style={s.bannerDividerLine} />
           </View>
 
           <TouchableOpacity
@@ -346,24 +320,24 @@ const CheckpointArrivalsModal = ({
               s.bannerButton,
               s.bannerButtonDanger,
               s.bannerButtonOutline,
-              isFinishing &&
-              s.bannerButtonDisabled,
+              isFinishing && s.bannerButtonDisabled,
             ]}>
-            <FontAwesome
-              name="stop-circle"
-              size={13}
-              color="#ef4444"
-            />
-            <Text
-              style={s.bannerButtonDangerText}>
-              Force End Ride
+            {isFinishing ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <FontAwesome
+                name="stop-circle"
+                size={13}
+                color={colors.primary}
+              />
+            )}
+            <Text style={s.bannerButtonDangerText}>
+              {isFinishing ? 'Ending…' : 'Force End Ride'}
             </Text>
           </TouchableOpacity>
         </View>
       );
-    }
-
-    // At ending — participant
+    }    // At ending — participant
     return (
       <View style={s.bannerSuccess}>
         <View style={s.bannerIconRow}>
@@ -422,30 +396,30 @@ const CheckpointArrivalsModal = ({
 
     if (error) {
       const isForbidden =
-        error
-          ?.toLowerCase()
-          .includes('auth_forbidden') ||
-        error
-          ?.toLowerCase()
-          .includes('forbidden') ||
-        error
-          ?.toLowerCase()
-          .includes('not a participant');
+        error?.toLowerCase().includes('auth_forbidden') ||
+        error?.toLowerCase().includes('forbidden') ||
+        error?.toLowerCase().includes('not a participant');
+
+      // Participants hit forbidden from backend — just show empty state, not a lock screen
+      if (isForbidden && !isCreator) {
+        return (
+          <View style={s.emptyContainer}>
+            <View style={s.emptyIconWrap}>
+              <FontAwesome name="flag-o" size={26} color={colors.textSecondary} />
+            </View>
+            <Text style={s.emptyText}>No checkpoint arrivals yet</Text>
+            <Text style={s.emptySubText}>Waiting for riders to check in…</Text>
+          </View>
+        );
+      }
 
       if (isForbidden) {
         return (
           <View style={s.forbiddenContainer}>
-            <FontAwesome
-              name="lock"
-              size={36}
-              color={colors.textMuted}
-            />
-            <Text style={s.forbiddenTitle}>
-              Access Restricted
-            </Text>
+            <FontAwesome name="lock" size={36} color={colors.textMuted} />
+            <Text style={s.forbiddenTitle}>Access Restricted</Text>
             <Text style={s.forbiddenText}>
-              You're not a participant of this
-              ride. Only riders who joined can
+              You're not a participant of this ride. Only riders who joined can
               view checkpoint arrivals.
             </Text>
           </View>
@@ -454,20 +428,10 @@ const CheckpointArrivalsModal = ({
 
       return (
         <View style={s.errorContainer}>
-          <FontAwesome
-            name="exclamation-circle"
-            size={32}
-            color="#ef4444"
-          />
-          <Text style={s.errorText}>
-            {error}
-          </Text>
-          <TouchableOpacity
-            style={s.retryButton}
-            onPress={fetchCheckpointArrivals}>
-            <Text style={s.retryButtonText}>
-              Retry
-            </Text>
+          <FontAwesome name="exclamation-circle" size={32} color="#ef4444" />
+          <Text style={s.errorText}>{error}</Text>
+          <TouchableOpacity style={s.retryButton} onPress={fetchCheckpointArrivals}>
+            <Text style={s.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
       );
@@ -618,22 +582,15 @@ const CheckpointArrivalsModal = ({
       visible={visible}
       animationType="slide"
       transparent={true}
+      statusBarTranslucent
       onRequestClose={onClose}>
       <View style={s.overlay}>
         <View style={s.container}>
           {/* Header */}
           <View style={s.header}>
-            <Text style={s.title}>
-              Checkpoint Arrivals
-            </Text>
-            <TouchableOpacity
-              onPress={onClose}
-              style={s.closeButton}>
-              <FontAwesome
-                name="times"
-                size={14}
-                color={colors.textPrimary}
-              />
+            <Text style={s.title}>Checkpoint Arrivals</Text>
+            <TouchableOpacity onPress={onClose} style={s.closeButton}>
+              <FontAwesome name="times" size={14} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
 
@@ -648,9 +605,7 @@ const CheckpointArrivalsModal = ({
             <View style={s.footerPill}>
               <TouchableOpacity
                 style={[s.footerSegment]}
-                onPress={
-                  fetchCheckpointArrivals
-                }>
+                onPress={fetchCheckpointArrivals}>
                 <FontAwesome
                   name="refresh"
                   size={14}
@@ -660,31 +615,18 @@ const CheckpointArrivalsModal = ({
                   style={[
                     s.footerSegmentText,
                     {
-                      color:
-                        'rgba(255,255,255,0.6)',
+                      color: 'rgba(255,255,255,0.6)',
                     },
                   ]}>
                   Refresh
                 </Text>
               </TouchableOpacity>
-              <View
-                style={s.footerPillDivider}
-              />
+              <View style={s.footerPillDivider} />
               <TouchableOpacity
-                style={[
-                  s.footerSegment,
-                  s.footerSegmentClose,
-                ]}
+                style={[s.footerSegment, s.footerSegmentClose]}
                 onPress={onClose}>
-                <FontAwesome
-                  name="times"
-                  size={14}
-                  color="#fff"
-                />
-                <Text
-                  style={s.footerSegmentText}>
-                  Close
-                </Text>
+                <FontAwesome name="times" size={14} color="#fff" />
+                <Text style={s.footerSegmentText}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -28,6 +28,7 @@ import {
   initialWindowMetrics,
   SafeAreaProvider,
 } from 'react-native-safe-area-context';
+import RideDetailView from './React/pages/finishedRide/Details/RideDetailView';
 
 interface AuthContextValue {
   token: string | null;
@@ -65,6 +66,7 @@ const AppStack = () => (
     <Stack.Screen name="LegalScreen" component={LegalScreen} />
     <Stack.Screen name="FinishedRideView" component={FinishedRideView} />
     <Stack.Screen name="PersonalSummaryView" component={PersonalSummaryView} />
+    <Stack.Screen name="RideDetailView" component={RideDetailView} />
   </Stack.Navigator>
 );
 

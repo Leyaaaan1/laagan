@@ -5,6 +5,7 @@ import leyans.RidersHub.ExceptionHandler.UnauthorizedAccessException;
 import leyans.RidersHub.Repository.*;
 import leyans.RidersHub.Utility.AppLogger;
 import leyans.RidersHub.Utility.CheckPointUtility;
+import leyans.RidersHub.Utility.RideCalculationUtils;
 import leyans.RidersHub.Utility.RiderUtil;
 import leyans.RidersHub.model.*;
 import leyans.RidersHub.model.participant.ParticipantLocation;
@@ -32,6 +33,7 @@ public class RideLocationService {
     private final ParticipantLocationRepository participantLocationRepository;
     private final CheckPointUtility checkPointUtility;
     private final RideLocationEmitterRegistry rideLocationEmitterRegistry;
+    private final RideCalculationUtils rideCalculationUtils;
 
 
 
@@ -41,7 +43,7 @@ public class RideLocationService {
     public RideLocationService(RiderLocationRepository locationRepo,
                                PsgcDataRepository psgcDataRepository,
                                LocationService locationService,
-                               RiderUtil riderUtil, ParticipantLocationRepository participantLocationRepository, CheckPointUtility checkPointUtility, RideLocationEmitterRegistry rideLocationEmitterRegistry) {
+                               RiderUtil riderUtil, ParticipantLocationRepository participantLocationRepository, CheckPointUtility checkPointUtility, RideLocationEmitterRegistry rideLocationEmitterRegistry, RideCalculationUtils rideCalculationUtils) {
         this.locationRepo = locationRepo;
         this.psgcDataRepository = psgcDataRepository;
         this.locationService = locationService;
@@ -49,6 +51,7 @@ public class RideLocationService {
         this.participantLocationRepository = participantLocationRepository;
         this.checkPointUtility = checkPointUtility;
         this.rideLocationEmitterRegistry = rideLocationEmitterRegistry;
+        this.rideCalculationUtils = rideCalculationUtils;
     }
 
     @Transactional(readOnly = true)
@@ -125,7 +128,7 @@ public class RideLocationService {
 
         if (loc.getId() != null && loc.getLocation() != null) {
             Point lastPoint = loc.getLocation();
-            double delta = haversineMeters(
+            double delta = RideCalculationUtils.haversineMeters(
                     lastPoint.getY(), lastPoint.getX(),   // last lat, lng
                     latitude, longitude                    // new lat, lng
             );
@@ -328,15 +331,7 @@ public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer star
                     "username", username, "error", e.getMessage());
         }
     }
-    private static double haversineMeters(double lat1, double lng1, double lat2, double lng2) {
-        final double R = 6_371_000;
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLng = Math.toRadians(lng2 - lng1);
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
-        return 2 * R * Math.asin(Math.sqrt(a));
-    }
+
 
     @Transactional(readOnly = true)
     public void validateRideAccess(Integer startedRideId) {

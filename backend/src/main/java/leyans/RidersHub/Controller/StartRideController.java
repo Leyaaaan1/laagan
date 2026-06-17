@@ -7,6 +7,7 @@ import leyans.RidersHub.DTO.Response.RideResponseDTO;
 import leyans.RidersHub.DTO.Response.StartRideResponseDTO;
 import leyans.RidersHub.ExceptionHandler.RideAuthorizationException;
 import leyans.RidersHub.Service.StartRideService;
+import leyans.RidersHub.Utility.AppLogger;
 import leyans.RidersHub.Utility.StartedUtil;
 import leyans.RidersHub.model.StartedRide;
 import org.springframework.http.HttpStatus;
@@ -22,11 +23,14 @@ public class StartRideController {
 
     private final StartRideService startRideService;
     private final StartedUtil startedUtil;
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(StartRideController.class);
+
 
     public StartRideController(StartRideService startRideService, StartedUtil startedUtil) {
         this.startRideService = startRideService;
         this.startedUtil = startedUtil;
     }
+
 
     @PostMapping("/{generatedRidesId}")
     public ResponseEntity<StartRideResponseDTO> startRide(@PathVariable String generatedRidesId) {
@@ -34,11 +38,12 @@ public class StartRideController {
             StartRideResponseDTO response = startRideService.startRide(generatedRidesId);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException ex) {
-            // ✅ Removed AccessDeniedException — now handled by GlobalExceptionHandler
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         } catch (IllegalStateException ex) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
         } catch (Exception ex) {
+            // Log the FULL stack trace so you can see the real cause
+            log.error("[startRide] Unexpected error for rideId={}", generatedRidesId, ex);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }

@@ -1,15 +1,23 @@
 package leyans.RidersHub.Service;
 
 import leyans.RidersHub.DTO.Response.FinishedDTO.FinishedRideResponseDTO;
+import leyans.RidersHub.DTO.Response.FinishedDTO.PhotoDTO;
 import leyans.RidersHub.ExceptionHandler.RideAuthorizationException;
 import leyans.RidersHub.Repository.*;
 import leyans.RidersHub.Utility.AppLogger;
 import leyans.RidersHub.Utility.FinishedRideUtility;
+import leyans.RidersHub.Utility.RideCalculationUtils;
 import leyans.RidersHub.Utility.StartedUtil;
 import leyans.RidersHub.model.*;
+import leyans.RidersHub.model.FinishedRide.FinishedRide;
+import leyans.RidersHub.model.FinishedRide.FinishedRidePhoto;
 import leyans.RidersHub.model.participant.RideCheckpointArrival;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
 
 @Service
 public class FinishedRideService {
@@ -21,12 +29,13 @@ public class FinishedRideService {
     private final RideCheckpointArrivalRepository rideCheckpointArrivalRepository;
     private final FinishedRideUtility finishedRideUtility;
     private final RideStatusService rideStatusService;
+    private final FinishedRidePhotoRepository finishedRidePhotoRepository;
 
     public FinishedRideService(StartedRideRepository startedRideRepository,
                                RidesRepository ridesRepository,
                                FinishedRideRepository finishedRideRepository,
                                StartedUtil startedUtil,
-                               RideCheckpointArrivalRepository rideCheckpointArrivalRepository, FinishedRideUtility finishedRideUtility, RideStatusService rideStatusService) {
+                               RideCheckpointArrivalRepository rideCheckpointArrivalRepository, FinishedRideUtility finishedRideUtility, RideStatusService rideStatusService, FinishedRidePhotoRepository finishedRidePhotoRepository) {
         this.startedRideRepository = startedRideRepository;
         this.ridesRepository = ridesRepository;
         this.finishedRideRepository = finishedRideRepository;
@@ -34,6 +43,7 @@ public class FinishedRideService {
         this.rideCheckpointArrivalRepository = rideCheckpointArrivalRepository;
         this.finishedRideUtility = finishedRideUtility;
         this.rideStatusService = rideStatusService;
+        this.finishedRidePhotoRepository = finishedRidePhotoRepository;
     }
 
     @Transactional
@@ -119,4 +129,41 @@ public class FinishedRideService {
 
         return finishedRideUtility.buildAndSaveFinishedRide(startedRide, ride, requester, generatedRidesId);
     }
+
+
+    @Transactional(readOnly = true)
+    public FinishedRideResponseDTO getFinishedRide(String generatedRidesId) {
+        AppLogger.info(this.getClass(), "getFinishedRide called", "generatedRidesId", generatedRidesId);
+
+        FinishedRide finishedRide = finishedRideRepository
+                .findByRideGeneratedRidesId(generatedRidesId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Finished ride not found: " + generatedRidesId));
+
+        FinishedRideResponseDTO dto = new FinishedRideResponseDTO(finishedRide);
+
+        // Route coordinates live on the Rides entity
+        dto.setRouteCoordinates(finishedRide.getRide().getRouteCoordinates());
+
+        // REFACTOR: was computeSpeed(distance, duration) private method.
+        // Now delegates to RideCalculationUtils — single source of truth.
+        dto.setAverageSpeedKph(RideCalculationUtils.computeAverageSpeedKph(
+                finishedRide.getRide().getDistance(),
+                finishedRide.getDurationMinutes()));
+
+        List<FinishedRidePhoto> photos =
+                finishedRidePhotoRepository.findByGeneratedRidesIdOrderByUploadedAtAsc(generatedRidesId);
+
+        photos.stream()
+                .findFirst()
+                .ifPresent(p -> dto.setPhotos(new PhotoDTO(
+                        p.getId(),
+                        p.getImageUrl(),
+                        p.getCaption(),
+                        p.getUploadedBy(),
+                        p.getUploadedAt().toString()
+                )));
+        return dto;
+    }
+
 }

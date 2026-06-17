@@ -31,6 +31,7 @@ import {
   getPersonalSummary,
 } from '../services/startService';
 import {routeCache} from '../services/cache/routeCache';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 const StartedRide = ({route, navigation}) => {
   const {username: routeUsername} = route?.params || {};
@@ -65,6 +66,7 @@ const StartedRide = ({route, navigation}) => {
 
   // Cache route when online
   useStartedRideRouteCache(activeRide);
+  const insets = useSafeAreaInsets();
 
   const {cachedRouteData} = useOfflineRouteCache(
     activeRide?.generatedRidesId,
@@ -157,7 +159,7 @@ const StartedRide = ({route, navigation}) => {
       }
       return null;
     }
-    if (activeRide) {
+    if (activeRide) { 
       return buildRouteDataForMap(activeRide);
     }
     return null;
@@ -208,22 +210,21 @@ const StartedRide = ({route, navigation}) => {
   // ── Participant: fetch their personal summary (ride may still be active) ──
   const handleNavigateToPersonalSummary = async rideId => {
     handleCloseModal();
-    clearActiveRide(); // ← ADD
-    await routeCache.clear(rideId); // ← ADD
     try {
       const data = await getPersonalSummary(rideId);
       navigation.navigate('FinishedRideView', {
         finishedRideData: data,
         isPersonalSummary: true,
+        hideQuickActions: true,
       });
     } catch (e) {
       navigation.navigate('FinishedRideView', {
         generatedRidesId: rideId,
         isPersonalSummary: true,
+        hideQuickActions: true,
       });
     }
   };
-
   return (
     <View style={startedRideStyles.container}>
       <StatusBar
@@ -236,7 +237,7 @@ const StartedRide = ({route, navigation}) => {
           rideRoutes.mapSection,
           {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0},
         ]}>
-        <View style={startedRideStyles.mapHeaderSpacer} />
+        <View style={{height: insets.top}} />
 
         <AdaptiveMapView
           ref={mapRef}
@@ -299,7 +300,7 @@ const StartedRide = ({route, navigation}) => {
         <View
           style={[
             startedRideStyles.routeInfoOverlay,
-            {pointerEvents: 'box-none'},
+            {pointerEvents: 'box-none', top: 100},
           ]}>
           <TouchableOpacity
             pointerEvents="auto"
@@ -339,7 +340,7 @@ const StartedRide = ({route, navigation}) => {
                       startedRideStyles.routeMarker,
                       startedRideStyles.startMarker,
                     ]}>
-                    <Text>🚀</Text>
+                    <Text></Text>
                   </View>
                   <Text style={startedRideStyles.routeLabel}>
                     STARTING POINT
@@ -393,7 +394,7 @@ const StartedRide = ({route, navigation}) => {
                       startedRideStyles.routeMarker,
                       startedRideStyles.endMarker,
                     ]}>
-                    <Text>🏁</Text>
+                    <Text></Text>
                   </View>
                   <Text style={startedRideStyles.routeLabel}>ENDING POINT</Text>
                 </View>
@@ -543,19 +544,28 @@ const StartedRide = ({route, navigation}) => {
         setPollingEnabled={setPollingEnabled}
         onRideFinished={async data => {
           handleCloseModal();
-          clearActiveRide(); // ← ADD
-          await routeCache.clear(activeRide?.generatedRidesId); // ← ADD
-          navigation.navigate('FinishedRideView', {finishedRideData: data});
+          clearActiveRide();
+          await routeCache.clear(activeRide?.generatedRidesId);
+          navigation.navigate('FinishedRideView', {
+            finishedRideData: data,
+            hideQuickActions: true,
+          });
         }}
         onNavigateToSummary={async generatedRidesId => {
           handleCloseModal();
-          clearActiveRide(); // ← ADD
-          await routeCache.clear(activeRide?.generatedRidesId); // ← ADD
+          clearActiveRide();
+          await routeCache.clear(activeRide?.generatedRidesId);
           try {
             const data = await getFinishedRideSummary(generatedRidesId);
-            navigation.navigate('FinishedRideView', {finishedRideData: data});
+            navigation.navigate('FinishedRideView', {
+              finishedRideData: data,
+              hideQuickActions: true,
+            });
           } catch (e) {
-            navigation.navigate('FinishedRideView', {generatedRidesId});
+            navigation.navigate('FinishedRideView', {
+              generatedRidesId,
+              hideQuickActions: true,
+            });
           }
         }}
         onNavigateToPersonalSummary={handleNavigateToPersonalSummary}

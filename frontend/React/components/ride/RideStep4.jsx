@@ -320,12 +320,6 @@ const RideStep4 = props => {
           mapCoords.endingPoint?.name || getLocationDisplayName(endingPoint),
       };
 
-      // Pre-populate context so StartedRide renders immediately with what we have,
-      // then kick off a background fetch to fill in startedRideId.
-      // StartedRide's auto-heal effect will detect the missing startedRideId and
-      // call fetchActiveRide() itself — but doing it here too means the context
-      // update races the navigation, giving us the best chance of having the
-      // full data by the time useStartedRideMarkers first reads it.
       setContextActiveRide(activeRideData);
       fetchActiveRideCtx(); // fire-and-forget — updates context with startedRideId
 
