@@ -45,6 +45,7 @@ public class CheckPointUtility {
     }
 
 
+    @Transactional
     public void autoMarkCheckpoints(StartedRide startedRide, Rider rider, Point riderPoint) {
         Rides ride = startedRide.getRide();
         if (ride == null) return;
@@ -134,6 +135,15 @@ public class CheckPointUtility {
 
         double endingDistanceMeters = locationRepo.getDistanceBetweenPoints(
                 riderPoint, endingLocation
+        );
+        AppLogger.info(this.getClass(), "Ending point distance check",
+                "rider", rider.getUsername(),
+                "distanceMeters", endingDistanceMeters,
+                "threshold", ARRIVAL_THRESHOLD_METERS,
+                "riderLat", riderPoint.getY(),
+                "riderLng", riderPoint.getX(),
+                "endingLat", endingLocation.getY(),
+                "endingLng", endingLocation.getX()
         );
 
         if (endingDistanceMeters <= ARRIVAL_THRESHOLD_METERS) {

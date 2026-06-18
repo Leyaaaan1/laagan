@@ -13,17 +13,10 @@
  *   averageSpeedKph – number | null   (used as baseline for coloring)
  */
 import React, {useState} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  LayoutAnimation,
-} from 'react-native';
+import {View, Text, TouchableOpacity, LayoutAnimation} from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import colors from '../../../styles/tokens/colors';
-import spacing from '../../../styles/tokens/spacing';
-import {fontSize, fontWeight} from '../../../styles/tokens/typography';
+import rideDetailStyles from '../../../styles/screens/rideDetailStyles';
 
 /** Map segment speed vs average to a color */
 const barColor = (segKph, avgKph) => {
@@ -59,73 +52,84 @@ const SegmentRow = ({segment, maxSpeed, avgSpeed, isLast}) => {
   };
 
   return (
-    <View style={[styles.segmentWrap, isLast && styles.segmentLast]}>
+    <View
+      style={[
+        rideDetailStyles.chartSegmentWrap,
+        isLast && rideDetailStyles.chartSegmentLast,
+      ]}>
       <TouchableOpacity
         activeOpacity={0.75}
         onPress={toggle}
-        style={styles.segmentRow}>
+        style={rideDetailStyles.chartSegmentRow}>
         {/* leg labels */}
-        <View style={styles.labels}>
-          <Text style={styles.fromLabel} numberOfLines={1}>
+        <View style={rideDetailStyles.chartLabels}>
+          <Text style={rideDetailStyles.chartFromLabel} numberOfLines={1}>
             {segment.fromLabel ?? 'Start'}
           </Text>
-          <View style={styles.toRow}>
+          <View style={rideDetailStyles.chartToRow}>
             <FontAwesome
               name="arrow-right"
               size={9}
               color={colors.textMuted}
-              style={{marginRight: 4}}
+              style={rideDetailStyles.chartToArrowIcon}
             />
-            <Text style={styles.toLabel} numberOfLines={1}>
+            <Text style={rideDetailStyles.chartToLabel} numberOfLines={1}>
               {segment.toLabel ?? 'End'}
             </Text>
           </View>
         </View>
 
         {/* bar track */}
-        <View style={styles.track}>
+        <View style={rideDetailStyles.chartTrack}>
           <View
-            style={[styles.bar, {width: `${barW}%`, backgroundColor: color}]}
+            style={[
+              rideDetailStyles.chartBar,
+              {width: `${barW}%`, backgroundColor: color},
+            ]}
           />
         </View>
 
         {/* speed badge */}
-        <View style={[styles.badge, {borderColor: color + '55'}]}>
-          <Text style={[styles.badgeValue, {color}]}>
+        <View
+          style={[rideDetailStyles.chartBadge, {borderColor: color + '55'}]}>
+          <Text style={[rideDetailStyles.chartBadgeValue, {color}]}>
             {speed > 0 ? speed.toFixed(1) : '—'}
           </Text>
-          <Text style={styles.badgeUnit}>kph</Text>
+          <Text style={rideDetailStyles.chartBadgeUnit}>kph</Text>
         </View>
 
         <FontAwesome
           name={expanded ? 'chevron-up' : 'chevron-down'}
           size={10}
           color={colors.textMuted}
-          style={styles.chevron}
+          style={rideDetailStyles.chartChevron}
         />
       </TouchableOpacity>
 
       {/* expanded detail */}
       {expanded && (
-        <View style={styles.detail}>
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Distance</Text>
-            <Text style={styles.detailValue}>
+        <View style={rideDetailStyles.chartDetail}>
+          <View style={rideDetailStyles.chartDetailItem}>
+            <Text style={rideDetailStyles.chartDetailLabel}>Distance</Text>
+            <Text style={rideDetailStyles.chartDetailValue}>
               {fmtDist(segment.distanceMeters)}
             </Text>
           </View>
-          <View style={styles.detailDivider} />
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Duration</Text>
-            <Text style={styles.detailValue}>
+          <View style={rideDetailStyles.chartDetailDivider} />
+          <View style={rideDetailStyles.chartDetailItem}>
+            <Text style={rideDetailStyles.chartDetailLabel}>Duration</Text>
+            <Text style={rideDetailStyles.chartDetailValue}>
               {fmtDur(segment.durationMinutes)}
             </Text>
           </View>
-          <View style={styles.detailDivider} />
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>vs avg</Text>
+          <View style={rideDetailStyles.chartDetailDivider} />
+          <View style={rideDetailStyles.chartDetailItem}>
+            <Text style={rideDetailStyles.chartDetailLabel}>vs avg</Text>
             <Text
-              style={[styles.detailValue, {color: barColor(speed, avgSpeed)}]}>
+              style={[
+                rideDetailStyles.chartDetailValue,
+                {color: barColor(speed, avgSpeed)},
+              ]}>
               {avgSpeed
                 ? `${speed >= avgSpeed ? '+' : ''}${(speed - avgSpeed).toFixed(
                     1,
@@ -145,37 +149,42 @@ const RideDetailSpeedChart = ({segments = [], averageSpeedKph}) => {
   const maxSpeed = Math.max(...segments.map(s => s.averageSpeedKph ?? 0), 0.1);
 
   return (
-    <View style={styles.section}>
+    <View style={rideDetailStyles.chartSection}>
       {/* section header */}
-      <View style={styles.sectionHeader}>
-        <View style={styles.sectionIconWrap}>
+      <View style={rideDetailStyles.chartSectionHeader}>
+        <View style={rideDetailStyles.chartSectionIconWrap}>
           <FontAwesome name="bar-chart" size={13} color={colors.primary} />
         </View>
-        <Text style={styles.sectionTitle}>Speed by Segment</Text>
-        <View style={styles.avgBadge}>
-          <Text style={styles.avgBadgeText}>
+        <Text style={rideDetailStyles.chartSectionTitle}>Speed by Segment</Text>
+        <View style={rideDetailStyles.chartAvgBadge}>
+          <Text style={rideDetailStyles.chartAvgBadgeText}>
             avg {(averageSpeedKph ?? 0).toFixed(1)} kph
           </Text>
         </View>
       </View>
 
       {/* legend */}
-      <View style={styles.legend}>
+      <View style={rideDetailStyles.chartLegend}>
         {[
           {color: '#10b981', label: '≥115% avg'},
           {color: '#4285f4', label: 'On pace'},
           {color: '#f59e0b', label: 'Below avg'},
           {color: colors.primary, label: 'Slow leg'},
         ].map(({color, label}) => (
-          <View key={label} style={styles.legendItem}>
-            <View style={[styles.legendDot, {backgroundColor: color}]} />
-            <Text style={styles.legendLabel}>{label}</Text>
+          <View key={label} style={rideDetailStyles.chartLegendItem}>
+            <View
+              style={[
+                rideDetailStyles.chartLegendDot,
+                {backgroundColor: color},
+              ]}
+            />
+            <Text style={rideDetailStyles.chartLegendLabel}>{label}</Text>
           </View>
         ))}
       </View>
 
       {/* bars */}
-      <View style={styles.chartContainer}>
+      <View style={rideDetailStyles.chartContainer}>
         {segments.map((seg, i) => (
           <SegmentRow
             key={`${seg.fromLabel}-${i}`}
@@ -187,183 +196,9 @@ const RideDetailSpeedChart = ({segments = [], averageSpeedKph}) => {
         ))}
       </View>
 
-      <Text style={styles.hint}>Tap a segment for details</Text>
+      <Text style={rideDetailStyles.chartHint}>Tap a segment for details</Text>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  section: {
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.md,
-  },
-
-  // ── section header ───────────────────────────
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-    gap: spacing.sm,
-  },
-  sectionIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.primaryAlpha15,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sectionTitle: {
-    flex: 1,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.bold,
-    color: colors.textPrimary,
-    letterSpacing: -0.2,
-  },
-  avgBadge: {
-    backgroundColor: colors.primaryAlpha15,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  avgBadgeText: {
-    fontSize: fontSize.xs,
-    color: colors.tibetanRed200,
-    fontWeight: fontWeight.semi,
-  },
-
-  // ── legend ────────────────────────────────────
-  legend: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  legendDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-  legendLabel: {
-    fontSize: 10,
-    color: colors.textMuted,
-  },
-
-  // ── chart container ──────────────────────────
-  chartContainer: {
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    overflow: 'hidden',
-  },
-
-  // ── segment row ───────────────────────────────
-  segmentWrap: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
-  },
-  segmentLast: {
-    borderBottomWidth: 0,
-  },
-  segmentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    gap: spacing.sm,
-  },
-  labels: {
-    width: 90,
-  },
-  fromLabel: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semi,
-    color: colors.textPrimary,
-  },
-  toRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  toLabel: {
-    fontSize: 10,
-    color: colors.textSecondary,
-    flex: 1,
-  },
-  track: {
-    flex: 1,
-    height: 8,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  bar: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  badge: {
-    alignItems: 'center',
-    width: 46,
-    paddingVertical: 3,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  badgeValue: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
-  },
-  badgeUnit: {
-    fontSize: 9,
-    color: colors.textMuted,
-  },
-  chevron: {
-    width: 14,
-    textAlign: 'center',
-  },
-
-  // ── expanded detail ───────────────────────────
-  detail: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
-  },
-  detailItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  detailDivider: {
-    width: 1,
-    backgroundColor: colors.borderLight,
-    marginVertical: 2,
-  },
-  detailLabel: {
-    fontSize: 10,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-    marginBottom: 3,
-  },
-  detailValue: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
-    color: colors.textPrimary,
-  },
-
-  hint: {
-    fontSize: 10,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginTop: spacing.xs,
-  },
-});
 
 export default RideDetailSpeedChart;

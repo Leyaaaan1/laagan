@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import {getPersonalSummary} from '../../services/startService';
@@ -30,6 +31,7 @@ const PersonalSummaryView = ({route, navigation}) => {
   const [rideData, setRideData] = useState(passedData || null);
   const [loading, setLoading] = useState(!passedData && !!generatedRidesId);
   const [error, setError] = useState(null);
+  const [snapshotUri, setSnapshotUri] = useState(null);
 
   useEffect(() => {
     // FIX 1: guard against missing data before accessing passedData.u
@@ -122,14 +124,26 @@ const PersonalSummaryView = ({route, navigation}) => {
         </View>
         {isValidCoordinate(processRideCoordinates(rideData)?.startingPoint) && (
           <View style={{height: 200, marginBottom: 4}}>
-            <RouteMapView
-              generatedRidesId={generatedRidesId}
-              startingPoint={processRideCoordinates(rideData).startingPoint}
-              endingPoint={processRideCoordinates(rideData).endingPoint}
-              stopPoints={processRideCoordinates(rideData).stopPoints}
-              isDark={false}
-              style={{flex: 1}}
-            />
+            {snapshotUri ? (
+              // Auto-captured static route snapshot, read from local device
+              // storage — replaces the live interactive map once one exists
+              // for this rider's personal finish. Falls back to the live
+              // map below if not yet captured on this device.
+              <Image
+                source={{uri: snapshotUri}}
+                style={{flex: 1, borderRadius: 8}}
+                resizeMode="cover"
+              />
+            ) : (
+              <RouteMapView
+                generatedRidesId={generatedRidesId}
+                startingPoint={processRideCoordinates(rideData).startingPoint}
+                endingPoint={processRideCoordinates(rideData).endingPoint}
+                stopPoints={processRideCoordinates(rideData).stopPoints}
+                isDark={false}
+                style={{flex: 1}}
+              />
+            )}
           </View>
         )}
 

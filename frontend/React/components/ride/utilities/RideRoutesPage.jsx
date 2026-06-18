@@ -18,6 +18,7 @@ import rideRoutes from '../../../styles/screens/rideRoutes';
 import timeline from '../../../styles/components/timeline';
 import feedback from '../../../styles/base/feedback';
 import {useAuth} from '../../../context/AuthContext';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 // Enable LayoutAnimation on Android
 if (
@@ -93,12 +94,16 @@ const TimelineStopCard = ({
     LayoutAnimation.easeInEaseOut();
     onPress();
   };
+  const insets = useSafeAreaInsets();
 
   return (
     <TouchableOpacity
       activeOpacity={0.7}
       onPress={handleCardPress}
-      style={timeline.cardContainer}>
+      style={[
+        timeline.cardContainer,
+        {paddingTop: insets.top}, // apply top safe area
+      ]}>
       <View style={timeline.card}>
         {/* Stop Type Label */}
         <View style={timeline.cardHeader}>
@@ -348,21 +353,6 @@ const RideRoutesPage = ({route}) => {
         translucent
         backgroundColor="transparent"
       />
-
-      {/* Load All Images Button (Ghost) — Top Right */}
-      <View style={timeline.loadAllButtonContainer}>
-        <TouchableOpacity
-          onPress={loadAllImages}
-          style={timeline.loadAllButton}>
-          <FontAwesome
-            name="download"
-            size={14}
-            color="#10b981"
-            style={{marginRight: 6}}
-          />
-          <Text style={timeline.loadAllButtonText}>Load All Images</Text>
-        </TouchableOpacity>
-      </View>
 
       <ScrollView
         style={rideRoutes.scrollView}

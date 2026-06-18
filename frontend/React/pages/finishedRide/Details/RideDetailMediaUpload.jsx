@@ -28,8 +28,7 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {finishedRideService} from '../../../services/finishedRideService';
 import colors from '../../../styles/tokens/colors';
-import spacing from '../../../styles/tokens/spacing';
-import {fontSize, fontWeight} from '../../../styles/tokens/typography';
+import rideDetailStyles from '../../../styles/screens/rideDetailStyles';
 
 const PICKER_OPTIONS_IMAGE = {
   mediaType: 'photo',
@@ -44,7 +43,10 @@ const PICKER_OPTIONS_VIDEO = {
 
 const MediaTypeButton = ({icon, label, active, onPress}) => (
   <TouchableOpacity
-    style={[styles.typeBtn, active && styles.typeBtnActive]}
+    style={[
+      rideDetailStyles.mediaTypeBtn,
+      active && rideDetailStyles.mediaTypeBtnActive,
+    ]}
     onPress={onPress}
     activeOpacity={0.8}>
     <FontAwesome
@@ -52,7 +54,11 @@ const MediaTypeButton = ({icon, label, active, onPress}) => (
       size={18}
       color={active ? colors.white : colors.textSecondary}
     />
-    <Text style={[styles.typeBtnLabel, active && styles.typeBtnLabelActive]}>
+    <Text
+      style={[
+        rideDetailStyles.mediaTypeBtnLabel,
+        active && rideDetailStyles.mediaTypeBtnLabelActive,
+      ]}>
       {label}
     </Text>
   </TouchableOpacity>
@@ -130,7 +136,7 @@ const RideDetailMediaUpload = ({
       transparent
       onRequestClose={handleClose}>
       <KeyboardAvoidingView
-        style={styles.backdrop}
+        style={rideDetailStyles.mediaBackdrop}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableOpacity
           style={StyleSheet.absoluteFill}
@@ -138,13 +144,13 @@ const RideDetailMediaUpload = ({
           activeOpacity={1}
         />
 
-        <View style={styles.sheet}>
+        <View style={rideDetailStyles.mediaSheet}>
           {/* drag handle */}
-          <View style={styles.handle} />
+          <View style={rideDetailStyles.mediaHandle} />
 
           {/* header */}
-          <View style={styles.sheetHeader}>
-            <Text style={styles.sheetTitle}>Add media</Text>
+          <View style={rideDetailStyles.mediaSheetHeader}>
+            <Text style={rideDetailStyles.mediaSheetTitle}>Add media</Text>
             <TouchableOpacity
               onPress={handleClose}
               hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
@@ -157,7 +163,7 @@ const RideDetailMediaUpload = ({
           </View>
 
           {/* type toggle */}
-          <View style={styles.typeRow}>
+          <View style={rideDetailStyles.mediaTypeRow}>
             <MediaTypeButton
               icon="camera"
               label="Photo"
@@ -180,7 +186,7 @@ const RideDetailMediaUpload = ({
 
           {/* pick file */}
           <TouchableOpacity
-            style={styles.pickArea}
+            style={rideDetailStyles.mediaPickArea}
             onPress={pickMedia}
             activeOpacity={0.75}>
             <FontAwesome
@@ -190,8 +196,8 @@ const RideDetailMediaUpload = ({
             />
             <Text
               style={[
-                styles.pickText,
-                selectedFile && styles.pickTextSelected,
+                rideDetailStyles.mediaPickText,
+                selectedFile && rideDetailStyles.mediaPickTextSelected,
               ]}>
               {fileLabel ?? `Choose a ${mode}`}
             </Text>
@@ -210,10 +216,12 @@ const RideDetailMediaUpload = ({
 
           {/* caption (photo only) */}
           {mode === 'photo' && (
-            <View style={styles.captionWrap}>
-              <Text style={styles.captionLabel}>Caption (optional)</Text>
+            <View style={rideDetailStyles.mediaCaptionWrap}>
+              <Text style={rideDetailStyles.mediaCaptionLabel}>
+                Caption (optional)
+              </Text>
               <TextInput
-                style={styles.captionInput}
+                style={rideDetailStyles.mediaCaptionInput}
                 value={caption}
                 onChangeText={setCaption}
                 placeholder="Add a caption…"
@@ -227,8 +235,9 @@ const RideDetailMediaUpload = ({
           {/* upload button */}
           <TouchableOpacity
             style={[
-              styles.uploadBtn,
-              (!selectedFile || uploading) && styles.uploadBtnDisabled,
+              rideDetailStyles.mediaUploadBtn,
+              (!selectedFile || uploading) &&
+                rideDetailStyles.mediaUploadBtnDisabled,
             ]}
             onPress={handleUpload}
             disabled={!selectedFile || uploading}
@@ -242,7 +251,9 @@ const RideDetailMediaUpload = ({
                   size={15}
                   color={colors.white}
                 />
-                <Text style={styles.uploadBtnText}>Upload {mode}</Text>
+                <Text style={rideDetailStyles.mediaUploadBtnText}>
+                  Upload {mode}
+                </Text>
               </>
             )}
           </TouchableOpacity>
@@ -251,145 +262,5 @@ const RideDetailMediaUpload = ({
     </Modal>
   );
 };
-
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.55)',
-  },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: spacing.lg,
-    paddingBottom: spacing.xl,
-    borderTopWidth: 1,
-    borderColor: colors.borderLight,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.borderLight,
-    alignSelf: 'center',
-    marginBottom: spacing.md,
-  },
-  sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.lg,
-  },
-  sheetTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-    color: colors.textPrimary,
-    letterSpacing: -0.3,
-  },
-
-  // ── type toggle ───────────────────────────────
-  typeRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  typeBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-  },
-  typeBtnActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  typeBtnLabel: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semi,
-    color: colors.textSecondary,
-  },
-  typeBtnLabelActive: {
-    color: colors.white,
-  },
-
-  // ── pick area ─────────────────────────────────
-  pickArea: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    borderStyle: 'dashed',
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.md,
-  },
-  pickText: {
-    flex: 1,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-  },
-  pickTextSelected: {
-    color: colors.textPrimary,
-    fontWeight: fontWeight.semi,
-  },
-
-  // ── caption ───────────────────────────────────
-  captionWrap: {
-    marginBottom: spacing.md,
-  },
-  captionLabel: {
-    fontSize: fontSize.xs,
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.xs,
-  },
-  captionInput: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    color: colors.textPrimary,
-    fontSize: fontSize.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    minHeight: 64,
-    textAlignVertical: 'top',
-  },
-
-  // ── upload button ─────────────────────────────
-  uploadBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 14,
-    shadowColor: colors.primary,
-    shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  uploadBtnDisabled: {
-    opacity: 0.45,
-  },
-  uploadBtnText: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.bold,
-    color: colors.white,
-  },
-});
 
 export default RideDetailMediaUpload;

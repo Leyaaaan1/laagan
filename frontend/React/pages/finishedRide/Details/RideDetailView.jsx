@@ -19,15 +19,13 @@ import {
   SafeAreaView,
   ActivityIndicator,
   RefreshControl,
-  StyleSheet,
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {finishedRideService} from '../../../services/finishedRideService';
 import colors from '../../../styles/tokens/colors';
-import spacing from '../../../styles/tokens/spacing';
-import {fontSize, fontWeight} from '../../../styles/tokens/typography';
 import finishedRideStyles from '../../../styles/screens/finishedRideStyles';
+import rideDetailStyles from '../../../styles/screens/rideDetailStyles';
 
 import RideDetailHero from './RideDetailHero';
 import RideDetailStats from './RideDetailStats';
@@ -42,14 +40,14 @@ import RouteMapView from '../../../utilities/route/view/RouteMapView';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SectionHeader = ({icon, title, badge}) => (
-  <View style={localStyles.sectionHeader}>
-    <View style={localStyles.sectionIconWrap}>
+  <View style={rideDetailStyles.viewSectionHeader}>
+    <View style={rideDetailStyles.viewSectionIconWrap}>
       <FontAwesome name={icon} size={13} color={colors.primary} />
     </View>
-    <Text style={localStyles.sectionTitle}>{title}</Text>
+    <Text style={rideDetailStyles.viewSectionTitle}>{title}</Text>
     {badge != null && (
-      <View style={localStyles.sectionBadge}>
-        <Text style={localStyles.sectionBadgeText}>{badge}</Text>
+      <View style={rideDetailStyles.viewSectionBadge}>
+        <Text style={rideDetailStyles.viewSectionBadgeText}>{badge}</Text>
       </View>
     )}
   </View>
@@ -116,7 +114,7 @@ const RideDetailView = ({route, navigation}) => {
         <ActivityIndicator
           size="large"
           color={colors.primary}
-          style={{flex: 1}}
+          style={rideDetailStyles.viewLoadingIndicator}
         />
       </SafeAreaView>
     );
@@ -169,11 +167,12 @@ const RideDetailView = ({route, navigation}) => {
     <SafeAreaView style={finishedRideStyles.container}>
       {/* ── Floating back button (overlays the hero) ──────────────────── */}
       <View
-        style={[localStyles.floatingHeader, {top: insets.top + spacing.sm}]}>
+        style={[rideDetailStyles.viewFloatingHeader, {top: insets.top + 2}]}>
         <TouchableOpacity
           style={[
             finishedRideStyles.backButtonSmall,
-            localStyles.floatingBackBtn,
+            rideDetailStyles.viewFloatingBackBtn,
+            rideDetailStyles.viewFloatingBackBtnPosition,
           ]}
           onPress={() => navigation.goBack()}>
           <FontAwesome
@@ -182,11 +181,17 @@ const RideDetailView = ({route, navigation}) => {
             color={rideDetail?.photo?.imageUrl ? colors.white : colors.primary}
           />
         </TouchableOpacity>
+        <View style={rideDetailStyles.viewPrBadgeWrap}>
+          <View style={rideDetailStyles.viewPrBadgeInner}>
+            <Text style={rideDetailStyles.viewPrBadgeOverlayText}>
+              Your personal record
+            </Text>
+          </View>
+        </View>
       </View>
-
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{paddingBottom: spacing.xl * 2}}
+        contentContainerStyle={rideDetailStyles.viewScrollContent}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -194,7 +199,6 @@ const RideDetailView = ({route, navigation}) => {
             tintColor={colors.primary}
           />
         }>
-        {/* ── Hero: cover photo + inline stats overlay ──────────────── */}
         <RideDetailHero
           photo={photo}
           rideName={rideName}
@@ -203,14 +207,6 @@ const RideDetailView = ({route, navigation}) => {
           avgSpeedKph={averageSpeedKph}
           onUpload={() => setUploadVisible(true)}
         />
-
-        {/* personal-record badge */}
-        {hasPersonalRecord && (
-          <View style={localStyles.prBadge}>
-            <FontAwesome name="trophy" size={11} color={colors.primary} />
-            <Text style={localStyles.prBadgeText}>Your personal record</Text>
-          </View>
-        )}
 
         {/* ── Stat cards ────────────────────────────────────────────── */}
         <RideDetailStats
@@ -224,36 +220,43 @@ const RideDetailView = ({route, navigation}) => {
 
         {/* ── Route map ─────────────────────────────────────────────── */}
         {hasRoute && (
-          <View style={localStyles.section}>
+          <View style={rideDetailStyles.viewSection}>
             <SectionHeader icon="map-o" title="Route" />
-            <View style={localStyles.mapWrapper}>
+            <View style={rideDetailStyles.viewMapWrapper}>
               <RouteMapView
                 generatedRidesId={generatedRidesId}
                 startingPoint={mapCoords.startingPoint}
                 endingPoint={mapCoords.endingPoint}
                 stopPoints={mapCoords.stopPoints ?? []}
                 isDark={false}
-                style={{flex: 1}}
+                style={rideDetailStyles.viewRouteMapFill}
               />
             </View>
             {/* start / end labels */}
-            <View style={localStyles.routeLabels}>
-              <View style={localStyles.routeLabel}>
+            <View style={rideDetailStyles.viewRouteLabels}>
+              <View style={rideDetailStyles.viewRouteLabel}>
                 <View
-                  style={[localStyles.routeDot, {backgroundColor: '#10b981'}]}
+                  style={[
+                    rideDetailStyles.viewRouteDot,
+                    {backgroundColor: '#10b981'},
+                  ]}
                 />
-                <Text style={localStyles.routeLabelText} numberOfLines={1}>
+                <Text
+                  style={rideDetailStyles.viewRouteLabelText}
+                  numberOfLines={1}>
                   {startingPointName ?? 'Start'}
                 </Text>
               </View>
-              <View style={localStyles.routeLabel}>
+              <View style={rideDetailStyles.viewRouteLabel}>
                 <View
                   style={[
-                    localStyles.routeDot,
+                    rideDetailStyles.viewRouteDot,
                     {backgroundColor: colors.primary},
                   ]}
                 />
-                <Text style={localStyles.routeLabelText} numberOfLines={1}>
+                <Text
+                  style={rideDetailStyles.viewRouteLabelText}
+                  numberOfLines={1}>
                   {endingPointName ?? 'End'}
                 </Text>
               </View>
@@ -263,7 +266,7 @@ const RideDetailView = ({route, navigation}) => {
 
         {/* ── Speed chart ───────────────────────────────────────────── */}
         {speedSegments.length > 0 && (
-          <View style={localStyles.chartSection}>
+          <View style={rideDetailStyles.viewChartSection}>
             <RideDetailSpeedChart
               segments={speedSegments}
               averageSpeedKph={averageSpeedKph}
@@ -273,11 +276,13 @@ const RideDetailView = ({route, navigation}) => {
 
         {/* ── Photo caption ─────────────────────────────────────────── */}
         {photo?.caption ? (
-          <View style={localStyles.section}>
+          <View style={rideDetailStyles.viewSection}>
             <SectionHeader icon="quote-left" title="Caption" />
-            <View style={localStyles.captionCard}>
-              <Text style={localStyles.captionText}>{photo.caption}</Text>
-              <Text style={localStyles.captionMeta}>
+            <View style={rideDetailStyles.viewCaptionCard}>
+              <Text style={rideDetailStyles.viewCaptionText}>
+                {photo.caption}
+              </Text>
+              <Text style={rideDetailStyles.viewCaptionMeta}>
                 {photo.uploadedBy ?? username ?? '—'}
                 {photo.uploadedAt
                   ? ` · ${new Date(photo.uploadedAt).toLocaleDateString()}`
@@ -290,11 +295,11 @@ const RideDetailView = ({route, navigation}) => {
         {/* ── Add media CTA (if no photo yet) ──────────────────────── */}
         {!photo && (
           <TouchableOpacity
-            style={localStyles.addMediaCta}
+            style={rideDetailStyles.viewAddMediaCta}
             onPress={() => setUploadVisible(true)}
             activeOpacity={0.8}>
             <FontAwesome name="camera" size={16} color={colors.primary} />
-            <Text style={localStyles.addMediaCtaText}>
+            <Text style={rideDetailStyles.viewAddMediaCtaText}>
               Add a photo or video to this ride
             </Text>
             <FontAwesome
@@ -305,7 +310,6 @@ const RideDetailView = ({route, navigation}) => {
           </TouchableOpacity>
         )}
       </ScrollView>
-
       {/* ── Media upload sheet ────────────────────────────────────────── */}
       <RideDetailMediaUpload
         visible={uploadVisible}
@@ -317,158 +321,5 @@ const RideDetailView = ({route, navigation}) => {
     </SafeAreaView>
   );
 };
-
-// ─────────────────────────────────────────────────────────────────────────────
-
-const localStyles = StyleSheet.create({
-  // ── floating back button overlaps hero ───────
-  floatingHeader: {
-    position: 'absolute',
-    left: spacing.lg,
-    zIndex: 10,
-  },
-  floatingBackBtn: {
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    borderRadius: 20,
-    padding: 6,
-  },
-
-  // ── personal record badge ─────────────────────
-  prBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.md,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.primaryAlpha20,
-    backgroundColor: colors.primaryAlpha10,
-  },
-  prBadgeText: {
-    fontSize: fontSize.sm,
-    color: colors.tibetanRed200,
-    fontWeight: fontWeight.semi,
-  },
-
-  // ── section wrapper ───────────────────────────
-  section: {
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.md,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  sectionIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.primaryAlpha15,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sectionTitle: {
-    flex: 1,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.bold,
-    color: colors.textPrimary,
-    letterSpacing: -0.2,
-  },
-  sectionBadge: {
-    backgroundColor: colors.primaryAlpha15,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    borderRadius: 20,
-  },
-  sectionBadgeText: {
-    fontSize: fontSize.xs,
-    color: colors.tibetanRed200,
-    fontWeight: fontWeight.bold,
-  },
-
-  // ── map ───────────────────────────────────────
-  mapWrapper: {
-    height: 220,
-    borderRadius: 14,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-  },
-  routeLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: spacing.sm,
-    paddingHorizontal: spacing.xs,
-  },
-  routeLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    maxWidth: '47%',
-  },
-  routeDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  routeLabelText: {
-    fontSize: fontSize.xs,
-    color: colors.textSecondary,
-    flex: 1,
-  },
-
-  // ── speed chart section margin ────────────────
-  chartSection: {
-    marginTop: spacing.md,
-  },
-
-  // ── caption card ──────────────────────────────
-  captionCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.primary,
-  },
-  captionText: {
-    fontSize: fontSize.sm,
-    color: colors.textPrimary,
-    lineHeight: 20,
-    fontStyle: 'italic',
-    marginBottom: spacing.xs,
-  },
-  captionMeta: {
-    fontSize: fontSize.xs,
-    color: colors.textMuted,
-  },
-
-  // ── add media CTA ─────────────────────────────
-  addMediaCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-  },
-  addMediaCtaText: {
-    flex: 1,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    fontWeight: fontWeight.medium,
-  },
-});
 
 export default RideDetailView;

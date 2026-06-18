@@ -26,7 +26,8 @@ import spacing from '../styles/tokens/spacing';
 import {fontSize} from '../styles/tokens/typography';
 import {useAuth} from '../context/AuthContext';
 import RideTypeSelector from '../commons/RideTypeSelector';
-import {authService} from '../services/authService';
+import header from '../styles/base/header';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 const s = (val, fallback = '') =>
   val !== null && val !== undefined ? String(val) : fallback;
@@ -87,8 +88,8 @@ function SectionCard({title, children, right}) {
 
 export default function RiderProfile({route, navigation}) {
   const {username: authUsername, logout, deleteAccount} = useAuth();
+  const insets = useSafeAreaInsets();
 
-  // ✅ Get the username from route params OR use your own
   const viewingUsername = route?.params?.username ?? authUsername;
   const isOwnProfile = viewingUsername === authUsername;
 
@@ -303,13 +304,12 @@ export default function RiderProfile({route, navigation}) {
   const displayName = s(profile?.displayName || profile?.username, 'Rider');
   const usernameStr = s(profile?.username, '');
   const bioStr = s(profile?.bio, '');
-  const memberSince = profile?.createdAt
-    ? new Date(profile.createdAt).toLocaleDateString('en-US', {
+
+  const memberSince = profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
-      })
-    : null;
+  }) : null;
 
   return (
     <View style={profileStyles.screen}>
@@ -322,8 +322,23 @@ export default function RiderProfile({route, navigation}) {
             tintColor={colors.primary}
           />
         }>
-        <View style={profileStyles.heroBanner} />
-
+        <View style={profileStyles.heroBanner}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{
+              position: 'absolute',
+              top: insets.top + 8,
+              left: spacing.md,
+              width: 34,
+              height: 34,
+              borderRadius: 17,
+              backgroundColor: 'rgba(0,0,0,0.35)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+            <FontAwesome name="arrow-left" size={16} color="#fff" />
+          </TouchableOpacity>
+        </View>
         <View style={profileStyles.avatarWrapper}>
           <View style={profileStyles.avatarCircle}>
             <Avatar
@@ -344,7 +359,6 @@ export default function RiderProfile({route, navigation}) {
             <Text style={profileStyles.displayName} numberOfLines={1}>
               {displayName}
             </Text>
-            {/* ✅ Only show edit button for own profile */}
             {isOwnProfile && (
               <TouchableOpacity
                 onPress={() => openEditModal('displayName')}
@@ -358,7 +372,6 @@ export default function RiderProfile({route, navigation}) {
           )}
         </View>
 
-        {/* ✅ Only show About section and edit for own profile */}
         {isOwnProfile && (
           <SectionCard
             title="About"

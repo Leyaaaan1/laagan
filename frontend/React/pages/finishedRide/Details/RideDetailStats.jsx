@@ -13,11 +13,10 @@
  *   endTime         – string | null   (ISO string)
  */
 import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import {View, Text} from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import colors from '../../../styles/tokens/colors';
-import spacing from '../../../styles/tokens/spacing';
-import {fontSize, fontWeight} from '../../../styles/tokens/typography';
+import rideDetailStyles from '../../../styles/screens/rideDetailStyles';
 
 const fmt = (n, digits = 1) => (n == null ? '—' : Number(n).toFixed(digits));
 
@@ -50,14 +49,22 @@ const fmtTime = isoStr => {
 };
 
 const StatCard = ({icon, iconColor, label, value, unit, wide}) => (
-  <View style={[styles.card, wide && styles.cardWide]}>
-    <View style={[styles.iconWrap, {backgroundColor: iconColor + '22'}]}>
+  <View
+    style={[
+      rideDetailStyles.statsCard,
+      wide && rideDetailStyles.statsCardWide,
+    ]}>
+    <View
+      style={[
+        rideDetailStyles.statsIconWrap,
+        {backgroundColor: iconColor + '22'},
+      ]}>
       <FontAwesome name={icon} size={14} color={iconColor} />
     </View>
-    <Text style={styles.label}>{label}</Text>
-    <View style={styles.valueRow}>
-      <Text style={styles.value}>{value}</Text>
-      {!!unit && <Text style={styles.unit}> {unit}</Text>}
+    <Text style={rideDetailStyles.statsLabel}>{label}</Text>
+    <View style={rideDetailStyles.statsValueRow}>
+      <Text style={rideDetailStyles.statsValue}>{value}</Text>
+      {!!unit && <Text style={rideDetailStyles.statsUnit}> {unit}</Text>}
     </View>
   </View>
 );
@@ -74,8 +81,8 @@ const RideDetailStats = ({
   const dur = fmtDuration(durationMinutes);
 
   return (
-    <View style={styles.section}>
-      <View style={styles.row}>
+    <View style={rideDetailStyles.statsSection}>
+      <View style={rideDetailStyles.statsRow}>
         <StatCard
           icon="road"
           iconColor={colors.primary}
@@ -92,7 +99,7 @@ const RideDetailStats = ({
         />
       </View>
 
-      <View style={styles.row}>
+      <View style={rideDetailStyles.statsRow}>
         <StatCard
           icon="tachometer"
           iconColor="#10b981"
@@ -111,113 +118,33 @@ const RideDetailStats = ({
 
       {/* Start / end time row */}
       {(startTime || endTime) && (
-        <View style={styles.timeRow}>
-          <View style={styles.timeItem}>
-            <Text style={styles.timeLabel}>Started</Text>
-            <Text style={styles.timeValue}>{fmtTime(startTime)}</Text>
+        <View style={rideDetailStyles.statsTimeRow}>
+          <View style={rideDetailStyles.statsTimeItem}>
+            <Text style={rideDetailStyles.statsTimeLabel}>Started</Text>
+            <Text style={rideDetailStyles.statsTimeValue}>
+              {fmtTime(startTime)}
+            </Text>
           </View>
           <FontAwesome
             name="long-arrow-right"
             size={14}
             color={colors.textSecondary}
-            style={styles.arrow}
+            style={rideDetailStyles.statsArrow}
           />
-          <View style={[styles.timeItem, styles.timeItemRight]}>
-            <Text style={styles.timeLabel}>Finished</Text>
-            <Text style={styles.timeValue}>{fmtTime(endTime)}</Text>
+          <View
+            style={[
+              rideDetailStyles.statsTimeItem,
+              rideDetailStyles.statsTimeItemRight,
+            ]}>
+            <Text style={rideDetailStyles.statsTimeLabel}>Finished</Text>
+            <Text style={rideDetailStyles.statsTimeValue}>
+              {fmtTime(endTime)}
+            </Text>
           </View>
         </View>
       )}
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  section: {
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.md,
-    gap: spacing.sm,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-
-  // ── stat card ─────────────────────────────────
-  card: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-  },
-  cardWide: {
-    flex: 2,
-  },
-  iconWrap: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  label: {
-    fontSize: fontSize.xs,
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  valueRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  value: {
-    fontSize: fontSize.h2,
-    fontWeight: fontWeight.bold,
-    color: colors.textPrimary,
-    letterSpacing: -0.5,
-  },
-  unit: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-    color: colors.textSecondary,
-  },
-
-  // ── time strip ────────────────────────────────
-  timeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-  },
-  timeItem: {
-    flex: 1,
-  },
-  timeItemRight: {
-    alignItems: 'flex-end',
-  },
-  timeLabel: {
-    fontSize: fontSize.xs,
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-    marginBottom: 3,
-  },
-  timeValue: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-    color: colors.textPrimary,
-  },
-  arrow: {
-    paddingHorizontal: spacing.md,
-  },
-});
 
 export default RideDetailStats;

@@ -74,7 +74,7 @@ export const RideActionButton = ({
   // ── Participant ────────────────────────────────────────────────────────────
 
   // Ride is ACTIVE and user is confirmed in participants → View
-  if (isStarted) {
+  if (isStarted && hasJoined) {
     return (
       <TouchableOpacity
         style={[rideStep4Styles.joinButton, {backgroundColor: colors.primary}]}
@@ -88,8 +88,7 @@ export const RideActionButton = ({
         <Text style={rideStep4Styles.joinButtonText}>View</Text>
       </TouchableOpacity>
     );
-  }
-  // Already in participants but ride not started yet → show nothing
+  }  // Already in participants but ride not started yet → show nothing
   if (hasJoined) {
     return null;
   }

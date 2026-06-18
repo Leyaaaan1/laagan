@@ -43,6 +43,7 @@
     "react-native-screens": "^4.10.0",
     "react-native-sse": "^1.2.1",
     "react-native-vector-icons": "^10.2.0",
+    "react-native-view-shot": "^5.1.0",
     "react-native-vision-camera": "^4.7.3",
     "react-native-webview": "^13.14.0",
     "react-native-worklets-core": "^1.6.2"
