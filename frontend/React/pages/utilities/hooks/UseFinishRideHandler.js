@@ -2,13 +2,14 @@ import {useState, useCallback} from 'react';
 import {Alert} from 'react-native';
 import {finishRide, forceFinishRide} from '../../../services/startService';
 import {finishedRideService} from '../../../services/finishedRideService';
+import {captureRideSnapshot} from '../../../utilities/captureRideSnapshot';
 
 export const useFinishRideHandler = (
   activeRide,
   stopPolling,
   setPollingEnabled,
   onRideFinished,
-  mapRef,
+  snapshotContainerRef, // ← renamed from mapRef — now points to the off-screen SVG View
 ) => {
   const [isFinishing, setIsFinishing] = useState(false);
 
@@ -16,89 +17,73 @@ export const useFinishRideHandler = (
     let snapshotUrl = null;
 
     try {
-      // ── Diagnostic: verify mapRef and its methods are reachable ──
-      console.log('[Snapshot] mapRef:', mapRef);
-      console.log('[Snapshot] mapRef.current:', mapRef?.current);
-      console.log('[Snapshot] fitMapToRoute type:', typeof mapRef?.current?.fitMapToRoute);
-      console.log('[Snapshot] captureSnapshot type:', typeof mapRef?.current?.captureSnapshot);
-      console.log('[Snapshot] generatedRidesId:', activeRide?.generatedRidesId);
-
-      if (!mapRef?.current) {
-        console.warn('[Snapshot] mapRef.current is null — map is not mounted or ref was not forwarded. Skipping snapshot.');
+      if (!snapshotContainerRef?.current) {
+        console.warn(
+          '[Snapshot] snapshotContainerRef.current is null — view not mounted. Skipping.',
+        );
         return null;
       }
 
-      if (typeof mapRef.current.fitMapToRoute !== 'function') {
-        console.warn('[Snapshot] fitMapToRoute is not a function — check useImperativeHandle on the map component.');
-      }
+      const result = await captureRideSnapshot({
+        containerRef: snapshotContainerRef,
+        generatedRidesId: activeRide?.generatedRidesId,
+      });
 
-      if (typeof mapRef.current.captureSnapshot !== 'function') {
-        console.warn('[Snapshot] captureSnapshot is not a function — check useImperativeHandle on the map component.');
+      if (result.skipped) {
+        console.warn('[Snapshot] Capture skipped:', result.reason);
         return null;
       }
 
-      // 1. Fit the map to show the entire route
-      console.log('[Snapshot] Fitting map to route...');
-      await mapRef.current.fitMapToRoute();
-
-      // 2. Wait for the map to settle
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // 3. Capture the snapshot
-      console.log('[Snapshot] Capturing snapshot...');
-      const snapshotUri = await mapRef.current.captureSnapshot();
-      console.log('[Snapshot] snapshotUri:', snapshotUri);
-
-      if (!snapshotUri) {
-        console.warn('[Snapshot] captureSnapshot returned null/undefined — no image produced.');
-        return null;
-      }
-
-      // 4. Upload to backend
       const file = {
-        uri: snapshotUri,
+        uri: result.snapshotUri,
         type: 'image/png',
         fileName: `snapshot-${activeRide?.generatedRidesId}-${Date.now()}.png`,
       };
-      console.log('[Snapshot] Uploading file:', file);
 
       snapshotUrl = await finishedRideService.uploadSnapshot(
         activeRide.generatedRidesId,
         file,
       );
-      console.log('[Snapshot] Uploaded successfully:', snapshotUrl);
     } catch (error) {
-      console.warn('[Snapshot] Capture or upload failed:', error?.message ?? error);
+      console.warn(
+        '[Snapshot] Capture or upload failed:',
+        error?.message ?? error,
+      );
     }
 
     return snapshotUrl;
-  }, [mapRef, activeRide?.generatedRidesId]);
+  }, [snapshotContainerRef, activeRide?.generatedRidesId]);
 
-  // ── Normal finish ─────────────────────────────────────────────
+  // ── handleFinishRide and handleForceFinishRide stay exactly the same ──
+  // (no changes needed below this point — they just call captureAndUploadSnapshot)
+
   const handleFinishRide = useCallback(async () => {
     if (!activeRide?.generatedRidesId) return;
     try {
       setIsFinishing(true);
       setPollingEnabled(false);
 
-      // Finish first — backend only accepts a snapshot once a
-      // FinishedRide or PersonalFinishedRide record exists.
+      // ✅ Capture while the polygon view is still mounted
+      const snapshotUrl = await captureAndUploadSnapshot();
+
       const data = await finishRide(activeRide.generatedRidesId);
       stopPolling();
 
-      // Capture/upload while the map is still mounted.
-      await captureAndUploadSnapshot();
-
-      onRideFinished?.(data);
+      onRideFinished?.(data, snapshotUrl); // ✅ pass snapshotUrl up
     } catch (err) {
       setPollingEnabled(true);
       Alert.alert('Could not finish ride', err.message || 'Please try again.');
     } finally {
       setIsFinishing(false);
     }
-  }, [activeRide, stopPolling, setPollingEnabled, onRideFinished, captureAndUploadSnapshot]);
+  }, [
+    activeRide,
+    stopPolling,
+    setPollingEnabled,
+    onRideFinished,
+    captureAndUploadSnapshot,
+  ]);
 
-  // ── Force finish ──────────────────────────────────────────────
   const handleForceFinishRide = useCallback(() => {
     if (!activeRide?.generatedRidesId) return;
 
@@ -115,15 +100,19 @@ export const useFinishRideHandler = (
               setIsFinishing(true);
               setPollingEnabled(false);
 
+              // ✅ Capture before the ride is ended on the backend
+              const snapshotUrl = await captureAndUploadSnapshot();
+
               const data = await forceFinishRide(activeRide.generatedRidesId);
               stopPolling();
 
-              await captureAndUploadSnapshot();
-
-              onRideFinished?.(data);
+              onRideFinished?.(data, snapshotUrl); // ✅ pass snapshotUrl up
             } catch (err) {
               setPollingEnabled(true);
-              Alert.alert('Could not force-end ride', err.message || 'Please try again.');
+              Alert.alert(
+                'Could not force-end ride',
+                err.message || 'Please try again.',
+              );
             } finally {
               setIsFinishing(false);
             }
@@ -132,8 +121,14 @@ export const useFinishRideHandler = (
       ],
       {cancelable: true},
     );
-  }, [activeRide, stopPolling, setPollingEnabled, onRideFinished, captureAndUploadSnapshot]);
-
+  }, [
+    activeRide,
+    stopPolling,
+    setPollingEnabled,
+    onRideFinished,
+    captureAndUploadSnapshot,
+  ]);
+  
   return {
     isFinishing,
     handleFinishRide,

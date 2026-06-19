@@ -4,6 +4,7 @@ import Geolocation from '@react-native-community/geolocation';
 import {getRouteCoordinates} from '../../services/RouteService';
 import {useAuth} from '../../context/AuthContext';
 import {checkNetworkStatus} from '../offlineUtils';
+import {routeCache} from '../../services/cache/routeCache';
 
 export const useRouteMapLogic = generatedRidesId => {
   const {} = useAuth();
@@ -97,6 +98,8 @@ export const useRouteMapLogic = generatedRidesId => {
       setRouteData(data);
       setError(null);
       setRouteError(null);
+      await routeCache.save(generatedRidesId, data);
+
     } catch (err) {
       const message = err?.message || 'Failed to load route data';
 

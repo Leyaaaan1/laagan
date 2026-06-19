@@ -120,5 +120,22 @@ export const riderMarkersScript = () => `
         }
     }
 
+    // ── NEW: dedicated clear function for snapshot capture ──
+    // The early-return above (when riderMarkers is empty) means
+    // updateRiderMarkers({}, '') never reaches the cleanup loop,
+    // so this standalone function is used instead to reliably
+    // remove all rider markers before a snapshot is taken.
+    function clearRiderMarkers() {
+        try {
+            Object.keys(riderMarkerInstances).forEach(riderId => {
+                const marker = riderMarkerInstances[riderId];
+                riderMarkersGroup.removeLayer(marker);
+                delete riderMarkerInstances[riderId];
+            });
+        } catch (error) {
+        }
+    }
+
     window.updateRiderMarkers = updateRiderMarkers;
+    window.clearRiderMarkers = clearRiderMarkers;
 `;

@@ -35,24 +35,16 @@ const AdaptiveMapView = forwardRef(
           const target = isOffline ? offlineRef : onlineRef;
           target.current?.focusOnRider(latitude, longitude, username);
         },
-
-        getContainerRef: () => containerViewRef,
-
-        // ─── NEW: Fit map to route ───
         fitMapToRoute: () => {
           const target = isOffline ? offlineRef : onlineRef;
           return target.current?.fitMapToRoute?.() ?? Promise.resolve(false);
         },
-
-        // ─── UPDATED: Capture snapshot with auto-zoom ───
-        captureSnapshot: () => {
-          const target = isOffline ? offlineRef : onlineRef;
-          return target.current?.captureSnapshot?.() ?? Promise.resolve(null);
-        },
+        // getContainerRef is no longer used for snapshots — kept for anything else that needs it
+        getContainerRef: () => containerViewRef,
+        // captureSnapshot: DELETED — snapshots now go through RideSnapshotView + captureRef
       }),
       [isOffline],
-    ) ;
-
+    );
     const sharedProps = {
       startingPoint,
       endingPoint,

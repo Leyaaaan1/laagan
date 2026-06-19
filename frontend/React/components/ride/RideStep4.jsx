@@ -39,6 +39,8 @@ import {
 import CheckpointArrivalsModal from '../../pages/utilities/CheckpointArrivalsModal';
 import RideHeroCard from './utilities/RideHeroCard';
 import {joinService} from '../../services/joinService';
+import {captureRideSnapshot} from '../../utilities/captureRideSnapshot';
+import RideSnapshotView from '../../utilities/route/view/RideSnapshotView';
 
 const RideStep4 = props => {
   const navigation = useNavigation();
@@ -50,7 +52,7 @@ const RideStep4 = props => {
     setActiveRide: setContextActiveRide,
   } = React.useContext(RideContext);
   const mapRef = useRef(null);
-
+  const snapshotRef = useRef(null);
   const routeParams = props.route?.params || {};
   const merged = {...props, ...routeParams};
   const {
@@ -359,7 +361,6 @@ const RideStep4 = props => {
         barStyle="light-content"
         translucent={false}
       />
-
       {/* Header */}
       <View style={[header.bar, {paddingTop: insets.top}]}>
         <TouchableOpacity
@@ -386,7 +387,6 @@ const RideStep4 = props => {
           />
         </View>
       </View>
-
       <View style={rideStep4Styles.fadeContainer}>
         {/* Map */}
         <View style={mapStyles.wrapper}>
@@ -491,7 +491,6 @@ const RideStep4 = props => {
           </View>
         </ScrollView>
       </View>
-
       {/* Participants modal */}
       <ParticipantList
         visible={state.showParticipantsModal}
@@ -502,8 +501,13 @@ const RideStep4 = props => {
         currentUsername={resolvedCurrentUsername}
         navigation={navigation}
       />
-
-      {/* Checkpoint arrivals modal — only mounted while ride is ACTIVE */}
+      <RideSnapshotView
+        ref={snapshotRef}
+        startingPoint={mapCoords.startingPoint}
+        endingPoint={mapCoords.endingPoint}
+        stopPoints={mapCoords.stopPoints}
+        routeCoordinates={[]} // RideStep4 has no live GeoJSON, landmarks-only is fine
+      />
       <CheckpointArrivalsModal
         visible={state.showCheckpointsModal}
         onClose={() => patchState({showCheckpointsModal: false})}
@@ -519,23 +523,33 @@ const RideStep4 = props => {
         stopPolling={null}
         setPollingEnabled={null}
         onRideFinished={(data, snapshotUrl) => {
-          // ← Updated to accept snapshotUrl
           patchState({showCheckpointsModal: false});
           refreshStatus();
-          // You might want to navigate to FinishedRideView here
           if (data) {
             navigation.navigate('FinishedRideView', {
               finishedRideData: data,
-              snapshotUrl, // ← Pass snapshot URL
+              snapshotUrl,
             });
           }
         }}
         onNavigateToSummary={async id => {
           patchState({showCheckpointsModal: false});
           let snapshotUri = null;
-          try {
-            snapshotUri = await mapRef.current?.captureSnapshot();
-          } catch (_) {}
+          const containerRef = mapRef.current?.getContainerRef?.();
+          if (containerRef) {
+            const result = await captureRideSnapshot({
+              containerRef,
+              generatedRidesId: id,
+            });
+            if (!result.skipped) snapshotUri = result.snapshotUri;
+          }
+          if (!snapshotUri) {
+            try {
+              const {getSnapshot} = await import('../../services/startService');
+              const res = await getSnapshot(id);
+              snapshotUri = res?.snapshotUrl ?? null;
+            } catch (_) {}
+          }
           navigation.navigate('FinishedRideView', {
             ...buildFinishedRideParams(id),
             snapshotUrl: snapshotUri,
@@ -544,27 +558,27 @@ const RideStep4 = props => {
         onNavigateToPersonalSummary={async id => {
           patchState({showCheckpointsModal: false});
           let snapshotUri = null;
-          try {
-            snapshotUri = await mapRef.current?.captureSnapshot();
-          } catch (_) {}
-
-          // Bug 1 fix: RouteMapView is a small preview tile — the WebView may
-          // not be ready when the modal fires, causing captureSnapshot() to
-          // return null. Fall back to the Cloudinary URL stored at ride finish.
+          const containerRef = mapRef.current?.getContainerRef?.();
+          if (containerRef) {
+            const result = await captureRideSnapshot({
+              containerRef,
+              generatedRidesId: id,
+            });
+            if (!result.skipped) snapshotUri = result.snapshotUri;
+          }
           if (!snapshotUri) {
             try {
               const {getSnapshot} = await import('../../services/startService');
-              const result = await getSnapshot(id);
-              snapshotUri = result?.snapshotUrl ?? null;
+              const res = await getSnapshot(id);
+              snapshotUri = res?.snapshotUrl ?? null;
             } catch (_) {}
           }
-
           navigation.navigate('PersonalSummaryView', {
             generatedRidesId: id,
             snapshotUri,
           });
         }}
-        mapRef={mapRef} // ← NEW: Pass mapRef
+        snapshotContainerRef={snapshotRef}
       />
     </View>
   );

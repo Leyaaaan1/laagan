@@ -117,8 +117,7 @@ const CheckpointArrivalsModal = ({
   setPollingEnabled,
   onRideFinished,
   onNavigateToSummary,
-  onNavigateToPersonalSummary,
-  mapRef,
+  onNavigateToPersonalSummary, snapshotContainerRef,
 }) => {
   const [arrivals, setArrivals] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -135,7 +134,7 @@ const CheckpointArrivalsModal = ({
     stopPolling,
     setPollingEnabled,
     onRideFinished,
-    mapRef,
+    snapshotContainerRef,
   );
 
   const [isCapturingSummary, setIsCapturingSummary] = useState(false);

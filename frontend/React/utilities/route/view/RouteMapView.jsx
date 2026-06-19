@@ -31,7 +31,7 @@ const RouteMapView = forwardRef(
   ) => {
     const webViewRef = useRef(null);
     const webViewReadyRef = useRef(false);
-    const snapshotResolverRef = useRef(null); // ── NEW ──
+    const snapshotResolverRef = useRef(null);
 
     const {
       isLoading,
@@ -69,9 +69,9 @@ const RouteMapView = forwardRef(
           webViewRef.current.injectJavaScript(script);
         },
 
-        // ─── NEW: Fit map to show entire route ───
+        // ─── Fit map to show entire route ───
         fitMapToRoute: () => {
-          return new Promise((resolve) => {
+          return new Promise(resolve => {
             if (!webViewRef.current || !webViewReadyRef.current) {
               resolve(false);
               return;
@@ -89,12 +89,10 @@ const RouteMapView = forwardRef(
           true;
         `;
 
-            // Store the resolve callback
             window.fitMapResolve = resolve;
 
             webViewRef.current.injectJavaScript(script);
 
-            // Timeout fallback
             setTimeout(() => {
               if (window.fitMapResolve) {
                 window.fitMapResolve(false);
@@ -104,79 +102,8 @@ const RouteMapView = forwardRef(
           });
         },
 
-        // ─── UPDATED: Capture snapshot with auto-zoom ───
-        captureSnapshot: () => {
-          return new Promise(async (resolve) => {
-            console.log('[Snapshot] Starting capture with auto-zoom...');
-
-            if (!webViewRef.current || !webViewReadyRef.current) {
-              console.log('[Snapshot] WebView not ready');
-              resolve(null);
-              return;
-            }
-
-            try {
-              // 1. First, fit map to show entire route
-              console.log('[Snapshot] Fitting map to route...');
-              const fitResult = await new Promise((res) => {
-                const fitScript = `
-              (function() {
-                if (window.fitMapToRoute) {
-                  window.fitMapToRoute();
-                  true;
-                } else {
-                  false;
-                }
-              })();
-              true;
-            `;
-
-                // Store resolve for fit callback
-                window.fitMapResolve = res;
-
-                webViewRef.current.injectJavaScript(fitScript);
-
-                // Timeout fallback
-                setTimeout(() => {
-                  if (window.fitMapResolve) {
-                    window.fitMapResolve(false);
-                    window.fitMapResolve = null;
-                  }
-                }, 3000);
-              });
-
-              console.log('[Snapshot] Fit result:', fitResult);
-
-              // 2. Wait a moment for the map to re-render
-              await new Promise(resolve => setTimeout(resolve, 500));
-
-              // 3. Now capture the snapshot
-              console.log('[Snapshot] Capturing after fit...');
-              snapshotResolverRef.current = resolve;
-
-              webViewRef.current.injectJavaScript(`
-            console.log('[WebView] Capturing snapshot after fit...');
-            window.exportMapSnapshot();
-            true;
-          `);
-
-              // Timeout fallback
-              setTimeout(() => {
-                if (snapshotResolverRef.current) {
-                  console.log('[Snapshot] TIMEOUT — no response from WebView');
-                  snapshotResolverRef.current(null);
-                  snapshotResolverRef.current = null;
-                }
-              }, 8000);
-
-            } catch (error) {
-              console.log('[Snapshot] Error during capture:', error);
-              resolve(null);
-            }
-          });
-        },
       }),
-      [],
+      [riderMarkers, currentUsername],
     );
 
     // ── Inject live rider markers ─────────────────────────────────────────────
@@ -208,7 +135,6 @@ const RouteMapView = forwardRef(
       webViewReadyRef.current = true;
 
       setTimeout(() => {
-        // Load all the route data into the WebView
         const script = `
       if (typeof window.loadRouteData === 'function') {
         window.loadRouteData(
@@ -220,7 +146,6 @@ const RouteMapView = forwardRef(
         );
       }
       
-      // After loading, fit the map to the route
       if (typeof window.fitMapToRoute === 'function') {
         setTimeout(function() {
           window.fitMapToRoute();
@@ -259,7 +184,6 @@ const RouteMapView = forwardRef(
         try {
           const msg = JSON.parse(event.nativeEvent.data);
 
-          // ── NEW: resolve snapshot promise ──
           if (msg.type === 'snapshotReady') {
             console.log(
               '[Snapshot] snapshotReady received, dataUri length:',

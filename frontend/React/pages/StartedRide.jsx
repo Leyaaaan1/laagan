@@ -33,6 +33,7 @@ import {
 import {routeCache} from '../services/cache/routeCache';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {captureRideSnapshot} from '../utilities/captureRideSnapshot';
+import RideSnapshotView from '../utilities/route/view/RideSnapshotView';
 
 const StartedRide = ({route, navigation}) => {
   const {username: routeUsername} = route?.params || {};
@@ -57,6 +58,7 @@ const StartedRide = ({route, navigation}) => {
   // Track which ride ID we've already synced from nav params so we don't
   // overwrite live context data on re-renders.
   const syncedRideIdRef = useRef(null);
+  const snapshotRef = useRef(null);
 
   const {riderMarkers, pollingError, isPolling, isOffline} =
     useStartedRideMarkers(
@@ -568,6 +570,16 @@ const StartedRide = ({route, navigation}) => {
           </View>
         </View>
       </Animated.View>
+      <RideSnapshotView
+        ref={snapshotRef}
+        startingPoint={mapData.startingPoint}
+        endingPoint={mapData.endingPoint}
+        stopPoints={mapData.stopPoints}
+        routeData={routeDataForMap} // your GeoJSON FeatureCollection
+        distance={activeRide?.distance} // "24.6 km" string from your ride object
+        duration={null} // populate if you track it
+        appName="LAAGAN"
+      />
       <CheckpointArrivalsModal
         visible={checkpointModalVisible}
         onClose={handleCloseModal}
@@ -581,17 +593,15 @@ const StartedRide = ({route, navigation}) => {
         setPollingEnabled={setPollingEnabled}
         onRideFinished={async (data, snapshotUrl) => {
           handleCloseModal();
-
           clearActiveRide();
           await routeCache.clear(activeRide?.generatedRidesId);
           navigation.navigate('FinishedRideView', {
             finishedRideData: data,
             hideQuickActions: true,
-            snapshotUrl: snapshotUrl,
+            snapshotUrl: snapshotUrl, //  now actually populated
           });
         }}
         onNavigateToSummary={async generatedRidesId => {
-          // auto-detected: polling saw FINISHED status
           handleCloseModal();
 
           let snapshotUri = null;
@@ -601,9 +611,7 @@ const StartedRide = ({route, navigation}) => {
               containerRef,
               generatedRidesId,
             });
-            if (!result.skipped) {
-              snapshotUri = result.snapshotUri;
-            }
+            if (!result.skipped) snapshotUri = result.snapshotUri;
           }
 
           clearActiveRide();
@@ -624,7 +632,7 @@ const StartedRide = ({route, navigation}) => {
           }
         }}
         onNavigateToPersonalSummary={handleNavigateToPersonalSummary}
-        mapRef={mapRef}
+        snapshotContainerRef={snapshotRef} //  was: mapRef (wrong — pointed at AdaptiveMapView instance, not the polygon View)
       />
     </View>
   );
