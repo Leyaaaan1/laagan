@@ -11,7 +11,6 @@ import spacing from '../tokens/spacing';
 import { fontSize, fontWeight } from '../tokens/typography';
 
 const profileStyles = StyleSheet.create({
-
   // ── Screen ────────────────────────────────────────────────────────────
   screen: {
     flex: 1,
@@ -19,6 +18,22 @@ const profileStyles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: spacing.lg * 2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
 
   // ── Hero banner ───────────────────────────────────────────────────────

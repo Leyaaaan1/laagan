@@ -57,10 +57,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<?> handleGenericException(Exception ex, HttpServletRequest request) {
         log.error("[GlobalExceptionHandler] Unhandled exception at {} {}: {}",
                 request.getMethod(), request.getRequestURI(), ex.getMessage(), ex);
+
+        String accept = request.getHeader("Accept");
+        boolean isEventStream = "text/event-stream".equals(request.getContentType())
+                || (accept != null && accept.contains("text/event-stream"));
+        if (isEventStream) {
+            return null;
+        }
+
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(buildErrorBody("Unexpected server error", HttpStatus.INTERNAL_SERVER_ERROR));
     }
-
     @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
     public ResponseEntity<?> handleValidationException(
             org.springframework.web.bind.MethodArgumentNotValidException ex) {

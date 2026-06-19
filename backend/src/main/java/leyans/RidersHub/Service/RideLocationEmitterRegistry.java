@@ -1,6 +1,7 @@
 package leyans.RidersHub.Service;
 
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -55,8 +56,30 @@ public class RideLocationEmitterRegistry {
         rideEmitters.removeAll(dead);
     }
 
+    /**
+     * Keeps idle connections alive through proxies/load balancers (e.g. Render's
+     * edge) that drop connections with no traffic for a while. Runs independently
+     * of location updates, so a stalled ride doesn't lose its stream.
+     */
+    @Scheduled(fixedRate = 20_000)
+    public void heartbeat() {
+        for (Map.Entry<Integer, List<SseEmitter>> entry : emitters.entrySet()) {
+            List<SseEmitter> dead = new ArrayList<>();
+            for (SseEmitter emitter : entry.getValue()) {
+                try {
+                    emitter.send(SseEmitter.event().name("ping").comment("keepalive"));
+                } catch (Exception e) {
+                    dead.add(emitter);
+                }
+            }
+            entry.getValue().removeAll(dead);
+        }
+    }
+
     private void remove(Integer rideId, SseEmitter emitter) {
-        List<SseEmitter> list = emitters.get(rideId);
-        if (list != null) list.remove(emitter);
+        emitters.computeIfPresent(rideId, (id, list) -> {
+            list.remove(emitter);
+            return list.isEmpty() ? null : list; // drop the map entry once empty
+        });
     }
 }
