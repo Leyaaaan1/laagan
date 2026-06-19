@@ -1,6 +1,10 @@
 import {useState, useCallback} from 'react';
 import {Alert} from 'react-native';
-import {finishRide, forceFinishRide} from '../../../services/startService';
+import {
+  finishRide,
+  forceFinishRide,
+  forceFinishOwnRide,
+} from '../../../services/startService';
 import {finishedRideService} from '../../../services/finishedRideService';
 import {captureRideSnapshot} from '../../../utilities/captureRideSnapshot';
 
@@ -11,7 +15,8 @@ export const useFinishRideHandler = (
   onRideFinished,
   snapshotContainerRef, // ← renamed from mapRef — now points to the off-screen SVG View
 ) => {
-  const [isFinishing, setIsFinishing] = useState(false);
+  const [finishingAction, setFinishingAction] = useState(null); // null | 'normal' | 'force'
+  const isFinishing = finishingAction !== null; // keep this — still useful for disabling both buttons while one is in flight
 
   const captureAndUploadSnapshot = useCallback(async () => {
     let snapshotUrl = null;
@@ -60,21 +65,22 @@ export const useFinishRideHandler = (
   const handleFinishRide = useCallback(async () => {
     if (!activeRide?.generatedRidesId) return;
     try {
-      setIsFinishing(true);
+      setFinishingAction('normal');
+
       setPollingEnabled(false);
 
-      // ✅ Capture while the polygon view is still mounted
+      //  Capture while the polygon view is still mounted
       const snapshotUrl = await captureAndUploadSnapshot();
 
       const data = await finishRide(activeRide.generatedRidesId);
       stopPolling();
 
-      onRideFinished?.(data, snapshotUrl); // ✅ pass snapshotUrl up
+      onRideFinished?.(data, snapshotUrl); //  pass snapshotUrl up
     } catch (err) {
       setPollingEnabled(true);
       Alert.alert('Could not finish ride', err.message || 'Please try again.');
     } finally {
-      setIsFinishing(false);
+      setFinishingAction(null);
     }
   }, [
     activeRide,
@@ -84,54 +90,47 @@ export const useFinishRideHandler = (
     captureAndUploadSnapshot,
   ]);
 
-  const handleForceFinishRide = useCallback(() => {
-    if (!activeRide?.generatedRidesId) return;
+  const handleForceFinishRide = useCallback(
+    async (endForAll = false) => {
+      if (!activeRide?.generatedRidesId) return;
 
-    Alert.alert(
-      'Force End Ride',
-      'This will end the ride for all participants immediately, regardless of their progress. Are you sure?',
-      [
-        {text: 'Cancel', style: 'cancel'},
-        {
-          text: 'Force End',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setIsFinishing(true);
-              setPollingEnabled(false);
+      try {
+        setFinishingAction('force');
+        setPollingEnabled(false);
 
-              // ✅ Capture before the ride is ended on the backend
-              const snapshotUrl = await captureAndUploadSnapshot();
+        // Capture before the ride is ended on the backend
+        const snapshotUrl = await captureAndUploadSnapshot();
 
-              const data = await forceFinishRide(activeRide.generatedRidesId);
-              stopPolling();
+        const data = endForAll
+          ? await forceFinishRide(activeRide.generatedRidesId)
+          : await forceFinishOwnRide(activeRide.generatedRidesId);
 
-              onRideFinished?.(data, snapshotUrl); // ✅ pass snapshotUrl up
-            } catch (err) {
-              setPollingEnabled(true);
-              Alert.alert(
-                'Could not force-end ride',
-                err.message || 'Please try again.',
-              );
-            } finally {
-              setIsFinishing(false);
-            }
-          },
-        },
-      ],
-      {cancelable: true},
-    );
-  }, [
-    activeRide,
-    stopPolling,
-    setPollingEnabled,
-    onRideFinished,
-    captureAndUploadSnapshot,
-  ]);
-  
+        stopPolling();
+
+        onRideFinished?.(data, snapshotUrl);
+      } catch (err) {
+        setPollingEnabled(true);
+        Alert.alert(
+          'Could not force-end ride',
+          err.message || 'Please try again.',
+        );
+      } finally {
+        setFinishingAction(null);
+      }
+    },
+    [
+      activeRide,
+      stopPolling,
+      setPollingEnabled,
+      onRideFinished,
+      captureAndUploadSnapshot,
+    ],
+  );
+
   return {
     isFinishing,
     handleFinishRide,
+    finishingAction,
     handleForceFinishRide,
     captureAndUploadSnapshot,
   };

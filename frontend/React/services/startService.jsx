@@ -87,6 +87,26 @@ export const forceFinishRide = async generatedRidesId => {
   return response.json();
 };
 
+export const forceFinishOwnRide = async generatedRidesId => {
+  const response = await api.post(
+    `/ride/finished/${generatedRidesId}/force/ownride`,
+    {},
+  );
+  if (!response.ok) {
+    const messages = {
+      401: 'Unauthorized. Please log in again.',
+      403: 'You are not a participant of this ride.',
+      404: 'Ride not found.',
+      409: 'Ride has already been finished.',
+    };
+    throw new Error(
+      messages[response.status] ||
+      'Failed to force-end your ride. Please try again.',
+    );
+  }
+  return response.json();
+};
+
 export const getFinishedRideSummary = async generatedRidesId => {
   const response = await api.get(`/ride/${generatedRidesId}/summary`);
   if (!response.ok) {

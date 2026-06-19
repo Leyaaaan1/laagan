@@ -88,9 +88,8 @@ public class FinishedRideService {
         Rides ride = ridesRepository.findByGeneratedRidesId(generatedRidesId)
                 .orElseThrow(() -> new IllegalArgumentException("Ride not found: " + generatedRidesId));
 
-        // Only the ride creator can force-finish
         if (!ride.getUsername().getUsername().equals(requester.getUsername())) {
-            throw new RideAuthorizationException("Only the ride creator can force-finish a ride");
+            throw new RideAuthorizationException("Only the ride creator can force-finish the entire ride");
         }
 
         if (!Boolean.TRUE.equals(ride.getActive())) {
@@ -105,12 +104,52 @@ public class FinishedRideService {
                 .findByRideGeneratedRidesId(generatedRidesId)
                 .orElseThrow(() -> new IllegalStateException("StartedRide record missing"));
 
-        AppLogger.warn(this.getClass(), "Force-finishing ride by creator",
+        AppLogger.warn(this.getClass(), "Force-finishing ride for all participants",
                 "generatedRidesId", generatedRidesId,
                 "creator", requester.getUsername());
         rideStatusService.markFinished(generatedRidesId, "Ride finished by " + requester.getUsername());
 
         return finishedRideUtility.buildAndSaveFinishedRide(startedRide, ride, requester, generatedRidesId);
+    }
+
+    @Transactional
+    public FinishedRideResponseDTO forceFinishOwnRide(String generatedRidesId) {
+        AppLogger.info(this.getClass(), "forceFinishOwnRide called",
+                "generatedRidesId", generatedRidesId);
+
+        Rider requester = startedUtil.authenticateAndGetInitiator();
+
+        Rides ride = ridesRepository.findByGeneratedRidesId(generatedRidesId)
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found: " + generatedRidesId));
+
+        if (!Boolean.TRUE.equals(ride.getActive())) {
+            throw new IllegalStateException("Ride is not currently active");
+        }
+
+        if (finishedRideRepository.existsByRideGeneratedRidesId(generatedRidesId)) {
+            throw new IllegalStateException("This ride has already been finished");
+        }
+
+        StartedRide startedRide = startedRideRepository
+                .findByRideGeneratedRidesId(generatedRidesId)
+                .orElseThrow(() -> new IllegalStateException("StartedRide record missing"));
+
+        boolean isCreator = ride.getUsername().getUsername().equals(requester.getUsername());
+        boolean isParticipant = startedRide.getParticipants().stream()
+                .anyMatch(p -> p.getUsername().equals(requester.getUsername()));
+
+        if (!isCreator && !isParticipant) {
+            throw new RideAuthorizationException("Only ride participants can force-finish their ride");
+        }
+
+        AppLogger.warn(this.getClass(), "Force-finishing own ride only",
+                "generatedRidesId", generatedRidesId,
+                "rider", requester.getUsername());
+
+        personalFinishedRideService.createPersonalSummaryOnArrival(
+                requester, ride, LocalDateTime.now());
+
+        return finishedRideUtility.buildPersonalFinishResponse(generatedRidesId, requester);
     }
 
     @Transactional(readOnly = true)

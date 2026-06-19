@@ -125,6 +125,7 @@ const CheckpointArrivalsModal = ({
 
   const {
     isFinishing,
+    finishingAction,
     handleFinishRide,
     handleForceFinishRide,
     captureAndUploadSnapshot,
@@ -232,7 +233,7 @@ const CheckpointArrivalsModal = ({
   // ─── Status banner ────────────────────────────────────────────
   const renderStatusBanner = () => {
     // Creator has NOT reached ending
-    if (!currentUserAtEnding && isCreator) {
+    if (!currentUserAtEnding) {
       return (
         <View style={s.bannerWarning}>
           <View style={s.bannerIconRow}>
@@ -248,37 +249,55 @@ const CheckpointArrivalsModal = ({
           <TouchableOpacity
             disabled={isFinishing}
             onPress={() => {
-              Alert.alert(
-                'Force End Ride',
-                'This will end the ride for all participants. Are you sure?',
-                [
-                  {text: 'Cancel', style: 'cancel'},
-                  {
-                    text: 'Force End',
-                    style: 'destructive',
-                    onPress: () => handleForceFinishRide(),
-                  },
-                ],
-              );
+              if (isCreator) {
+                Alert.alert(
+                  'Force End Ride',
+                  'End just your own ride, or end it for every participant?',
+                  [
+                    {text: 'Cancel', style: 'cancel'},
+                    {
+                      text: 'End My Ride Only',
+                      onPress: () => handleForceFinishRide(false),
+                    },
+                    {
+                      text: 'End For Everyone',
+                      style: 'destructive',
+                      onPress: () => handleForceFinishRide(true),
+                    },
+                  ],
+                );
+              } else {
+                Alert.alert(
+                  'Force End Ride',
+                  'This will end the ride for you only — other riders can continue. Are you sure?',
+                  [
+                    {text: 'Cancel', style: 'cancel'},
+                    {
+                      text: 'Force End',
+                      style: 'destructive',
+                      onPress: () => handleForceFinishRide(false),
+                    },
+                  ],
+                );
+              }
             }}
             style={[
               s.bannerButton,
               s.bannerButtonDanger,
               isFinishing && s.bannerButtonDisabled,
             ]}>
-            {isFinishing ? (
+            {finishingAction === 'force' ? (
               <ActivityIndicator size="small" color="#ef4444" />
             ) : (
               <FontAwesome name="stop-circle" size={13} color="#ef4444" />
             )}
             <Text style={s.bannerButtonDangerText}>
-              {isFinishing ? 'Ending…' : 'Force End Ride'}
+              {finishingAction === 'force' ? 'Ending…' : 'Force End Ride'}
             </Text>
           </TouchableOpacity>
         </View>
       );
     }
-    if (!currentUserAtEnding) return null;
 
     // At ending — creator
     if (isCreator) {
@@ -298,13 +317,13 @@ const CheckpointArrivalsModal = ({
               s.bannerButtonSuccess,
               isFinishing && s.bannerButtonDisabled,
             ]}>
-            {isFinishing ? (
+            {finishingAction === 'normal' ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <FontAwesome name="check-circle" size={13} color="#fff" />
             )}
             <Text style={s.bannerButtonSuccessText}>
-              {isFinishing ? 'Ending…' : 'End Your Ride'}
+              {finishingAction === 'normal' ? 'Ending…' : 'End Your Ride'}
             </Text>
           </TouchableOpacity>
 
@@ -314,19 +333,22 @@ const CheckpointArrivalsModal = ({
             <View style={s.bannerDividerLine} />
           </View>
 
-          {/* Force End — owner only */}
           <TouchableOpacity
             disabled={isFinishing}
             onPress={() => {
               Alert.alert(
                 'Force End Ride',
-                'This will end the ride for all participants. Are you sure?',
+                'End just your own ride, or end it for every participant?',
                 [
                   {text: 'Cancel', style: 'cancel'},
                   {
-                    text: 'Force End',
+                    text: 'End My Ride Only',
+                    onPress: () => handleForceFinishRide(false),
+                  },
+                  {
+                    text: 'End For Everyone',
                     style: 'destructive',
-                    onPress: () => handleForceFinishRide(),
+                    onPress: () => handleForceFinishRide(true),
                   },
                 ],
               );
@@ -337,7 +359,7 @@ const CheckpointArrivalsModal = ({
               s.bannerButtonOutline,
               isFinishing && s.bannerButtonDisabled,
             ]}>
-            {isFinishing ? (
+            {finishingAction === 'force' ? (
               <ActivityIndicator size="small" color={colors.primary} />
             ) : (
               <FontAwesome
@@ -347,7 +369,7 @@ const CheckpointArrivalsModal = ({
               />
             )}
             <Text style={s.bannerButtonDangerText}>
-              {isFinishing ? 'Ending…' : 'Force End Ride'}
+              {finishingAction === 'force' ? 'Ending…' : 'Force End Ride'}
             </Text>
           </TouchableOpacity>
         </View>
