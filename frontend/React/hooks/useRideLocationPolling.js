@@ -51,34 +51,35 @@ function haversineMeters(lat1, lng1, lat2, lng2) {
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
-/**
- * Opens an SSE stream for the given rideId.
- * Uses react-native-sse — a direct import, no global polyfill needed.
- * Token comes from the hook's tokenRef (via useAuth()).
- */
 export const openLocationStream = (rideId, token, onLocations, onError) => {
   const url = `${API_BASE_URL}/location/${rideId}/stream`;
+  console.log('[SSE] connecting to:', url);
 
   const es = new EventSource(url, {
     headers: {Authorization: `Bearer ${token}`},
   });
 
+  es.addEventListener('open', () => {
+    console.log('[SSE] connection OPEN');
+  });
+
   es.addEventListener('location-update', event => {
+    console.log('[SSE] location-update received:', event.data);
     try {
       const locations = JSON.parse(event.data);
       onLocations(locations);
     } catch (e) {
+      console.log('[SSE] parse error:', e);
     }
   });
 
-  // react-native-sse uses addEventListener('error') not es.onerror
   es.addEventListener('error', err => {
+    console.log('[SSE] error event:', JSON.stringify(err));
     onError?.(err);
   });
 
   return es;
 };
-
 // ─── useLocationPermission ────────────────────────────────────────────────
 
 export const useLocationPermission = () => {

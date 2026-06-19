@@ -26,7 +26,6 @@ import spacing from '../styles/tokens/spacing';
 import {fontSize} from '../styles/tokens/typography';
 import {useAuth} from '../context/AuthContext';
 import RideTypeSelector from '../commons/RideTypeSelector';
-import header from '../styles/base/header';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 const s = (val, fallback = '') =>
