@@ -3,6 +3,8 @@ package leyans.RidersHub.Controller;
 import leyans.RidersHub.DTO.Response.FinishedDTO.DetailDTO;
 import leyans.RidersHub.DTO.Response.FinishedDTO.SnapshotResponseDTO;
 import leyans.RidersHub.Service.RideDetailService;
+import leyans.RidersHub.Service.UploadService;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,9 +15,11 @@ import org.springframework.web.multipart.MultipartFile;
 public class RideDetailController {
 
     private final RideDetailService rideDetailService;
+    private final UploadService uploadService;
 
-    public RideDetailController(RideDetailService rideDetailService) {
+    public RideDetailController(RideDetailService rideDetailService, UploadService uploadService) {
         this.rideDetailService = rideDetailService;
+        this.uploadService = uploadService;
     }
 
     /**
@@ -28,16 +32,24 @@ public class RideDetailController {
         return ResponseEntity.ok(rideDetailService.getRideDetail(generatedRidesId));
     }
 
-    @PostMapping("/{generatedRidesId}/snapshot")
+
+    @PostMapping(value = "/{generatedRidesId}/snapshot", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<SnapshotResponseDTO> uploadSnapshot(
             @PathVariable String generatedRidesId,
-            @RequestParam("file") MultipartFile file) {
-        return ResponseEntity.ok(rideDetailService.uploadSnapshot(generatedRidesId, file));
+            @RequestPart("file") MultipartFile file) {
+
+        return ResponseEntity.ok(uploadService.uploadSnapshot(generatedRidesId, file));
     }
 
-    // ─── NEW: Get Snapshot ─────────────────────────────────────
-    @GetMapping("/{generatedRidesId}/request")
-    public ResponseEntity<SnapshotResponseDTO> getSnapshot(@PathVariable String generatedRidesId) {
-        return ResponseEntity.ok(rideDetailService.getSnapshot(generatedRidesId));
+    /**
+     * GET /rides/{generatedRidesId}/snapshot
+     *
+     * Returns the stored Cloudinary URL for the ride's snapshot.
+     */
+    @GetMapping("/{generatedRidesId}/snapshot")
+    public ResponseEntity<SnapshotResponseDTO> getSnapshot(
+            @PathVariable String generatedRidesId) {
+
+        return ResponseEntity.ok(uploadService.getSnapshot(generatedRidesId));
     }
 }

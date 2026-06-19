@@ -9,13 +9,11 @@ import leyans.RidersHub.Utility.RideCalculationUtils;
 import leyans.RidersHub.Utility.StartedUtil;
 import leyans.RidersHub.model.*;
 import leyans.RidersHub.model.FinishedRide.FinishedRide;
-import leyans.RidersHub.model.FinishedRide.FinishedRidePhoto;
 import leyans.RidersHub.model.participant.RideCheckpointArrival;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.time.LocalDateTime;
 
 
 @Service
@@ -28,13 +26,14 @@ public class FinishedRideService {
     private final RideCheckpointArrivalRepository rideCheckpointArrivalRepository;
     private final FinishedRideUtility finishedRideUtility;
     private final RideStatusService rideStatusService;
-    private final FinishedRidePhotoRepository finishedRidePhotoRepository;
+    private final PersonalFinishedRideService personalFinishedRideService;
+
 
     public FinishedRideService(StartedRideRepository startedRideRepository,
                                RidesRepository ridesRepository,
                                FinishedRideRepository finishedRideRepository,
                                StartedUtil startedUtil,
-                               RideCheckpointArrivalRepository rideCheckpointArrivalRepository, FinishedRideUtility finishedRideUtility, RideStatusService rideStatusService, FinishedRidePhotoRepository finishedRidePhotoRepository) {
+                               RideCheckpointArrivalRepository rideCheckpointArrivalRepository, FinishedRideUtility finishedRideUtility, RideStatusService rideStatusService, PersonalFinishedRideService personalFinishedRideService) {
         this.startedRideRepository = startedRideRepository;
         this.ridesRepository = ridesRepository;
         this.finishedRideRepository = finishedRideRepository;
@@ -42,7 +41,7 @@ public class FinishedRideService {
         this.rideCheckpointArrivalRepository = rideCheckpointArrivalRepository;
         this.finishedRideUtility = finishedRideUtility;
         this.rideStatusService = rideStatusService;
-        this.finishedRidePhotoRepository = finishedRidePhotoRepository;
+        this.personalFinishedRideService = personalFinishedRideService;
     }
 
     @Transactional
@@ -58,15 +57,11 @@ public class FinishedRideService {
             throw new IllegalStateException("Ride is not currently active");
         }
 
+        // NEW: if the ride was already force-finished by the creator, block personal finish
         if (finishedRideRepository.existsByRideGeneratedRidesId(generatedRidesId)) {
-            throw new IllegalStateException("Ride has already been finished");
+            throw new IllegalStateException("This ride has already been finished by the creator");
         }
 
-        StartedRide startedRide = startedRideRepository
-                .findByRideGeneratedRidesId(generatedRidesId)
-                .orElseThrow(() -> new IllegalStateException("StartedRide record missing"));
-
-        // Check if requester is at ending point
         boolean requesterAtEnding = rideCheckpointArrivalRepository
                 .existsByRideGeneratedRidesIdAndRiderUsernameAndCheckpointType(
                         ride.getGeneratedRidesId(),
@@ -78,23 +73,12 @@ public class FinishedRideService {
             throw new IllegalStateException("You must reach the ending point before finishing the ride");
         }
 
-        // Check if ALL participants have reached the ending point
-        int totalParticipants = startedRide.getParticipants().size();
-        long participantsAtEnding = rideCheckpointArrivalRepository
-                .countByRideGeneratedRidesIdAndCheckpointType(
-                        generatedRidesId,
-                        RideCheckpointArrival.CheckpointType.ENDING);
+        // Delegates to service which handles startTime, duration, and repository.save()
+        personalFinishedRideService.createPersonalSummaryOnArrival(
+                requester, ride, LocalDateTime.now());
 
-        if (participantsAtEnding < totalParticipants) {
-            int stillWaiting = (int) (totalParticipants - participantsAtEnding);
-            throw new IllegalStateException(
-                    "Waiting for " + stillWaiting + " participant(s) to reach the finish line");
-        }
-        rideStatusService.markFinished(generatedRidesId, "Ride finished by " + requester.getUsername());
-
-        return finishedRideUtility.buildAndSaveFinishedRide(startedRide, ride, requester, generatedRidesId);
+        return finishedRideUtility.buildPersonalFinishResponse(generatedRidesId, requester);
     }
-
     @Transactional
     public FinishedRideResponseDTO forceFinishRide(String generatedRidesId) {
         AppLogger.info(this.getClass(), "forceFinishRide called", "generatedRidesId", generatedRidesId);
@@ -128,7 +112,6 @@ public class FinishedRideService {
 
         return finishedRideUtility.buildAndSaveFinishedRide(startedRide, ride, requester, generatedRidesId);
     }
-
 
     @Transactional(readOnly = true)
     public FinishedRideResponseDTO getFinishedRide(String generatedRidesId) {

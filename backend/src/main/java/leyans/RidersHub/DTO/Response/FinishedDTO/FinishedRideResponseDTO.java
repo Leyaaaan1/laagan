@@ -26,6 +26,8 @@ public class FinishedRideResponseDTO {
     private String routeCoordinates;       // raw GeoJSON string from Rides entity
     private Double averageSpeedKph;        // computed: (distance / durationMinutes) * 0.06
 
+    private String snapshotUrl;
+
     public FinishedRideResponseDTO() {}
 
     public FinishedRideResponseDTO(FinishedRide finishedRide) {
@@ -42,6 +44,7 @@ public class FinishedRideResponseDTO {
                 .toList();
         this.creatorUsername = finishedRide.getFinishedBy().getUsername();
         this.participantCount = finishedRide.getCompletedParticipants() != null ? finishedRide.getCompletedParticipants().size() : 0;
+        this.snapshotUrl = finishedRide.getSnapshotUrl();
     }
 
 
@@ -51,6 +54,14 @@ public class FinishedRideResponseDTO {
         }
         // km/h = (meters / minutes) * 0.06
         return Math.round(((double) distanceMeters / durationMinutes) * 0.06 * 10.0) / 10.0;
+    }
+
+    public String getSnapshotUrl() {
+        return snapshotUrl;
+    }
+
+    public void setSnapshotUrl(String snapshotUrl) {
+        this.snapshotUrl = snapshotUrl;
     }
 
     public String getRouteCoordinates() {

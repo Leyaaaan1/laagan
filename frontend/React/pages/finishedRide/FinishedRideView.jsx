@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   ActivityIndicator,
   StyleSheet,
+  Image,
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import colors from '../../styles/tokens/colors';
@@ -20,11 +21,7 @@ import {
 import FinishedRideSummary from './FinishedRideSummary';
 import FinishedRideParticipants from './FinishedRideParticipants';
 import FinishedRideCheckpoints from './FinishedRideCheckpoints';
-import RouteMapView from '../../utilities/route/view/RouteMapView';
-import {
-  isValidCoordinate,
-  processRideCoordinates,
-} from '../../utilities/CoordinateUtils';
+import {finishedRideService} from '../../services/finishedRideService';
 import {useAuth} from '../../context/AuthContext';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
@@ -41,6 +38,8 @@ const enrichParticipants = (
     return {...p, checkpointsReached: reached, totalCheckpoints};
   });
 };
+
+
 
 const safe = val => (Array.isArray(val) ? val : []);
 
@@ -66,8 +65,9 @@ const FinishedRideView = ({route, navigation}) => {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(!passedData && !!generatedRidesId);
   const [error, setError] = useState(null);
-  const mapRef = useRef(null);
-  const [snapshotUrl, setSnapshotUrl] = useState(passedSnapshotUrl || null);
+  const [snapshotUrl, setSnapshotUrl] = useState(
+    passedSnapshotUrl?.trim() ? passedSnapshotUrl : null,
+  );
 
   // ── Load finished ride data ──────────────────────────────────────
   useEffect(() => {
@@ -115,19 +115,17 @@ const FinishedRideView = ({route, navigation}) => {
     load();
   }, [generatedRidesId]);
 
+  useEffect(() => {
+    if (snapshotUrl || !generatedRidesId) return;
+    finishedRideService
+      .getSnapshot(generatedRidesId)
+      .then(url => setSnapshotUrl(url))
+      .catch(() => {
+        // No snapshot yet — screen just renders without it
+      });
+  }, [generatedRidesId, snapshotUrl]);
+
   const insets = useSafeAreaInsets();
-
-  // ── Derive map coordinates from the finished ride data ───────────
-  const mapCoords = (() => {
-    if (!finishedRideData) return null;
-    return processRideCoordinates(finishedRideData);
-  })();
-
-  const hasRoute = !!(
-    finishedRideData?.routeCoordinates ||
-    isValidCoordinate(mapCoords?.startingPoint) ||
-    isValidCoordinate(mapCoords?.endingPoint)
-  );
 
   // ── Loading / error states ───────────────────────────────────────
   if (loading) {
@@ -191,7 +189,6 @@ const FinishedRideView = ({route, navigation}) => {
   const isParticipant = safeParticipants.some(
     p => p.username === currentUsername,
   );
-  const canUploadPhotos = isParticipant || !isPersonalSummary;
 
   return (
     <View style={[finishedRideStyles.container, {paddingTop: insets.top}]}>
@@ -241,16 +238,12 @@ const FinishedRideView = ({route, navigation}) => {
       <ScrollView
         contentContainerStyle={finishedRideStyles.scrollContent}
         showsVerticalScrollIndicator={false}>
-        {hasRoute && (
-          <View style={localStyles.mapWrapper}>
-            <RouteMapView
-              ref={mapRef}
-              generatedRidesId={generatedRidesId}
-              startingPoint={mapCoords?.startingPoint}
-              endingPoint={mapCoords?.endingPoint}
-              stopPoints={mapCoords?.stopPoints || []}
-              isDark={false}
-              style={{flex: 1}}
+        {snapshotUrl && (
+          <View style={localStyles.snapshotWrapper}>
+            <Image
+              source={{uri: snapshotUrl}}
+              style={localStyles.snapshotImage}
+              resizeMode="cover"
             />
           </View>
         )}
@@ -272,7 +265,8 @@ const FinishedRideView = ({route, navigation}) => {
         />
       </ScrollView>
     </View>
-  );};
+  );
+};
 
 const localStyles = StyleSheet.create({
   mapWrapper: {
@@ -285,6 +279,20 @@ const localStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  snapshotWrapper: {
+    height: 220,
+    marginHorizontal: 16,
+    marginVertical: 12,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
+  },
+  snapshotImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
 });
 

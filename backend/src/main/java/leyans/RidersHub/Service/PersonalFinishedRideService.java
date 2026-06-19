@@ -89,7 +89,8 @@ public class PersonalFinishedRideService {
                 ride.getStartingPointName(),
                 ride.getEndingPointName(),
                 ride.getDistance(),             // NEW field — distanceMeters
-                personalAverageSpeedKph         // NEW field — averageSpeedKph
+                personalAverageSpeedKph,
+                personalFinishedRide.getSnapshotUrl()
         );
 
         return dto;
@@ -138,7 +139,7 @@ public class PersonalFinishedRideService {
         int durationMinutes = (int) ChronoUnit.MINUTES.between(startTime, endTime);
 
         PersonalFinishedRide record = new PersonalFinishedRide(
-                ride, rider, startTime, endTime, durationMinutes);
+                ride, rider, startTime, endTime, durationMinutes, null);
 
         personalFinishedRideRepository.save(record);
     }

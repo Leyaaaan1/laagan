@@ -49,16 +49,29 @@ public class PersonalFinishedRide {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(name = "snapshotUrl")
+    private String snapshotUrl;
+
+
     public PersonalFinishedRide() {}
 
     public PersonalFinishedRide(Rides ride, Rider rider,
                                 LocalDateTime startTime, LocalDateTime endTime,
-                                Integer durationMinutes) {
+                                Integer durationMinutes, String snapshotUrl) {
         this.ride = ride;
         this.rider = rider;
         this.startTime = startTime;
         this.endTime = endTime;
         this.durationMinutes = durationMinutes;
+        this.snapshotUrl = snapshotUrl;
+    }
+
+    public String getSnapshotUrl() {
+        return snapshotUrl;
+    }
+
+    public void setSnapshotUrl(String snapshotUrl) {
+        this.snapshotUrl = snapshotUrl;
     }
 
     public Integer getId() { return id; }

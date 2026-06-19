@@ -259,7 +259,20 @@ const CheckpointArrivalsModal = ({
           </View>
           <TouchableOpacity
             disabled={isFinishing}
-            onPress={handleForceFinishRide}
+            onPress={() => {
+              Alert.alert(
+                'Force End Ride',
+                'This will end the ride for all participants. Are you sure?',
+                [
+                  {text: 'Cancel', style: 'cancel'},
+                  {
+                    text: 'Force End',
+                    style: 'destructive',
+                    onPress: () => handleForceFinishRide(),
+                  },
+                ],
+              );
+            }}
             style={[
               s.bannerButton,
               s.bannerButtonDanger,
@@ -277,7 +290,6 @@ const CheckpointArrivalsModal = ({
         </View>
       );
     }
-
     if (!currentUserAtEnding) return null;
 
     // At ending — creator
@@ -289,34 +301,48 @@ const CheckpointArrivalsModal = ({
             <Text style={s.bannerSuccessTitle}>Finish line reached!</Text>
           </View>
 
-          {onNavigateToPersonalSummary && (
-            <TouchableOpacity
-              disabled={isCapturingSummary}
-              onPress={handleViewMySummary}
-              style={[
-                s.bannerButton,
-                s.bannerButtonSuccess,
-                isCapturingSummary && s.bannerButtonDisabled,
-              ]}>
-              {isCapturingSummary ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <FontAwesome name="user" size={13} color="#fff" />
-              )}
-              <Text style={s.bannerButtonSuccessText}>
-                {isCapturingSummary ? 'Preparing…' : 'View My Summary'}
-              </Text>
-            </TouchableOpacity>
-          )}
+          {/* End Your Ride */}
+          <TouchableOpacity
+            disabled={isFinishing}
+            onPress={handleFinishRide}
+            style={[
+              s.bannerButton,
+              s.bannerButtonSuccess,
+              isFinishing && s.bannerButtonDisabled,
+            ]}>
+            {isFinishing ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <FontAwesome name="check-circle" size={13} color="#fff" />
+            )}
+            <Text style={s.bannerButtonSuccessText}>
+              {isFinishing ? 'Ending…' : 'End Your Ride'}
+            </Text>
+          </TouchableOpacity>
+
           <View style={s.bannerDivider}>
             <View style={s.bannerDividerLine} />
             <Text style={s.bannerDividerText}>or</Text>
             <View style={s.bannerDividerLine} />
           </View>
 
+          {/* Force End — owner only */}
           <TouchableOpacity
             disabled={isFinishing}
-            onPress={handleForceFinishRide}
+            onPress={() => {
+              Alert.alert(
+                'Force End Ride',
+                'This will end the ride for all participants. Are you sure?',
+                [
+                  {text: 'Cancel', style: 'cancel'},
+                  {
+                    text: 'Force End',
+                    style: 'destructive',
+                    onPress: () => handleForceFinishRide(),
+                  },
+                ],
+              );
+            }}
             style={[
               s.bannerButton,
               s.bannerButtonDanger,
@@ -338,7 +364,8 @@ const CheckpointArrivalsModal = ({
           </TouchableOpacity>
         </View>
       );
-    } // At ending — participant
+    }
+    // At ending — participant
     return (
       <View style={s.bannerSuccess}>
         <View style={s.bannerIconRow}>
@@ -347,28 +374,25 @@ const CheckpointArrivalsModal = ({
             Great job completing the ride!
           </Text>
         </View>
-        {onNavigateToPersonalSummary && (
-          <TouchableOpacity
-            disabled={isCapturingSummary}
-            onPress={handleViewMySummary}
-            style={[
-              s.bannerButton,
-              s.bannerButtonSuccess,
-              isCapturingSummary && s.bannerButtonDisabled,
-            ]}>
-            {isCapturingSummary ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <FontAwesome name="bar-chart" size={13} color="#fff" />
-            )}
-            <Text style={s.bannerButtonSuccessText}>
-              {isCapturingSummary ? 'Preparing…' : 'View My Summary'}
-            </Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          disabled={isFinishing}
+          onPress={handleFinishRide}
+          style={[
+            s.bannerButton,
+            s.bannerButtonSuccess,
+            isFinishing && s.bannerButtonDisabled,
+          ]}>
+          {isFinishing ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <FontAwesome name="check-circle" size={13} color="#fff" />
+          )}
+          <Text style={s.bannerButtonSuccessText}>
+            {isFinishing ? 'Ending…' : 'End Your Ride'}
+          </Text>
+        </TouchableOpacity>
       </View>
-    );
-  };
+    );  };
 
   // ─── Arrivals content ─────────────────────────────────────────
   const renderContent = () => {

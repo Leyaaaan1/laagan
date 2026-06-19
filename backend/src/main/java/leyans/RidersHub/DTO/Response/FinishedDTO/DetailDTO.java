@@ -31,11 +31,19 @@ public class DetailDTO {
     private Integer durationMinutes;
     private Double averageSpeedKph;
     private List<SpeedSegmentDTO> speedSegments;
+    private String snapshotUrl;
+
 
 
     public DetailDTO() {}
 
+    public String getSnapshotUrl() {
+        return snapshotUrl;
+    }
 
+    public void setSnapshotUrl(String snapshotUrl) {
+        this.snapshotUrl = snapshotUrl;
+    }
 
     public String getGeneratedRidesId() { return generatedRidesId; }
     public void setGeneratedRidesId(String generatedRidesId) { this.generatedRidesId = generatedRidesId; }
