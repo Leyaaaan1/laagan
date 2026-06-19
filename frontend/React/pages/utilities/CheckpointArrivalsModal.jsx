@@ -116,8 +116,7 @@ const CheckpointArrivalsModal = ({
   stopPolling,
   setPollingEnabled,
   onRideFinished,
-  onNavigateToSummary,
-  onNavigateToPersonalSummary, snapshotContainerRef,
+  onNavigateToSummary, snapshotContainerRef,
 }) => {
   const [arrivals, setArrivals] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -137,17 +136,7 @@ const CheckpointArrivalsModal = ({
     snapshotContainerRef,
   );
 
-  const [isCapturingSummary, setIsCapturingSummary] = useState(false);
 
-  const handleViewMySummary = useCallback(async () => {
-    try {
-      setIsCapturingSummary(true);
-      await captureAndUploadSnapshot();
-    } finally {
-      setIsCapturingSummary(false);
-      onNavigateToPersonalSummary(generatedRidesId);
-    }
-  }, [captureAndUploadSnapshot, onNavigateToPersonalSummary, generatedRidesId]);
 
 
   const fetchCheckpointArrivals = useCallback(async () => {

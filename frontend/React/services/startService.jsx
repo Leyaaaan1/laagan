@@ -115,7 +115,7 @@ export const getPersonalSummary = async generatedRidesId => {
     };
     throw new Error(
       messages[response.status] ||
-      'Failed to fetch personal summary. Please try again.',
+        'You need to end the ride to view the summary.',
     );
   }
   return response.json();

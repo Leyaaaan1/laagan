@@ -34,12 +34,9 @@ import {RideContext} from '../../context/RideContext';
 import useRideStatus, {RIDE_STATUS} from './hooks/useRideStatus';
 import {
   RideActionButton,
-  RideStatusCenterButton,
 } from './utilities/RideActionButton';
-import CheckpointArrivalsModal from '../../pages/utilities/CheckpointArrivalsModal';
 import RideHeroCard from './utilities/RideHeroCard';
 import {joinService} from '../../services/joinService';
-import {captureRideSnapshot} from '../../utilities/captureRideSnapshot';
 import RideSnapshotView from '../../utilities/route/view/RideSnapshotView';
 
 const RideStep4 = props => {
@@ -52,7 +49,6 @@ const RideStep4 = props => {
     setActiveRide: setContextActiveRide,
   } = React.useContext(RideContext);
   const mapRef = useRef(null);
-  const snapshotRef = useRef(null);
   const routeParams = props.route?.params || {};
   const merged = {...props, ...routeParams};
   const {
@@ -118,7 +114,6 @@ const RideStep4 = props => {
     rideNameImageError: null,
     distanceState: passedRideDetails?.distance ?? distance ?? '--',
     showParticipantsModal: false,
-    showCheckpointsModal: false,
     rideDetailsWithCoords: passedRideDetails || null,
   });
 
@@ -330,27 +325,23 @@ const RideStep4 = props => {
     }
   };
 
-  /**
-   * Bottom-bar center button:
-   *   FINISHED          → FinishedRideView (full group summary)
-   *   PERSONAL_FINISHED → PersonalSummaryView
-   *   ACTIVE            → CheckpointArrivalsModal (slide-up, same as ParticipantList)
-   */
-  const handleCenterAction = () => {
+  const handleSummaryAction = () => {
     const {rideStatus} = actionStatus;
 
+    // Ride fully finished — go to group summary
     if (rideStatus === RIDE_STATUS.FINISHED) {
       navigation.navigate('FinishedRideView', buildFinishedRideParams());
       return;
     }
 
-    if (rideStatus === RIDE_STATUS.PERSONAL_FINISHED) {
+    // Ride active but this user personally finished — go to personal summary
+    if (
+      rideStatus === RIDE_STATUS.ACTIVE ||
+      rideStatus === RIDE_STATUS.PERSONAL_FINISHED
+    ) {
       navigation.navigate('PersonalSummaryView', {generatedRidesId});
       return;
     }
-
-    // ACTIVE → modal
-    patchState({showCheckpointsModal: true});
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -484,10 +475,19 @@ const RideStep4 = props => {
             </TouchableOpacity>
 
             {/* Status-driven center button — null when NOT_STARTED */}
-            <RideStatusCenterButton
-              rideStatus={actionStatus.rideStatus}
-              onPress={handleCenterAction}
-            />
+            {(actionStatus.rideStatus === RIDE_STATUS.ACTIVE ||
+              actionStatus.rideStatus === RIDE_STATUS.PERSONAL_FINISHED ||
+              actionStatus.rideStatus === RIDE_STATUS.FINISHED) && (
+              <>
+                <View style={header.bottomNavDivider} />
+                <TouchableOpacity
+                  style={buttons.bottomNav}
+                  onPress={handleSummaryAction}>
+                  <FontAwesome name="flag-checkered" size={18} color="#fff" />
+                  <Text style={buttons.textNav}>Summary</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </ScrollView>
       </View>
@@ -500,85 +500,6 @@ const RideStep4 = props => {
         username={username}
         currentUsername={resolvedCurrentUsername}
         navigation={navigation}
-      />
-      <RideSnapshotView
-        ref={snapshotRef}
-        startingPoint={mapCoords.startingPoint}
-        endingPoint={mapCoords.endingPoint}
-        stopPoints={mapCoords.stopPoints}
-        routeCoordinates={[]} // RideStep4 has no live GeoJSON, landmarks-only is fine
-      />
-      <CheckpointArrivalsModal
-        visible={state.showCheckpointsModal}
-        onClose={() => patchState({showCheckpointsModal: false})}
-        generatedRidesId={generatedRidesId}
-        stopPoints={mapCoords.stopPoints || []}
-        endingPointName={
-          state.rideDetailsWithCoords?.endingPointName ||
-          getLocationDisplayName(endingPointName)
-        }
-        username={resolvedCurrentUsername}
-        isCreator={actionStatus.isOwner}
-        activeRide={buildActiveRide()}
-        stopPolling={null}
-        setPollingEnabled={null}
-        onRideFinished={(data, snapshotUrl) => {
-          patchState({showCheckpointsModal: false});
-          refreshStatus();
-          if (data) {
-            navigation.navigate('FinishedRideView', {
-              finishedRideData: data,
-              snapshotUrl,
-            });
-          }
-        }}
-        onNavigateToSummary={async id => {
-          patchState({showCheckpointsModal: false});
-          let snapshotUri = null;
-          const containerRef = mapRef.current?.getContainerRef?.();
-          if (containerRef) {
-            const result = await captureRideSnapshot({
-              containerRef,
-              generatedRidesId: id,
-            });
-            if (!result.skipped) snapshotUri = result.snapshotUri;
-          }
-          if (!snapshotUri) {
-            try {
-              const {getSnapshot} = await import('../../services/startService');
-              const res = await getSnapshot(id);
-              snapshotUri = res?.snapshotUrl ?? null;
-            } catch (_) {}
-          }
-          navigation.navigate('FinishedRideView', {
-            ...buildFinishedRideParams(id),
-            snapshotUrl: snapshotUri,
-          });
-        }}
-        onNavigateToPersonalSummary={async id => {
-          patchState({showCheckpointsModal: false});
-          let snapshotUri = null;
-          const containerRef = mapRef.current?.getContainerRef?.();
-          if (containerRef) {
-            const result = await captureRideSnapshot({
-              containerRef,
-              generatedRidesId: id,
-            });
-            if (!result.skipped) snapshotUri = result.snapshotUri;
-          }
-          if (!snapshotUri) {
-            try {
-              const {getSnapshot} = await import('../../services/startService');
-              const res = await getSnapshot(id);
-              snapshotUri = res?.snapshotUrl ?? null;
-            } catch (_) {}
-          }
-          navigation.navigate('PersonalSummaryView', {
-            generatedRidesId: id,
-            snapshotUri,
-          });
-        }}
-        snapshotContainerRef={snapshotRef}
       />
     </View>
   );

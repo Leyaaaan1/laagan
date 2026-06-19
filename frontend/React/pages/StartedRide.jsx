@@ -593,13 +593,13 @@ const StartedRide = ({route, navigation}) => {
         setPollingEnabled={setPollingEnabled}
         onRideFinished={async (data, snapshotUrl) => {
           handleCloseModal();
+
+          const params = buildRideStep4Params(activeRide, username);
+
           clearActiveRide();
           await routeCache.clear(activeRide?.generatedRidesId);
-          navigation.navigate('FinishedRideView', {
-            finishedRideData: data,
-            hideQuickActions: true,
-            snapshotUrl: snapshotUrl, //  now actually populated
-          });
+
+          navigation.navigate('RideStep4', params);
         }}
         onNavigateToSummary={async generatedRidesId => {
           handleCloseModal();
@@ -631,8 +631,7 @@ const StartedRide = ({route, navigation}) => {
             });
           }
         }}
-        onNavigateToPersonalSummary={handleNavigateToPersonalSummary}
-        snapshotContainerRef={snapshotRef} //  was: mapRef (wrong — pointed at AdaptiveMapView instance, not the polygon View)
+        snapshotContainerRef={snapshotRef}
       />
     </View>
   );
