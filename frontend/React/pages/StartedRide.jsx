@@ -31,6 +31,9 @@ import {
   getPersonalSummary,
 } from '../services/startService';
 import {routeCache} from '../services/cache/routeCache';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {captureRideSnapshot} from '../utilities/captureRideSnapshot';
+import RideSnapshotView from '../utilities/route/view/RideSnapshotView';
 
 const StartedRide = ({route, navigation}) => {
   const {username: routeUsername} = route?.params || {};
@@ -55,6 +58,7 @@ const StartedRide = ({route, navigation}) => {
   // Track which ride ID we've already synced from nav params so we don't
   // overwrite live context data on re-renders.
   const syncedRideIdRef = useRef(null);
+  const snapshotRef = useRef(null);
 
   const {riderMarkers, pollingError, isPolling, isOffline} =
     useStartedRideMarkers(
@@ -65,6 +69,7 @@ const StartedRide = ({route, navigation}) => {
 
   // Cache route when online
   useStartedRideRouteCache(activeRide);
+  const insets = useSafeAreaInsets();
 
   const {cachedRouteData} = useOfflineRouteCache(
     activeRide?.generatedRidesId,
@@ -118,8 +123,7 @@ const StartedRide = ({route, navigation}) => {
       // Pass generatedRidesId so participants use the correct lookup endpoint
       // (GET /started-ride/by-ride/{id}) instead of the owner-only endpoint.
       fetchActiveRide(activeRide.generatedRidesId)
-        .catch(err => {
-        })
+        .catch(err => {})
         .finally(() => setIsFetchingRide(false));
     }
     // Intentionally only re-run when the ride ID changes or startedRideId appears
@@ -145,15 +149,13 @@ const StartedRide = ({route, navigation}) => {
         try {
           const parsed = JSON.parse(cachedRouteData.routeCoordinates);
           return parsed;
-        } catch (err) {
-        }
+        } catch (err) {}
       }
       // Case 3: the whole thing is a JSON string
       if (typeof cachedRouteData === 'string') {
         try {
           return JSON.parse(cachedRouteData);
-        } catch (err) {
-        }
+        } catch (err) {}
       }
       return null;
     }
@@ -208,18 +210,56 @@ const StartedRide = ({route, navigation}) => {
   // ── Participant: fetch their personal summary (ride may still be active) ──
   const handleNavigateToPersonalSummary = async rideId => {
     handleCloseModal();
-    clearActiveRide(); // ← ADD
-    await routeCache.clear(rideId); // ← ADD
+
+    console.log('[Snapshot] Starting capture for rideId:', rideId);
+    console.log('[Snapshot] mapRef.current:', mapRef.current);
+    console.log(
+      '[Snapshot] captureSnapshot fn:',
+      mapRef.current?.captureSnapshot,
+    );
+
+    let snapshotUri = null;
+    try {
+      snapshotUri = await mapRef.current?.captureSnapshot();
+      console.log(
+        '[Snapshot] Local capture result:',
+        snapshotUri ? 'GOT URI (length: ' + snapshotUri.length + ')' : 'NULL',
+      );
+    } catch (e) {
+      console.log('[Snapshot] Local capture ERROR:', e);
+    }
+
+    // Bug 1 fix: if the local WebView capture returned null (the map wasn't
+    // fully rendered yet), fall back to the Cloudinary URL that was stored
+    // when the ride was finished via FinishedRideService / RideDetailService.
+    if (!snapshotUri) {
+      try {
+        const {getSnapshot} = await import('../services/startService');
+        const result = await getSnapshot(rideId);
+        snapshotUri = result?.snapshotUrl ?? null;
+        console.log(
+          '[Snapshot] Cloudinary fallback:',
+          snapshotUri ? 'GOT URL' : 'NULL',
+        );
+      } catch (e) {
+        console.log('[Snapshot] Cloudinary fallback failed:', e);
+      }
+    }
+
     try {
       const data = await getPersonalSummary(rideId);
-      navigation.navigate('FinishedRideView', {
+      navigation.navigate('PersonalSummaryView', {
         finishedRideData: data,
         isPersonalSummary: true,
+        hideQuickActions: true,
+        snapshotUri,
       });
     } catch (e) {
-      navigation.navigate('FinishedRideView', {
+      navigation.navigate('PersonalSummaryView', {
         generatedRidesId: rideId,
         isPersonalSummary: true,
+        hideQuickActions: true,
+        snapshotUri,
       });
     }
   };
@@ -236,7 +276,7 @@ const StartedRide = ({route, navigation}) => {
           rideRoutes.mapSection,
           {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0},
         ]}>
-        <View style={startedRideStyles.mapHeaderSpacer} />
+        <View style={{height: insets.top}} />
 
         <AdaptiveMapView
           ref={mapRef}
@@ -299,7 +339,7 @@ const StartedRide = ({route, navigation}) => {
         <View
           style={[
             startedRideStyles.routeInfoOverlay,
-            {pointerEvents: 'box-none'},
+            {pointerEvents: 'box-none', top: 100},
           ]}>
           <TouchableOpacity
             pointerEvents="auto"
@@ -339,7 +379,7 @@ const StartedRide = ({route, navigation}) => {
                       startedRideStyles.routeMarker,
                       startedRideStyles.startMarker,
                     ]}>
-                    <Text>🚀</Text>
+                    <Text></Text>
                   </View>
                   <Text style={startedRideStyles.routeLabel}>
                     STARTING POINT
@@ -393,7 +433,7 @@ const StartedRide = ({route, navigation}) => {
                       startedRideStyles.routeMarker,
                       startedRideStyles.endMarker,
                     ]}>
-                    <Text>🏁</Text>
+                    <Text></Text>
                   </View>
                   <Text style={startedRideStyles.routeLabel}>ENDING POINT</Text>
                 </View>
@@ -530,6 +570,16 @@ const StartedRide = ({route, navigation}) => {
           </View>
         </View>
       </Animated.View>
+      <RideSnapshotView
+        ref={snapshotRef}
+        startingPoint={mapData.startingPoint}
+        endingPoint={mapData.endingPoint}
+        stopPoints={mapData.stopPoints}
+        routeData={routeDataForMap} // your GeoJSON FeatureCollection
+        distance={activeRide?.distance} // "24.6 km" string from your ride object
+        duration={null} // populate if you track it
+        appName="LAAGAN"
+      />
       <CheckpointArrivalsModal
         visible={checkpointModalVisible}
         onClose={handleCloseModal}
@@ -541,24 +591,47 @@ const StartedRide = ({route, navigation}) => {
         activeRide={activeRide}
         stopPolling={stopPolling}
         setPollingEnabled={setPollingEnabled}
-        onRideFinished={async data => {
+        onRideFinished={async (data, snapshotUrl) => {
           handleCloseModal();
-          clearActiveRide(); // ← ADD
-          await routeCache.clear(activeRide?.generatedRidesId); // ← ADD
-          navigation.navigate('FinishedRideView', {finishedRideData: data});
+
+          const params = buildRideStep4Params(activeRide, username);
+
+          clearActiveRide();
+          await routeCache.clear(activeRide?.generatedRidesId);
+
+          navigation.navigate('RideStep4', params);
         }}
         onNavigateToSummary={async generatedRidesId => {
           handleCloseModal();
-          clearActiveRide(); // ← ADD
-          await routeCache.clear(activeRide?.generatedRidesId); // ← ADD
+
+          let snapshotUri = null;
+          const containerRef = mapRef.current?.getContainerRef();
+          if (containerRef) {
+            const result = await captureRideSnapshot({
+              containerRef,
+              generatedRidesId,
+            });
+            if (!result.skipped) snapshotUri = result.snapshotUri;
+          }
+
+          clearActiveRide();
+          await routeCache.clear(activeRide?.generatedRidesId);
           try {
             const data = await getFinishedRideSummary(generatedRidesId);
-            navigation.navigate('FinishedRideView', {finishedRideData: data});
+            navigation.navigate('FinishedRideView', {
+              finishedRideData: data,
+              hideQuickActions: true,
+              snapshotUrl: snapshotUri,
+            });
           } catch (e) {
-            navigation.navigate('FinishedRideView', {generatedRidesId});
+            navigation.navigate('FinishedRideView', {
+              generatedRidesId,
+              hideQuickActions: true,
+              snapshotUrl: snapshotUri,
+            });
           }
         }}
-        onNavigateToPersonalSummary={handleNavigateToPersonalSummary}
+        snapshotContainerRef={snapshotRef}
       />
     </View>
   );

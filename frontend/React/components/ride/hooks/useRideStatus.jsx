@@ -17,20 +17,6 @@ const useRideStatus = ({
   participants,
   isRideStarted = false,
 }) => {
-  const [loading, setLoading] = useState(false);
-  const [actionStatus, setActionStatus] = useState({
-    isOwner: false,
-    hasJoined: false,
-    hasPendingRequest: false,
-    rideStatus: RIDE_STATUS.NOT_STARTED,
-    rideStarted: false,
-  });
-
-  const fetchCount = useRef(0);
-
-  // ── Resolve username to a stable STRING primitive ─────────────────────────
-  // If username is an object (e.g. { username: 'dako' }), pulling .username
-  // here prevents a new object reference from re-triggering effects every render.
   const ownerUsername =
     typeof username === 'object' && username !== null
       ? username?.username
@@ -39,20 +25,43 @@ const useRideStatus = ({
   const deriveLocalFlags = () => {
     const isOwner = ownerUsername === resolvedCurrentUsername;
     const hasJoined =
+      !isOwner &&
       Array.isArray(participants) &&
-      participants.some(p => p.username === resolvedCurrentUsername) &&
-      !isOwner;
+      participants.some(p =>
+        typeof p === 'string'
+          ? p === resolvedCurrentUsername
+          : p.username === resolvedCurrentUsername,
+      );
     return {isOwner, hasJoined};
   };
+  const [actionStatus, setActionStatus] = useState(() => {
+    const {isOwner, hasJoined} = deriveLocalFlags();
+    console.log('[useState init]', {isOwner, hasJoined});
+    return {
+      isOwner,
+      hasJoined,
+      hasPendingRequest: false,
+      rideStatus: isRideStarted ? RIDE_STATUS.ACTIVE : RIDE_STATUS.NOT_STARTED,
+      rideStarted: isRideStarted ?? false,
+    };
+  });
+
+  const [loading, setLoading] = useState(false);
+  const fetchCount = useRef(0);
 
   const fetchStatus = async () => {
     if (!generatedRidesId) return;
     setLoading(true);
     try {
       const data = await getRideStatus(generatedRidesId);
+      console.log('[fetchStatus] raw data:', JSON.stringify(data));
 
       const backendStatus = data?.currentStatus;
       const {isOwner, hasJoined} = deriveLocalFlags();
+      console.log('[fetchStatus] after deriveLocalFlags:', {
+        isOwner,
+        hasJoined,
+      });
 
       const currentUserRiderStatus = data?.riderStatuses?.find(
         rs => rs.riderUsername === resolvedCurrentUsername,
@@ -69,7 +78,7 @@ const useRideStatus = ({
         effectiveStatus = RIDE_STATUS.PERSONAL_FINISHED;
       }
 
-      setActionStatus({
+      const nextState = {
         isOwner,
         hasJoined,
         hasPendingRequest: false,
@@ -77,8 +86,11 @@ const useRideStatus = ({
         rideStarted:
           effectiveStatus === RIDE_STATUS.ACTIVE ||
           effectiveStatus === RIDE_STATUS.PERSONAL_FINISHED,
-      });
+      };
+      console.log('[fetchStatus] setting actionStatus:', nextState);
+      setActionStatus(nextState);
     } catch (_err) {
+      console.log('[fetchStatus] ERROR — using fallback:', _err?.message);
       const {isOwner, hasJoined} = deriveLocalFlags();
       setActionStatus({
         isOwner,
@@ -94,31 +106,31 @@ const useRideStatus = ({
     }
   };
 
-  // ── Re-fetch only when ride ID or user identity changes ───────────────────
-  // FIX: use ownerUsername (string) instead of username (may be object).
-  // An object prop creates a new reference every render → infinite fetch loop.
   useEffect(() => {
     fetchCount.current += 1;
+    console.log(
+      '[useEffect] fetchStatus triggered, count:',
+      fetchCount.current,
+    );
     fetchStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [generatedRidesId, ownerUsername, resolvedCurrentUsername]);
 
-  // ── Keep isOwner/hasJoined in sync when participants list changes ──────────
-  // FIX: derive a stable string key instead of depending on the array reference.
-  // A new array reference every render also causes an infinite update loop.
   const participantKey = Array.isArray(participants)
-    ? participants.map(p => p.username).join(',')
+    ? participants.map(p => (typeof p === 'string' ? p : p.username)).join(',')
     : '';
+  console.log('[useRideStatus] participantKey:', participantKey);
+  console.log('[useRideStatus] current actionStatus:', actionStatus);
 
   useEffect(() => {
+    console.log('[participantKey effect] triggered, key:', participantKey);
     setActionStatus(prev => {
       const {isOwner, hasJoined} = deriveLocalFlags();
+      console.log('[participantKey effect] updating:', {isOwner, hasJoined});
       return {...prev, isOwner, hasJoined};
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [participantKey]);
 
   return {actionStatus, loading, refresh: fetchStatus};
-};
-
-export default useRideStatus;
+};export default useRideStatus;

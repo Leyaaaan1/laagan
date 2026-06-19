@@ -150,7 +150,7 @@ const FinishedRideCheckpoints = ({
                       {checkpoint.name}
                     </Text>
                     <Text style={finishedRideStyles.timelineCount}>
-                      {checkpoint.arrivers.length}{' '}
+                      {checkpoint.arrivers.length}
                       {checkpoint.arrivers.length !== 1 ? 'riders' : 'rider'}
                     </Text>
                   </View>

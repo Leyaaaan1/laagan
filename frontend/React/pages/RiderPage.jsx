@@ -85,7 +85,6 @@ const RiderPage = ({navigation}) => {
 
   const insets = useSafeAreaInsets();
 
-
   const prevUsernameRef = useRef(null);
   useEffect(() => {
     if (
@@ -106,7 +105,9 @@ const RiderPage = ({navigation}) => {
     try {
       setActiveRideLoading(true);
       const result = await getActiveRide();
-      setFetchedActiveRide(result);
+      // Only treat as a real active ride if it has a meaningful identifier
+      const hasRide = result && (result.generatedRidesId || result.ridesName);
+      setFetchedActiveRide(hasRide ? result : null);
     } catch (err) {
       const msg = err?.message ?? '';
 
@@ -196,7 +197,11 @@ const RiderPage = ({navigation}) => {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingTop: insets.top + 5,
+          paddingTop: insets.top + 2,
+          paddingLeft: 5,
+          paddingRight: 5,
+          paddingBottom: 5,
+
         }}>
         <View style={{flex: 1, flexDirection: 'row', alignItems: 'center'}}>
           <TouchableOpacity
@@ -252,63 +257,58 @@ const RiderPage = ({navigation}) => {
         </View>
       </View>
 
-      {/* ─────────────────────────────────────────────────────────────────
-          Active Ride banner
-          Uses displayActiveRide = fetchedActiveRide ?? contextActiveRide
-          so the cached ride is shown when the API call fails offline.
-      ───────────────────────────────────────────────────────────────── */}
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={() => {
-          if (!displayActiveRide) return;
-          navigation.navigate('StartedRide', {
-            activeRide: displayActiveRide,
-            username,
-          });
-        }}
-        style={{
-          marginHorizontal: 16,
-          marginVertical: 8,
-          backgroundColor: '#1e1e1e',
-          borderRadius: 8,
-          padding: 12,
-        }}>
-        <Text style={{color: '#fff', fontSize: 16, marginBottom: 8}}>
-          Active Ride
-        </Text>
-        {activeRideLoading && !displayActiveRide ? (
-          // Show spinner only on the very first load when there's no
-          // cached data yet.  If we already have the cached ride, render
-          // it straight away to avoid a flash of "No active ride".
-          <ActivityIndicator color="#fff" size="small" />
-        ) : displayActiveRide ? (
-          <View>
-            <Text style={{color: '#fff', fontSize: 14}}>
-              {displayActiveRide.ridesName ?? '—'}
-            </Text>
-            <View
-              style={{
-                flexDirection: 'row',
-                marginTop: 4,
-                justifyContent: 'space-between',
-              }}>
-              <Text style={{color: '#888', fontSize: 12}}>
-                {displayActiveRide.locationName ?? '—'}
+      {/* Active Ride banner — hidden entirely when there is no active ride */}
+      {(activeRideLoading && !displayActiveRide) ||
+      (displayActiveRide &&
+        (displayActiveRide.generatedRidesId || displayActiveRide.ridesName)) ? (
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => {
+            if (!displayActiveRide) return;
+            navigation.navigate('StartedRide', {
+              activeRide: displayActiveRide,
+              username,
+            });
+          }}
+          style={{
+            marginHorizontal: 16,
+            marginVertical: 8,
+            backgroundColor: '#1e1e1e',
+            borderRadius: 8,
+            padding: 12,
+          }}>
+          <Text style={{color: '#fff', fontSize: 16, marginBottom: 8}}>
+            Active Ride
+          </Text>
+          {activeRideLoading && !displayActiveRide ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <View>
+              <Text style={{color: '#fff', fontSize: 14}}>
+                {displayActiveRide.ridesName ?? '—'}
               </Text>
-              <Text style={{color: '#888', fontSize: 12}}>
-                {displayActiveRide.riderType ?? '—'}
-              </Text>
-              <Text style={{color: '#888', fontSize: 12}}>
-                {displayActiveRide.distance != null
-                  ? `${displayActiveRide.distance} km`
-                  : '— km'}
-              </Text>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  marginTop: 4,
+                  justifyContent: 'space-between',
+                }}>
+                <Text style={{color: '#888', fontSize: 12}}>
+                  {displayActiveRide.locationName ?? '—'}
+                </Text>
+                <Text style={{color: '#888', fontSize: 12}}>
+                  {displayActiveRide.riderType ?? '—'}
+                </Text>
+                <Text style={{color: '#888', fontSize: 12}}>
+                  {displayActiveRide.distance != null
+                    ? `${displayActiveRide.distance} km`
+                    : '— km'}
+                </Text>
+              </View>
             </View>
-          </View>
-        ) : (
-          <Text style={{color: '#666', fontSize: 14}}>No active ride</Text>
-        )}
-      </TouchableOpacity>
+          )}
+        </TouchableOpacity>
+      ) : null}
 
       <View style={{flex: 1}}>
         <RidesList

@@ -34,12 +34,10 @@ import {RideContext} from '../../context/RideContext';
 import useRideStatus, {RIDE_STATUS} from './hooks/useRideStatus';
 import {
   RideActionButton,
-  RideStatusCenterButton,
 } from './utilities/RideActionButton';
-import CheckpointArrivalsModal from '../../pages/utilities/CheckpointArrivalsModal';
 import RideHeroCard from './utilities/RideHeroCard';
 import {joinService} from '../../services/joinService';
-
+import RideSnapshotView from '../../utilities/route/view/RideSnapshotView';
 
 const RideStep4 = props => {
   const navigation = useNavigation();
@@ -50,7 +48,7 @@ const RideStep4 = props => {
     fetchActiveRide: fetchActiveRideCtx,
     setActiveRide: setContextActiveRide,
   } = React.useContext(RideContext);
-
+  const mapRef = useRef(null);
   const routeParams = props.route?.params || {};
   const merged = {...props, ...routeParams};
   const {
@@ -116,7 +114,6 @@ const RideStep4 = props => {
     rideNameImageError: null,
     distanceState: passedRideDetails?.distance ?? distance ?? '--',
     showParticipantsModal: false,
-    showCheckpointsModal: false,
     rideDetailsWithCoords: passedRideDetails || null,
   });
 
@@ -175,7 +172,6 @@ const RideStep4 = props => {
 
   // ── Effects ───────────────────────────────────────────────────────────────
 
-
   useEffect(() => {
     if (!locationName) return;
     patchState({rideNameImageLoading: true, rideNameImageError: null});
@@ -221,9 +217,8 @@ const RideStep4 = props => {
       });
   }, [generatedRidesId]);
 
-
   useEffect(() => {
-    if (!generatedRidesId ) return;
+    if (!generatedRidesId) return;
 
     let interval;
 
@@ -242,8 +237,6 @@ const RideStep4 = props => {
     interval = setInterval(fetchPendingCount, 60_000);
     return () => clearInterval(interval);
   }, [generatedRidesId]);
-
-
 
   // ── Shared active-ride object (used by StartedRide + CheckpointArrivalsModal)
   const buildActiveRide = () => {
@@ -320,12 +313,6 @@ const RideStep4 = props => {
           mapCoords.endingPoint?.name || getLocationDisplayName(endingPoint),
       };
 
-      // Pre-populate context so StartedRide renders immediately with what we have,
-      // then kick off a background fetch to fill in startedRideId.
-      // StartedRide's auto-heal effect will detect the missing startedRideId and
-      // call fetchActiveRide() itself — but doing it here too means the context
-      // update races the navigation, giving us the best chance of having the
-      // full data by the time useStartedRideMarkers first reads it.
       setContextActiveRide(activeRideData);
       fetchActiveRideCtx(); // fire-and-forget — updates context with startedRideId
 
@@ -338,27 +325,23 @@ const RideStep4 = props => {
     }
   };
 
-  /**
-   * Bottom-bar center button:
-   *   FINISHED          → FinishedRideView (full group summary)
-   *   PERSONAL_FINISHED → PersonalSummaryView
-   *   ACTIVE            → CheckpointArrivalsModal (slide-up, same as ParticipantList)
-   */
-  const handleCenterAction = () => {
+  const handleSummaryAction = () => {
     const {rideStatus} = actionStatus;
 
+    // Ride fully finished — go to group summary
     if (rideStatus === RIDE_STATUS.FINISHED) {
       navigation.navigate('FinishedRideView', buildFinishedRideParams());
       return;
     }
 
-    if (rideStatus === RIDE_STATUS.PERSONAL_FINISHED) {
+    // Ride active but this user personally finished — go to personal summary
+    if (
+      rideStatus === RIDE_STATUS.ACTIVE ||
+      rideStatus === RIDE_STATUS.PERSONAL_FINISHED
+    ) {
       navigation.navigate('PersonalSummaryView', {generatedRidesId});
       return;
     }
-
-    // ACTIVE → modal
-    patchState({showCheckpointsModal: true});
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -369,7 +352,6 @@ const RideStep4 = props => {
         barStyle="light-content"
         translucent={false}
       />
-
       {/* Header */}
       <View style={[header.bar, {paddingTop: insets.top}]}>
         <TouchableOpacity
@@ -396,7 +378,6 @@ const RideStep4 = props => {
           />
         </View>
       </View>
-
       <View style={rideStep4Styles.fadeContainer}>
         {/* Map */}
         <View style={mapStyles.wrapper}>
@@ -421,6 +402,7 @@ const RideStep4 = props => {
           )}
           {hasValidRouteData && (
             <RouteMapView
+              ref={mapRef}
               generatedRidesId={generatedRidesId}
               startingPoint={mapCoords.startingPoint}
               endingPoint={mapCoords.endingPoint}
@@ -493,14 +475,22 @@ const RideStep4 = props => {
             </TouchableOpacity>
 
             {/* Status-driven center button — null when NOT_STARTED */}
-            <RideStatusCenterButton
-              rideStatus={actionStatus.rideStatus}
-              onPress={handleCenterAction}
-            />
+            {(actionStatus.rideStatus === RIDE_STATUS.ACTIVE ||
+              actionStatus.rideStatus === RIDE_STATUS.PERSONAL_FINISHED ||
+              actionStatus.rideStatus === RIDE_STATUS.FINISHED) && (
+              <>
+                <View style={header.bottomNavDivider} />
+                <TouchableOpacity
+                  style={buttons.bottomNav}
+                  onPress={handleSummaryAction}>
+                  <FontAwesome name="flag-checkered" size={18} color="#fff" />
+                  <Text style={buttons.textNav}>Summary</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </ScrollView>
       </View>
-
       {/* Participants modal */}
       <ParticipantList
         visible={state.showParticipantsModal}
@@ -510,35 +500,6 @@ const RideStep4 = props => {
         username={username}
         currentUsername={resolvedCurrentUsername}
         navigation={navigation}
-      />
-
-      {/* Checkpoint arrivals modal — only mounted while ride is ACTIVE */}
-      <CheckpointArrivalsModal
-        visible={state.showCheckpointsModal}
-        onClose={() => patchState({showCheckpointsModal: false})}
-        generatedRidesId={generatedRidesId}
-        stopPoints={mapCoords.stopPoints || []}
-        endingPointName={
-          state.rideDetailsWithCoords?.endingPointName ||
-          getLocationDisplayName(endingPointName)
-        }
-        username={resolvedCurrentUsername}
-        isCreator={actionStatus.isOwner}
-        activeRide={buildActiveRide()}
-        stopPolling={null}
-        setPollingEnabled={null}
-        onRideFinished={() => {
-          patchState({showCheckpointsModal: false});
-          refreshStatus();
-        }}
-        onNavigateToSummary={id => {
-          patchState({showCheckpointsModal: false});
-          navigation.navigate('FinishedRideView', buildFinishedRideParams(id));
-        }}
-        onNavigateToPersonalSummary={id => {
-          patchState({showCheckpointsModal: false});
-          navigation.navigate('PersonalSummaryView', {generatedRidesId: id});
-        }}
       />
     </View>
   );

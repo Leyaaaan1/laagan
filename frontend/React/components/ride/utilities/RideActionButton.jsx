@@ -6,18 +6,12 @@ import rideStep4Styles from '../../../styles/screens/rideStep4';
 import {RIDE_STATUS} from '../hooks/useRideStatus';
 import buttons from '../../../styles/base/buttons';
 import header from '../../../styles/base/header';
+import colors from '../../../styles/tokens/colors';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Navbar action button  (top-right of the header)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Rules:
- *  - "Start Ride"   → owner only, ride NOT yet started
- *  - "Join Ride"    → non-owner who has NOT joined (active) or already joined
- *                     (disabled/lowered opacity)
- *  - "View"         → ride is ACTIVE or PERSONAL_FINISHED, visible to everyone
- */
 export const RideActionButton = ({
   isOwner,
   hasJoined,
@@ -36,15 +30,15 @@ export const RideActionButton = ({
     );
   }
 
-  const isActive =
-    rideStatus === RIDE_STATUS.ACTIVE ||
-    rideStatus === RIDE_STATUS.PERSONAL_FINISHED;
-  const isFinished = rideStatus === RIDE_STATUS.FINISHED;
+  const isStarted = rideStatus === RIDE_STATUS.ACTIVE;
+  const isPersonalFinished = rideStatus === RIDE_STATUS.PERSONAL_FINISHED;
+  const isFinished =
+    rideStatus === RIDE_STATUS.FINISHED || rideStatus === RIDE_STATUS.STOPPED;
 
-  // ── Owner ─────────────────────────────────────────────────────────────────
+  // ── Owner ──────────────────────────────────────────────────────────────────
   if (isOwner) {
-    if (isActive || isFinished) {
-      // Ride in progress or done — show View (owner can always view)
+    // Ride active or participant finished their leg → View
+    if (isStarted || isPersonalFinished) {
       return (
         <TouchableOpacity
           style={rideStep4Styles.startButton}
@@ -60,7 +54,16 @@ export const RideActionButton = ({
       );
     }
 
-    // NOT_STARTED → Start Ride button
+    // Finished / Stopped → reset to Play so owner can start a new session
+    if (isFinished) {
+      return (
+        <TouchableOpacity style={rideStep4Styles.startButton} onPress={onStart}>
+          <FontAwesome name="play" size={16} color="#fff" />
+        </TouchableOpacity>
+      );
+    }
+
+    // NOT_STARTED → Start
     return (
       <TouchableOpacity style={rideStep4Styles.startButton} onPress={onStart}>
         <FontAwesome name="play" size={16} color="#fff" />
@@ -68,13 +71,13 @@ export const RideActionButton = ({
     );
   }
 
-  // ── Participant ───────────────────────────────────────────────────────────
+  // ── Participant ────────────────────────────────────────────────────────────
 
-  // View: ride is active (or user already finished their leg)
-  if (isActive && hasJoined) {
+  // Ride is ACTIVE and user is confirmed in participants → View
+  if (isStarted && hasJoined) {
     return (
       <TouchableOpacity
-        style={[rideStep4Styles.joinButton, {backgroundColor: '#2196F3'}]}
+        style={[rideStep4Styles.joinButton, {backgroundColor: colors.primary}]}
         onPress={onViewStarted}>
         <FontAwesome
           name="map-marker"
@@ -85,46 +88,30 @@ export const RideActionButton = ({
         <Text style={rideStep4Styles.joinButtonText}>View</Text>
       </TouchableOpacity>
     );
-  }
-
-  // Already joined but ride not started yet — show disabled Join button
+  }  // Already in participants but ride not started yet → show nothing
   if (hasJoined) {
-    return (
-      <TouchableOpacity
-        style={[rideStep4Styles.joinButton, {opacity: 0.45}]}
-        disabled={true}>
-        <FontAwesome
-          name="check-circle"
-          size={14}
-          color="#fff"
-          style={{marginRight: 6}}
-        />
-        <Text style={rideStep4Styles.joinButtonText}>Joined</Text>
-      </TouchableOpacity>
-    );
+    return null;
   }
 
-  // Pending approval
+  // Join request sent but not yet accepted → dimmed disabled button
+  // Remove this block entirely if pending request tracking is not implemented
   if (hasPendingRequest) {
     return (
       <TouchableOpacity
-        style={[
-          rideStep4Styles.joinButton,
-          {opacity: 0.6, backgroundColor: '#ffa500'},
-        ]}
-        disabled={true}>
+        style={[rideStep4Styles.joinButton, {opacity: 0.45}]}
+        disabled>
         <FontAwesome
-          name="hourglass-half"
+          name="plus"
           size={14}
           color="#fff"
           style={{marginRight: 6}}
         />
-        <Text style={rideStep4Styles.joinButtonText}>Pending</Text>
+        <Text style={rideStep4Styles.joinButtonText}>Join Ride</Text>
       </TouchableOpacity>
     );
   }
 
-  // Default: not joined, ride open — Join Ride
+  // Not in participants, no pending request → Join Ride
   return (
     <TouchableOpacity style={rideStep4Styles.joinButton} onPress={onJoin}>
       <FontAwesome
@@ -137,7 +124,6 @@ export const RideActionButton = ({
     </TouchableOpacity>
   );
 };
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Bottom action bar (center button between Riders ↔ Stop Points)
 // ─────────────────────────────────────────────────────────────────────────────

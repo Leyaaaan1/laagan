@@ -11,5 +11,6 @@ public interface FinishedRideRepository extends JpaRepository<FinishedRide, Inte
 
     Optional<FinishedRide> findByRideGeneratedRidesId(String generatedRidesId);
 
+
     boolean existsByRideGeneratedRidesId(String generatedRidesId);
 }

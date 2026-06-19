@@ -198,31 +198,35 @@ const StepOverlay = ({
 
 // ─── Mock screens ────────────────────────────────────────────────────────────
 
-/** Screen 0 — Home (RiderPage) — highlights the + button */
-const MockHomePage = ({refs}) => (
 
+/** Screen 0 — Home (RiderPage) — highlights the + button */
+const MockHomePage = ({refs, insets}) => (
   <View style={mock.screen}>
     {/* ── Header ── */}
-    <View style={mock.homeHeader}>
+    <View style={[mock.homeHeader, {paddingTop: insets.top + 12}]}>
       {/* Avatar + username */}
       <View style={mock.homeUserRow}>
         <View style={mock.homeAvatar}>
           <FontAwesome name="motorcycle" size={16} color="#fff" />
         </View>
         <View style={{marginLeft: 10}}>
-          <Text style={mock.homeUsername}>YAWELS123</Text>
-          <View style={{flexDirection:'row', alignItems:'center', gap:5}}>
+          <Text style={mock.homeUsername}>Lean Paninsoro</Text>
+          <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
             <FontAwesome name="motorcycle" size={10} color="#888" />
             <Text style={mock.homeUserSub}>No type</Text>
           </View>
         </View>
       </View>
-
       {/* Right action buttons */}
       <View style={mock.homeActions}>
         <View style={mock.homeRideIdBtn}>
           <Text style={mock.homeRideIdTxt}>Ride ID</Text>
-          <FontAwesome name="search" size={12} color="#fff" style={{marginLeft:4}} />
+          <FontAwesome
+            name="search"
+            size={12}
+            color="#fff"
+            style={{marginLeft: 4}}
+          />
         </View>
         <View style={mock.homeQrBtn}>
           <FontAwesome name="qrcode" size={16} color="#fff" />
@@ -243,59 +247,156 @@ const MockHomePage = ({refs}) => (
     {/* ── Ride Card ── */}
     <View style={mock.homeCard}>
       {/* Card header */}
-      <View style={{padding:14, borderBottomWidth:1, borderBottomColor:'#2a2a2a'}}>
+      <View
+        style={{
+          padding: 14,
+          borderBottomWidth: 1,
+          borderBottomColor: '#2a2a2a',
+        }}>
         <Text style={mock.homeCardTitle}>DAHILAYAN ADVENTURE PARK</Text>
-        <View style={{flexDirection:'row', alignItems:'center', gap:8, marginTop:4}}>
-          <Text style={{fontSize:11, color:'#888'}}>ID: #5F74527788F3</Text>
-          <View style={mock.inactiveBadge}><Text style={mock.inactiveTxt}>INACTIVE</Text></View>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            marginTop: 4,
+          }}>
+          <Text style={{fontSize: 11, color: '#888'}}>ID: #5F74527788F3</Text>
+          <View style={mock.inactiveBadge}>
+            <Text style={mock.inactiveTxt}>INACTIVE</Text>
+          </View>
         </View>
       </View>
 
       {/* Meta row */}
-      <View style={{padding:14, paddingBottom:8}}>
-        <View style={{flexDirection:'row', justifyContent:'space-between', alignItems:'center', marginBottom:10}}>
-          <Text style={{fontSize:15, fontWeight:'800', color:'#fff'}}>Bukidnon Rides</Text>
-          <View style={{flexDirection:'row', alignItems:'center', gap:5}}>
+      <View style={{padding: 14, paddingBottom: 8}}>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 10,
+          }}>
+          <Text style={{fontSize: 15, fontWeight: '800', color: '#fff'}}>
+            Bukidnon Rides
+          </Text>
+          <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
             <FontAwesome name="motorcycle" size={13} color={colors.primary} />
-            <Text style={{fontSize:13, fontWeight:'700', color:'#fff'}}>144 km</Text>
+            <Text style={{fontSize: 13, fontWeight: '700', color: '#fff'}}>
+              144 km
+            </Text>
           </View>
         </View>
 
         {/* Route row */}
-        <View style={{flexDirection:'row', alignItems:'center', gap:6, marginBottom:6}}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            marginBottom: 6,
+          }}>
           <FontAwesome name="map-marker" size={12} color={colors.primary} />
-          <Text style={{fontSize:12, fontWeight:'700', color:colors.primary}}>Toril District</Text>
+          <Text
+            style={{fontSize: 12, fontWeight: '700', color: colors.primary}}>
+            Toril District
+          </Text>
           <FontAwesome name="arrow-right" size={10} color="#666" />
-          <Text style={{fontSize:12, color:'#ccc'}} numberOfLines={1}>Dahilayan Adventure Pa...</Text>
+          <Text style={{fontSize: 12, color: '#ccc'}} numberOfLines={1}>
+            Dahilayan Adventure Pa...
+          </Text>
         </View>
 
         {/* Date row */}
-        <View style={{flexDirection:'row', alignItems:'center', gap:6, marginBottom:6}}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            marginBottom: 6,
+          }}>
           <FontAwesome name="calendar" size={12} color="#888" />
-          <Text style={{fontSize:12, color:'#888'}}>July 02, 2026, 11:10 AM</Text>
+          <Text style={{fontSize: 12, color: '#888'}}>
+            July 02, 2026, 11:10 AM
+          </Text>
         </View>
 
         {/* Creator row */}
-        <View style={{flexDirection:'row', alignItems:'center', gap:6}}>
+        <View style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
           <FontAwesome name="user-circle" size={12} color="#888" />
-          <Text style={{fontSize:11, color:'#666'}}>Created by lean_paninsoro</Text>
+          <Text style={{fontSize: 11, color: '#666'}}>
+            Created by lean_paninsoro
+          </Text>
         </View>
       </View>
 
       {/* Map thumbnail placeholder */}
       <View style={mock.homeMapThumb}>
-        <View style={{flex:1, backgroundColor:'#d5e8c8', borderRadius:10, margin:2, overflow:'hidden'}}>
-          <Text style={{position:'absolute', top:8, left:30, fontSize:9, color:'#555'}}>Mountain Pines Place</Text>
-          <Text style={{position:'absolute', top:38, left:55, fontSize:9, color:'#555'}}>Dahilayan</Text>
-          <Text style={{position:'absolute', top:48, left:55, fontSize:9, color:'#555'}}>Adventure Park</Text>
-          <View style={{position:'absolute', top:34, left:70, width:10, height:10, borderRadius:5, backgroundColor:colors.primary, borderWidth:1.5, borderColor:'#fff'}} />
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: '#d5e8c8',
+            borderRadius: 10,
+            margin: 2,
+            overflow: 'hidden',
+          }}>
+          <Text
+            style={{
+              position: 'absolute',
+              top: 8,
+              left: 30,
+              fontSize: 9,
+              color: '#555',
+            }}>
+            Mountain Pines Place
+          </Text>
+          <Text
+            style={{
+              position: 'absolute',
+              top: 38,
+              left: 55,
+              fontSize: 9,
+              color: '#555',
+            }}>
+            Dahilayan
+          </Text>
+          <Text
+            style={{
+              position: 'absolute',
+              top: 48,
+              left: 55,
+              fontSize: 9,
+              color: '#555',
+            }}>
+            Adventure Park
+          </Text>
+          <View
+            style={{
+              position: 'absolute',
+              top: 34,
+              left: 70,
+              width: 10,
+              height: 10,
+              borderRadius: 5,
+              backgroundColor: colors.primary,
+              borderWidth: 1.5,
+              borderColor: '#fff',
+            }}
+          />
         </View>
       </View>
 
       {/* Description */}
-      <View style={{padding:14, backgroundColor:'#1a1a1a', borderBottomLeftRadius:14, borderBottomRightRadius:14}}>
-        <Text style={{fontSize:13, color:'#ccc', lineHeight:19}}>
-          Bukidnon is home to multiple famous destinations, but the most popular is Dahilayan Adventure Park in Manolo Fortich
+      <View
+        style={{
+          padding: 14,
+          backgroundColor: '#1a1a1a',
+          borderBottomLeftRadius: 14,
+          borderBottomRightRadius: 14,
+        }}>
+        <Text style={{fontSize: 13, color: '#ccc', lineHeight: 19}}>
+          Bukidnon is home to multiple famous destinations, but the most popular
+          is Dahilayan Adventure Park in Manolo Fortich
         </Text>
       </View>
     </View>
@@ -505,6 +606,7 @@ const MockStartedRide = ({refs}) => (
 
 /** Screen 4 — Checkpoint Arrivals modal */
 const MockCheckpointModal = ({refs}) => (
+
   <View style={mock.screen}>
     {/* dimmed map behind */}
     <View style={[mock.liveMapBox, {opacity: 0.4}]}>
@@ -675,7 +777,6 @@ const OnboardingTour = ({navigation, route}) => {
 
   const currentStep  = STEPS[stepIdx];
   const totalSteps   = STEPS.length;
-  const insets = useSafeAreaInsets();
 
 
   // Measure target element relative to container each time step changes
@@ -726,6 +827,7 @@ const OnboardingTour = ({navigation, route}) => {
   localIdx = stepIdx - seen;
 
   const stepLabel = `STEP ${stepIdx + 1} OF ${totalSteps}`;
+  const insets = useSafeAreaInsets();
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
@@ -734,12 +836,12 @@ const OnboardingTour = ({navigation, route}) => {
 
       <View ref={containerRef} style={styles.container} collapsable={false}>
         <Animated.View style={[styles.screenWrap, {opacity: fadeAnim}]}>
-          {currentStep.screen === 0 && <MockHomePage refs={refs} />}
-          {currentStep.screen === 1 && <MockCreateRide refs={refs} />}
-          {currentStep.screen === 2 && <MockSetLocation refs={refs} />}
-          {currentStep.screen === 3 && <MockPointPicker refs={refs} />}
-          {currentStep.screen === 4 && <MockStartedRide refs={refs} />}
-          {currentStep.screen === 5 && <MockCheckpointModal refs={refs} />}
+          {currentStep.screen === 0 && <MockHomePage refs={refs} insets={insets} />}
+          {currentStep.screen === 1 && <MockCreateRide refs={refs} insets={insets} />}
+          {currentStep.screen === 2 && <MockSetLocation refs={refs} insets={insets} />}
+          {currentStep.screen === 3 && <MockPointPicker refs={refs} insets={insets} />}
+          {currentStep.screen === 4 && <MockStartedRide refs={refs} insets={insets} />}
+          {currentStep.screen === 5 && <MockCheckpointModal refs={refs} insets={insets} />}
         </Animated.View>
 
         {/* Overlay */}

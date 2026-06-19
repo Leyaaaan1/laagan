@@ -20,7 +20,6 @@ import feedback from '../../../styles/base/feedback';
 import badges from '../../../styles/base/badges';
 import {RideContext} from '../../../context/RideContext';
 
-// ✅ ADDED: Import getRideDetails to fetch fresh participant data
 import {getRideDetails} from '../../../services/rideService';
 
 const ParticipantList = ({
@@ -30,7 +29,7 @@ const ParticipantList = ({
                            username,
                            currentUsername,
                            navigation,
-                           participants: propParticipants = [], // ✅ Accept participants as fallback
+                           participants: propParticipants = [], //
                          }) => {
   const [state, setState] = useState({
     rides: [],
@@ -42,12 +41,11 @@ const ParticipantList = ({
     qrCodeBase64: '',
     inviteLink: '',
     loadingQr: false,
-    participants: [], // ✅ Local state for participants
+    participants: [], //
   });
 
   const {activeRide, updateRideParticipants} = useContext(RideContext);
 
-  // ✅ CHANGED: Use local state participants, fallback to context, then fallback to props
   const participants = state.participants.length > 0
     ? state.participants
     : (activeRide?.participants || propParticipants || []);

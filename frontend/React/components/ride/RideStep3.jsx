@@ -34,6 +34,7 @@ import inputs from '../../styles/base/inputs';
 import RouteTimeline from './utilities/RouteTimeline';
 import ridestep3style from '../../styles/screens/ridestep3style';
 import {createMemoCompare} from '../../utilities/propsComparison';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 const RideStep3 = ({
   mapMode,
@@ -77,6 +78,8 @@ const RideStep3 = ({
   const bottomSheetAnimValue = useRef(new Animated.Value(0)).current;
   const debounceRef = useRef(null);
   const [localQuery, setLocalQuery] = useState(searchQuery || '');
+  const insets = useSafeAreaInsets();
+
   const {handleLocalChange, handleClearSearch} = buildSearchHandlers({
     debounceRef,
     setLocalQuery,
@@ -217,8 +220,8 @@ const RideStep3 = ({
       setStopPoints,
       setCurrentStop,
       setIsAddingStop,
-      setStartingPointFromSearch, // ✅ now forwarded
-      setEndingPointFromSearch, // ✅ now forwarded
+      setStartingPointFromSearch, //  now forwarded
+      setEndingPointFromSearch, // now forwarded
       onRouteReady: triggerDrawRoute,
     });
 
@@ -261,7 +264,7 @@ const RideStep3 = ({
     (mapMode === 'ending' && endingPoint);
 
   return (
-    <View style={ridestep3style.container}>
+    <View style={[ridestep3style.container, {paddingTop: insets.top}]}>
       <StatusBar
         translucent
         backgroundColor="transparent"

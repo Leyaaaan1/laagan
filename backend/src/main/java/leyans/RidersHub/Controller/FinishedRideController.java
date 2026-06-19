@@ -48,6 +48,14 @@ public class FinishedRideController {
     }
 
 
+    @PostMapping("/finished/{generatedRidesId}/force/ownride")
+    public ResponseEntity<FinishedRideResponseDTO> forceFinishRideParticipants(
+            @PathVariable String generatedRidesId) {
+
+        FinishedRideResponseDTO response = finishedRideService.forceFinishOwnRide(generatedRidesId);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{generatedRidesId}/checkpoint-arrivals")
     public ResponseEntity<List<CheckpointArrivalResponse>> getCheckpointArrivals(
             @PathVariable String generatedRidesId) {
@@ -70,4 +78,11 @@ public class FinishedRideController {
             @PathVariable String generatedRidesId) {
         return ResponseEntity.ok(personalFinishedRideService.getPersonalSummaryDTO(generatedRidesId));
     }
+
+    @GetMapping("/{generatedRidesId}")
+    public ResponseEntity<FinishedRideResponseDTO> getFinishedRide(
+            @PathVariable String generatedRidesId) {
+        return ResponseEntity.ok(finishedRideService.getFinishedRide(generatedRidesId));
+    }
+
 }

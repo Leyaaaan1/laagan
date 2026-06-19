@@ -8,6 +8,7 @@ import leyans.RidersHub.DTO.Response.FinishedDTO.PersonalFinishedRideDTO;
 import leyans.RidersHub.Repository.PersonalFinishedRideRepository;
 import leyans.RidersHub.Repository.RideCheckpointArrivalRepository;
 import leyans.RidersHub.Repository.StartedRideRepository;
+import leyans.RidersHub.Utility.RideCalculationUtils;
 import leyans.RidersHub.Utility.StartedUtil;
 import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.Rides;
@@ -48,7 +49,7 @@ public class PersonalFinishedRideService {
         Rides ride = personalFinishedRide.getRide();
         String riderUsername = personalFinishedRide.getRider().getUsername();
 
-        // Fetch checkpoint arrivals specific to this rider
+        // Checkpoint arrivals filtered to this rider only
         List<CheckpointArrivalResponse> checkpointArrivals =
                 rideCheckpointArrivalRepository.findByRideGeneratedRidesId(generatedRidesId)
                         .stream()
@@ -56,7 +57,7 @@ public class PersonalFinishedRideService {
                         .map(CheckpointArrivalResponse::new)
                         .toList();
 
-        // Convert StopPoint entities to StopPointDTO
+        // Stop points
         List<StopPointDTO> stopPointDTOs = ride.getStopPoints() != null
                 ? ride.getStopPoints().stream()
                   .map(sp -> new StopPointDTO(
@@ -67,7 +68,14 @@ public class PersonalFinishedRideService {
                   .toList()
                 : new ArrayList<>();
 
-        // Create DTO with all needed data
+        // NEW: personal speed uses personal durationMinutes, not group duration.
+        // Distance comes from Rides (same for everyone in the group).
+        // Both are computed by RideCalculationUtils — no separate formula here.
+        Double personalAverageSpeedKph = RideCalculationUtils.computeAverageSpeedKph(
+                ride.getDistance(),
+                personalFinishedRide.getDurationMinutes()
+        );
+
         PersonalFinishedRideDTO dto = new PersonalFinishedRideDTO(
                 personalFinishedRide.getId(),
                 riderUsername,
@@ -77,21 +85,15 @@ public class PersonalFinishedRideService {
                 personalFinishedRide.getDurationMinutes(),
                 personalFinishedRide.getCreatedAt(),
                 checkpointArrivals,
-                stopPointDTOs,  //
+                stopPointDTOs,
                 ride.getStartingPointName(),
-                ride.getEndingPointName()
+                ride.getEndingPointName(),
+                ride.getDistance(),             // NEW field — distanceMeters
+                personalAverageSpeedKph,
+                personalFinishedRide.getSnapshotUrl()
         );
 
         return dto;
-    }
-    @Transactional(readOnly = true)
-    public PersonalFinishedRide getPersonalSummary(String generatedRidesId) {
-        Rider currentUser = startedUtil.authenticateAndGetInitiator();
-        return personalFinishedRideRepository
-                .findByRideGeneratedRidesIdAndRiderUsername(
-                        generatedRidesId, currentUser.getUsername())
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "No personal summary found for rider: " + currentUser.getUsername()));
     }
 
     // ── Write — called when a rider records an ENDING checkpoint arrival ──────
@@ -102,6 +104,20 @@ public class PersonalFinishedRideService {
     // It is idempotent: if the record already exists it does nothing, so it is
     // safe to call it even if a rider somehow triggers the ending checkpoint twice.
 
+    @Transactional(readOnly = true)
+    public PersonalFinishedRide getPersonalSummary(String generatedRidesId) {
+        Rider currentUser = startedUtil.authenticateAndGetInitiator();
+        return personalFinishedRideRepository
+                .findByRideGeneratedRidesIdAndRiderUsername(
+                        generatedRidesId, currentUser.getUsername())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "No personal summary found for rider: " + currentUser.getUsername()));
+    }
+
+    // =========================================================================
+    // WRITE — called when a rider records an ENDING checkpoint arrival
+    // Idempotent: safe to call twice.
+    // =========================================================================
     @Transactional
     public void createPersonalSummaryOnArrival(Rider rider,
                                                Rides ride,
@@ -109,13 +125,11 @@ public class PersonalFinishedRideService {
         String generatedRidesId = ride.getGeneratedRidesId();
         String username = rider.getUsername();
 
-        // Idempotency guard — do nothing if already saved
         if (personalFinishedRideRepository
                 .existsByRideGeneratedRidesIdAndRiderUsername(generatedRidesId, username)) {
             return;
         }
 
-        // Fetch the StartedRide to get the ride's start time
         StartedRide startedRide = startedRideRepository
                 .findByRideGeneratedRidesId(generatedRidesId)
                 .orElseThrow(() -> new IllegalStateException(
@@ -125,7 +139,7 @@ public class PersonalFinishedRideService {
         int durationMinutes = (int) ChronoUnit.MINUTES.between(startTime, endTime);
 
         PersonalFinishedRide record = new PersonalFinishedRide(
-                ride, rider, startTime, endTime, durationMinutes);
+                ride, rider, startTime, endTime, durationMinutes, null);
 
         personalFinishedRideRepository.save(record);
     }

@@ -1,5 +1,3 @@
-
-
 import React, {useRef, forwardRef, useImperativeHandle} from 'react';
 import {View, StyleSheet} from 'react-native';
 import RouteMapView from './RouteMapView';
@@ -10,8 +8,6 @@ const AdaptiveMapView = forwardRef(
   (
     {
       isOffline = false,
-
-      // Passed through to both maps unchanged
       generatedRidesId,
       startingPoint,
       endingPoint,
@@ -21,21 +17,17 @@ const AdaptiveMapView = forwardRef(
       isDark = false,
       riderMarkers = {},
       currentUsername = '',
-
-      // Any extra props (e.g. testID) forwarded to the active map
       ...restProps
     },
     ref,
   ) => {
     const onlineRef = useRef(null);
     const offlineRef = useRef(null);
+    const containerViewRef = useRef(null);
 
     const {userLocation: offlineUserLocation} =
       useOfflineUserLocation(isOffline);
 
-
-    // ─── Forwarded ref ───────────────────────────────────────────────────────
-    // Route the call to whichever map is currently visible.
     useImperativeHandle(
       ref,
       () => ({
@@ -43,10 +35,16 @@ const AdaptiveMapView = forwardRef(
           const target = isOffline ? offlineRef : onlineRef;
           target.current?.focusOnRider(latitude, longitude, username);
         },
+        fitMapToRoute: () => {
+          const target = isOffline ? offlineRef : onlineRef;
+          return target.current?.fitMapToRoute?.() ?? Promise.resolve(false);
+        },
+        // getContainerRef is no longer used for snapshots — kept for anything else that needs it
+        getContainerRef: () => containerViewRef,
+        // captureSnapshot: DELETED — snapshots now go through RideSnapshotView + captureRef
       }),
       [isOffline],
     );
-
     const sharedProps = {
       startingPoint,
       endingPoint,
@@ -57,11 +55,8 @@ const AdaptiveMapView = forwardRef(
       ...restProps,
     };
 
-    // ─── Render ──────────────────────────────────────────────────────────────
-    // Both components are always mounted; only the visible one fills the space.
-    // `display: 'none'` hides the inactive map without unmounting its WebView.
     return (
-      <View style={[styles.container, style]}>
+      <View ref={containerViewRef} style={[styles.container, style]}>
         {isOffline ? (
           <OfflineMapView
             key="offline"
@@ -84,19 +79,15 @@ const AdaptiveMapView = forwardRef(
     );
   },
 );
-// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
   fill: {
-    // Absolute so both maps occupy the same space; only one is visible.
     ...StyleSheet.absoluteFillObject,
   },
   hidden: {
-    // display:'none' hides the view but keeps it mounted in memory,
-    // preserving WebView state across connectivity changes.
     display: 'none',
   },
 });

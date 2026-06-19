@@ -2,6 +2,7 @@ package leyans.RidersHub.Service;
 
 import leyans.RidersHub.DTO.Response.StartRideResponseDTO;
 import leyans.RidersHub.ExceptionHandler.RideAuthorizationException;
+import leyans.RidersHub.Repository.RideCheckpointArrivalRepository;
 import leyans.RidersHub.Repository.RidesRepository;
 import leyans.RidersHub.Repository.StartedRideRepository;
 import leyans.RidersHub.Utility.AppLogger;
@@ -11,6 +12,7 @@ import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.Rides;
 import leyans.RidersHub.model.StartedRide;
 import leyans.RidersHub.model.participant.ParticipantLocation;
+import leyans.RidersHub.model.participant.RideCheckpointArrival;
 import org.locationtech.jts.geom.Point;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,15 +31,17 @@ public class StartRideService {
     private final RideLocationService rideLocationService;
 
     private final RideStatusService rideStatusService;
+    private final RideCheckpointArrivalRepository rideCheckpointArrivalRepository;
 
     public StartRideService(StartedRideRepository startedRideRepository, RidesRepository ridesRepository,
-                            StartedUtil startedUtil, RidesUtil ridesUtil, RideLocationService rideLocationService, RideStatusService rideStatusService) {
+                            StartedUtil startedUtil, RidesUtil ridesUtil, RideLocationService rideLocationService, RideStatusService rideStatusService, RideCheckpointArrivalRepository rideCheckpointArrivalRepository) {
         this.startedRideRepository = startedRideRepository;
         this.ridesRepository = ridesRepository;
         this.startedUtil = startedUtil;
         this.ridesUtil = ridesUtil;
         this.rideLocationService = rideLocationService;
         this.rideStatusService = rideStatusService;
+        this.rideCheckpointArrivalRepository = rideCheckpointArrivalRepository;
     }
 
     @Transactional
@@ -54,6 +58,7 @@ public class StartRideService {
         }
 
         Point startingPoint = ride.getStartingLocation();
+
         if (startingPoint == null) {
             AppLogger.throwInvalidRequest(this.getClass(), "Ride does not have a valid starting location");
             throw new RuntimeException("Ride does not have a valid starting location");
@@ -71,6 +76,29 @@ public class StartRideService {
         startedRide.setParticipants(allParticipants);
         startedRide = startedRideRepository.save(startedRide);
         AppLogger.info(this.getClass(), "Ride started successfully", "rideId", generatedRidesId);
+
+        // Mark the creator's STARTING_POINT arrival immediately on ride start,
+        // but only if one doesn't already exist (guards against retries / re-starts).
+        boolean startingAlreadyMarked = rideCheckpointArrivalRepository
+                .existsByRideGeneratedRidesIdAndRiderUsernameAndCheckpointType(
+                        generatedRidesId,
+                        initiator.getUsername(),
+                        RideCheckpointArrival.CheckpointType.STARTING_POINT
+                );
+
+        if (!startingAlreadyMarked && startingPoint != null) {
+            RideCheckpointArrival startArrival = new RideCheckpointArrival(
+                    ride,
+                    initiator,
+                    RideCheckpointArrival.CheckpointType.STARTING_POINT,
+                    null,
+                    LocalDateTime.now()
+            );
+            rideCheckpointArrivalRepository.save(startArrival);
+            AppLogger.info(this.getClass(), "Marked creator STARTING_POINT arrival",
+                    "rider", initiator.getUsername(), "rideId", generatedRidesId);
+        }
+
         ride.setActive(true);
         ridesRepository.save(ride);
         rideStatusService.markStarted(generatedRidesId);

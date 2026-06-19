@@ -5,11 +5,16 @@ import leyans.RidersHub.ExceptionHandler.RideAuthorizationException;
 import leyans.RidersHub.Repository.*;
 import leyans.RidersHub.Utility.AppLogger;
 import leyans.RidersHub.Utility.FinishedRideUtility;
+import leyans.RidersHub.Utility.RideCalculationUtils;
 import leyans.RidersHub.Utility.StartedUtil;
 import leyans.RidersHub.model.*;
+import leyans.RidersHub.model.FinishedRide.FinishedRide;
 import leyans.RidersHub.model.participant.RideCheckpointArrival;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+
 
 @Service
 public class FinishedRideService {
@@ -21,12 +26,14 @@ public class FinishedRideService {
     private final RideCheckpointArrivalRepository rideCheckpointArrivalRepository;
     private final FinishedRideUtility finishedRideUtility;
     private final RideStatusService rideStatusService;
+    private final PersonalFinishedRideService personalFinishedRideService;
+
 
     public FinishedRideService(StartedRideRepository startedRideRepository,
                                RidesRepository ridesRepository,
                                FinishedRideRepository finishedRideRepository,
                                StartedUtil startedUtil,
-                               RideCheckpointArrivalRepository rideCheckpointArrivalRepository, FinishedRideUtility finishedRideUtility, RideStatusService rideStatusService) {
+                               RideCheckpointArrivalRepository rideCheckpointArrivalRepository, FinishedRideUtility finishedRideUtility, RideStatusService rideStatusService, PersonalFinishedRideService personalFinishedRideService) {
         this.startedRideRepository = startedRideRepository;
         this.ridesRepository = ridesRepository;
         this.finishedRideRepository = finishedRideRepository;
@@ -34,6 +41,7 @@ public class FinishedRideService {
         this.rideCheckpointArrivalRepository = rideCheckpointArrivalRepository;
         this.finishedRideUtility = finishedRideUtility;
         this.rideStatusService = rideStatusService;
+        this.personalFinishedRideService = personalFinishedRideService;
     }
 
     @Transactional
@@ -49,15 +57,11 @@ public class FinishedRideService {
             throw new IllegalStateException("Ride is not currently active");
         }
 
+        // NEW: if the ride was already force-finished by the creator, block personal finish
         if (finishedRideRepository.existsByRideGeneratedRidesId(generatedRidesId)) {
-            throw new IllegalStateException("Ride has already been finished");
+            throw new IllegalStateException("This ride has already been finished by the creator");
         }
 
-        StartedRide startedRide = startedRideRepository
-                .findByRideGeneratedRidesId(generatedRidesId)
-                .orElseThrow(() -> new IllegalStateException("StartedRide record missing"));
-
-        // Check if requester is at ending point
         boolean requesterAtEnding = rideCheckpointArrivalRepository
                 .existsByRideGeneratedRidesIdAndRiderUsernameAndCheckpointType(
                         ride.getGeneratedRidesId(),
@@ -69,23 +73,12 @@ public class FinishedRideService {
             throw new IllegalStateException("You must reach the ending point before finishing the ride");
         }
 
-        // Check if ALL participants have reached the ending point
-        int totalParticipants = startedRide.getParticipants().size();
-        long participantsAtEnding = rideCheckpointArrivalRepository
-                .countByRideGeneratedRidesIdAndCheckpointType(
-                        generatedRidesId,
-                        RideCheckpointArrival.CheckpointType.ENDING);
+        // Delegates to service which handles startTime, duration, and repository.save()
+        personalFinishedRideService.createPersonalSummaryOnArrival(
+                requester, ride, LocalDateTime.now());
 
-        if (participantsAtEnding < totalParticipants) {
-            int stillWaiting = (int) (totalParticipants - participantsAtEnding);
-            throw new IllegalStateException(
-                    "Waiting for " + stillWaiting + " participant(s) to reach the finish line");
-        }
-        rideStatusService.markFinished(generatedRidesId, "Ride finished by " + requester.getUsername());
-
-        return finishedRideUtility.buildAndSaveFinishedRide(startedRide, ride, requester, generatedRidesId);
+        return finishedRideUtility.buildPersonalFinishResponse(generatedRidesId, requester);
     }
-
     @Transactional
     public FinishedRideResponseDTO forceFinishRide(String generatedRidesId) {
         AppLogger.info(this.getClass(), "forceFinishRide called", "generatedRidesId", generatedRidesId);
@@ -95,9 +88,8 @@ public class FinishedRideService {
         Rides ride = ridesRepository.findByGeneratedRidesId(generatedRidesId)
                 .orElseThrow(() -> new IllegalArgumentException("Ride not found: " + generatedRidesId));
 
-        // Only the ride creator can force-finish
         if (!ride.getUsername().getUsername().equals(requester.getUsername())) {
-            throw new RideAuthorizationException("Only the ride creator can force-finish a ride");
+            throw new RideAuthorizationException("Only the ride creator can force-finish the entire ride");
         }
 
         if (!Boolean.TRUE.equals(ride.getActive())) {
@@ -112,11 +104,77 @@ public class FinishedRideService {
                 .findByRideGeneratedRidesId(generatedRidesId)
                 .orElseThrow(() -> new IllegalStateException("StartedRide record missing"));
 
-        AppLogger.warn(this.getClass(), "Force-finishing ride by creator",
+        AppLogger.warn(this.getClass(), "Force-finishing ride for all participants",
                 "generatedRidesId", generatedRidesId,
                 "creator", requester.getUsername());
         rideStatusService.markFinished(generatedRidesId, "Ride finished by " + requester.getUsername());
 
         return finishedRideUtility.buildAndSaveFinishedRide(startedRide, ride, requester, generatedRidesId);
     }
+
+    @Transactional
+    public FinishedRideResponseDTO forceFinishOwnRide(String generatedRidesId) {
+        AppLogger.info(this.getClass(), "forceFinishOwnRide called",
+                "generatedRidesId", generatedRidesId);
+
+        Rider requester = startedUtil.authenticateAndGetInitiator();
+
+        Rides ride = ridesRepository.findByGeneratedRidesId(generatedRidesId)
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found: " + generatedRidesId));
+
+        if (!Boolean.TRUE.equals(ride.getActive())) {
+            throw new IllegalStateException("Ride is not currently active");
+        }
+
+        if (finishedRideRepository.existsByRideGeneratedRidesId(generatedRidesId)) {
+            throw new IllegalStateException("This ride has already been finished");
+        }
+
+        StartedRide startedRide = startedRideRepository
+                .findByRideGeneratedRidesId(generatedRidesId)
+                .orElseThrow(() -> new IllegalStateException("StartedRide record missing"));
+
+        boolean isCreator = ride.getUsername().getUsername().equals(requester.getUsername());
+        boolean isParticipant = startedRide.getParticipants().stream()
+                .anyMatch(p -> p.getUsername().equals(requester.getUsername()));
+
+        if (!isCreator && !isParticipant) {
+            throw new RideAuthorizationException("Only ride participants can force-finish their ride");
+        }
+
+        AppLogger.warn(this.getClass(), "Force-finishing own ride only",
+                "generatedRidesId", generatedRidesId,
+                "rider", requester.getUsername());
+
+        personalFinishedRideService.createPersonalSummaryOnArrival(
+                requester, ride, LocalDateTime.now());
+
+        return finishedRideUtility.buildPersonalFinishResponse(generatedRidesId, requester);
+    }
+
+    @Transactional(readOnly = true)
+    public FinishedRideResponseDTO getFinishedRide(String generatedRidesId) {
+        AppLogger.info(this.getClass(), "getFinishedRide called", "generatedRidesId", generatedRidesId);
+
+        FinishedRide finishedRide = finishedRideRepository
+                .findByRideGeneratedRidesId(generatedRidesId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Finished ride not found: " + generatedRidesId));
+
+        FinishedRideResponseDTO dto = new FinishedRideResponseDTO(finishedRide);
+
+        // Route coordinates live on the Rides entity
+        dto.setRouteCoordinates(finishedRide.getRide().getRouteCoordinates());
+
+        // REFACTOR: was computeSpeed(distance, duration) private method.
+        // Now delegates to RideCalculationUtils — single source of truth.
+        dto.setAverageSpeedKph(RideCalculationUtils.computeAverageSpeedKph(
+                finishedRide.getRide().getDistance(),
+                finishedRide.getDurationMinutes()));
+
+
+
+        return dto;
+    }
+
 }

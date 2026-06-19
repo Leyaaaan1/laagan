@@ -23,6 +23,11 @@ public class FinishedRideResponseDTO {
     private List<ParticipantStatisticsDTO> participantStats;
     private List<CheckpointArrivalResponse> checkpointArrivals;
 
+    private String routeCoordinates;       // raw GeoJSON string from Rides entity
+    private Double averageSpeedKph;        // computed: (distance / durationMinutes) * 0.06
+
+    private String snapshotUrl;
+
     public FinishedRideResponseDTO() {}
 
     public FinishedRideResponseDTO(FinishedRide finishedRide) {
@@ -39,9 +44,45 @@ public class FinishedRideResponseDTO {
                 .toList();
         this.creatorUsername = finishedRide.getFinishedBy().getUsername();
         this.participantCount = finishedRide.getCompletedParticipants() != null ? finishedRide.getCompletedParticipants().size() : 0;
+        this.snapshotUrl = finishedRide.getSnapshotUrl();
     }
 
-    // Getters and Setters
+
+    private static Double computeSpeed(Integer distanceMeters, Integer durationMinutes) {
+        if (distanceMeters == null || durationMinutes == null || durationMinutes == 0) {
+            return null;
+        }
+        // km/h = (meters / minutes) * 0.06
+        return Math.round(((double) distanceMeters / durationMinutes) * 0.06 * 10.0) / 10.0;
+    }
+
+    public String getSnapshotUrl() {
+        return snapshotUrl;
+    }
+
+    public void setSnapshotUrl(String snapshotUrl) {
+        this.snapshotUrl = snapshotUrl;
+    }
+
+    public String getRouteCoordinates() {
+        return routeCoordinates;
+    }
+
+    public void setRouteCoordinates(String routeCoordinates) {
+        this.routeCoordinates = routeCoordinates;
+    }
+
+    public Double getAverageSpeedKph() {
+        return averageSpeedKph;
+    }
+
+    public void setAverageSpeedKph(Double averageSpeedKph) {
+        this.averageSpeedKph = averageSpeedKph;
+    }
+
+
+
+// Getters and Setters
 
     public String getGeneratedRidesId() { return generatedRidesId; }
     public void setGeneratedRidesId(String generatedRidesId) { this.generatedRidesId = generatedRidesId; }

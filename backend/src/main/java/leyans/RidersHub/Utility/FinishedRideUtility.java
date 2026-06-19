@@ -73,7 +73,8 @@ public class FinishedRideUtility {
                 startTime,
                 endTime,
                 durationMinutes,
-                participants
+                participants,
+                null
         );
 
         FinishedRide saved = finishedRideRepository.save(finishedRide);
@@ -210,5 +211,21 @@ public class FinishedRideUtility {
                     );
                 })
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public FinishedRideResponseDTO buildPersonalFinishResponse(String generatedRidesId, Rider rider) {
+        List<RideCheckpointArrival> arrivals =
+                rideCheckpointArrivalRepository.findByRideGeneratedRidesId(generatedRidesId);
+
+        Rides ride = ridesRepository.findByGeneratedRidesId(generatedRidesId)
+                .orElseThrow(() -> new EntityNotFoundException("Ride not found: " + generatedRidesId));
+
+        FinishedRideResponseDTO response = new FinishedRideResponseDTO();
+        response.setGeneratedRidesId(generatedRidesId);
+        response.setCheckpointArrivals(arrivals.stream()
+                .map(CheckpointArrivalResponse::new)
+                .toList());
+        return response;
     }
 }

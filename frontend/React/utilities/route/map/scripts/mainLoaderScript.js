@@ -1,12 +1,13 @@
 // mainLoaderScript.js
 export const mainLoaderScript = () => `
+
     window.loadRouteData = function(routeData, startPoint, endPoint, stopPoints, userLocation) {
         const map = window.getMap();
-        
-        window.routeData = routeData;
+
+        window.routeData     = routeData;
         window.startingPoint = startPoint;
-        window.endingPoint = endPoint;
-        window.stopPoints = stopPoints || [];
+        window.endingPoint   = endPoint;
+        window.stopPoints    = stopPoints || [];
 
         if (!map) {
             initMap(startPoint);
@@ -14,14 +15,12 @@ export const mainLoaderScript = () => `
             return;
         }
 
-        // ✨ NEW: Try to display route, but don't fail if routeData is null
-        let routeDisplayed = false;
+        // Display route polyline if route data is available
         if (routeData) {
-            routeDisplayed = window.displayRoute(routeData);
-        } else {
+            window.displayRoute(routeData);
         }
 
-        // Always add markers (start, end, stops) regardless of route availability
+        // Always add markers regardless of whether a route polyline exists
         setTimeout(() => {
             window.addRouteMarkers();
         }, 200);
@@ -31,7 +30,9 @@ export const mainLoaderScript = () => `
         }
     };
 
-    document.addEventListener('DOMContentLoaded', function() {
+ 
+
+    document.addEventListener('DOMContentLoaded', function () {
         initMap();
     });
 `;
