@@ -1,4 +1,5 @@
 import {api} from './Apiclient';
+import {dataUriToFile} from '../utilities/dataUriToFile';
 
 export const finishedRideService = {
   // ── Existing ─────────────────────────────────────────────────────────────
@@ -26,10 +27,7 @@ export const finishedRideService = {
     });
     if (caption) form.append('caption', caption);
 
-    const response = await api.postForm(
-      `/view/${generatedRidesId}/photo`,
-      form,
-    );
+    const response = await api.get(`/view/${generatedRidesId}/photo`, form);
     if (!response.ok) throw new Error('Failed to upload photo');
     return response.json(); // returns PhotoDTO
   },
@@ -55,5 +53,38 @@ export const finishedRideService = {
       `/view/${generatedRidesId}/photo/${photoId}`,
     );
     if (!response.ok) throw new Error('Failed to delete photo');
+  },
+
+    uploadSnapshot: async (generatedRidesId, file) => {
+      const fileName = file.fileName ?? 'snapshot.png';
+      const fileUri = await dataUriToFile(file.uri, fileName);
+
+      const form = new FormData();
+      form.append('file', {
+        uri: fileUri,
+        name: fileName,
+        type: file.type ?? 'image/png',
+      });
+
+      const response = await api.postForm(
+        `/view/${generatedRidesId}/snapshot`,
+        form,
+      );
+      if (!response.ok) throw new Error('Failed to upload snapshot');
+      const data = await response.json();
+      return data.snapshotUrl;
+    },
+
+
+  getSnapshot: async generatedRidesId => {
+    const response = await api.get(`/view/${generatedRidesId}/request`);
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('SNAPSHOT_NOT_AVAILABLE');
+      }
+      throw new Error('Failed to load snapshot');
+    }
+    const data = await response.json();
+    return data.snapshotUrl;
   },
 };

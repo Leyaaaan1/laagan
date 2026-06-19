@@ -81,9 +81,11 @@ export const apiFetch = async (
   if (!isPublic && !token) {
     throw new Error('AUTH_MISSING');
   }
+  const isFormData = options.body instanceof FormData;
+
 
   const headers = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : {'Content-Type': 'application/json'}),
     ...(options.headers || {}),
     ...(token ? {Authorization: `Bearer ${token}`} : {}),
   };
@@ -166,6 +168,10 @@ export const api = {
   /**   * POST request with JSON body   * @param {string} path - API endpoint   * @param {Object} body - Request body   * @param {string} token - Optional override token   */
   post: (path, body, token = null) =>
     apiFetch(path, {method: 'POST', body: JSON.stringify(body)}, token),
+
+  postForm: (path, formData, token = null) =>
+    apiFetch(path, {method: 'POST', body: formData}, token),
+
 
   /**   * PUT request with JSON body   * @param {string} path - API endpoint   * @param {Object} body - Request body   * @param {string} token - Optional override token   */
   put: (path, body, token = null) =>

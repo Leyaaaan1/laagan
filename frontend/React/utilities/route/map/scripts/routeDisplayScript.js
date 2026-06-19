@@ -2,7 +2,6 @@
 export const routeDisplayScript = () => `
     function displayRoute(routeData) {
         try {
-
             const map = window.getMap();
 
             if (!map) {
@@ -38,7 +37,6 @@ export const routeDisplayScript = () => `
 
     function displayGeoJsonRoute(geoJsonData) {
         try {
-
             const map = window.getMap();
 
             geoJsonRouteLayer = L.geoJSON(geoJsonData, {
@@ -80,18 +78,8 @@ export const routeDisplayScript = () => `
                 }
             }).addTo(map);
 
-            const startPoint = window.startingPoint;
-            if (startPoint && startPoint.lat && startPoint.lng) {
-                map.setView([startPoint.lat, startPoint.lng], 16, {
-                    animate: true,
-                    duration: 1
-                });
-            } else if (geoJsonRouteLayer) {
-                const bounds = geoJsonRouteLayer.getBounds();
-                if (bounds.isValid()) {
-                    map.fitBounds(bounds.pad(0.1));
-                }
-            }
+            // Store the layer for bounds calculation
+            window.geoJsonRouteLayer = geoJsonRouteLayer;
 
             let totalDistance = 0;
             let totalDuration = 0;
@@ -106,7 +94,6 @@ export const routeDisplayScript = () => `
                     coordinateCount += feature.geometry.coordinates.length;
                 }
             });
-
 
             window.ReactNativeWebView?.postMessage(JSON.stringify({
                 type: 'routeLoaded',
@@ -125,7 +112,6 @@ export const routeDisplayScript = () => `
 
     function displayCoordinateRoute(routeData) {
         try {
-
             const map = window.getMap();
             let routeCoordinates = [];
 
@@ -153,17 +139,8 @@ export const routeDisplayScript = () => `
                 lineCap: 'round'
             }).addTo(map);
 
-            const startPoint = window.startingPoint;
-            if (startPoint && startPoint.lat && startPoint.lng) {
-                map.setView([startPoint.lat, startPoint.lng], 16, {
-                    animate: true,
-                    duration: 1
-                });
-            } else if (routeCoordinates.length > 0) {
-                const group = new L.featureGroup([routeLayer]);
-                map.fitBounds(group.getBounds().pad(0.1));
-            }
-
+            // Store the layer for bounds calculation
+            window.routeLayer = routeLayer;
 
             window.ReactNativeWebView?.postMessage(JSON.stringify({
                 type: 'routeLoaded',

@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -59,12 +59,15 @@ const FinishedRideView = ({route, navigation}) => {
     participantCount: passedParticipantCount,
     participants: passedParticipants,
     startTime: passedStartTime,
+    snapshotUrl: passedSnapshotUrl,
   } = route.params || {};
 
   const [finishedRideData, setFinishedRideData] = useState(passedData || null);
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(!passedData && !!generatedRidesId);
   const [error, setError] = useState(null);
+  const mapRef = useRef(null);
+  const [snapshotUrl, setSnapshotUrl] = useState(passedSnapshotUrl || null);
 
   // ── Load finished ride data ──────────────────────────────────────
   useEffect(() => {
@@ -204,25 +207,35 @@ const FinishedRideView = ({route, navigation}) => {
         {/* Right-side action buttons */}
         {!hideQuickActions && (
           <View style={localStyles.headerActions}>
-          {/* Ride Detail */}
-          <TouchableOpacity
-            style={finishedRideStyles.headerActionButton}
-            onPress={() =>
-              navigation.navigate('RideDetailView', {generatedRidesId})
-            }>
-            <FontAwesome name="bar-chart" size={15} color={colors.primary} />
-          </TouchableOpacity>
+            {/* Ride Detail */}
+            <TouchableOpacity
+              style={finishedRideStyles.headerActionButton}
+              onPress={() =>
+                navigation.navigate('RideDetailView', {generatedRidesId})
+              }>
+              <FontAwesome name="bar-chart" size={15} color={colors.primary} />
+            </TouchableOpacity>
+            {/* My Summary */}
+            <TouchableOpacity
+              style={finishedRideStyles.headerActionButton}
+              onPress={async () => {
+                console.log('[Snapshot] Navigating to Personal Summary');
 
-          {/* My Summary */}
-          <TouchableOpacity
-            style={finishedRideStyles.headerActionButton}
-            onPress={() =>
-              navigation.navigate('PersonalSummaryView', {generatedRidesId})
-            }>
-            <FontAwesome name="user" size={16} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
-          )}
+                // Use existing snapshot URL from the ride completion
+                // This was uploaded to Cloudinary when the ride finished
+                let finalSnapshotUri = snapshotUrl;
+
+                console.log('[Snapshot] Using snapshot URL:', finalSnapshotUri);
+
+                navigation.navigate('PersonalSummaryView', {
+                  generatedRidesId,
+                  snapshotUri: finalSnapshotUri, // Pass the Cloudinary URL
+                });
+              }}>
+              <FontAwesome name="user" size={16} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       <ScrollView
@@ -231,6 +244,7 @@ const FinishedRideView = ({route, navigation}) => {
         {hasRoute && (
           <View style={localStyles.mapWrapper}>
             <RouteMapView
+              ref={mapRef}
               generatedRidesId={generatedRidesId}
               startingPoint={mapCoords?.startingPoint}
               endingPoint={mapCoords?.endingPoint}

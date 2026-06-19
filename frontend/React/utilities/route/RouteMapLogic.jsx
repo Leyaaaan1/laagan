@@ -199,6 +199,7 @@ export const useRouteMapLogic = generatedRidesId => {
       if (!webViewRef.current) return;
 
       const script = `
+      // 1. Load route data
       if (typeof window.loadRouteData === 'function') {
         window.loadRouteData(
           ${JSON.stringify(routeData)},
@@ -207,10 +208,18 @@ export const useRouteMapLogic = generatedRidesId => {
           ${JSON.stringify(stopPoints)},
           ${JSON.stringify(userLocation)}
         );
-      } else {
       }
+      
+      // 2. Fit map to route after loading
+      if (typeof window.fitMapToRoute === 'function') {
+        setTimeout(function() {
+          window.fitMapToRoute();
+        }, 500);
+      }
+      
       true;
     `;
+
       webViewRef.current.injectJavaScript(script);
     },
     [],

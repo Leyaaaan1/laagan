@@ -25,7 +25,6 @@ public class FinishedRideResponseDTO {
 
     private String routeCoordinates;       // raw GeoJSON string from Rides entity
     private Double averageSpeedKph;        // computed: (distance / durationMinutes) * 0.06
-    private PhotoDTO photos;
 
     public FinishedRideResponseDTO() {}
 
@@ -70,13 +69,7 @@ public class FinishedRideResponseDTO {
         this.averageSpeedKph = averageSpeedKph;
     }
 
-    public PhotoDTO getPhotos() {
-        return photos;
-    }
 
-    public void setPhotos(PhotoDTO photos) {
-        this.photos = photos;
-    }
 
 // Getters and Setters
 

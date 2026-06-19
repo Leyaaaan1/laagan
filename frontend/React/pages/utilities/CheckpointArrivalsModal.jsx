@@ -105,91 +105,101 @@ const groupAndSortArrivals = (
 // ─── Component ──────────────────────────────────────────────────
 
 const CheckpointArrivalsModal = ({
-                                   visible,
-                                   onClose,
-                                   generatedRidesId,
-                                   stopPoints = [],
-                                   endingPointName = 'Ending Point',
-                                   username,
-                                   isCreator,
-                                   activeRide,
-                                   stopPolling,
-                                   setPollingEnabled,
-                                   onRideFinished,
-                                   onNavigateToSummary,
-                                   onNavigateToPersonalSummary,
-                                 }) => {
+  visible,
+  onClose,
+  generatedRidesId,
+  stopPoints = [],
+  endingPointName = 'Ending Point',
+  username,
+  isCreator,
+  activeRide,
+  stopPolling,
+  setPollingEnabled,
+  onRideFinished,
+  onNavigateToSummary,
+  onNavigateToPersonalSummary,
+  mapRef,
+}) => {
   const [arrivals, setArrivals] = useState([]);
-  const [loading, setLoading] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [rideStatus, setRideStatus] =
-    useState(null);
+  const [rideStatus, setRideStatus] = useState(null);
 
   const {
     isFinishing,
     handleFinishRide,
     handleForceFinishRide,
+    captureAndUploadSnapshot,
   } = useFinishRideHandler(
     activeRide,
     stopPolling,
     setPollingEnabled,
     onRideFinished,
+    mapRef,
   );
-  const fetchCheckpointArrivals =
-    useCallback(async () => {
-      if (!generatedRidesId || generatedRidesId === 'undefined') return; // ← ADD
-      try {
-        setLoading(true);
-        setError(null);
 
-        const [arrivalsResult, statusResult] = await Promise.allSettled([
-          getCheckpointArrivals(generatedRidesId),
-          getRideStatusDetailed(generatedRidesId),
-        ]);
+  const [isCapturingSummary, setIsCapturingSummary] = useState(false);
 
-        const data =
-          arrivalsResult.status === 'fulfilled' ? arrivalsResult.value : [];
-        const statusData =
-          statusResult.status === 'fulfilled' ? statusResult.value : null;
+  const handleViewMySummary = useCallback(async () => {
+    try {
+      setIsCapturingSummary(true);
+      await captureAndUploadSnapshot();
+    } finally {
+      setIsCapturingSummary(false);
+      onNavigateToPersonalSummary(generatedRidesId);
+    }
+  }, [captureAndUploadSnapshot, onNavigateToPersonalSummary, generatedRidesId]);
 
-        // Only throw (set error state) if arrivals themselves failed
-        if (arrivalsResult.status === 'rejected') {
-          throw arrivalsResult.reason;
-        }
 
-        setArrivals(data);
-        setRideStatus(statusData);
+  const fetchCheckpointArrivals = useCallback(async () => {
+    if (!generatedRidesId || generatedRidesId === 'undefined') return; // ← ADD
+    try {
+      setLoading(true);
+      setError(null);
 
-        if (statusData?.currentStatus === 'FINISHED') {
-          onNavigateToSummary?.(generatedRidesId);
-          return;
-        }
-        if (statusData?.currentStatus === 'STOPPED') {
-          onClose?.();
-          Alert.alert(
-            'Ride Stopped',
-            'This ride has been stopped by the creator.',
-          );
-          return;
-        }
-      } catch (err) {
-        setError(err.message);
-        const isForbidden =
-          err.message?.toLowerCase().includes('auth_forbidden') ||
-          err.message?.toLowerCase().includes('forbidden') ||
-          err.message?.toLowerCase().includes('not a participant');
-        if (!isForbidden) {
-          Alert.alert('Error', err.message);
-        }
-      } finally {
-        setLoading(false);
+      const [arrivalsResult, statusResult] = await Promise.allSettled([
+        getCheckpointArrivals(generatedRidesId),
+        getRideStatusDetailed(generatedRidesId),
+      ]);
+
+      const data =
+        arrivalsResult.status === 'fulfilled' ? arrivalsResult.value : [];
+      const statusData =
+        statusResult.status === 'fulfilled' ? statusResult.value : null;
+
+      // Only throw (set error state) if arrivals themselves failed
+      if (arrivalsResult.status === 'rejected') {
+        throw arrivalsResult.reason;
       }
-    }, [
-      generatedRidesId,
-      onNavigateToSummary,
-      onClose,
-    ]); // ← explicit deps
+
+      setArrivals(data);
+      setRideStatus(statusData);
+
+      if (statusData?.currentStatus === 'FINISHED') {
+        onNavigateToSummary?.(generatedRidesId);
+        return;
+      }
+      if (statusData?.currentStatus === 'STOPPED') {
+        onClose?.();
+        Alert.alert(
+          'Ride Stopped',
+          'This ride has been stopped by the creator.',
+        );
+        return;
+      }
+    } catch (err) {
+      setError(err.message);
+      const isForbidden =
+        err.message?.toLowerCase().includes('auth_forbidden') ||
+        err.message?.toLowerCase().includes('forbidden') ||
+        err.message?.toLowerCase().includes('not a participant');
+      if (!isForbidden) {
+        Alert.alert('Error', err.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [generatedRidesId, onNavigateToSummary, onClose]); // ← explicit deps
 
   useEffect(() => {
     if (!visible || !generatedRidesId || generatedRidesId === 'undefined')
@@ -207,36 +217,29 @@ const CheckpointArrivalsModal = ({
     fetchCheckpointArrivals,
   ]);
 
-
   const currentUserAtEnding =
     !!username &&
     (arrivals.some(
-        a =>
-          a.checkpointType === 'ENDING' &&
-          a.riderUsername === username,
-      ) ||
+      a => a.checkpointType === 'ENDING' && a.riderUsername === username,
+    ) ||
       rideStatus?.riderStatuses?.some(
-        r =>
-          r.riderUsername === username &&
-          r.status === 'RIDER_FINISHED',
+        r => r.riderUsername === username && r.status === 'RIDER_FINISHED',
       ));
 
   const finishedRiderCount =
-    rideStatus?.riderStatuses?.filter(r => r.status === 'RIDER_FINISHED').length ?? 0;
+    rideStatus?.riderStatuses?.filter(r => r.status === 'RIDER_FINISHED')
+      .length ?? 0;
   const totalRiderCount = rideStatus?.riderStatuses?.length ?? 0;
   const allParticipantsFinished =
     totalRiderCount > 0 && finishedRiderCount >= totalRiderCount;
   const waitingCount = totalRiderCount - finishedRiderCount;
 
-
-  const sortedCheckpoints =
-    groupAndSortArrivals(
-      arrivals,
-      stopPoints,
-      endingPointName,
-    );
+  const sortedCheckpoints = groupAndSortArrivals(
+    arrivals,
+    stopPoints,
+    endingPointName,
+  );
   const s = checkpointModalStyles;
-
 
   // ─── Status banner ────────────────────────────────────────────
   const renderStatusBanner = () => {
@@ -251,8 +254,7 @@ const CheckpointArrivalsModal = ({
               color="#ef4444"
             />
             <Text style={s.bannerWarningText}>
-              You haven't reached the finish
-              line yet.
+              You haven't reached the finish line yet.
             </Text>
           </View>
           <TouchableOpacity
@@ -261,26 +263,15 @@ const CheckpointArrivalsModal = ({
             style={[
               s.bannerButton,
               s.bannerButtonDanger,
-              isFinishing &&
-              s.bannerButtonDisabled,
+              isFinishing && s.bannerButtonDisabled,
             ]}>
             {isFinishing ? (
-              <ActivityIndicator
-                size="small"
-                color="#ef4444"
-              />
+              <ActivityIndicator size="small" color="#ef4444" />
             ) : (
-              <FontAwesome
-                name="stop-circle"
-                size={13}
-                color="#ef4444"
-              />
+              <FontAwesome name="stop-circle" size={13} color="#ef4444" />
             )}
-            <Text
-              style={s.bannerButtonDangerText}>
-              {isFinishing
-                ? 'Ending…'
-                : 'Force End Ride'}
+            <Text style={s.bannerButtonDangerText}>
+              {isFinishing ? 'Ending…' : 'Force End Ride'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -300,13 +291,23 @@ const CheckpointArrivalsModal = ({
 
           {onNavigateToPersonalSummary && (
             <TouchableOpacity
-              onPress={() => onNavigateToPersonalSummary(generatedRidesId)}
-              style={[s.bannerButton, s.bannerButtonSuccess]}>
-              <FontAwesome name="user" size={13} color="#fff" />
-              <Text style={s.bannerButtonSuccessText}>View My Summary</Text>
+              disabled={isCapturingSummary}
+              onPress={handleViewMySummary}
+              style={[
+                s.bannerButton,
+                s.bannerButtonSuccess,
+                isCapturingSummary && s.bannerButtonDisabled,
+              ]}>
+              {isCapturingSummary ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <FontAwesome name="user" size={13} color="#fff" />
+              )}
+              <Text style={s.bannerButtonSuccessText}>
+                {isCapturingSummary ? 'Preparing…' : 'View My Summary'}
+              </Text>
             </TouchableOpacity>
           )}
-
           <View style={s.bannerDivider}>
             <View style={s.bannerDividerLine} />
             <Text style={s.bannerDividerText}>or</Text>
@@ -337,40 +338,31 @@ const CheckpointArrivalsModal = ({
           </TouchableOpacity>
         </View>
       );
-    }    // At ending — participant
+    } // At ending — participant
     return (
       <View style={s.bannerSuccess}>
         <View style={s.bannerIconRow}>
-          <FontAwesome
-            name="flag-checkered"
-            size={20}
-            color="#4CAF50"
-          />
+          <FontAwesome name="flag-checkered" size={20} color="#4CAF50" />
           <Text style={s.bannerSuccessTitle}>
             Great job completing the ride!
           </Text>
         </View>
         {onNavigateToPersonalSummary && (
           <TouchableOpacity
-            onPress={() =>
-              onNavigateToPersonalSummary(
-                generatedRidesId,
-              )
-            }
+            disabled={isCapturingSummary}
+            onPress={handleViewMySummary}
             style={[
               s.bannerButton,
               s.bannerButtonSuccess,
+              isCapturingSummary && s.bannerButtonDisabled,
             ]}>
-            <FontAwesome
-              name="bar-chart"
-              size={13}
-              color="#fff"
-            />
-            <Text
-              style={
-                s.bannerButtonSuccessText
-              }>
-              View My Summary
+            {isCapturingSummary ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <FontAwesome name="bar-chart" size={13} color="#fff" />
+            )}
+            <Text style={s.bannerButtonSuccessText}>
+              {isCapturingSummary ? 'Preparing…' : 'View My Summary'}
             </Text>
           </TouchableOpacity>
         )}
@@ -383,13 +375,8 @@ const CheckpointArrivalsModal = ({
     if (loading) {
       return (
         <View style={s.loadingContainer}>
-          <ActivityIndicator
-            size="large"
-            color={colors.primary}
-          />
-          <Text style={s.loadingText}>
-            Loading arrivals…
-          </Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={s.loadingText}>Loading arrivals…</Text>
         </View>
       );
     }
@@ -405,7 +392,11 @@ const CheckpointArrivalsModal = ({
         return (
           <View style={s.emptyContainer}>
             <View style={s.emptyIconWrap}>
-              <FontAwesome name="flag-o" size={26} color={colors.textSecondary} />
+              <FontAwesome
+                name="flag-o"
+                size={26}
+                color={colors.textSecondary}
+              />
             </View>
             <Text style={s.emptyText}>No checkpoint arrivals yet</Text>
             <Text style={s.emptySubText}>Waiting for riders to check in…</Text>
@@ -430,7 +421,9 @@ const CheckpointArrivalsModal = ({
         <View style={s.errorContainer}>
           <FontAwesome name="exclamation-circle" size={32} color="#ef4444" />
           <Text style={s.errorText}>{error}</Text>
-          <TouchableOpacity style={s.retryButton} onPress={fetchCheckpointArrivals}>
+          <TouchableOpacity
+            style={s.retryButton}
+            onPress={fetchCheckpointArrivals}>
             <Text style={s.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -441,18 +434,10 @@ const CheckpointArrivalsModal = ({
       return (
         <View style={s.emptyContainer}>
           <View style={s.emptyIconWrap}>
-            <FontAwesome
-              name="flag-o"
-              size={26}
-              color={colors.textSecondary}
-            />
+            <FontAwesome name="flag-o" size={26} color={colors.textSecondary} />
           </View>
-          <Text style={s.emptyText}>
-            No checkpoint arrivals yet
-          </Text>
-          <Text style={s.emptySubText}>
-            Waiting for riders to check in…
-          </Text>
+          <Text style={s.emptyText}>No checkpoint arrivals yet</Text>
+          <Text style={s.emptySubText}>Waiting for riders to check in…</Text>
         </View>
       );
     }
@@ -460,118 +445,107 @@ const CheckpointArrivalsModal = ({
     return (
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={
-          s.scrollContent
-        }>
+        contentContainerStyle={s.scrollContent}>
         {/* Timeline */}
         <View style={s.timelineContainer}>
-          {sortedCheckpoints.map(
-            (checkpoint, idx) => {
-              const isLast =
-                idx ===
-                sortedCheckpoints.length - 1;
-              const hasArrivers =
-                checkpoint.arrivers.length > 0;
+          {sortedCheckpoints.map((checkpoint, idx) => {
+            const isLast = idx === sortedCheckpoints.length - 1;
+            const hasArrivers = checkpoint.arrivers.length > 0;
 
-              return (
-                <View
-                  key={`${checkpoint.type}-${
-                    checkpoint.index ?? 'null'
-                  }-${idx}`}
-                  style={s.timelineRow}>
-                  {/* Left rail */}
-                  <View style={s.timelineLeft}>
+            return (
+              <View
+                key={`${checkpoint.type}-${checkpoint.index ?? 'null'}-${idx}`}
+                style={s.timelineRow}>
+                {/* Left rail */}
+                <View style={s.timelineLeft}>
+                  <View
+                    style={[
+                      s.timelineIconWrap,
+                      hasArrivers && s.timelineIconWrapActive,
+                    ]}>
+                    <FontAwesome
+                      name={getCheckpointIconName(checkpoint.type)}
+                      size={14}
+                      color={
+                        hasArrivers ? colors.primary : colors.textSecondary
+                      }
+                    />
+                    <Text
+                      style={{
+                        fontSize: 9,
+                        color: hasArrivers
+                          ? colors.white
+                          : colors.textSecondary,
+                        textAlign: 'center',
+                        marginTop: 2,
+                        fontWeight: '600',
+                      }}>
+                      {checkpoint.type === 'STOP_POINT'
+                        ? `Stop ${(checkpoint.index ?? 0) + 1}`
+                        : checkpoint.type === 'ENDING'
+                        ? 'End'
+                        : 'Start'}
+                    </Text>
+                  </View>
+                  {!isLast && (
                     <View
                       style={[
-                        s.timelineIconWrap,
-                        hasArrivers && s.timelineIconWrapActive,
-                      ]}>
-                      <FontAwesome
-                        name={getCheckpointIconName(checkpoint.type)}
-                        size={14}
-                        color={
-                          hasArrivers ? colors.primary : colors.textSecondary
-                        }
-                      />
-                      <Text
-                        style={{
-                          fontSize: 9,
-                          color: hasArrivers
-                            ? colors.white
-                            : colors.textSecondary,
-                          textAlign: 'center',
-                          marginTop: 2,
-                          fontWeight: '600',
-                        }}>
-                        {checkpoint.type === 'STOP_POINT'
-                          ? `Stop ${(checkpoint.index ?? 0) + 1}`
-                          : checkpoint.type === 'ENDING'
-                          ? 'End'
-                          : 'Start'}
+                        s.timelineLine,
+                        hasArrivers && s.timelineLineActive,
+                      ]}
+                    />
+                  )}
+                </View>
+                {/* Right content */}
+                <View style={s.timelineContent}>
+                  <View
+                    style={[
+                      s.checkpointHeader,
+                      hasArrivers && s.checkpointHeaderActive,
+                    ]}>
+                    <View style={s.checkpointTitleContainer}>
+                      <Text style={s.checkpointTitle}>{checkpoint.name}</Text>
+                      <Text style={s.checkpointCount}>
+                        {checkpoint.arrivers.length}{' '}
+                        {checkpoint.arrivers.length !== 1 ? 'riders' : 'rider'}
                       </Text>
                     </View>
-                    {!isLast && (
-                      <View
-                        style={[
-                          s.timelineLine,
-                          hasArrivers && s.timelineLineActive,
-                        ]}
-                      />
-                    )}
                   </View>
-                  {/* Right content */}
-                  <View style={s.timelineContent}>
-                    <View
-                      style={[
-                        s.checkpointHeader,
-                        hasArrivers && s.checkpointHeaderActive,
-                      ]}>
-                      <View style={s.checkpointTitleContainer}>
-                        <Text style={s.checkpointTitle}>{checkpoint.name}</Text>
-                        <Text style={s.checkpointCount}>
-                          {checkpoint.arrivers.length}{' '}
-                          {checkpoint.arrivers.length !== 1
-                            ? 'riders'
-                            : 'rider'}
-                        </Text>
-                      </View>
-                    </View>
 
-                    {hasArrivers && (
-                      <View style={s.arriversList}>
-                        {checkpoint.arrivers.map((arriver, arriverIdx) => (
-                          <View
-                            key={`arriver-${checkpoint.type}-${
-                              checkpoint.index ?? 'null'
-                            }-${arriverIdx}`}
-                            style={s.arriverItem}>
-                            <View style={s.arriverAvatar}>
-                              <Text style={s.arriverInitial}>
-                                {(arriver.username || 'U')[0].toUpperCase()}
-                              </Text>
-                            </View>
-                            <View style={s.arriverInfo}>
-                              <Text style={s.arriverUsername}>
-                                {arriver.username}
-                              </Text>
-                              <Text style={s.arriverTime}>
-                                {formatArrivalTime(arriver.arrivedAt)}
-                              </Text>
-                            </View>
-                            <FontAwesome
-                              name="check-circle"
-                              size={16}
-                              color="#10b981"
-                            />
+                  {hasArrivers && (
+                    <View style={s.arriversList}>
+                      {checkpoint.arrivers.map((arriver, arriverIdx) => (
+                        <View
+                          key={`arriver-${checkpoint.type}-${
+                            checkpoint.index ?? 'null'
+                          }-${arriverIdx}`}
+                          style={s.arriverItem}>
+                          <View style={s.arriverAvatar}>
+                            <Text style={s.arriverInitial}>
+                              {(arriver.username || 'U')[0].toUpperCase()}
+                            </Text>
                           </View>
-                        ))}
-                      </View>
-                    )}
-                  </View>
+                          <View style={s.arriverInfo}>
+                            <Text style={s.arriverUsername}>
+                              {arriver.username}
+                            </Text>
+                            <Text style={s.arriverTime}>
+                              {formatArrivalTime(arriver.arrivedAt)}
+                            </Text>
+                          </View>
+                          <FontAwesome
+                            name="check-circle"
+                            size={16}
+                            color="#10b981"
+                          />
+                        </View>
+                      ))}
+                    </View>
+                  )}
                 </View>
-              );
-            },
-          )}
+              </View>
+            );
+          })}
         </View>
       </ScrollView>
     );

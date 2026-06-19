@@ -40,7 +40,6 @@ import CheckpointArrivalsModal from '../../pages/utilities/CheckpointArrivalsMod
 import RideHeroCard from './utilities/RideHeroCard';
 import {joinService} from '../../services/joinService';
 
-
 const RideStep4 = props => {
   const navigation = useNavigation();
   const {username: authUsername} = useAuth();
@@ -50,6 +49,7 @@ const RideStep4 = props => {
     fetchActiveRide: fetchActiveRideCtx,
     setActiveRide: setContextActiveRide,
   } = React.useContext(RideContext);
+  const mapRef = useRef(null);
 
   const routeParams = props.route?.params || {};
   const merged = {...props, ...routeParams};
@@ -175,7 +175,6 @@ const RideStep4 = props => {
 
   // ── Effects ───────────────────────────────────────────────────────────────
 
-
   useEffect(() => {
     if (!locationName) return;
     patchState({rideNameImageLoading: true, rideNameImageError: null});
@@ -221,9 +220,8 @@ const RideStep4 = props => {
       });
   }, [generatedRidesId]);
 
-
   useEffect(() => {
-    if (!generatedRidesId ) return;
+    if (!generatedRidesId) return;
 
     let interval;
 
@@ -242,8 +240,6 @@ const RideStep4 = props => {
     interval = setInterval(fetchPendingCount, 60_000);
     return () => clearInterval(interval);
   }, [generatedRidesId]);
-
-
 
   // ── Shared active-ride object (used by StartedRide + CheckpointArrivalsModal)
   const buildActiveRide = () => {
@@ -415,6 +411,7 @@ const RideStep4 = props => {
           )}
           {hasValidRouteData && (
             <RouteMapView
+              ref={mapRef}
               generatedRidesId={generatedRidesId}
               startingPoint={mapCoords.startingPoint}
               endingPoint={mapCoords.endingPoint}
@@ -521,18 +518,53 @@ const RideStep4 = props => {
         activeRide={buildActiveRide()}
         stopPolling={null}
         setPollingEnabled={null}
-        onRideFinished={() => {
+        onRideFinished={(data, snapshotUrl) => {
+          // ← Updated to accept snapshotUrl
           patchState({showCheckpointsModal: false});
           refreshStatus();
+          // You might want to navigate to FinishedRideView here
+          if (data) {
+            navigation.navigate('FinishedRideView', {
+              finishedRideData: data,
+              snapshotUrl, // ← Pass snapshot URL
+            });
+          }
         }}
-        onNavigateToSummary={id => {
+        onNavigateToSummary={async id => {
           patchState({showCheckpointsModal: false});
-          navigation.navigate('FinishedRideView', buildFinishedRideParams(id));
+          let snapshotUri = null;
+          try {
+            snapshotUri = await mapRef.current?.captureSnapshot();
+          } catch (_) {}
+          navigation.navigate('FinishedRideView', {
+            ...buildFinishedRideParams(id),
+            snapshotUrl: snapshotUri,
+          });
         }}
-        onNavigateToPersonalSummary={id => {
+        onNavigateToPersonalSummary={async id => {
           patchState({showCheckpointsModal: false});
-          navigation.navigate('PersonalSummaryView', {generatedRidesId: id});
+          let snapshotUri = null;
+          try {
+            snapshotUri = await mapRef.current?.captureSnapshot();
+          } catch (_) {}
+
+          // Bug 1 fix: RouteMapView is a small preview tile — the WebView may
+          // not be ready when the modal fires, causing captureSnapshot() to
+          // return null. Fall back to the Cloudinary URL stored at ride finish.
+          if (!snapshotUri) {
+            try {
+              const {getSnapshot} = await import('../../services/startService');
+              const result = await getSnapshot(id);
+              snapshotUri = result?.snapshotUrl ?? null;
+            } catch (_) {}
+          }
+
+          navigation.navigate('PersonalSummaryView', {
+            generatedRidesId: id,
+            snapshotUri,
+          });
         }}
+        mapRef={mapRef} // ← NEW: Pass mapRef
       />
     </View>
   );

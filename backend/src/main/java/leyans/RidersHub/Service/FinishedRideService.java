@@ -1,7 +1,6 @@
 package leyans.RidersHub.Service;
 
 import leyans.RidersHub.DTO.Response.FinishedDTO.FinishedRideResponseDTO;
-import leyans.RidersHub.DTO.Response.FinishedDTO.PhotoDTO;
 import leyans.RidersHub.ExceptionHandler.RideAuthorizationException;
 import leyans.RidersHub.Repository.*;
 import leyans.RidersHub.Utility.AppLogger;
@@ -151,18 +150,8 @@ public class FinishedRideService {
                 finishedRide.getRide().getDistance(),
                 finishedRide.getDurationMinutes()));
 
-        List<FinishedRidePhoto> photos =
-                finishedRidePhotoRepository.findByGeneratedRidesIdOrderByUploadedAtAsc(generatedRidesId);
 
-        photos.stream()
-                .findFirst()
-                .ifPresent(p -> dto.setPhotos(new PhotoDTO(
-                        p.getId(),
-                        p.getImageUrl(),
-                        p.getCaption(),
-                        p.getUploadedBy(),
-                        p.getUploadedAt().toString()
-                )));
+
         return dto;
     }
 

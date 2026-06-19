@@ -1,8 +1,8 @@
 package leyans.RidersHub.Service;
 
 import leyans.RidersHub.DTO.Request.RidesDTO.StopPointDTO;
-import leyans.RidersHub.DTO.Response.FinishedDTO.PhotoDTO;
 import leyans.RidersHub.DTO.Response.FinishedDTO.DetailDTO;
+import leyans.RidersHub.DTO.Response.FinishedDTO.SnapshotResponseDTO;
 import leyans.RidersHub.DTO.Response.FinishedDTO.SpeedSegmentDTO;
 import leyans.RidersHub.Repository.FinishedRidePhotoRepository;
 import leyans.RidersHub.Repository.FinishedRideRepository;
@@ -12,6 +12,7 @@ import leyans.RidersHub.Repository.RidesRepository;
 import leyans.RidersHub.Utility.AppLogger;
 import leyans.RidersHub.Utility.RideCalculationUtils;
 import leyans.RidersHub.Utility.StartedUtil;
+import leyans.RidersHub.model.FinishedRide.FinishedRidePhoto;
 import leyans.RidersHub.model.FinishedRide.PersonalFinishedRide;
 import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.Rides;
@@ -20,13 +21,11 @@ import leyans.RidersHub.model.participant.RideCheckpointArrival;
 import org.locationtech.jts.geom.Point;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class RideDetailService {
@@ -37,19 +36,22 @@ public class RideDetailService {
     private final RideCheckpointArrivalRepository rideCheckpointArrivalRepository;
     private final FinishedRidePhotoRepository finishedRidePhotoRepository;
     private final StartedUtil startedUtil;
+    private final UploadService uploadService;
+
 
     public RideDetailService(RidesRepository ridesRepository,
                              FinishedRideRepository finishedRideRepository,
                              PersonalFinishedRideRepository personalFinishedRideRepository,
                              RideCheckpointArrivalRepository rideCheckpointArrivalRepository,
                              FinishedRidePhotoRepository finishedRidePhotoRepository,
-                             StartedUtil startedUtil) {
+                             StartedUtil startedUtil, UploadService uploadService) {
         this.ridesRepository = ridesRepository;
         this.finishedRideRepository = finishedRideRepository;
         this.personalFinishedRideRepository = personalFinishedRideRepository;
         this.rideCheckpointArrivalRepository = rideCheckpointArrivalRepository;
         this.finishedRidePhotoRepository = finishedRidePhotoRepository;
         this.startedUtil = startedUtil;
+        this.uploadService = uploadService;
     }
 
     @Transactional(readOnly = true)
@@ -107,15 +109,11 @@ public class RideDetailService {
             dto.setSpeedSegments(List.of());
         }
 
-        finishedRidePhotoRepository.findByGeneratedRidesIdOrderByUploadedAtAsc(generatedRidesId)
-                .stream()
-                .findFirst()
-                .ifPresent(p -> dto.setPhoto(new PhotoDTO(
-                        p.getId(), p.getImageUrl(), p.getCaption(),
-                        p.getUploadedBy(), p.getUploadedAt().toString())));
-
         return dto;
     }
+
+
+
     /**
      * Turns this rider's checkpoint timestamps into consecutive splits
      * (Start → Stop 1 → Stop 2 → ... → End), each with its own
@@ -188,4 +186,77 @@ public class RideDetailService {
                                  RideCheckpointArrival.CheckpointType type, Integer index) {}
 
     private record TimedCheckpoint(String label, double lat, double lng, LocalDateTime arrivedAt) {}
+
+    @Transactional
+    public SnapshotResponseDTO uploadSnapshot(String generatedRidesId, MultipartFile file) {
+        AppLogger.info(this.getClass(), "uploadSnapshot called", "generatedRidesId", generatedRidesId);
+
+        Rider requester = startedUtil.authenticateAndGetInitiator();
+
+        // Verify ride exists
+        Rides ride = ridesRepository.findByGeneratedRidesId(generatedRidesId)
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found: " + generatedRidesId));
+
+        // Verify ride is finished
+        boolean groupFinished = finishedRideRepository.existsByRideGeneratedRidesId(generatedRidesId);
+        boolean personallyFinished = personalFinishedRideRepository
+                .existsByRideGeneratedRidesIdAndRiderUsername(generatedRidesId, requester.getUsername());
+
+        if (!groupFinished && !personallyFinished) {
+            throw new IllegalStateException("Can only upload snapshot for finished rides");
+        }
+
+        // Verify requester is a participant
+        boolean isParticipant = ride.getParticipants().stream()
+                .anyMatch(p -> p.getUsername().equals(requester.getUsername()));
+        boolean isOwner = ride.getUsername().getUsername().equals(requester.getUsername());
+
+        if (!isParticipant && !isOwner) {
+            throw new SecurityException("Only ride participants can upload snapshots");
+        }
+
+
+        try {
+            // 1. Upload to Cloudinary
+            byte[] imageBytes = file.getBytes();
+            String imageUrl = uploadService.uploadSnapshot(imageBytes);
+
+            if (imageUrl == null) {
+                throw new RuntimeException("Failed to upload snapshot to Cloudinary");
+            }
+
+            // 2. Save to database
+            FinishedRidePhoto snapshot = new FinishedRidePhoto();
+            snapshot.setGeneratedRidesId(generatedRidesId);
+            snapshot.setImageUrl(imageUrl);
+            snapshot.setCaption("Ride Snapshot");
+            snapshot.setUploadedBy(requester.getUsername());
+            snapshot.setUploadedAt(LocalDateTime.now());
+
+            finishedRidePhotoRepository.save(snapshot);
+
+            // 3. Return just the URL
+            return new SnapshotResponseDTO(imageUrl);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to process snapshot: " + e.getMessage(), e);
+        }
+    }
+
+    // ─── NEW: Get Snapshot ──────────────────────────────────────
+    @Transactional(readOnly = true)
+    public SnapshotResponseDTO getSnapshot(String generatedRidesId) {
+        AppLogger.info(this.getClass(), "getSnapshot called", "generatedRidesId", generatedRidesId);
+
+        // Optional: Verify user is authenticated
+        Rider requester = startedUtil.authenticateAndGetInitiator();
+
+        // Find the latest snapshot for this ride
+        return finishedRidePhotoRepository
+                .findFirstByGeneratedRidesIdAndCaptionOrderByUploadedAtDesc(
+                        generatedRidesId, "Ride Snapshot")
+                .map(photo -> new SnapshotResponseDTO(photo.getImageUrl()))
+                .orElseThrow(() -> new IllegalArgumentException("No snapshot found for ride: " + generatedRidesId));
+    }
+
 }

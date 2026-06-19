@@ -1,32 +1,18 @@
-
+// captureRideSnapshot.js
 import {captureRef} from 'react-native-view-shot';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// In-flight guard — prevents double-capture if called twice quickly
 const captureInFlight = new Set();
 
-const storageKey = generatedRidesId => `routeSnapshot:${generatedRidesId}`;
-
-// Call this from PersonalSummaryView (or anywhere else) to read back a
-// previously-captured snapshot for a ride. Returns null if none exists yet.
-export async function getLocalRouteSnapshot(generatedRidesId) {
-  if (!generatedRidesId) return null;
-  try {
-    return await AsyncStorage.getItem(storageKey(generatedRidesId));
-  } catch (e) {
-    return null;
-  }
-}
-
+/**
+ * Captures a native screenshot of the view pointed to by `containerRef`.
+ * Returns { skipped, reason? } or { skipped: false, snapshotUri }.
+ *
+ * No AsyncStorage — caller owns the URI and decides what to do with it.
+ */
 export async function captureRideSnapshot({containerRef, generatedRidesId}) {
   if (!generatedRidesId) {
     return {skipped: true, reason: 'NO_RIDE_ID'};
-  }
-
-  const existing = await getLocalRouteSnapshot(generatedRidesId);
-  if (existing) {
-    // Idempotency guard — a snapshot already exists on this device for this
-    // ride, never recapture.
-    return {skipped: true, reason: 'ALREADY_CAPTURED', snapshotUri: existing};
   }
 
   if (captureInFlight.has(generatedRidesId)) {
@@ -40,17 +26,19 @@ export async function captureRideSnapshot({containerRef, generatedRidesId}) {
   captureInFlight.add(generatedRidesId);
 
   try {
-    // 'data-uri' gives back a ready-to-render string
-    // ("data:image/png;base64,...") with no temp-file management needed.
-    const dataUri = await captureRef(containerRef, {
+    // 'data-uri' → "data:image/png;base64,..." — no temp file, no permissions needed.
+    // react-native-view-shot renders exactly what is on screen (tiles included),
+    // bypassing the WebView canvas cross-origin restriction entirely.
+    const snapshotUri = await captureRef(containerRef, {
       format: 'png',
       quality: 0.9,
       result: 'data-uri',
     });
 
-    await AsyncStorage.setItem(storageKey(generatedRidesId), dataUri);
-
-    return {skipped: false, snapshotUri: dataUri};
+    return {skipped: false, snapshotUri};
+  } catch (e) {
+    console.warn('[captureRideSnapshot] capture failed:', e);
+    return {skipped: true, reason: 'CAPTURE_ERROR'};
   } finally {
     captureInFlight.delete(generatedRidesId);
   }

@@ -4,20 +4,13 @@ package leyans.RidersHub.Controller;
 import leyans.RidersHub.DTO.Response.CheckpointArrivalResponse;
 import leyans.RidersHub.DTO.Response.FinishedDTO.FinishedRideResponseDTO;
 import leyans.RidersHub.DTO.Response.FinishedDTO.PersonalFinishedRideDTO;
-import leyans.RidersHub.DTO.Response.FinishedDTO.PhotoDTO;
 import leyans.RidersHub.Service.FinishedRideService;
 import leyans.RidersHub.Service.PersonalFinishedRideService;
 import leyans.RidersHub.Utility.CheckPointUtility;
 import leyans.RidersHub.Utility.FinishedRideUtility;
-import leyans.RidersHub.Utility.PhotoUploadUtility;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -27,16 +20,14 @@ public class FinishedRideController {
     private final FinishedRideService finishedRideService;
     private final FinishedRideUtility finishedRideUtility;
     private final CheckPointUtility checkPointUtility;
-    private final PhotoUploadUtility photoUploadUtility;
 
     private final PersonalFinishedRideService personalFinishedRideService;
 
 
-    public FinishedRideController(FinishedRideService finishedRideService, FinishedRideUtility finishedRideUtility, CheckPointUtility checkPointUtility, PhotoUploadUtility photoUploadUtility, PersonalFinishedRideService personalFinishedRideService) {
+    public FinishedRideController(FinishedRideService finishedRideService, FinishedRideUtility finishedRideUtility, CheckPointUtility checkPointUtility, PersonalFinishedRideService personalFinishedRideService) {
         this.finishedRideService = finishedRideService;
         this.finishedRideUtility = finishedRideUtility;
         this.checkPointUtility = checkPointUtility;
-        this.photoUploadUtility = photoUploadUtility;
         this.personalFinishedRideService = personalFinishedRideService;
     }
 
@@ -86,25 +77,4 @@ public class FinishedRideController {
         return ResponseEntity.ok(finishedRideService.getFinishedRide(generatedRidesId));
     }
 
-
-    @PostMapping(value = "/{generatedRidesId}/upload/photos",
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<PhotoDTO> uploadPhoto(
-            @PathVariable String generatedRidesId,
-            @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "caption", required = false) String caption,
-            @AuthenticationPrincipal UserDetails userDetails) throws IOException {
-
-        PhotoDTO dto =
-                photoUploadUtility.uploadRidePhoto(
-                        generatedRidesId, file, caption,
-                        userDetails.getUsername());
-        return ResponseEntity.ok(dto);
-    }
-
-    @GetMapping("/{generatedRidesId}/photos")
-    public ResponseEntity<List<PhotoDTO>> getPhotos(
-            @PathVariable String generatedRidesId) {
-        return ResponseEntity.ok(photoUploadUtility.getRidePhotos(generatedRidesId));
-    }
 }

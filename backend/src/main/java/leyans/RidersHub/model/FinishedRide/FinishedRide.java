@@ -50,6 +50,8 @@ public class FinishedRide {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    private String
+
     public FinishedRide() {}
 
     public FinishedRide(Rides ride, Rider finishedBy,

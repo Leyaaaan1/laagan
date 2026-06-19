@@ -1,12 +1,11 @@
 package leyans.RidersHub.Controller;
 
 import leyans.RidersHub.DTO.Response.FinishedDTO.DetailDTO;
+import leyans.RidersHub.DTO.Response.FinishedDTO.SnapshotResponseDTO;
 import leyans.RidersHub.Service.RideDetailService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 
 @RestController
@@ -27,5 +26,18 @@ public class RideDetailController {
     @GetMapping("/{generatedRidesId}/detail")
     public ResponseEntity<DetailDTO> getRideDetail(@PathVariable String generatedRidesId) {
         return ResponseEntity.ok(rideDetailService.getRideDetail(generatedRidesId));
+    }
+
+    @PostMapping("/{generatedRidesId}/snapshot")
+    public ResponseEntity<SnapshotResponseDTO> uploadSnapshot(
+            @PathVariable String generatedRidesId,
+            @RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(rideDetailService.uploadSnapshot(generatedRidesId, file));
+    }
+
+    // ─── NEW: Get Snapshot ─────────────────────────────────────
+    @GetMapping("/{generatedRidesId}/request")
+    public ResponseEntity<SnapshotResponseDTO> getSnapshot(@PathVariable String generatedRidesId) {
+        return ResponseEntity.ok(rideDetailService.getSnapshot(generatedRidesId));
     }
 }

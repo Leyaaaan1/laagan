@@ -32,9 +32,10 @@ public class DetailDTO {
     private Double averageSpeedKph;
     private List<SpeedSegmentDTO> speedSegments;
 
-    private PhotoDTO photo;
 
     public DetailDTO() {}
+
+
 
     public String getGeneratedRidesId() { return generatedRidesId; }
     public void setGeneratedRidesId(String generatedRidesId) { this.generatedRidesId = generatedRidesId; }
@@ -75,6 +76,9 @@ public class DetailDTO {
     public List<SpeedSegmentDTO> getSpeedSegments() { return speedSegments; }
     public void setSpeedSegments(List<SpeedSegmentDTO> speedSegments) { this.speedSegments = speedSegments; }
 
-    public PhotoDTO getPhoto() { return photo; }
-    public void setPhoto(PhotoDTO photo) { this.photo = photo; }
+
+
+
+
 }
+

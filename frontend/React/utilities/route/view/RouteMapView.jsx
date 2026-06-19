@@ -1,3 +1,4 @@
+// RouteMapView.jsx
 import React, {
   useRef,
   useEffect,
@@ -23,12 +24,14 @@ const RouteMapView = forwardRef(
       isDark = false,
       riderMarkers = {},
       currentUsername = '',
+      onMapReady,
       ...restProps
     },
     ref,
   ) => {
     const webViewRef = useRef(null);
     const webViewReadyRef = useRef(false);
+    const snapshotResolverRef = useRef(null); // ── NEW ──
 
     const {
       isLoading,
@@ -43,44 +46,150 @@ const RouteMapView = forwardRef(
       updateUserLocationOnMap,
     } = useRouteMapLogic(generatedRidesId);
 
-    // ✅ EXPOSE focusOnRider to parent via ref
+    // ── Expose methods to parent via ref ─────────────────────────────────────
     useImperativeHandle(
       ref,
       () => ({
         focusOnRider: (latitude, longitude, username) => {
           if (!webViewRef.current || !webViewReadyRef.current) return;
-          // JSON.stringify handles all escaping — same pattern used in injectRiderMarkers
           const safeUsername = JSON.stringify(String(username));
-          const label = JSON.stringify(String(username).substring(0, 3).toUpperCase());
+          const label = JSON.stringify(
+            String(username).substring(0, 3).toUpperCase(),
+          );
           const script = `
-    (function() {
-      if (window.orientMapToPoint) {
-        window.orientMapToPoint({ lat: ${latitude}, lng: ${longitude}, name: ${safeUsername} });
-        var label = document.getElementById('compass-label');
-        if (label) label.textContent = '🏍 ' + ${label};
-      } else {
-      }
-    })();
-    true;
-  `;
+        (function() {
+          if (window.orientMapToPoint) {
+            window.orientMapToPoint({ lat: ${latitude}, lng: ${longitude}, name: ${safeUsername} });
+            var label = document.getElementById('compass-label');
+            if (label) label.textContent = '🏍 ' + ${label};
+          }
+        })();
+        true;
+      `;
           webViewRef.current.injectJavaScript(script);
         },
 
+        // ─── NEW: Fit map to show entire route ───
+        fitMapToRoute: () => {
+          return new Promise((resolve) => {
+            if (!webViewRef.current || !webViewReadyRef.current) {
+              resolve(false);
+              return;
+            }
+
+            const script = `
+          (function() {
+            if (window.fitMapToRoute) {
+              window.fitMapToRoute();
+              true;
+            } else {
+              false;
+            }
+          })();
+          true;
+        `;
+
+            // Store the resolve callback
+            window.fitMapResolve = resolve;
+
+            webViewRef.current.injectJavaScript(script);
+
+            // Timeout fallback
+            setTimeout(() => {
+              if (window.fitMapResolve) {
+                window.fitMapResolve(false);
+                window.fitMapResolve = null;
+              }
+            }, 3000);
+          });
+        },
+
+        // ─── UPDATED: Capture snapshot with auto-zoom ───
+        captureSnapshot: () => {
+          return new Promise(async (resolve) => {
+            console.log('[Snapshot] Starting capture with auto-zoom...');
+
+            if (!webViewRef.current || !webViewReadyRef.current) {
+              console.log('[Snapshot] WebView not ready');
+              resolve(null);
+              return;
+            }
+
+            try {
+              // 1. First, fit map to show entire route
+              console.log('[Snapshot] Fitting map to route...');
+              const fitResult = await new Promise((res) => {
+                const fitScript = `
+              (function() {
+                if (window.fitMapToRoute) {
+                  window.fitMapToRoute();
+                  true;
+                } else {
+                  false;
+                }
+              })();
+              true;
+            `;
+
+                // Store resolve for fit callback
+                window.fitMapResolve = res;
+
+                webViewRef.current.injectJavaScript(fitScript);
+
+                // Timeout fallback
+                setTimeout(() => {
+                  if (window.fitMapResolve) {
+                    window.fitMapResolve(false);
+                    window.fitMapResolve = null;
+                  }
+                }, 3000);
+              });
+
+              console.log('[Snapshot] Fit result:', fitResult);
+
+              // 2. Wait a moment for the map to re-render
+              await new Promise(resolve => setTimeout(resolve, 500));
+
+              // 3. Now capture the snapshot
+              console.log('[Snapshot] Capturing after fit...');
+              snapshotResolverRef.current = resolve;
+
+              webViewRef.current.injectJavaScript(`
+            console.log('[WebView] Capturing snapshot after fit...');
+            window.exportMapSnapshot();
+            true;
+          `);
+
+              // Timeout fallback
+              setTimeout(() => {
+                if (snapshotResolverRef.current) {
+                  console.log('[Snapshot] TIMEOUT — no response from WebView');
+                  snapshotResolverRef.current(null);
+                  snapshotResolverRef.current = null;
+                }
+              }, 8000);
+
+            } catch (error) {
+              console.log('[Snapshot] Error during capture:', error);
+              resolve(null);
+            }
+          });
+        },
       }),
       [],
     );
 
+    // ── Inject live rider markers ─────────────────────────────────────────────
     const injectRiderMarkers = useCallback((markers, user) => {
       if (!webViewRef.current || !webViewReadyRef.current) return;
       const script = `
-      if (typeof window.updateRiderMarkers === 'function') {
-        window.updateRiderMarkers(${JSON.stringify(markers)}, ${JSON.stringify(
-        user,
-      )});
-      } else {
-      }
-      true;
-    `;
+        if (typeof window.updateRiderMarkers === 'function') {
+          window.updateRiderMarkers(${JSON.stringify(
+            markers,
+          )}, ${JSON.stringify(user)});
+        }
+        true;
+      `;
       webViewRef.current.injectJavaScript(script);
     }, []);
 
@@ -97,18 +206,39 @@ const RouteMapView = forwardRef(
 
     const onWebViewLoad = useCallback(() => {
       webViewReadyRef.current = true;
+
       setTimeout(() => {
-        handleWebViewLoad(
-          webViewRef,
-          routeData,
-          startingPoint,
-          endingPoint,
-          stopPoints,
-          userLocation,
+        // Load all the route data into the WebView
+        const script = `
+      if (typeof window.loadRouteData === 'function') {
+        window.loadRouteData(
+          ${JSON.stringify(routeData)},
+          ${JSON.stringify(startingPoint)},
+          ${JSON.stringify(endingPoint)},
+          ${JSON.stringify(stopPoints)},
+          ${JSON.stringify(userLocation)}
         );
+      }
+      
+      // After loading, fit the map to the route
+      if (typeof window.fitMapToRoute === 'function') {
+        setTimeout(function() {
+          window.fitMapToRoute();
+        }, 500);
+      }
+      
+      true;
+    `;
+
+        webViewRef.current.injectJavaScript(script);
+
         if (Object.keys(riderMarkers).length > 0) {
           injectRiderMarkers(riderMarkers, currentUsername);
         }
+
+        setTimeout(() => {
+          onMapReady?.();
+        }, 3000);
       }, 500);
     }, [
       routeData,
@@ -120,12 +250,46 @@ const RouteMapView = forwardRef(
       currentUsername,
       handleWebViewLoad,
       injectRiderMarkers,
+      onMapReady,
     ]);
 
-    const onWebViewMessage = event => {
-      handleWebViewMessage(event, err => err, onWebViewLoad);
-    };
+    // ── onWebViewMessage ──────────────────────────────────────────────────────
+    const onWebViewMessage = useCallback(
+      event => {
+        try {
+          const msg = JSON.parse(event.nativeEvent.data);
 
+          // ── NEW: resolve snapshot promise ──
+          if (msg.type === 'snapshotReady') {
+            console.log(
+              '[Snapshot] snapshotReady received, dataUri length:',
+              msg.dataUri?.length,
+            );
+            snapshotResolverRef.current?.(msg.dataUri);
+            snapshotResolverRef.current = null;
+            return;
+          }
+          if (msg.type === 'snapshotError') {
+            console.log('[Snapshot] snapshotError received:', msg.error);
+            snapshotResolverRef.current?.(null);
+            snapshotResolverRef.current = null;
+            return;
+          }
+
+          if (msg.type === 'markerError') {
+            console.warn('[RouteMapView] marker error:', msg.error);
+            return;
+          }
+        } catch (_) {
+          // Not JSON — ignore
+        }
+
+        handleWebViewMessage(event, err => err, onWebViewLoad);
+      },
+      [handleWebViewMessage, onWebViewLoad],
+    );
+
+    // ── Loading state ─────────────────────────────────────────────────────────
     if (isLoading) {
       return (
         <View style={[layout.screen, style, layout.center]}>
@@ -138,6 +302,7 @@ const RouteMapView = forwardRef(
       );
     }
 
+    // ── Fatal error state ─────────────────────────────────────────────────────
     if (error && !routeData) {
       return (
         <View style={[layout.screen, style, layout.center]}>
@@ -161,6 +326,7 @@ const RouteMapView = forwardRef(
       );
     }
 
+    // ── Main render ───────────────────────────────────────────────────────────
     return (
       <View style={[layout.screen, style]}>
         {routeError && (
@@ -185,6 +351,7 @@ const RouteMapView = forwardRef(
             </Text>
           </View>
         )}
+
         <WebView
           ref={webViewRef}
           source={{html: createMapHTML()}}
