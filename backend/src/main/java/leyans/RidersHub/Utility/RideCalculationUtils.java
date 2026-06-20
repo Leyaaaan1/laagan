@@ -8,11 +8,11 @@ public class RideCalculationUtils {
     private RideCalculationUtils() {}
 
 
-    public static Double computeAverageSpeedKph(Integer distanceMeters, Integer durationMinutes) {
-        if (distanceMeters == null || durationMinutes == null || durationMinutes == 0) {
+    public static Double computeAverageSpeedKph(Integer distanceKm, Integer durationMinutes) {
+        if (distanceKm == null || durationMinutes == null || durationMinutes == 0) {
             return null;
         }
-        double raw = ((double) distanceMeters / durationMinutes) * 0.06;
+        double raw = ((double) distanceKm / durationMinutes) * 60.0;
         return Math.round(raw * 10.0) / 10.0;
     }
 

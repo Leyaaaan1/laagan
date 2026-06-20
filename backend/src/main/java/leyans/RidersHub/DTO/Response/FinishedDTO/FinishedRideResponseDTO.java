@@ -9,7 +9,7 @@ import java.util.List;
 public class FinishedRideResponseDTO {
 
     private String generatedRidesId;
-    private Integer distance;
+    private Integer distanceMeters;
     private LocalDateTime rideDate;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
@@ -19,20 +19,17 @@ public class FinishedRideResponseDTO {
     private List<StopPointDTO> stopPoints;
     private String creatorUsername;
     private Integer participantCount;
-    private List<ParticipantSummaryDTO> completedParticipants;
-    private List<ParticipantStatisticsDTO> participantStats;
+    private List<ParticipantProgressDTO> participantProgress;
     private List<CheckpointArrivalResponse> checkpointArrivals;
 
-    private String routeCoordinates;       // raw GeoJSON string from Rides entity
     private Double averageSpeedKph;        // computed: (distance / durationMinutes) * 0.06
 
-    private String snapshotUrl;
 
     public FinishedRideResponseDTO() {}
 
     public FinishedRideResponseDTO(FinishedRide finishedRide) {
         this.generatedRidesId = finishedRide.getRide().getGeneratedRidesId();
-        this.distance = finishedRide.getRide().getDistance();
+        this.distanceMeters = finishedRide.getRide().getDistance();
         this.rideDate = finishedRide.getRide().getDate();
         this.startTime = finishedRide.getStartTime();
         this.endTime = finishedRide.getEndTime();
@@ -44,33 +41,19 @@ public class FinishedRideResponseDTO {
                 .toList();
         this.creatorUsername = finishedRide.getFinishedBy().getUsername();
         this.participantCount = finishedRide.getCompletedParticipants() != null ? finishedRide.getCompletedParticipants().size() : 0;
-        this.snapshotUrl = finishedRide.getSnapshotUrl();
     }
 
 
-    private static Double computeSpeed(Integer distanceMeters, Integer durationMinutes) {
-        if (distanceMeters == null || durationMinutes == null || durationMinutes == 0) {
-            return null;
-        }
-        // km/h = (meters / minutes) * 0.06
-        return Math.round(((double) distanceMeters / durationMinutes) * 0.06 * 10.0) / 10.0;
+    public Integer getDistanceMeters() {
+        return distanceMeters;
     }
 
-    public String getSnapshotUrl() {
-        return snapshotUrl;
+    public void setDistanceMeters(Integer distanceMeters) {
+        this.distanceMeters = distanceMeters;
     }
 
-    public void setSnapshotUrl(String snapshotUrl) {
-        this.snapshotUrl = snapshotUrl;
-    }
 
-    public String getRouteCoordinates() {
-        return routeCoordinates;
-    }
 
-    public void setRouteCoordinates(String routeCoordinates) {
-        this.routeCoordinates = routeCoordinates;
-    }
 
     public Double getAverageSpeedKph() {
         return averageSpeedKph;
@@ -82,15 +65,11 @@ public class FinishedRideResponseDTO {
 
 
 
-// Getters and Setters
 
     public String getGeneratedRidesId() { return generatedRidesId; }
     public void setGeneratedRidesId(String generatedRidesId) { this.generatedRidesId = generatedRidesId; }
 
 
-
-    public Integer getDistance() { return distance; }
-    public void setDistance(Integer distance) { this.distance = distance; }
 
     public LocalDateTime getRideDate() { return rideDate; }
     public void setRideDate(LocalDateTime rideDate) { this.rideDate = rideDate; }
@@ -121,11 +100,8 @@ public class FinishedRideResponseDTO {
     public Integer getParticipantCount() { return participantCount; }
     public void setParticipantCount(Integer participantCount) { this.participantCount = participantCount; }
 
-    public List<ParticipantSummaryDTO> getCompletedParticipants() { return completedParticipants; }
-    public void setCompletedParticipants(List<ParticipantSummaryDTO> completedParticipants) { this.completedParticipants = completedParticipants; }
-
-    public List<ParticipantStatisticsDTO> getParticipantStats() { return participantStats; }
-    public void setParticipantStats(List<ParticipantStatisticsDTO> participantStats) { this.participantStats = participantStats; }
+    public List<ParticipantProgressDTO> getParticipantProgress() { return participantProgress; }
+    public void setParticipantProgress(List<ParticipantProgressDTO> participantProgress) { this.participantProgress = participantProgress; }
 
     public List<CheckpointArrivalResponse> getCheckpointArrivals() { return checkpointArrivals; }
     public void setCheckpointArrivals(List<CheckpointArrivalResponse> checkpointArrivals) { this.checkpointArrivals = checkpointArrivals; }

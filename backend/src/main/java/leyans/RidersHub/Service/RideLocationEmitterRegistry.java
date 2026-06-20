@@ -20,7 +20,7 @@ public class RideLocationEmitterRegistry {
     private final Map<Integer, List<SseEmitter>> emitters = new ConcurrentHashMap<>();
 
     public SseEmitter subscribe(Integer rideId) {
-        SseEmitter emitter = new SseEmitter(300_000L);
+        SseEmitter emitter = new SseEmitter(1_800_000L);
 
         emitters.computeIfAbsent(rideId, k -> new CopyOnWriteArrayList<>()).add(emitter);
 
@@ -81,5 +81,14 @@ public class RideLocationEmitterRegistry {
             list.remove(emitter);
             return list.isEmpty() ? null : list; // drop the map entry once empty
         });
+    }
+
+    public void closeAll(Integer rideId) {
+        List<SseEmitter> list = emitters.remove(rideId);
+        if (list != null) {
+            for (SseEmitter emitter : list) {
+                try { emitter.complete(); } catch (Exception ignored) {}
+            }
+        }
     }
 }

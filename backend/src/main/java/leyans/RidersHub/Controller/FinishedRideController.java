@@ -79,10 +79,6 @@ public class FinishedRideController {
         return ResponseEntity.ok(personalFinishedRideService.getPersonalSummaryDTO(generatedRidesId));
     }
 
-    @GetMapping("/{generatedRidesId}")
-    public ResponseEntity<FinishedRideResponseDTO> getFinishedRide(
-            @PathVariable String generatedRidesId) {
-        return ResponseEntity.ok(finishedRideService.getFinishedRide(generatedRidesId));
-    }
+
 
 }

@@ -46,6 +46,10 @@ public class PersonalFinishedRide {
     @Column(name = "duration_minutes")
     private Integer durationMinutes; // endTime - startTime
 
+    @Column(name = "average_speed_kph")
+    private Double averageSpeedKph;
+
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -57,13 +61,22 @@ public class PersonalFinishedRide {
 
     public PersonalFinishedRide(Rides ride, Rider rider,
                                 LocalDateTime startTime, LocalDateTime endTime,
-                                Integer durationMinutes, String snapshotUrl) {
+                                Integer durationMinutes, String snapshotUrl, Double averageSpeedKph) {
         this.ride = ride;
         this.rider = rider;
         this.startTime = startTime;
         this.endTime = endTime;
         this.durationMinutes = durationMinutes;
         this.snapshotUrl = snapshotUrl;
+        this.averageSpeedKph = averageSpeedKph;
+    }
+
+    public Double getAverageSpeedKph() {
+        return averageSpeedKph;
+    }
+
+    public void setAverageSpeedKph(Double averageSpeedKph) {
+        this.averageSpeedKph = averageSpeedKph;
     }
 
     public String getSnapshotUrl() {

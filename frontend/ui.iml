@@ -111,5 +111,6 @@
     <orderEntry type="library" name="Maven: io.micrometer:micrometer-core:1.13.2" level="project" />
     <orderEntry type="library" scope="RUNTIME" name="Maven: org.hdrhistogram:HdrHistogram:2.2.2" level="project" />
     <orderEntry type="library" scope="RUNTIME" name="Maven: org.latencyutils:LatencyUtils:2.0.3" level="project" />
+    <orderEntry type="library" name="Chart.js" level="application" />
   </component>
 </module>
