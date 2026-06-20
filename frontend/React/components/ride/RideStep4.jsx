@@ -37,13 +37,10 @@ import {
 } from './utilities/RideActionButton';
 import RideHeroCard from './utilities/RideHeroCard';
 import {joinService} from '../../services/joinService';
-import RideSnapshotView from '../../utilities/route/view/RideSnapshotView';
 
 const RideStep4 = props => {
   const navigation = useNavigation();
   const {username: authUsername} = useAuth();
-  // Pull fetchActiveRide so we can populate context with startedRideId
-  // immediately after starting a ride (fixes "Connecting…" on first open).
   const {
     fetchActiveRide: fetchActiveRideCtx,
     setActiveRide: setContextActiveRide,
@@ -266,19 +263,7 @@ const RideStep4 = props => {
     };
   };
 
-  // ── Shared FinishedRideView params ────────────────────────────────────────
-  const buildFinishedRideParams = (id = generatedRidesId) => ({
-    generatedRidesId: id,
-    isRideActive: false,
-    rideName,
-    startingPointName,
-    endingPointName,
-    stopPoints: mapCoords.stopPoints || [],
-    participants: participants || [],
-    participantCount: participants?.length ?? 0,
-  });
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleJoinRide = () => {
     if (actionStatus.isOwner) {
@@ -328,22 +313,15 @@ const RideStep4 = props => {
   const handleSummaryAction = () => {
     const {rideStatus} = actionStatus;
 
-    // Ride fully finished — go to group summary
-    if (rideStatus === RIDE_STATUS.FINISHED) {
-      navigation.navigate('FinishedRideView', buildFinishedRideParams());
-      return;
-    }
-
-    // Ride active but this user personally finished — go to personal summary
     if (
+      rideStatus === RIDE_STATUS.FINISHED ||
       rideStatus === RIDE_STATUS.ACTIVE ||
       rideStatus === RIDE_STATUS.PERSONAL_FINISHED
     ) {
-      navigation.navigate('PersonalSummaryView', {generatedRidesId});
+      navigation.navigate('RideDetailView', {generatedRidesId});
       return;
     }
   };
-
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <View style={rideStep4Styles.container}>
