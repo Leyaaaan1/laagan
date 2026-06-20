@@ -68,6 +68,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(buildErrorBody("Unexpected server error", HttpStatus.INTERNAL_SERVER_ERROR));
     }
+
+    @ExceptionHandler(org.springframework.web.context.request.async.AsyncRequestTimeoutException.class)
+    public ResponseEntity<?> handleAsyncTimeout(
+            org.springframework.web.context.request.async.AsyncRequestTimeoutException ex,
+            HttpServletRequest request) {
+        // Expected for SSE streams once they hit their configured emitter timeout —
+        // the client auto-reconnects, so this isn't a real error. Log quietly instead
+        // of screaming ERROR for normal, by-design behavior.
+        log.debug("Async/SSE timeout (expected) at {} {}", request.getMethod(), request.getRequestURI());
+        return null;
+    }
     @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
     public ResponseEntity<?> handleValidationException(
             org.springframework.web.bind.MethodArgumentNotValidException ex) {

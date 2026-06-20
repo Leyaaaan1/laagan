@@ -1,15 +1,4 @@
-/**
- * RideDetailView.jsx
- *
- * Strava-style personal ride detail screen.
- * Fetches RideDetailDTO from GET /view/{generatedRidesId}/detail and
- * assembles the full-bleed hero, stat cards, speed chart, route map,
- * and media upload flow.
- *
- * Navigation params expected:
- *   generatedRidesId – string (required)
- *   username         – string (optional, for display context)
- */
+
 import React, {useCallback, useEffect, useState} from 'react';
 import {
   View,
@@ -30,43 +19,23 @@ import rideDetailStyles from '../../../styles/screens/rideDetailStyles';
 import RideDetailHero from './RideDetailHero';
 import RideDetailStats from './RideDetailStats';
 import RideDetailSpeedChart from './RideDetailSpeedChart';
-import RideDetailMediaUpload from './RideDetailMediaUpload';
-import {
-  isValidCoordinate,
-  processRideCoordinates,
-} from '../../../utilities/CoordinateUtils';
-import RouteMapView from '../../../utilities/route/view/RouteMapView';
 
-// ─────────────────────────────────────────────────────────────────────────────
 
-const SectionHeader = ({icon, title, badge}) => (
-  <View style={rideDetailStyles.viewSectionHeader}>
-    <View style={rideDetailStyles.viewSectionIconWrap}>
-      <FontAwesome name={icon} size={13} color={colors.primary} />
-    </View>
-    <Text style={rideDetailStyles.viewSectionTitle}>{title}</Text>
-    {badge != null && (
-      <View style={rideDetailStyles.viewSectionBadge}>
-        <Text style={rideDetailStyles.viewSectionBadgeText}>{badge}</Text>
-      </View>
-    )}
-  </View>
-);
 
-// ─────────────────────────────────────────────────────────────────────────────
 
 const RideDetailView = ({route, navigation}) => {
-  const {generatedRidesId, username} = route.params ?? {};
+  const {generatedRidesId} = route.params ?? {};
   const insets = useSafeAreaInsets();
 
   const [rideDetail, setRideDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  const [uploadVisible, setUploadVisible] = useState(false);
+
   const NOT_YET_AVAILABLE_MESSAGE =
     "You haven't finished this ride yet — your detail view will appear once you do.";
-  // ── Fetch ────────────────────────────────────────────────────────────────
+
+  // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchDetail = useCallback(
     async (isRefresh = false) => {
       if (!generatedRidesId) {
@@ -75,7 +44,7 @@ const RideDetailView = ({route, navigation}) => {
         return;
       }
       try {
-        if (!isRefresh) setLoading(true);
+        if (!isRefresh) {setLoading(true);}
         const data = await finishedRideService.getRideDetail(generatedRidesId);
         setRideDetail(data);
         setError(null);
@@ -102,12 +71,9 @@ const RideDetailView = ({route, navigation}) => {
     fetchDetail(true);
   };
 
-  // ── Upload callbacks ─────────────────────────────────────────────────────
-  const handlePhotoUploaded = updatedPhoto => {
-    setRideDetail(prev => ({...prev, photo: updatedPhoto}));
-  };
 
-  // ── Loading ──────────────────────────────────────────────────────────────
+
+  // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <SafeAreaView style={finishedRideStyles.container}>
@@ -143,7 +109,7 @@ const RideDetailView = ({route, navigation}) => {
     );
   }
 
-  // ── Derived values ───────────────────────────────────────────────────────
+  // ── Derived values ─────────────────────────────────────────────────────────
   const {
     rideName,
     distanceMeters,
@@ -153,19 +119,13 @@ const RideDetailView = ({route, navigation}) => {
     endTime,
     speedSegments = [],
     photo,
-    hasPersonalRecord,
-    startingPointName,
-    endingPointName,
-    stopPoints = [],
   } = rideDetail;
 
-  const distanceKm = distanceMeters != null ? distanceMeters / 1000 : null;
-  const mapCoords = processRideCoordinates(rideDetail);
-  const hasRoute = isValidCoordinate(mapCoords?.startingPoint);
+  const hasSegments = speedSegments.length > 0;
 
   return (
     <SafeAreaView style={finishedRideStyles.container}>
-      {/* ── Floating back button (overlays the hero) ──────────────────── */}
+      {/* ── Floating back button (overlays the hero) ───────────────────── */}
       <View
         style={[rideDetailStyles.viewFloatingHeader, {top: insets.top + 2}]}>
         <TouchableOpacity
@@ -178,7 +138,7 @@ const RideDetailView = ({route, navigation}) => {
           <FontAwesome
             name="arrow-left"
             size={16}
-            color={rideDetail?.photo?.imageUrl ? colors.white : colors.primary}
+            color={photo?.imageUrl ? colors.white : colors.primary}
           />
         </TouchableOpacity>
         <View style={rideDetailStyles.viewPrBadgeWrap}>
@@ -189,6 +149,7 @@ const RideDetailView = ({route, navigation}) => {
           </View>
         </View>
       </View>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={rideDetailStyles.viewScrollContent}
@@ -199,16 +160,10 @@ const RideDetailView = ({route, navigation}) => {
             tintColor={colors.primary}
           />
         }>
-        <RideDetailHero
-          photo={photo}
-          rideName={rideName}
-          distanceKm={distanceKm}
-          durationMin={durationMinutes}
-          avgSpeedKph={averageSpeedKph}
-          onUpload={() => setUploadVisible(true)}
-        />
+        {/* ── Hero (photo + ride name only) ───────────────────────────── */}
+        <RideDetailHero photo={photo} rideName={rideName} />
 
-        {/* ── Stat cards ────────────────────────────────────────────── */}
+        {/* ── Stat cards ──────────────────────────────────────────────── */}
         <RideDetailStats
           distanceMeters={distanceMeters}
           durationMinutes={durationMinutes}
@@ -218,54 +173,8 @@ const RideDetailView = ({route, navigation}) => {
           endTime={endTime}
         />
 
-        {/* ── Route map ─────────────────────────────────────────────── */}
-        {hasRoute && (
-          <View style={rideDetailStyles.viewSection}>
-            <SectionHeader icon="map-o" title="Route" />
-            <View style={rideDetailStyles.viewMapWrapper}>
-              <RouteMapView
-                generatedRidesId={generatedRidesId}
-                startingPoint={mapCoords.startingPoint}
-                endingPoint={mapCoords.endingPoint}
-                stopPoints={mapCoords.stopPoints ?? []}
-                isDark={false}
-                style={rideDetailStyles.viewRouteMapFill}
-              />
-            </View>
-            {/* start / end labels */}
-            <View style={rideDetailStyles.viewRouteLabels}>
-              <View style={rideDetailStyles.viewRouteLabel}>
-                <View
-                  style={[
-                    rideDetailStyles.viewRouteDot,
-                    {backgroundColor: '#10b981'},
-                  ]}
-                />
-                <Text
-                  style={rideDetailStyles.viewRouteLabelText}
-                  numberOfLines={1}>
-                  {startingPointName ?? 'Start'}
-                </Text>
-              </View>
-              <View style={rideDetailStyles.viewRouteLabel}>
-                <View
-                  style={[
-                    rideDetailStyles.viewRouteDot,
-                    {backgroundColor: colors.primary},
-                  ]}
-                />
-                <Text
-                  style={rideDetailStyles.viewRouteLabelText}
-                  numberOfLines={1}>
-                  {endingPointName ?? 'End'}
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* ── Speed chart ───────────────────────────────────────────── */}
-        {speedSegments.length > 0 && (
+        {/* ── Speed chart ─────────────────────────────────────────────── */}
+        {hasSegments && (
           <View style={rideDetailStyles.viewChartSection}>
             <RideDetailSpeedChart
               segments={speedSegments}
@@ -274,50 +183,11 @@ const RideDetailView = ({route, navigation}) => {
           </View>
         )}
 
-        {/* ── Photo caption ─────────────────────────────────────────── */}
-        {photo?.caption ? (
-          <View style={rideDetailStyles.viewSection}>
-            <SectionHeader icon="quote-left" title="Caption" />
-            <View style={rideDetailStyles.viewCaptionCard}>
-              <Text style={rideDetailStyles.viewCaptionText}>
-                {photo.caption}
-              </Text>
-              <Text style={rideDetailStyles.viewCaptionMeta}>
-                {photo.uploadedBy ?? username ?? '—'}
-                {photo.uploadedAt
-                  ? ` · ${new Date(photo.uploadedAt).toLocaleDateString()}`
-                  : ''}
-              </Text>
-            </View>
-          </View>
-        ) : null}
 
-        {/* ── Add media CTA (if no photo yet) ──────────────────────── */}
-        {!photo && (
-          <TouchableOpacity
-            style={rideDetailStyles.viewAddMediaCta}
-            onPress={() => setUploadVisible(true)}
-            activeOpacity={0.8}>
-            <FontAwesome name="camera" size={16} color={colors.primary} />
-            <Text style={rideDetailStyles.viewAddMediaCtaText}>
-              Add a photo or video to this ride
-            </Text>
-            <FontAwesome
-              name="chevron-right"
-              size={12}
-              color={colors.textMuted}
-            />
-          </TouchableOpacity>
-        )}
       </ScrollView>
-      {/* ── Media upload sheet ────────────────────────────────────────── */}
-      <RideDetailMediaUpload
-        visible={uploadVisible}
-        onClose={() => setUploadVisible(false)}
-        onPhotoUploaded={handlePhotoUploaded}
-        onVideoUploaded={() => {}}
-        generatedRidesId={generatedRidesId}
-      />
+
+      {/* ── Media upload sheet ──────────────────────────────────────────── */}
+
     </SafeAreaView>
   );
 };

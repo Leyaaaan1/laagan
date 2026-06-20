@@ -68,13 +68,9 @@ public class PersonalFinishedRideService {
                   .toList()
                 : new ArrayList<>();
 
-        // NEW: personal speed uses personal durationMinutes, not group duration.
-        // Distance comes from Rides (same for everyone in the group).
-        // Both are computed by RideCalculationUtils — no separate formula here.
-        Double personalAverageSpeedKph = RideCalculationUtils.computeAverageSpeedKph(
-                ride.getDistance(),
-                personalFinishedRide.getDurationMinutes()
-        );
+        // Average speed is computed once at write-time (createPersonalSummaryOnArrival)
+        // and stored on the entity — read it directly instead of recomputing.
+        Double personalAverageSpeedKph = personalFinishedRide.getAverageSpeedKph();
 
         PersonalFinishedRideDTO dto = new PersonalFinishedRideDTO(
                 personalFinishedRide.getId(),
@@ -89,8 +85,7 @@ public class PersonalFinishedRideService {
                 ride.getStartingPointName(),
                 ride.getEndingPointName(),
                 ride.getDistance(),             // NEW field — distanceMeters
-                personalAverageSpeedKph,
-                personalFinishedRide.getSnapshotUrl()
+                personalAverageSpeedKph
         );
 
         return dto;
@@ -138,8 +133,13 @@ public class PersonalFinishedRideService {
         LocalDateTime startTime = startedRide.getStartTime();
         int durationMinutes = (int) ChronoUnit.MINUTES.between(startTime, endTime);
 
+        // Compute once here, at write-time, since distance and durationMinutes are
+        // both fixed facts by now — store it so reads never need to recompute.
+        Double averageSpeedKph = RideCalculationUtils.computeAverageSpeedKph(
+                ride.getDistance(), durationMinutes);
+
         PersonalFinishedRide record = new PersonalFinishedRide(
-                ride, rider, startTime, endTime, durationMinutes, null);
+                ride, rider, startTime, endTime, durationMinutes,  null, averageSpeedKph);
 
         personalFinishedRideRepository.save(record);
     }

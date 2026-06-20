@@ -24,7 +24,6 @@ public class PersonalFinishedRideDTO {
     private Integer distanceMeters;
 
     private Double averageSpeedKph;
-    private String snapshotUrl;
     public PersonalFinishedRideDTO() {}
 
     public PersonalFinishedRideDTO(Integer id,
@@ -39,8 +38,7 @@ public class PersonalFinishedRideDTO {
                                    String startingPointName,
                                    String endingPointName,
                                    Integer distanceMeters,
-                                   Double averageSpeedKph,
-                                   String snapshotUrl) {
+                                   Double averageSpeedKph) {
         this.id = id;
         this.riderUsername = riderUsername;
         this.generatedRidesId = generatedRidesId;
@@ -54,7 +52,6 @@ public class PersonalFinishedRideDTO {
         this.endingPointName = endingPointName;
         this.distanceMeters = distanceMeters;
         this.averageSpeedKph = averageSpeedKph;
-        this.snapshotUrl = snapshotUrl;
     }
     public PersonalFinishedRideDTO(Integer id,
                                    String riderUsername,
@@ -69,16 +66,10 @@ public class PersonalFinishedRideDTO {
                                    String endingPointName) {
         this(id, riderUsername, generatedRidesId, startTime, endTime,
                 durationMinutes, createdAt, checkpointArrivals, stopPoints,
-                startingPointName, endingPointName, null, null, null);
+                startingPointName, endingPointName, null, null);
     }
 
-    public String getSnapshotUrl() {
-        return snapshotUrl;
-    }
 
-    public void setSnapshotUrl(String snapshotUrl) {
-        this.snapshotUrl = snapshotUrl;
-    }
 
     public Integer getDistanceMeters() {
         return distanceMeters;

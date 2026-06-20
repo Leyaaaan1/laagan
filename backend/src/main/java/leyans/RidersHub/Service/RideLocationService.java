@@ -275,24 +275,29 @@ public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer star
             double latitude,
             double longitude) {
 
-        String currentUsername = riderUtil.getCurrentUsername();
-
         updateLocation(startedRideId, latitude, longitude);
 
         List<RiderLocation> locations =
                 locationRepo.findLatestLocationPerParticipantOptimized(startedRideId);
 
-        boolean currentUserFinished = locations.stream()
-                .findFirst()
-                .map(loc -> checkPointUtility.isRiderFinished(
-                        loc.getStartedRide().getRide().getGeneratedRidesId(),
-                        currentUsername))
-                .orElse(false);
+        if (locations.isEmpty()) {
+            return List.of();
+        }
+
+        // Resolve generatedRidesId once from the StartedRide — all locations in this
+        // list belong to the same ride, so we only need to look it up once.
+        String generatedRidesId = locations.get(0)
+                .getStartedRide().getRide().getGeneratedRidesId();
 
         List<LocationUpdateRequestDTO> result = locations.stream()
                 .map(loc -> {
                     Point p = loc.getLocation();
                     String locUsername = loc.getUsername().getUsername();
+
+                    // Check finished status per-rider so every participant in the
+                    // broadcast gets the correct tag, not just the caller.
+                    boolean isFinished = checkPointUtility.isRiderFinished(
+                            generatedRidesId, locUsername);
 
                     return new LocationUpdateRequestDTO(
                             startedRideId,
@@ -302,9 +307,7 @@ public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer star
                             loc.getLocationName(),
                             loc.getDistanceMeters(),
                             loc.getTimestamp(),
-                            locUsername.equals(currentUsername) && currentUserFinished
-                                    ? "RIDER_FINISHED"
-                                    : null
+                            isFinished ? "RIDER_FINISHED" : null
                     );
                 })
                 .collect(Collectors.toList());

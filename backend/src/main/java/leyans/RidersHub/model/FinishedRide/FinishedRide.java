@@ -39,6 +39,10 @@ public class FinishedRide {
     @Column(name = "duration_minutes")
     private Integer durationMinutes;
 
+    @Column(name = "average_speed_kph")
+    private Double averageSpeedKph;
+
+
     @ManyToMany
     @JoinTable(
             name = "finished_ride_participants",
@@ -58,7 +62,7 @@ public class FinishedRide {
 
     public FinishedRide(Rides ride, Rider finishedBy,
                         LocalDateTime startTime, LocalDateTime endTime,
-                        Integer durationMinutes, Set<Rider> completedParticipants, String snapshotUrl) {
+                        Integer durationMinutes, Set<Rider> completedParticipants, String snapshotUrl, Double averageSpeedKph) {
         this.ride = ride;
         this.finishedBy = finishedBy;
         this.startTime = startTime;
@@ -66,6 +70,15 @@ public class FinishedRide {
         this.durationMinutes = durationMinutes;
         this.completedParticipants = completedParticipants;
         this.snapshotUrl = snapshotUrl;
+        this.averageSpeedKph = averageSpeedKph;
+    }
+
+    public Double getAverageSpeedKph() {
+        return averageSpeedKph;
+    }
+
+    public void setAverageSpeedKph(Double averageSpeedKph) {
+        this.averageSpeedKph = averageSpeedKph;
     }
 
     public String getSnapshotUrl() {

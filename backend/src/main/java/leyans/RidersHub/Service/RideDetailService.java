@@ -33,20 +33,18 @@ public class RideDetailService {
     private final PersonalFinishedRideRepository personalFinishedRideRepository;
     private final RideCheckpointArrivalRepository rideCheckpointArrivalRepository;
     private final StartedUtil startedUtil;
-    private final UploadService uploadService;
 
 
     public RideDetailService(RidesRepository ridesRepository,
                              FinishedRideRepository finishedRideRepository,
                              PersonalFinishedRideRepository personalFinishedRideRepository,
                              RideCheckpointArrivalRepository rideCheckpointArrivalRepository,
-                             StartedUtil startedUtil, UploadService uploadService) {
+                             StartedUtil startedUtil) {
         this.ridesRepository = ridesRepository;
         this.finishedRideRepository = finishedRideRepository;
         this.personalFinishedRideRepository = personalFinishedRideRepository;
         this.rideCheckpointArrivalRepository = rideCheckpointArrivalRepository;
         this.startedUtil = startedUtil;
-        this.uploadService = uploadService;
     }
 
     @Transactional(readOnly = true)
@@ -88,8 +86,7 @@ public class RideDetailService {
             dto.setStartTime(personal.getStartTime());
             dto.setEndTime(personal.getEndTime());
             dto.setDurationMinutes(personal.getDurationMinutes());
-            dto.setAverageSpeedKph(RideCalculationUtils.computeAverageSpeedKph(
-                    ride.getDistance(), personal.getDurationMinutes()));
+            dto.setAverageSpeedKph(personal.getAverageSpeedKph());
 
             List<RideCheckpointArrival> riderArrivals = rideCheckpointArrivalRepository
                     .findByRideGeneratedRidesId(generatedRidesId)

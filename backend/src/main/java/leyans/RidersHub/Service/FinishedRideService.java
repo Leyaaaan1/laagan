@@ -5,7 +5,6 @@ import leyans.RidersHub.ExceptionHandler.RideAuthorizationException;
 import leyans.RidersHub.Repository.*;
 import leyans.RidersHub.Utility.AppLogger;
 import leyans.RidersHub.Utility.FinishedRideUtility;
-import leyans.RidersHub.Utility.RideCalculationUtils;
 import leyans.RidersHub.Utility.StartedUtil;
 import leyans.RidersHub.model.*;
 import leyans.RidersHub.model.FinishedRide.FinishedRide;
@@ -27,13 +26,14 @@ public class FinishedRideService {
     private final FinishedRideUtility finishedRideUtility;
     private final RideStatusService rideStatusService;
     private final PersonalFinishedRideService personalFinishedRideService;
+    private final RideLocationEmitterRegistry rideLocationEmitterRegistry;
 
 
     public FinishedRideService(StartedRideRepository startedRideRepository,
                                RidesRepository ridesRepository,
                                FinishedRideRepository finishedRideRepository,
                                StartedUtil startedUtil,
-                               RideCheckpointArrivalRepository rideCheckpointArrivalRepository, FinishedRideUtility finishedRideUtility, RideStatusService rideStatusService, PersonalFinishedRideService personalFinishedRideService) {
+                               RideCheckpointArrivalRepository rideCheckpointArrivalRepository, FinishedRideUtility finishedRideUtility, RideStatusService rideStatusService, PersonalFinishedRideService personalFinishedRideService, RideLocationEmitterRegistry rideLocationEmitterRegistry) {
         this.startedRideRepository = startedRideRepository;
         this.ridesRepository = ridesRepository;
         this.finishedRideRepository = finishedRideRepository;
@@ -42,6 +42,7 @@ public class FinishedRideService {
         this.finishedRideUtility = finishedRideUtility;
         this.rideStatusService = rideStatusService;
         this.personalFinishedRideService = personalFinishedRideService;
+        this.rideLocationEmitterRegistry = rideLocationEmitterRegistry;
     }
 
     @Transactional
@@ -109,9 +110,12 @@ public class FinishedRideService {
                 "creator", requester.getUsername());
         rideStatusService.markFinished(generatedRidesId, "Ride finished by " + requester.getUsername());
 
+        // Ride is over for everyone — close any open SSE streams for it so they
+        // don't sit alive (and getting heartbeat-pinged) until their 300s timeout.
+        rideLocationEmitterRegistry.closeAll(startedRide.getId());
+
         return finishedRideUtility.buildAndSaveFinishedRide(startedRide, ride, requester, generatedRidesId);
     }
-
     @Transactional
     public FinishedRideResponseDTO forceFinishOwnRide(String generatedRidesId) {
         AppLogger.info(this.getClass(), "forceFinishOwnRide called",
@@ -152,29 +156,5 @@ public class FinishedRideService {
         return finishedRideUtility.buildPersonalFinishResponse(generatedRidesId, requester);
     }
 
-    @Transactional(readOnly = true)
-    public FinishedRideResponseDTO getFinishedRide(String generatedRidesId) {
-        AppLogger.info(this.getClass(), "getFinishedRide called", "generatedRidesId", generatedRidesId);
-
-        FinishedRide finishedRide = finishedRideRepository
-                .findByRideGeneratedRidesId(generatedRidesId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Finished ride not found: " + generatedRidesId));
-
-        FinishedRideResponseDTO dto = new FinishedRideResponseDTO(finishedRide);
-
-        // Route coordinates live on the Rides entity
-        dto.setRouteCoordinates(finishedRide.getRide().getRouteCoordinates());
-
-        // REFACTOR: was computeSpeed(distance, duration) private method.
-        // Now delegates to RideCalculationUtils — single source of truth.
-        dto.setAverageSpeedKph(RideCalculationUtils.computeAverageSpeedKph(
-                finishedRide.getRide().getDistance(),
-                finishedRide.getDurationMinutes()));
-
-
-
-        return dto;
-    }
 
 }
