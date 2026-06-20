@@ -23,12 +23,16 @@ import {useDeepLinking} from './React/utilities/deepLinking';
 import EmailVerificationScreen from './React/screens/EmailVerificationScreen';
 import VerifyEmailLinkScreen from './React/screens/VerifyEmailLinkScreen';
 import OnboardingTour from './React/screens/OnboardingTour';
+import RideUpdateModal from './React/screens/RideUpdateModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   initialWindowMetrics,
   SafeAreaProvider,
 } from 'react-native-safe-area-context';
 import RideDetailView from './React/pages/finishedRide/Details/RideDetailView';
+
+const WHATS_NEW_KEY = '@rideapp_whats_new_v1';
+
 
 interface AuthContextValue {
   token: string | null;
@@ -73,41 +77,67 @@ const AppStack = () => (
 const NavigationContent = () => {
   const auth = useAuth() as unknown as AuthContextValue;
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
+  const [whatsNewSeen, setWhatsNewSeen] = useState<boolean | null>(null);
 
   useDeepLinking();
   setAuthContextRef(auth);
   GoogleSignin.configure({webClientId: googleclientid, offlineAccess: false});
-
   useEffect(() => {
-    AsyncStorage.getItem('@rideapp_onboarding_done').then(val => {
-      setOnboardingDone(val === 'true');
+    Promise.all([
+      AsyncStorage.getItem('@rideapp_onboarding_done'),
+      AsyncStorage.getItem(WHATS_NEW_KEY),
+    ]).then(([onboarding, whatsNew]) => {
+      setOnboardingDone(onboarding === 'true');
+      setWhatsNewSeen(whatsNew === 'true');
     });
   }, []);
 
-  if (!auth.ready || onboardingDone === null) return <LoadingScreen />;
+  if (!auth.ready || onboardingDone === null || whatsNewSeen === null)
+    return <LoadingScreen />;
 
-  if (!onboardingDone) {
-    return (
-      <Stack.Navigator
-        screenOptions={{headerShown: false}}
-        screenListeners={{
-          state: async e => {
-            const route = e.data?.state?.routes?.find(
-              r => r.name === 'OnboardingTour',
-            );
-            if ((route?.params as OnboardingParams)?.completed) {
-              await AsyncStorage.setItem('@rideapp_onboarding_done', 'true');
-              setOnboardingDone(true);
-            }
-          },
-        }}>
-        <Stack.Screen name="OnboardingTour" component={OnboardingTour} />
-      </Stack.Navigator>
-    );
-  }
-  if (!auth.token) return <AuthStack />;
-  return <AppStack />;
+  const handleWhatsNewClose = async () => {
+    await AsyncStorage.setItem(WHATS_NEW_KEY, 'true');
+    setWhatsNewSeen(true);
+  };
+
+  /** Renders the correct stack for the current app state */
+  const renderStack = () => {
+    if (!onboardingDone) {
+      return (
+        <Stack.Navigator
+          screenOptions={{headerShown: false}}
+          screenListeners={{
+            state: async e => {
+              const route = e.data?.state?.routes?.find(
+                r => r.name === 'OnboardingTour',
+              );
+              if ((route?.params as OnboardingParams)?.completed) {
+                await AsyncStorage.setItem('@rideapp_onboarding_done', 'true');
+                setOnboardingDone(true);
+              }
+            },
+          }}>
+          <Stack.Screen name="OnboardingTour" component={OnboardingTour} />
+        </Stack.Navigator>
+      );
+    }
+    if (!auth.token) return <AuthStack />;
+    return <AppStack />;
+  };
+
+  return (
+    <>
+      {renderStack()}
+      {/* "What's New" modal — shown once per version, on top of any screen */}
+      <RideUpdateModal
+        visible={!whatsNewSeen}
+        onClose={handleWhatsNewClose}
+        onConfirm={handleWhatsNewClose}
+      />
+    </>
+  );
 };
+
 export default function App() {
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
