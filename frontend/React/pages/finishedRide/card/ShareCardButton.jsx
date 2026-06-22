@@ -1,19 +1,4 @@
-// ShareCardButton.jsx
-// Adds a "Background Photo" row so the user can pick/clear their own photo
-// on top of the polygon snapshot.
-//
-// ── What changed from the previous version ───────────────────────────────────
-//  • Destructures pickPhoto, clearPhoto, photoUri, picking from useRideShareCard
-//  • Renders an "Add Background Photo" / "Change Photo" pill above the share row
-//  • Shows a ✕ chip to remove the photo when one is set
-//
-// ── RideDetailView: add these two fields to shareData ────────────────────────
-//   snapshotUrl:   snapshotUrl,          // state already in RideDetailView
-//   speedSegments: speedSegments ?? [],  // from rideDetail (already destructured)
-//
-// ── Then pass snapshotUrl into ShareCardButton ────────────────────────────────
-//   <ShareCardButton shareData={shareData} format="story" />
-//   (no extra props needed — snapshotUrl lives inside shareData.snapshotUrl)
+
 
 import React from 'react';
 import {
@@ -27,13 +12,11 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import {useRideShareCard} from './useRideShareCard';
 import colors from '../../../styles/tokens/colors';
 
-/**
- * @param {{
- *   shareData: object,   // must include snapshotUrl + speedSegments
- *   format?:   'story' | 'feed'
- * }} props
- */
-const ShareCardButton = ({shareData, format = 'story'}) => {
+const ShareCardButton = ({
+  shareData,
+  format = 'story',
+  initialPhotoUri = null,
+}) => {
   const {
     CardNode,
     triggerShare,
@@ -44,7 +27,7 @@ const ShareCardButton = ({shareData, format = 'story'}) => {
     clearPhoto,
     photoUri,
     picking,
-  } = useRideShareCard({data: shareData, format});
+  } = useRideShareCard({data: shareData, format, initialPhotoUri});
 
   const isLocked = sharing || saving;
 

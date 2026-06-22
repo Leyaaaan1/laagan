@@ -1,8 +1,3 @@
-// RideShareCard.jsx — redesigned
-// Layout: header → polygon snapshot → ride name → speed graph (transparent) → stats → footer
-// photoUri = user-picked background photo (null → dark card)
-// data.snapshotUrl = pre-rendered polygon map from server
-// data.speedSegments = array of speed objects or numbers
 
 import React, {forwardRef, useMemo} from 'react';
 import {View, Text, Image, ImageBackground, StyleSheet} from 'react-native';
@@ -66,8 +61,6 @@ const fmtDate = iso => {
 };
 const fmtSpeed = kph => (kph == null ? '—' : Number(kph).toFixed(1));
 
-// ─── Speed graph ──────────────────────────────────────────────────────────────
-// Handles segments as plain numbers or objects with various speed keys
 function extractSpeeds(segments) {
   if (!segments?.length) return [];
   return segments.map(s =>
@@ -355,12 +348,14 @@ const RideShareCard = forwardRef(function RideShareCard(
 
   // Positioned off-screen so it renders without being visible to the user.
   // react-native-view-shot captures it at full resolution.
-  const cardStyle = [ss.cardRoot, {width, height, top: -height}];
+  // opacity:0 keeps card in render tree (ImageBackground loads) but invisible.
+  // top:-height breaks Android capture — Android skips off-viewport views.
+  const cardStyle = [ss.cardRoot, {width, height, opacity: 0}];
 
   // ── User picked a background photo ───────────────────────────────────────
   if (photoUri) {
     return (
-      <View ref={ref} style={cardStyle} collapsable={false}>
+      <View ref={ref} style={cardStyle} collapsable={false} pointerEvents="none">
         <ImageBackground
           source={{uri: photoUri}}
           style={StyleSheet.absoluteFill}
@@ -393,7 +388,7 @@ const RideShareCard = forwardRef(function RideShareCard(
     <View
       ref={ref}
       style={[cardStyle, {backgroundColor: T.bgDeep}]}
-      collapsable={false}>
+      collapsable={false}>        
       <CardContent
         data={data}
         format={format}

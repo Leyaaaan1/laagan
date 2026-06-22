@@ -1,4 +1,3 @@
-
 import React, {useCallback, useEffect, useState} from 'react';
 import {
   View,
@@ -25,10 +24,11 @@ import RideDetailSpeedChart from './RideDetailSpeedChart';
 import FinishedRideSummary from '../FinishedRideSummary';
 import FinishedRideParticipants from '../FinishedRideParticipants';
 import FinishedRideCheckpoints from '../FinishedRideCheckpoints';
-import {getFinishedRideSummary, getPersonalSummary} from '../../../services/startService';
+import {
+  getFinishedRideSummary,
+  getPersonalSummary,
+} from '../../../services/startService';
 import checkpointModalStyles from '../../../styles/screens/checkpointModalStyles';
-
-
 
 const safe = val => (Array.isArray(val) ? val : []);
 
@@ -67,8 +67,6 @@ const RideDetailView = ({route, navigation}) => {
   const [personalError, setPersonalError] = useState(null);
 
   const [snapshotUrl, setSnapshotUrl] = useState(null);
-
-
 
   const NOT_YET_AVAILABLE_MESSAGE =
     "You haven't finished this ride yet — your detail view will appear once you do.";
@@ -295,18 +293,11 @@ const RideDetailView = ({route, navigation}) => {
                 />
               </View>
             )}
-            <RideDetailStats
-              distanceMeters={distanceMeters}
-              durationMinutes={durationMinutes}
-              averageSpeedKph={averageSpeedKph}
-              segmentCount={speedSegments.length}
-              startTime={startTime}
-              endTime={endTime}
-            />
+            
             <ShareCardButton
               shareData={shareData}
               format="story"
-              photoUri={snapshotUrl}
+              initialPhotoUri={snapshotUrl}
             />
           </>
         )}
@@ -405,7 +396,6 @@ const RideDetailView = ({route, navigation}) => {
         </View>
       </View>
 
-      {/* ── Media upload sheet ──────────────────────────────────────────── */}
     </SafeAreaView>
   );
 };
