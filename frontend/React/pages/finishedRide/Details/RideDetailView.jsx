@@ -18,7 +18,7 @@ import colors from '../../../styles/tokens/colors';
 import finishedRideStyles from '../../../styles/screens/finishedRideStyles';
 import rideDetailStyles from '../../../styles/screens/rideDetailStyles';
 
-import RideDetailHero from './RideDetailHero';
+import ShareCardButton from '../card/ShareCardButton';
 import RideDetailStats from './RideDetailStats';
 import RideDetailSpeedChart from './RideDetailSpeedChart';
 
@@ -67,6 +67,7 @@ const RideDetailView = ({route, navigation}) => {
   const [personalError, setPersonalError] = useState(null);
 
   const [snapshotUrl, setSnapshotUrl] = useState(null);
+
 
 
   const NOT_YET_AVAILABLE_MESSAGE =
@@ -228,6 +229,17 @@ const RideDetailView = ({route, navigation}) => {
     name: s.name ?? s.stopName,
   }));
 
+  const shareData = {
+    rideName: rideName ?? 'Unnamed Ride',
+    rideDate: startTime ?? null,
+    riderName: null,
+    generatedRidesId,
+    distanceMeters: distanceMeters ?? null,
+    durationMinutes: durationMinutes ?? null,
+    averageSpeedKph: averageSpeedKph ?? null,
+    snapshotUrl: snapshotUrl, // ← add this
+    speedSegments: speedSegments ?? [], // ← add this
+  };
   return (
     <SafeAreaView style={finishedRideStyles.container}>
       {/* ── Floating back button (overlays the hero) ───────────────────── */}
@@ -290,6 +302,11 @@ const RideDetailView = ({route, navigation}) => {
               segmentCount={speedSegments.length}
               startTime={startTime}
               endTime={endTime}
+            />
+            <ShareCardButton
+              shareData={shareData}
+              format="story"
+              photoUri={snapshotUrl}
             />
           </>
         )}
