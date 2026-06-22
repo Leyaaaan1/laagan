@@ -4,10 +4,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  FlatList,
   ScrollView,
   ActivityIndicator,
-  Image,
   StatusBar,
 } from 'react-native';
 import {WebView} from 'react-native-webview';
@@ -15,7 +13,6 @@ import getMapHTML from '../../utilities/mapHTML';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import {getLocationImage} from '../../services/rideService';
 import feedback from '../../styles/base/feedback';
-import images from '../../styles/base/images';
 import buttons from '../../styles/base/buttons';
 import rideCreation from '../../styles/screens/rideCreation';
 import inputs from '../../styles/base/inputs';
@@ -27,41 +24,15 @@ import {DEFAULT_COORDS} from '../../utilities/route/map/appDefaults';
 import {createMemoCompare} from '../../utilities/propsComparison';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
-// Philippines centre — safe default when no coords are available yet
 const DEFAULT_LAT = parseFloat(DEFAULT_COORDS.latitude);
 const DEFAULT_LNG = parseFloat(DEFAULT_COORDS.longitude);
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-/** A single photo tile shown in the location photo strip. */
-const LocationPhoto = ({item}) => (
-  <View
-    style={{
-      width: 110,
-      height: 80,
-      borderRadius: 10,
-      overflow: 'hidden',
-      backgroundColor: '#ddd',
-    }}>
-    <Image
-      source={{uri: item.imageUrl}}
-      style={{width: '100%', height: '100%', resizeMode: 'cover'}}
-    />
-    {(item.author || item.license) && (
-      <View style={[images.metaOverlay, {paddingVertical: 3}]}>
-        <Text style={[images.metaText, {fontSize: 9}]} numberOfLines={1}>
-          {item.author ? `📷 ${item.author}` : item.license}
-        </Text>
-      </View>
-    )}
-  </View>
-);
 
 /** Bottom panel shown after a location has been selected. */
 const SelectedLocationPanel = ({
   locationName,
-  images: locationImages,
-  imageLoading,
   onConfirm,
   bottomInset,
 }) => (
@@ -96,23 +67,6 @@ const SelectedLocationPanel = ({
           style={{marginLeft: 12}}
         />
       </View>
-
-      {imageLoading ? (
-        <View style={[feedback.loadingRow, {marginBottom: 10}]}>
-          <ActivityIndicator size="small" color="#8c2323" />
-          <Text style={feedback.loadingText}>Loading photos…</Text>
-        </View>
-      ) : Array.isArray(locationImages) && locationImages.length > 0 ? (
-        <FlatList
-          data={locationImages}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(_, idx) => idx.toString()}
-          style={{marginBottom: 12}}
-          contentContainerStyle={{gap: 8}}
-          renderItem={({item}) => <LocationPhoto item={item} />}
-        />
-      ) : null}
 
       <TouchableOpacity
         style={buttons.primary}

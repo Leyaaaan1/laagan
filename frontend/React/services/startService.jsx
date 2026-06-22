@@ -117,7 +117,7 @@ export const getFinishedRideSummary = async generatedRidesId => {
     };
     throw new Error(
       messages[response.status] ||
-      'Failed to fetch ride summary. Please try again.',
+        'Ride summary will be available once all riders have finished their rides.',
     );
   }
   return response.json();

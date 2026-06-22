@@ -61,16 +61,6 @@ const PersonalSummaryView = ({route, navigation}) => {
     load();
   }, [generatedRidesId]);
 
-  useEffect(() => {
-    if (snapshotUrl || !generatedRidesId) return; // already have one, or nothing to fetch with
-    finishedRideService
-      .getSnapshot(generatedRidesId)
-      .then(url => setSnapshotUrl(url))
-      .catch(() => {
-        // No snapshot uploaded for this ride yet — not an error state,
-        // the screen just renders without the image section.
-      });
-  }, [generatedRidesId, snapshotUrl]);
 
   // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
@@ -144,16 +134,6 @@ const PersonalSummaryView = ({route, navigation}) => {
           </Text>
         </View>
 
-        {/* ── Snapshot image — only shown if capture succeeded ── */}
-        {snapshotUrl && (
-          <View style={localStyles.mapWrapper}>
-            <Image
-              source={{uri: snapshotUrl}}
-              style={localStyles.mapInner}
-              resizeMode="cover"
-            />
-          </View>
-        )}
         {/* ── Ride stats ── */}
         <FinishedRideSummary rideData={rideData} />
 

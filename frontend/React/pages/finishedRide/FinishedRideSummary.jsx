@@ -7,6 +7,7 @@ import colors from '../../styles/tokens/colors';
 import finishedRideStyles from '../../styles/screens/finishedRideStyles';
 
 const FinishedRideSummary = ({rideData}) => {
+  console.log('ride data from finishedride', rideData);
   const formatTime = timestamp => {
     if (!timestamp) return '—';
     return new Date(timestamp).toLocaleTimeString('en-US', {
@@ -34,14 +35,8 @@ const FinishedRideSummary = ({rideData}) => {
     {
       icon: 'road',
       label: 'Distance',
-      value: rideData.distance ?? '—',
-      unit: rideData.distance ? 'km' : '',
-    },
-    {
-      icon: 'bicycle',
-      label: 'Type',
-      value: rideData.riderType ?? '—',
-      unit: '',
+      value: rideData.distanceMeters ?? '—',
+      unit: rideData.distanceMeters ? 'km' : '',
     },
   ];
   return (

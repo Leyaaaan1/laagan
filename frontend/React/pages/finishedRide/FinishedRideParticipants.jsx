@@ -6,6 +6,18 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import colors from '../../styles/tokens/colors';
 import finishedRideStyles from '../../styles/screens/finishedRideStyles';
 
+const formatArrivalTime = iso => {
+  if (!iso) return null;
+  try {
+    return new Date(iso).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return null;
+  }
+};
+
 const FinishedRideParticipants = ({participants, participantCount}) => {
   const hasParticipants = participants && participants.length > 0;
 
@@ -34,12 +46,18 @@ const FinishedRideParticipants = ({participants, participantCount}) => {
                       100,
                   )
                 : 0;
-            const isComplete = pct === 100;
+            // Prefer backend `status` when present (finished-ride path),
+            // fall back to percentage-based completion (live-arrivals path,
+            // where status hasn't been computed yet).
+            const isComplete = participant.status
+              ? participant.status === 'COMPLETED'
+              : pct === 100;
             const isLast = idx === participants.length - 1;
+            const arrivalLabel = formatArrivalTime(participant.arrivalTime);
 
             return (
               <View
-                key={`participant-${idx}`}
+                key={participant.username ?? `participant-${idx}`}
                 style={[
                   finishedRideStyles.participantItem,
                   isLast && finishedRideStyles.participantItemLast,
@@ -59,6 +77,7 @@ const FinishedRideParticipants = ({participants, participantCount}) => {
                   <Text style={finishedRideStyles.participantCheckpoints}>
                     {participant.checkpointsReached} /{' '}
                     {participant.totalCheckpoints} checkpoints
+                    {arrivalLabel ? `  ·  ${arrivalLabel}` : ''}
                   </Text>
                 </View>
 

@@ -21,7 +21,7 @@ import {splitDateTime} from './utilities/RideStepUtils';
 import RideTypeSelector from '../../commons/RideTypeSelector';
 import {createMemoCompare} from '../../utilities/propsComparison';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-// ─── Sub-components ───────────────────────────────────────────────────────────
+import {useNavigation} from '@react-navigation/native';
 
 /** Shows the currently selected date/time or a placeholder prompt. */
 const DateDisplay = ({date}) => {
@@ -75,6 +75,7 @@ const RideStep1 = ({
   const [dateError, setDateError] = useState('');
   const [focusedInput, setFocusedInput] = useState(null);
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -99,6 +100,9 @@ const RideStep1 = ({
           <Text style={header.title}>CREATE RIDE</Text>
           <Text style={header.subtitle}>Step 1 of 3 — Details</Text>
         </View>
+        <TouchableOpacity onPress={() => navigation.navigate('RiderPage')}>
+          <Text style={[buttons.textDark, {fontSize: 14, padding: 10}]}>Back</Text>
+        </TouchableOpacity>
         <TouchableOpacity
           style={[buttons.row, {paddingVertical: 8}]}
           onPress={nextStep}

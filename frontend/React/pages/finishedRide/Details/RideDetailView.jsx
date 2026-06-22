@@ -8,6 +8,8 @@ import {
   SafeAreaView,
   ActivityIndicator,
   RefreshControl,
+  Image,
+  StyleSheet,
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -20,17 +22,52 @@ import RideDetailHero from './RideDetailHero';
 import RideDetailStats from './RideDetailStats';
 import RideDetailSpeedChart from './RideDetailSpeedChart';
 
+import FinishedRideSummary from '../FinishedRideSummary';
+import FinishedRideParticipants from '../FinishedRideParticipants';
+import FinishedRideCheckpoints from '../FinishedRideCheckpoints';
+import {getFinishedRideSummary, getPersonalSummary} from '../../../services/startService';
+import checkpointModalStyles from '../../../styles/screens/checkpointModalStyles';
 
 
+
+const safe = val => (Array.isArray(val) ? val : []);
+
+const enrichParticipants = (
+  participants = [],
+  checkpointArrivals = [],
+  stopPoints = [],
+) => {
+  const totalCheckpoints = 1 + stopPoints.length + 1;
+  return participants.map(p => {
+    const reached = checkpointArrivals.filter(
+      a => a.riderUsername === p.username,
+    ).length;
+    return {...p, checkpointsReached: reached, totalCheckpoints};
+  });
+};
 
 const RideDetailView = ({route, navigation}) => {
   const {generatedRidesId} = route.params ?? {};
+
   const insets = useSafeAreaInsets();
 
   const [rideDetail, setRideDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+
+  const [activeTab, setActiveTab] = useState('My Stats'); // 'finished' | 'detail' | 'personal'
+
+  const [finishedData, setFinishedData] = useState(null);
+  const [finishedLoading, setFinishedLoading] = useState(false);
+  const [finishedError, setFinishedError] = useState(null);
+
+  const [personalData, setPersonalData] = useState(null);
+  const [personalLoading, setPersonalLoading] = useState(false);
+  const [personalError, setPersonalError] = useState(null);
+
+  const [snapshotUrl, setSnapshotUrl] = useState(null);
+
 
   const NOT_YET_AVAILABLE_MESSAGE =
     "You haven't finished this ride yet — your detail view will appear once you do.";
@@ -44,7 +81,9 @@ const RideDetailView = ({route, navigation}) => {
         return;
       }
       try {
-        if (!isRefresh) {setLoading(true);}
+        if (!isRefresh) {
+          setLoading(true);
+        }
         const data = await finishedRideService.getRideDetail(generatedRidesId);
         setRideDetail(data);
         setError(null);
@@ -66,12 +105,60 @@ const RideDetailView = ({route, navigation}) => {
     fetchDetail();
   }, [fetchDetail]);
 
+  useEffect(() => {
+    if (snapshotUrl || !generatedRidesId) return;
+    finishedRideService
+      .getSnapshot(generatedRidesId)
+      .then(url => setSnapshotUrl(url))
+      .catch(() => {
+        // No snapshot uploaded for this ride yet — screen just renders without it
+      });
+  }, [generatedRidesId, snapshotUrl]);
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchDetail(true);
   };
 
+  const handleTabPress = useCallback(
+    async tab => {
+      setActiveTab(tab);
 
+      if (tab === 'Ride Summary' && !finishedData && !finishedLoading) {
+        setFinishedLoading(true);
+        setFinishedError(null);
+        try {
+          const data = await getFinishedRideSummary(generatedRidesId);
+          setFinishedData(data);
+        } catch (err) {
+          setFinishedError(err.message ?? 'Failed to load finished summary');
+        } finally {
+          setFinishedLoading(false);
+        }
+        return;
+      }
+
+      if (tab === 'My Summary' && !personalData && !personalLoading) {
+        setPersonalLoading(true);
+        setPersonalError(null);
+        try {
+          const data = await getPersonalSummary(generatedRidesId);
+          setPersonalData(data);
+        } catch (err) {
+          setPersonalError(err.message ?? 'Failed to load personal summary');
+        } finally {
+          setPersonalLoading(false);
+        }
+      }
+    },
+    [
+      generatedRidesId,
+      finishedData,
+      finishedLoading,
+      personalData,
+      personalLoading,
+    ],
+  );
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
@@ -123,33 +210,44 @@ const RideDetailView = ({route, navigation}) => {
 
   const hasSegments = speedSegments.length > 0;
 
+  const finishedArrivals = safe(finishedData?.checkpointArrivals);
+  const finishedStopPoints = safe(finishedData?.stopPoints);
+  const finishedParticipantProgress = safe(finishedData?.participantProgress);
+  const enrichedParticipants = finishedParticipantProgress.length
+    ? finishedParticipantProgress
+    : enrichParticipants(
+        safe(finishedData?.completedParticipants),
+        finishedArrivals,
+        finishedStopPoints,
+      );
+
+  const personalArrivals = safe(personalData?.checkpointArrivals);
+  const personalStopPoints = safe(personalData?.stopPoints).map(s => ({
+    lat: s.lat ?? s.stopLatitude,
+    lng: s.lng ?? s.stopLongitude,
+    name: s.name ?? s.stopName,
+  }));
+
   return (
     <SafeAreaView style={finishedRideStyles.container}>
       {/* ── Floating back button (overlays the hero) ───────────────────── */}
       <View
-        style={[rideDetailStyles.viewFloatingHeader, {top: insets.top + 2}]}>
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingTop: insets.top + 2,
+          paddingHorizontal: 16,
+          paddingBottom: 8,
+        }}>
         <TouchableOpacity
-          style={[
-            finishedRideStyles.backButtonSmall,
-            rideDetailStyles.viewFloatingBackBtn,
-            rideDetailStyles.viewFloatingBackBtnPosition,
-          ]}
+          style={finishedRideStyles.backButtonSmall}
           onPress={() => navigation.goBack()}>
-          <FontAwesome
-            name="arrow-left"
-            size={16}
-            color={photo?.imageUrl ? colors.white : colors.primary}
-          />
+          <FontAwesome name="arrow-left" size={16} color={colors.primary} />
         </TouchableOpacity>
-        <View style={rideDetailStyles.viewPrBadgeWrap}>
-          <View style={rideDetailStyles.viewPrBadgeInner}>
-            <Text style={rideDetailStyles.viewPrBadgeOverlayText}>
-              Your personal record
-            </Text>
-          </View>
-        </View>
+        <View style={rideDetailStyles.viewPrBadgeWrap}></View>
+        <View style={{width: 36}} />
       </View>
-
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={rideDetailStyles.viewScrollContent}
@@ -161,35 +259,155 @@ const RideDetailView = ({route, navigation}) => {
           />
         }>
         {/* ── Hero (photo + ride name only) ───────────────────────────── */}
-        <RideDetailHero photo={photo} rideName={rideName} />
 
         {/* ── Stat cards ──────────────────────────────────────────────── */}
-        <RideDetailStats
-          distanceMeters={distanceMeters}
-          durationMinutes={durationMinutes}
-          averageSpeedKph={averageSpeedKph}
-          segmentCount={speedSegments.length}
-          startTime={startTime}
-          endTime={endTime}
-        />
+        {activeTab === 'My Stats' && (
+          <>
+            {/* ── Stat cards ──────────────────────────────────────────── */}
+            {snapshotUrl && (
+              <View style={localStyles.snapshotWrapper}>
+                <Image
+                  source={{uri: snapshotUrl}}
+                  style={localStyles.snapshotImage}
+                  resizeMode="cover"
+                />
+              </View>
+            )}
 
-        {/* ── Speed chart ─────────────────────────────────────────────── */}
-        {hasSegments && (
-          <View style={rideDetailStyles.viewChartSection}>
-            <RideDetailSpeedChart
-              segments={speedSegments}
+            {/* ── Speed chart ──────────────────────────────────────────── */}
+            {hasSegments && (
+              <View style={rideDetailStyles.viewChartSection}>
+                <RideDetailSpeedChart
+                  segments={speedSegments}
+                  averageSpeedKph={averageSpeedKph}
+                />
+              </View>
+            )}
+            <RideDetailStats
+              distanceMeters={distanceMeters}
+              durationMinutes={durationMinutes}
               averageSpeedKph={averageSpeedKph}
+              segmentCount={speedSegments.length}
+              startTime={startTime}
+              endTime={endTime}
             />
-          </View>
+          </>
         )}
 
+        {activeTab === 'Ride Summary' && (
+          <>
+            {finishedLoading && (
+              <ActivityIndicator size="large" color={colors.primary} />
+            )}
+            {!finishedLoading && finishedError && (
+              <Text style={finishedRideStyles.errorText}>{finishedError}</Text>
+            )}
+            {!finishedLoading && !finishedError && finishedData && (
+              <>
+                <FinishedRideSummary rideData={finishedData} />
+                <FinishedRideParticipants
+                  participants={enrichedParticipants}
+                  participantCount={finishedData.participantCount}
+                />
+                <FinishedRideCheckpoints
+                  checkpointArrivals={finishedArrivals}
+                  startingPointName={finishedData.startingPointName}
+                  endingPointName={finishedData.endingPointName}
+                  stopPoints={finishedStopPoints}
+                />
+              </>
+            )}
+          </>
+        )}
 
+        {activeTab === 'My Summary' && (
+          <>
+            {personalLoading && (
+              <ActivityIndicator size="large" color={colors.primary} />
+            )}
+            {!personalLoading && personalError && (
+              <Text style={finishedRideStyles.errorText}>{personalError}</Text>
+            )}
+            {!personalLoading && !personalError && personalData && (
+              <>
+                <FinishedRideSummary rideData={personalData} />
+                <FinishedRideCheckpoints
+                  checkpointArrivals={personalArrivals}
+                  startingPointName={personalData.startingPointName}
+                  endingPointName={personalData.endingPointName}
+                  stopPoints={personalStopPoints}
+                />
+              </>
+            )}
+          </>
+        )}
       </ScrollView>
 
-      {/* ── Media upload sheet ──────────────────────────────────────────── */}
+      {/* ── Tab switcher ──────────────────────────────────────────────── */}
+      <View style={checkpointModalStyles.footer}>
+        <View style={checkpointModalStyles.footerPill}>
+          <TouchableOpacity
+            style={[
+              checkpointModalStyles.footerSegment,
+              activeTab === 'Ride Summary' &&
+                checkpointModalStyles.footerSegmentClose,
+            ]}
+            onPress={() => handleTabPress('Ride Summary')}>
+            <Text style={checkpointModalStyles.footerSegmentText}>
+              Ride Summary
+            </Text>
+          </TouchableOpacity>
 
+          <View style={checkpointModalStyles.footerPillDivider} />
+
+          <TouchableOpacity
+            style={[
+              checkpointModalStyles.footerSegment,
+              activeTab === 'My Stats' &&
+                checkpointModalStyles.footerSegmentClose,
+            ]}
+            onPress={() => handleTabPress('My Stats')}>
+            <Text style={checkpointModalStyles.footerSegmentText}>
+              My Stats
+            </Text>
+          </TouchableOpacity>
+
+          <View style={checkpointModalStyles.footerPillDivider} />
+
+          <TouchableOpacity
+            style={[
+              checkpointModalStyles.footerSegment,
+              activeTab === 'My Summary' &&
+                checkpointModalStyles.footerSegmentClose,
+            ]}
+            onPress={() => handleTabPress('My Summary')}>
+            <Text style={checkpointModalStyles.footerSegmentText}>
+              My Summary
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* ── Media upload sheet ──────────────────────────────────────────── */}
     </SafeAreaView>
   );
 };
+
+const localStyles = StyleSheet.create({
+  snapshotWrapper: {
+    height: 220,
+    marginHorizontal: 16,
+    marginVertical: 12,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
+  },
+  snapshotImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+});
 
 export default RideDetailView;

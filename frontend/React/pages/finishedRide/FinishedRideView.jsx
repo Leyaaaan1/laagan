@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -44,7 +44,6 @@ const enrichParticipants = (
 const safe = val => (Array.isArray(val) ? val : []);
 
 const FinishedRideView = ({route, navigation}) => {
-  const {username: currentUsername} = useAuth();
   const {
     finishedRideData: passedData,
     generatedRidesId,
@@ -58,16 +57,13 @@ const FinishedRideView = ({route, navigation}) => {
     participantCount: passedParticipantCount,
     participants: passedParticipants,
     startTime: passedStartTime,
-    snapshotUrl: passedSnapshotUrl,
   } = route.params || {};
 
   const [finishedRideData, setFinishedRideData] = useState(passedData || null);
-  const [photos, setPhotos] = useState([]);
+  const [ setPhotos] = useState([]);
   const [loading, setLoading] = useState(!passedData && !!generatedRidesId);
   const [error, setError] = useState(null);
-  const [snapshotUrl, setSnapshotUrl] = useState(
-    passedSnapshotUrl?.trim() ? passedSnapshotUrl : null,
-  );
+
 
   // ── Load finished ride data ──────────────────────────────────────
   useEffect(() => {
@@ -76,9 +72,11 @@ const FinishedRideView = ({route, navigation}) => {
     const load = async () => {
       try {
         const statusData = await getRideStatus(generatedRidesId);
+        console.log('statusData:', JSON.stringify(statusData, null, 2));
 
         if (isPersonalSummary) {
           const data = await getPersonalSummary(generatedRidesId);
+          console.log('personal summary data:', JSON.stringify(data, null, 2));
           setFinishedRideData(data);
           return;
         }
@@ -86,6 +84,10 @@ const FinishedRideView = ({route, navigation}) => {
         if (statusData.currentStatus === 'FINISHED') {
           // getFinishedRideSummary now returns routeCoordinates + averageSpeedKph + photos
           const data = await getFinishedRideSummary(generatedRidesId);
+          console.log(
+            'finished ride summary data:',
+            JSON.stringify(data, null, 2),
+          );
           setFinishedRideData(data);
           setPhotos(safe(data.photos));
           return;
@@ -93,6 +95,7 @@ const FinishedRideView = ({route, navigation}) => {
 
         // Still active — load live arrivals (no route stats yet)
         const arrivals = await getCheckpointArrivals(generatedRidesId);
+        console.log('checkpoint arrivals (active ride):', JSON.stringify(arrivals, null, 2));
         setFinishedRideData({
           rideName,
           startingPointName: passedStartingPointName,
@@ -106,24 +109,15 @@ const FinishedRideView = ({route, navigation}) => {
           })),
         });
       } catch (err) {
+        console.log('load() error:', err.message);
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
-
     load();
   }, [generatedRidesId]);
 
-  useEffect(() => {
-    if (snapshotUrl || !generatedRidesId) return;
-    finishedRideService
-      .getSnapshot(generatedRidesId)
-      .then(url => setSnapshotUrl(url))
-      .catch(() => {
-        // No snapshot yet — screen just renders without it
-      });
-  }, [generatedRidesId, snapshotUrl]);
 
   const insets = useSafeAreaInsets();
 
@@ -161,24 +155,21 @@ const FinishedRideView = ({route, navigation}) => {
   const {
     participantCount,
     completedParticipants,
+    participantProgress, // 🔧 the actual field your backend returns
     checkpointArrivals,
     startingPointName,
     endingPointName,
     stopPoints,
-    distance,
-    durationMinutes,
-    averageSpeedKph,
-    routeCoordinates,
   } = finishedRideData;
 
   const safeParticipants = safe(completedParticipants);
   const safeArrivals = safe(checkpointArrivals);
   const safeStopPoints = safe(stopPoints);
-  const enrichedParticipants = enrichParticipants(
-    safeParticipants,
-    safeArrivals,
-    safeStopPoints,
-  );
+  const safeParticipantProgress = safe(participantProgress);
+
+  const enrichedParticipants = safeParticipantProgress.length
+    ? safeParticipantProgress
+    : enrichParticipants(safeParticipants, safeArrivals, safeStopPoints);
 
   const headerTitle = isPersonalSummary
     ? 'My Summary'
@@ -186,9 +177,7 @@ const FinishedRideView = ({route, navigation}) => {
     ? 'Live Arrivals'
     : 'Ride Summary';
 
-  const isParticipant = safeParticipants.some(
-    p => p.username === currentUsername,
-  );
+
 
   return (
     <View style={[finishedRideStyles.container, {paddingTop: insets.top}]}>
@@ -216,17 +205,11 @@ const FinishedRideView = ({route, navigation}) => {
             <TouchableOpacity
               style={finishedRideStyles.headerActionButton}
               onPress={async () => {
-                console.log('[Snapshot] Navigating to Personal Summary');
 
-                // Use existing snapshot URL from the ride completion
-                // This was uploaded to Cloudinary when the ride finished
-                let finalSnapshotUri = snapshotUrl;
 
-                console.log('[Snapshot] Using snapshot URL:', finalSnapshotUri);
 
                 navigation.navigate('PersonalSummaryView', {
                   generatedRidesId,
-                  snapshotUri: finalSnapshotUri, // Pass the Cloudinary URL
                 });
               }}>
               <FontAwesome name="user" size={16} color={colors.primary} />
@@ -238,15 +221,7 @@ const FinishedRideView = ({route, navigation}) => {
       <ScrollView
         contentContainerStyle={finishedRideStyles.scrollContent}
         showsVerticalScrollIndicator={false}>
-        {snapshotUrl && (
-          <View style={localStyles.snapshotWrapper}>
-            <Image
-              source={{uri: snapshotUrl}}
-              style={localStyles.snapshotImage}
-              resizeMode="cover"
-            />
-          </View>
-        )}
+
 
         <FinishedRideSummary rideData={finishedRideData} />
 
@@ -280,20 +255,7 @@ const localStyles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  snapshotWrapper: {
-    height: 220,
-    marginHorizontal: 16,
-    marginVertical: 12,
-    borderRadius: 12,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
-  },
-  snapshotImage: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
+
 });
 
 export default FinishedRideView;

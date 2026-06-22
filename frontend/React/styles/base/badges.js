@@ -9,7 +9,6 @@ import spacing from '../tokens/spacing';
 import { fontSize, fontWeight } from '../tokens/typography';
 
 const badges = StyleSheet.create({
-
   // ── Base badge ───────────────────────────────
   base: {
     paddingHorizontal: spacing.sm,
@@ -17,6 +16,20 @@ const badges = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  riderTypePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primaryAlpha20,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  riderTypePillText: {
+    color: colors.primary,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semi,
   },
 
   // ── Primary (red) ────────────────────────────

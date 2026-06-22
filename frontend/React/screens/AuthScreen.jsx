@@ -34,6 +34,8 @@ import {
 } from '../utilities/validator/Authvalidation';
 import {createMemoCompare} from '../utilities/propsComparison';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import RideUpdateModal from './RideUpdateModal';
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ValidationChecklist
@@ -95,6 +97,7 @@ const AuthForm = React.memo(
     handleFacebookLogin,
     handleGoogleLogin,
     navigation, // ← now received as a prop
+    onShowWhatsNew,
   }) => (
     <KeyboardAvoidingView
       style={layout.center}
@@ -266,12 +269,39 @@ const AuthForm = React.memo(
             ? "Don't have an account? Register"
             : 'Already have an account? Login'}
         </Text>
-
       </TouchableOpacity>
       <TouchableOpacity>
-      <Text style={text.muted}>
-        First load may take a moment — we're on free tier servers
-      </Text>
+        <Text style={text.muted}>
+          First load may take a moment — we're on free tier servers
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={onShowWhatsNew}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: spacing.xs,
+          paddingVertical: spacing.sm,
+          paddingHorizontal: spacing.md,
+          marginTop: spacing.xs,
+          backgroundColor: '#ffffff',
+          borderWidth: 1,
+          borderColor: 'rgba(155,38,38,0.35)',
+          borderRadius: 99,
+          alignSelf: 'center',
+        }}>
+        <FontAwesome name="star" size={11} color={colors.primary} />
+        <Text
+          style={{
+            fontSize: 12,
+            fontWeight: '700',
+            color: colors.primary,
+            letterSpacing: 0.4,
+          }}>
+          What's New — Ride Analytics
+        </Text>
       </TouchableOpacity>
 
       {/* ── Legal Links ── */}
@@ -317,6 +347,7 @@ const AuthScreen = ({navigation}) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [whatsNewVisible, setWhatsNewVisible] = useState(false);
 
   const [touched, setTouched] = useState({
     email: false,
@@ -437,6 +468,13 @@ const AuthScreen = ({navigation}) => {
         handleFacebookLogin={handleFacebookLogin}
         handleGoogleLogin={handleGoogleLogin}
         navigation={navigation} // ← pass it down
+        onShowWhatsNew={() => setWhatsNewVisible(true)}
+      />
+
+      <RideUpdateModal
+        visible={whatsNewVisible}
+        onClose={() => setWhatsNewVisible(false)}
+        onConfirm={() => setWhatsNewVisible(false)}
       />
     </View>
   );

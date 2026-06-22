@@ -4,32 +4,85 @@ import React, {
   useCallback,
   useRef,
   useContext,
+  useMemo,
 } from 'react';
 import {
   View,
   Text,
   Image,
+  TextInput,
   TouchableOpacity,
   ActivityIndicator,
   StatusBar,
+  ScrollView,
+  Keyboard,
+  Animated,
+  Alert,
 } from 'react-native';
-import {useFocusEffect} from '@react-navigation/native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import SearchHeader from './utilities/SearchHeader';
 import {getActiveRide} from '../services/startService';
+import {getRideDetails} from '../services/rideService';
 import ScannerHeader from './utilities/ScannerHeader';
-import RidesList from '../components/ride/modal/RidesList';
 import layout from '../styles/base/layout';
 import header from '../styles/base/header';
-import badges from '../styles/base/badges';
+import s from '../styles/screens/riderPage';
 import {getMyProfile} from '../services/profileService';
 import colors from '../styles/tokens/colors';
-import {getRideTypeIcon} from '../utilities/rideTypes';
 import {buildRideStep4Params} from '../utilities/NavigationParamsBuilder';
+import {getRideTypeIcon} from '../utilities/rideTypes';
 import {useAuth} from '../context/AuthContext';
 import {RideContext} from '../context/RideContext';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import RidesList from '../components/ride/modal/RidesList';
 
+// ─── helpers ──────────────────────────────────────────────────────────────────
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 5) {return 'Riding late tonight';}
+  if (hour < 12) {return 'Good morning';}
+  if (hour < 18) {return 'Good afternoon';}
+  return 'Good evening';
+};
+
+// Normalizes whatever shape the active-ride / profile payloads happen to have
+// into a simple status, so the UI never breaks if a field is missing.
+// TODO(backend): once the API returns an explicit `status` field on a ride
+// ("upcoming" | "active" | "finished"), this can be simplified to just read it.
+const getRideStatus = ride => {
+  if (!ride) {return 'active';}
+  const raw = (ride.status || ride.rideStatus || '').toString().toLowerCase();
+  if (raw.includes('finish') || raw.includes('complete')) {return 'finished';}
+  if (raw.includes('upcoming') || raw.includes('scheduled')) {return 'upcoming';}
+  return 'active';
+};
+
+const STATUS_META = {
+  active: {
+    label: 'Active',
+    dotColor: colors.success,
+    style: 'statusActive',
+    textColor: colors.success,
+  },
+  upcoming: {
+    label: 'Upcoming',
+    dotColor: colors.primary,
+    style: 'statusUpcoming',
+    textColor: colors.primary,
+  },
+  finished: {
+    label: 'Finished',
+    dotColor: colors.textMuted,
+    style: 'statusFinished',
+    textColor: colors.textSecondary,
+  },
+};
+
+const formatNumber = value => {
+  if (value === null || value === undefined || Number.isNaN(value)) {return '—';}
+  return String(value);
+};
+
+// ─── ProfileAvatar ────────────────────────────────────────────────────────────
 const ProfileAvatar = ({profile, avatarStyle}) => {
   if (profile?.profilePictureUrl) {
     return (
@@ -51,16 +104,52 @@ const ProfileAvatar = ({profile, avatarStyle}) => {
   return <FontAwesome name="user" size={20} color="#fff" />;
 };
 
-const RiderPage = ({navigation}) => {
-  const {username, ready} = useAuth();
+// ─── AnimatedPress ────────────────────────────────────────────────────────────
+// Lightweight press-scale wrapper so the quick action cards feel tactile,
+// without pulling in any new dependency.
+const AnimatedPress = ({onPress, style, disabled, children}) => {
+  const scale = useRef(new Animated.Value(1)).current;
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // CHANGED: also read activeRide from RideContext.
-  //
-  // RideContext now loads the last-known ride from AsyncStorage on mount,
-  // so `contextActiveRide` will be populated even when the device is
-  // offline and the API call below fails.
-  // ─────────────────────────────────────────────────────────────────────────
+  const animateTo = value =>
+    Animated.spring(scale, {
+      toValue: value,
+      useNativeDriver: true,
+      speed: 30,
+      bounciness: 6,
+    }).start();
+
+  return (
+    <Animated.View style={[style, {transform: [{scale}]}]}>
+      <TouchableOpacity
+        activeOpacity={0.9}
+        disabled={disabled}
+        onPress={onPress}
+        onPressIn={() => animateTo(0.96)}
+        onPressOut={() => animateTo(1)}
+        style={{flex: 1, width: '100%'}}>
+        {children}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
+// ─── StatusBadge ──────────────────────────────────────────────────────────────
+const StatusBadge = ({status}) => {
+  const meta = STATUS_META[status] ?? STATUS_META.active;
+  return (
+    <View style={[s.statusBadge, s[meta.style]]}>
+      <View style={[s.statusBadgeDot, {backgroundColor: meta.dotColor}]} />
+      <Text style={[s.statusBadgeText, {color: meta.textColor}]}>
+        {meta.label}
+      </Text>
+    </View>
+  );
+};
+
+// ─── RiderPage ────────────────────────────────────────────────────────────────
+const RiderPage = ({navigation}) => {
+  const {username, ready, logout} = useAuth();
+
   const {
     activeRide: contextActiveRide,
     clearActiveRide: clearContextActiveRide,
@@ -68,30 +157,27 @@ const RiderPage = ({navigation}) => {
 
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
-
-  // Local fetch state — separate from the context so we don't trigger
-  // unnecessary re-renders across the app on every poll tick.
   const [fetchedActiveRide, setFetchedActiveRide] = useState(null);
   const [activeRideLoading, setActiveRideLoading] = useState(false);
   const [profileRefreshing, setProfileRefreshing] = useState(false);
+  const [rideCode, setRideCode] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState('');
+
   const ridesListRefRef = useRef(null);
+  // Ref to trigger ScannerHeader's modal from our custom card button
+  const scannerRef = useRef(null);
+  const [menuVisible, setMenuVisible] = useState(false);
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // The ride shown in the banner:
-  //   • Prefer the freshly-fetched value (online).
-  //   • Fall back to whatever the context restored from the cache (offline).
-  // ─────────────────────────────────────────────────────────────────────────
   const displayActiveRide = fetchedActiveRide ?? contextActiveRide;
-
   const insets = useSafeAreaInsets();
-
   const prevUsernameRef = useRef(null);
+
   useEffect(() => {
     if (
       prevUsernameRef.current !== null &&
       prevUsernameRef.current !== username
     ) {
-      // Only clear when switching from one real user to a different one
       clearContextActiveRide();
     }
     if (username) {
@@ -100,34 +186,27 @@ const RiderPage = ({navigation}) => {
   }, [username, clearContextActiveRide]);
 
   // ── Fetch active ride ─────────────────────────────────────────────────────
-  // RiderPage.jsx — fetchActiveRide
   const fetchActiveRide = useCallback(async () => {
     try {
       setActiveRideLoading(true);
       const result = await getActiveRide();
-      // Only treat as a real active ride if it has a meaningful identifier
       const hasRide = result && (result.generatedRidesId || result.ridesName);
       setFetchedActiveRide(hasRide ? result : null);
     } catch (err) {
       const msg = err?.message ?? '';
-
       if (msg === 'NOT_FOUND') {
-        // Confirmed no active ride on the server — clear stale cache
         setFetchedActiveRide(null);
         clearContextActiveRide();
         return;
       }
-
       if (msg === 'SERVER_ERROR' || msg.startsWith('5')) {
-        // Server blip — keep whatever is cached, log quietly
         return;
       }
-
-      // Any other error (network timeout, etc.) — same: keep cache
     } finally {
       setActiveRideLoading(false);
     }
   }, [clearContextActiveRide]);
+
   // ── Fetch profile ─────────────────────────────────────────────────────────
   const fetchProfile = useCallback(async () => {
     try {
@@ -142,31 +221,43 @@ const RiderPage = ({navigation}) => {
     }
   }, []);
 
-  // ── Refresh all data ──────────────────────────────────────────────────────
-  const handleRefreshAll = useCallback(async () => {
-    setProfileRefreshing(true);
-    await Promise.all([fetchActiveRide(), fetchProfile()]);
-    if (ridesListRefRef.current?.refreshRides) {
-      ridesListRefRef.current.refreshRides();
-    }
-  }, [fetchActiveRide, fetchProfile]);
-
-  // ── Load data on mount — only once auth is ready ──────────────────────────
   useEffect(() => {
-    if (!ready) return;
+    if (!ready) {return;}
     fetchActiveRide();
     fetchProfile();
   }, [ready, fetchActiveRide, fetchProfile]);
 
-  // ── Refresh when screen comes into focus — only when auth is ready ─────────
-  useFocusEffect(
-    useCallback(() => {
-      if (!ready) return;
-      handleRefreshAll();
-    }, [ready, handleRefreshAll]),
+  // ── Derived display data ─────────────────────────────────────────────────
+  // These read from whatever the profile payload already provides. If/when
+  // the backend adds dedicated aggregate fields (rides joined/created,
+  // distance traveled, last ride summary) they will be picked up automatically
+  // via the fallbacks below — nothing else in this component needs to change.
+  const stats = useMemo(() => {
+    const ridesJoined =
+      profile?.totalRidesJoined ??
+      profile?.ridesJoinedCount ??
+      profile?.ridesJoined ??
+      null;
+    const ridesCreated =
+      profile?.totalRidesCreated ??
+      profile?.ridesCreatedCount ??
+      profile?.ridesCreated ??
+      null;
+    const distance =
+      profile?.totalDistance ??
+      profile?.distanceTraveled ??
+      profile?.totalDistanceKm ??
+      null;
+    const lastRide = profile?.lastRide ?? null;
+    return {ridesJoined, ridesCreated, distance, lastRide};
+  }, [profile]);
+
+  const rideStatus = useMemo(
+    () => getRideStatus(displayActiveRide),
+    [displayActiveRide],
   );
 
-  // ── Early return AFTER all hooks ──────────────────────────────────────────
+
   if (!ready) {
     return (
       <View
@@ -174,152 +265,412 @@ const RiderPage = ({navigation}) => {
           layout.screen,
           {alignItems: 'center', justifyContent: 'center'},
         ]}>
-        <ActivityIndicator color="#fff" size="large" />
+        <ActivityIndicator color={colors.primary} size="large" />
       </View>
     );
   }
 
-  const handleRideSelect = ride => {
-    const params = buildRideStep4Params(ride, username);
-    navigation.navigate('RideStep4', params);
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  const handleRideSelect = async item => {
+    try {
+      const ride = await getRideDetails(item.generatedRidesId);
+      const params = buildRideStep4Params(ride, username);
+      navigation.navigate('RideStep4', params);
+    } catch (err) {
+      Alert.alert('Error', err.message || 'Failed to open ride');
+    }
+  };
+  const handleCreateRide = () => navigation.navigate('CreateRide', {username});
+
+  const handleOpenActiveRide = () => {
+    if (!displayActiveRide) {return;}
+    navigation.navigate('StartedRide', {
+      activeRide: displayActiveRide,
+      username,
+    });
   };
 
-  const handleCreateRide = () => navigation.navigate('CreateRide', {username});
+  const handleOpenProfile = () =>
+    navigation.navigate('RiderProfile', {username});
+
+  // Uses getRideDetails (same as SearchHeader) — fetches full ride then navigates
+  const handleSearchRide = async () => {
+    const trimmed = rideCode.trim();
+    if (!trimmed) {
+      setSearchError('Please enter a ride code');
+      return;
+    }
+    Keyboard.dismiss();
+    setSearchLoading(true);
+    setSearchError('');
+    try {
+      const ride = await getRideDetails(trimmed);
+      const params = buildRideStep4Params(ride, username);
+      setRideCode('');
+      navigation.navigate('RideStep4', params);
+    } catch (err) {
+      setSearchError(err?.message || 'Ride not found');
+    } finally {
+      setSearchLoading(false);
+    }
+  };
 
   const riderType = profile?.riderTypes?.[0] ?? null;
 
+  const hasActiveRide =
+    (activeRideLoading && !displayActiveRide) ||
+    (displayActiveRide &&
+      (displayActiveRide.generatedRidesId || displayActiveRide.ridesName));
+
   return (
     <View style={layout.screen}>
-      <StatusBar barStyle="light-content" backgroundColor="#151515" />
-
+      <StatusBar barStyle="light-content" backgroundColor={colors.surface} />
+      {/* ── Top nav bar ───────────────────────────────────────────────────── */}
       <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingTop: insets.top + 2,
-          paddingLeft: 5,
-          paddingRight: 5,
-          paddingBottom: 5,
-
-        }}>
-        <View style={{flex: 1, flexDirection: 'row', alignItems: 'center'}}>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => navigation.navigate('RiderProfile', {username})}
-            style={header.avatar}>
-            <ProfileAvatar profile={profile} avatarStyle={header.avatar} />
-          </TouchableOpacity>
-
-          <View style={{flex: 1}}>
-            <Text
-              style={[header.username, {flexShrink: 1, fontSize: 14}]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.6}>
-              {username ?? 'Rider'}
-            </Text>
-            {loading ? (
-              <ActivityIndicator
-                color="#fff"
-                size="small"
-                style={{marginTop: 4}}
-              />
-            ) : (
-              <View style={badges.riderTypeBadge}>
-                <FontAwesome
-                  name={getRideTypeIcon(riderType)}
-                  size={12}
-                  color="#fff"
-                  style={{marginRight: 5}}
-                />
-                <Text style={badges.riderTypeText}>
-                  {riderType ?? 'No type'}
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
-
-        <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
-          <SearchHeader navigation={navigation} />
-          <ScannerHeader navigation={navigation} />
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleCreateRide}
-            style={{
-              backgroundColor: colors.primary,
-              padding: 8,
-              borderRadius: 5,
-            }}>
-            <FontAwesome name="plus" size={16} color="#fff" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Active Ride banner — hidden entirely when there is no active ride */}
-      {(activeRideLoading && !displayActiveRide) ||
-      (displayActiveRide &&
-        (displayActiveRide.generatedRidesId || displayActiveRide.ridesName)) ? (
+        style={[
+          s.navbar,
+          {
+            paddingTop: insets.top + 4,
+            paddingHorizontal: 16,
+            paddingBottom: 10,
+          },
+        ]}>
         <TouchableOpacity
           activeOpacity={0.8}
-          onPress={() => {
-            if (!displayActiveRide) return;
-            navigation.navigate('StartedRide', {
-              activeRide: displayActiveRide,
-              username,
-            });
-          }}
-          style={{
-            marginHorizontal: 16,
-            marginVertical: 8,
-            backgroundColor: '#1e1e1e',
-            borderRadius: 8,
-            padding: 12,
-          }}>
-          <Text style={{color: '#fff', fontSize: 16, marginBottom: 8}}>
-            Active Ride
+          onPress={handleOpenProfile}
+          style={header.avatar}>
+          <ProfileAvatar profile={profile} avatarStyle={header.avatar} />
+        </TouchableOpacity>
+        <View style={{flex: 1, marginLeft: 10}}>
+          <Text
+            style={[header.username, {fontSize: 14, flexShrink: 1}]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.6}>
+            {getGreeting()}, {username ?? 'Rider'}
           </Text>
-          {activeRideLoading && !displayActiveRide ? (
-            <ActivityIndicator color="#fff" size="small" />
+          {loading ? (
+            <ActivityIndicator
+              color="#fff"
+              size="small"
+              style={{marginTop: 4}}
+            />
           ) : (
             <View>
-              <Text style={{color: '#fff', fontSize: 14}}>
-                {displayActiveRide.ridesName ?? '—'}
+              <Text style={[header.username, {fontSize: 14, flexShrink: 1}]}>
+                <FontAwesome
+                  name={getRideTypeIcon(riderType)}
+                  size={11}
+                  color={colors.primary}
+                  style={{marginRight: 4, paddingRight: 8}}
+                />{' '}
+                {riderType ?? 'unknown'}
               </Text>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  marginTop: 4,
-                  justifyContent: 'space-between',
-                }}>
-                <Text style={{color: '#888', fontSize: 12}}>
-                  {displayActiveRide.locationName ?? '—'}
-                </Text>
-                <Text style={{color: '#888', fontSize: 12}}>
-                  {displayActiveRide.riderType ?? '—'}
-                </Text>
-                <Text style={{color: '#888', fontSize: 12}}>
-                  {displayActiveRide.distance != null
-                    ? `${displayActiveRide.distance} km`
-                    : '— km'}
-                </Text>
-              </View>
             </View>
           )}
+        </View>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setMenuVisible(true)}
+          style={{padding: 6}}>
+          <FontAwesome name="cog" size={18} color={colors.textSecondary} />
         </TouchableOpacity>
-      ) : null}
+        {menuVisible && (
+          <>
+            {/* invisible backdrop — tap outside to close */}
+            <TouchableOpacity
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 99,
+              }}
+              activeOpacity={1}
+              onPress={() => setMenuVisible(false)}
+            />
 
-      <View style={{flex: 1}}>
-        <RidesList
-          onRideSelect={handleRideSelect}
-          mode="all"
-          pageSize={10}
-          ref={ridesListRefRef}
-        />
+            {/* dropdown card, anchored right under the cog */}
+            <View
+              style={{
+                position: 'absolute',
+                top: insets.top + 58,
+                right: 16,
+                backgroundColor: '#1a1a1a',
+                borderRadius: 16,
+                paddingVertical: 6,
+                minWidth: 140,
+                zIndex: 100,
+                elevation: 12,
+                shadowColor: '#000',
+                shadowOffset: {width: 0, height: 4},
+                shadowOpacity: 0.3,
+                shadowRadius: 10,
+              }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setMenuVisible(false);
+                  handleOpenProfile();
+                }}
+                style={{paddingVertical: 12, paddingHorizontal: 16}}>
+                <Text style={{color: colors.white}}>Profile</Text>
+              </TouchableOpacity>
+
+              <View
+                style={{
+                  height: 1,
+                  backgroundColor: 'rgba(255,255,255,0.08)',
+                  marginHorizontal: 12,
+                }}
+              />
+
+              <TouchableOpacity
+                onPress={() => {
+                  setMenuVisible(false);
+                  logout();
+                }}
+                style={{paddingVertical: 12, paddingHorizontal: 16}}>
+                <Text style={{color: '#dc2626'}}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
       </View>
+      {/* ── Scrollable body ───────────────────────────────────────────────── */}
+      {/* ── Scrollable body — RidesList's own FlatList is now the single
+            scroll container for the whole screen, so nothing's nested
+            inside a ScrollView anymore. ─────────────────────────────── */}
+      <RidesList
+        mode="my"
+        onRideSelect={handleRideSelect}
+        style={{flex: 1}}
+        contentContainerStyle={{paddingHorizontal: 15, paddingBottom: 40}}
+        ListHeaderComponent={
+          <>
+            <View style={s.heroContainer}>
+              <Text style={s.heroGreeting}>
+                {getGreeting()}, {username ?? 'Rider'}
+              </Text>
+              <Text style={s.heroTitle}>Ready to ride?</Text>
+              <Text style={s.heroSubtitle}>
+                Scan a code, enter a ride ID, or create your own.
+              </Text>
+            </View>
+
+            <View style={s.searchSection}>
+              <Text style={s.sectionLabel}>Find a ride</Text>
+
+              <View style={s.searchCard}>
+                <FontAwesome
+                  name="search"
+                  size={15}
+                  color={colors.textSecondary}
+                  style={{marginLeft: 4}}
+                />
+                <TextInput
+                  style={s.searchInput}
+                  placeholder="Enter ride code"
+                  placeholderTextColor={colors.textMuted}
+                  value={rideCode}
+                  onChangeText={text => {
+                    setRideCode(text);
+                    if (searchError) {
+                      setSearchError('');
+                    }
+                  }}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="search"
+                  onSubmitEditing={handleSearchRide}
+                />
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={handleSearchRide}
+                  disabled={searchLoading}
+                  style={s.searchJoinBtn}>
+                  {searchLoading ? (
+                    <ActivityIndicator size="small" color={colors.white} />
+                  ) : (
+                    <>
+                      <Text style={s.searchJoinLabel}>Search</Text>
+                      <FontAwesome
+                        name="arrow-right"
+                        size={11}
+                        color={colors.white}
+                      />
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {searchError ? (
+                <Text
+                  style={{
+                    color: colors.error,
+                    fontSize: 11,
+                    marginTop: 6,
+                    marginLeft: 4,
+                  }}>
+                  {searchError}
+                </Text>
+              ) : (
+                <Text style={s.searchHelperText}>
+                  Enter a ride code shared by your group.
+                </Text>
+              )}
+            </View>
+            <ScannerHeader ref={scannerRef} navigation={navigation} cardMode />
+
+            {/* ── Quick action cards ─────────────────────────────────── */}
+            <View style={s.actionRow}>
+              {/* Scan QR */}
+              <AnimatedPress
+                style={s.actionCardPrimary}
+                onPress={() => scannerRef.current?.openScanner('invite')}>
+                <View>
+                  <FontAwesome name="qrcode" size={20} color={colors.white} />
+                </View>
+                <View>
+                  <Text style={s.actionLabel}>Scan QR</Text>
+                  <Text style={s.actionSubLabelLight}>Join via code</Text>
+                </View>
+              </AnimatedPress>
+              {/* Create Ride */}
+              <AnimatedPress
+                onPress={handleCreateRide}
+                style={s.actionCardPrimary}>
+                <View>
+                  <FontAwesome name="plus" size={20} color={colors.white} />
+                </View>
+
+                <View>
+                  <Text style={s.actionLabel}>Create Ride</Text>
+                  <Text style={s.actionSubLabelLight}>Start something new</Text>
+                </View>
+              </AnimatedPress>
+            </View>
+
+            <View style={s.ridesSection}>
+              <View style={s.sectionHeaderRow}>
+                <Text style={s.sectionLabel}>My rides</Text>
+              </View>
+              {activeRideLoading && !displayActiveRide ? (
+                <View style={s.rideCardSkeleton}>
+                  <ActivityIndicator color={colors.primary} size="small" />
+                </View>
+              ) : hasActiveRide ? (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={handleOpenActiveRide}
+                  style={s.rideCard}>
+                  <View style={s.rideCardTopRow}>
+                    <Text style={s.rideCardName} numberOfLines={1}>
+                      {displayActiveRide.ridesName ?? 'Untitled ride'}
+                    </Text>
+                    <StatusBadge status={rideStatus} />
+                  </View>
+
+                  {displayActiveRide.locationName ? (
+                    <View style={s.rideCardMetaRow}>
+                      <FontAwesome
+                        name="map-marker"
+                        size={12}
+                        color={colors.textMuted}
+                      />
+                      <Text style={s.rideCardMetaText} numberOfLines={1}>
+                        {displayActiveRide.locationName}
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  <View style={s.rideCardMetaRow}>
+                    {displayActiveRide.participantsCount != null ||
+                    displayActiveRide.ridersCount != null ? (
+                      <>
+                        <FontAwesome
+                          name="users"
+                          size={12}
+                          color={colors.textMuted}
+                        />
+                        <Text style={s.rideCardMetaText}>
+                          {displayActiveRide.participantsCount ??
+                            displayActiveRide.ridersCount}{' '}
+                          riders
+                        </Text>
+                      </>
+                    ) : null}
+                    {displayActiveRide.distance != null ? (
+                      <>
+                        <FontAwesome
+                          name="road"
+                          size={12}
+                          color={colors.textMuted}
+                          style={{
+                            marginLeft:
+                              displayActiveRide.participantsCount != null
+                                ? spacingGapFallback
+                                : 0,
+                          }}
+                        />
+                        <Text style={s.rideCardMetaText}>
+                          {displayActiveRide.distance} km
+                        </Text>
+                      </>
+                    ) : null}
+                  </View>
+
+                  <View style={s.rideCardFooterRow}>
+                    <Text style={s.rideCardDateText}>
+                      {displayActiveRide.scheduledAt ??
+                        displayActiveRide.startTime ??
+                        displayActiveRide.date ??
+                        'Today'}
+                    </Text>
+                    <View style={s.rideCardViewBtn}>
+                      <Text style={s.rideCardViewBtnText}>View details</Text>
+                      <FontAwesome
+                        name="chevron-right"
+                        size={11}
+                        color={colors.primary}
+                      />
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ) : (
+                <View style={s.emptyStateCard}>
+                  <View style={s.emptyStateIconWell}>
+                    <FontAwesome name="road" size={26} color={colors.primary} />
+                  </View>
+                  <Text style={s.emptyStateTitle}>
+                    Your adventures start here.
+                  </Text>
+                  <Text style={s.emptyStateSubtitle}>
+                    You don't have any rides yet. Create one and invite your
+                    group, or join with a code above.
+                  </Text>
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={handleCreateRide}
+                    style={s.emptyStateButton}>
+                    <FontAwesome name="plus" size={12} color={colors.white} />
+                    <Text style={s.emptyStateButtonText}>
+                      Create your first ride
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </>
+        }
+      />
     </View>
   );
 };
+
+// Small fallbacks used only for inline spacing tweaks above (kept local so
+// this file has no new dependency on the spacing token file).
+const spacingGapFallback = 10;
+const spacingBottomFallback = 8;
 
 export default RiderPage;

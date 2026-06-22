@@ -14,7 +14,14 @@ import RideCard from './RideCard';
 
 const AUTO_RETRY_DELAY_MS = 8000; // wait 8s then auto-retry on timeout
 
-const RidesList = ({onRideSelect, mode = 'all', pageSize = 10}) => {
+const RidesList = ({
+  onRideSelect,
+  mode = 'all',
+  pageSize = 10,
+  ListHeaderComponent,
+  style,
+  contentContainerStyle = {padding: 15},
+}) => {
   const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -106,22 +113,6 @@ const RidesList = ({onRideSelect, mode = 'all', pageSize = 10}) => {
     [onRideSelect, isMyRidesMode],
   );
 
-  const renderEmpty = () => (
-    <View style={{padding: 40, alignItems: 'center'}}>
-      <FontAwesome
-        name="road"
-        size={48}
-        color="#666"
-        style={{marginBottom: 15}}
-      />
-      <Text style={{color: '#ddd', fontSize: 16}}>
-        {isMyRidesMode
-          ? "You haven't created any rides yet"
-          : 'No rides available'}
-      </Text>
-    </View>
-  );
-
   const renderFooter = () => {
     if (!loading || refreshing) return null;
     return (
@@ -131,89 +122,112 @@ const RidesList = ({onRideSelect, mode = 'all', pageSize = 10}) => {
     );
   };
 
-  if (error) {
-    if (isTimeout) {
+  // Handles empty list, no-rides, AND error/timeout states — all rendered
+  // as ListEmptyComponent so the header above the list never disappears,
+  // even when this fetch fails.
+  const renderEmpty = () => {
+    if (error) {
+      if (isTimeout) {
+        return (
+          <View style={{padding: 20, alignItems: 'center'}}>
+            <FontAwesome
+              name="hourglass-half"
+              size={36}
+              color="#f59e0b"
+              style={{marginBottom: 12}}
+            />
+            <Text
+              style={{
+                color: '#f59e0b',
+                fontSize: 16,
+                fontWeight: '700',
+                marginBottom: 6,
+              }}>
+              Server is waking up…
+            </Text>
+            <Text
+              style={{
+                color: '#aaa',
+                textAlign: 'center',
+                fontSize: 13,
+                marginBottom: 16,
+                lineHeight: 20,
+              }}>
+              We're on free-tier servers — they go to sleep between requests.
+              {'\n'}
+              Retrying automatically in {retryCountdown}s.
+            </Text>
+            <TouchableOpacity
+              style={{
+                backgroundColor: colors.primary,
+                paddingVertical: 10,
+                paddingHorizontal: 28,
+                borderRadius: 8,
+              }}
+              onPress={() => {
+                clearRetryTimers();
+                handleRefresh();
+              }}>
+              <Text style={{color: '#fff', fontWeight: 'bold'}}>Retry Now</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      }
+
       return (
         <View style={{padding: 20, alignItems: 'center'}}>
           <FontAwesome
-            name="hourglass-half"
-            size={36}
-            color="#f59e0b"
-            style={{marginBottom: 12}}
+            name="exclamation-triangle"
+            size={32}
+            color="red"
+            style={{marginBottom: 15}}
           />
-          <Text
-            style={{
-              color: '#f59e0b',
-              fontSize: 16,
-              fontWeight: '700',
-              marginBottom: 6,
-            }}>
-            Server is waking up…
-          </Text>
-          <Text
-            style={{
-              color: '#aaa',
-              textAlign: 'center',
-              fontSize: 13,
-              marginBottom: 16,
-              lineHeight: 20,
-            }}>
-            We're on free-tier servers — they go to sleep between requests.
-            {'\n'}
-            Retrying automatically in {retryCountdown}s.
+          <Text style={{color: 'red', textAlign: 'center', marginBottom: 15}}>
+            {error}
           </Text>
           <TouchableOpacity
             style={{
               backgroundColor: colors.primary,
-              paddingVertical: 10,
-              paddingHorizontal: 28,
+              paddingVertical: 12,
+              paddingHorizontal: 24,
               borderRadius: 8,
             }}
-            onPress={() => {
-              clearRetryTimers();
-              handleRefresh();
-            }}>
-            <Text style={{color: '#fff', fontWeight: 'bold'}}>Retry Now</Text>
+            onPress={handleRefresh}>
+            <Text style={{color: '#fff', fontWeight: 'bold'}}>Retry</Text>
           </TouchableOpacity>
         </View>
       );
     }
 
     return (
-      <View style={{padding: 20, alignItems: 'center'}}>
+      <View style={{padding: 40, alignItems: 'center'}}>
         <FontAwesome
-          name="exclamation-triangle"
-          size={32}
-          color="red"
+          name="road"
+          size={48}
+          color="#666"
           style={{marginBottom: 15}}
         />
-        <Text style={{color: 'red', textAlign: 'center', marginBottom: 15}}>
-          {error}
+        <Text style={{color: '#ddd', fontSize: 16}}>
+          {isMyRidesMode
+            ? "You haven't created any rides yet"
+            : 'No rides available'}
         </Text>
-        <TouchableOpacity
-          style={{
-            backgroundColor: colors.primary,
-            paddingVertical: 12,
-            paddingHorizontal: 24,
-            borderRadius: 8,
-          }}
-          onPress={handleRefresh}>
-          <Text style={{color: '#fff', fontWeight: 'bold'}}>Retry</Text>
-        </TouchableOpacity>
       </View>
     );
-  }
+  };
 
   return (
     <FlatList
-      data={rides}
+      style={style}
+      data={error ? [] : rides}
       renderItem={renderItem}
       keyExtractor={(item, index) =>
         item?.generatedRidesId?.toString() || index.toString()
       }
+      ListHeaderComponent={ListHeaderComponent}
       ListEmptyComponent={loading && !refreshing ? null : renderEmpty}
       ListFooterComponent={renderFooter}
-      contentContainerStyle={{padding: 15}}
+      contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={false}
       refreshing={refreshing}
       onRefresh={handleRefresh}
