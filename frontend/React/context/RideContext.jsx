@@ -17,6 +17,16 @@ import {
 
 export const RideContext = createContext();
 
+const toSerializable = ride => {
+  if (!ride || typeof ride !== 'object') return ride;
+  const out = {...ride};
+  for (const key of Object.keys(out)) {
+    if (out[key] instanceof Date) {
+      out[key] = out[key].toISOString();
+    }
+  }
+  return out;
+};
 export const RideProvider = ({children}) => {
   const [activeRide, setActiveRideState] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -53,12 +63,11 @@ export const RideProvider = ({children}) => {
         typeof rideOrUpdater === 'function'
           ? rideOrUpdater(prev)
           : rideOrUpdater;
-      // Fire-and-forget — storage failure must not crash the UI
-      saveActiveRide(next);
-      return next;
+      const safeNext = toSerializable(next); // ← NEW
+      saveActiveRide(safeNext);
+      return safeNext;
     });
   }, []);
-
   const fetchActiveRide = useCallback(
     async generatedRidesId => {
       if (isRefreshing) return;

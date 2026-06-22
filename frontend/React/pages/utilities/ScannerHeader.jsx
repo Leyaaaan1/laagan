@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, {useState, useCallback, useImperativeHandle, forwardRef} from 'react';
 import {
   View,
   Text,
@@ -11,14 +11,13 @@ import {
 } from 'react-native';
 import { Camera, useCameraDevice, useCameraPermission, useCodeScanner } from 'react-native-vision-camera';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import { joinService } from '../../services/joinService';
 import { getRideDetails } from '../../services/rideService';
 import { buildRideStep4Params } from '../../utilities/NavigationParamsBuilder';
 import scanner from '../../styles/components/scanner';
 import {useAuth} from '../../context/AuthContext';
 import {inviteService} from '../../services/inviteService';
 
-const ScannerHeader = ({navigation}) => {
+const ScannerHeader = forwardRef(({navigation, cardMode}, ref) => {
   const {token, username} = useAuth();
   const [scannerVisible, setScannerVisible] = useState(false);
   const [scanning, setScanning] = useState(true);
@@ -71,7 +70,6 @@ const ScannerHeader = ({navigation}) => {
           setScannerVisible(false);
 
           navigation.navigate('RideStep4', params);
-
         }
         // ─────────────────────────────────────────────────────────────────
         // MODE 2: RIDE ID (View ride details by scanning ride ID QR code)
@@ -125,7 +123,6 @@ const ScannerHeader = ({navigation}) => {
     [scanning, processing, scanMode, username, token, navigation],
   );
 
-
   // Use the built-in code scanner
   const codeScanner = useCodeScanner({
     codeTypes: ['qr'],
@@ -155,6 +152,7 @@ const ScannerHeader = ({navigation}) => {
     setScannerVisible(true);
     setScanning(true);
   };
+  useImperativeHandle(ref, () => ({openScanner}));
 
   if (!device) {
     return null;
@@ -162,12 +160,14 @@ const ScannerHeader = ({navigation}) => {
 
   return (
     <>
-      <TouchableOpacity
-        style={scanner.scanButton}
-        onPress={() => openScanner('invite')}
-        activeOpacity={0.7}>
-        <FontAwesome name="qrcode" size={16} color="#fff" />
-      </TouchableOpacity>
+      {!cardMode && (
+        <TouchableOpacity
+          style={scanner.scanButton}
+          onPress={() => openScanner('invite')}
+          activeOpacity={0.7}>
+          <FontAwesome name="qrcode" size={16} color="#fff" />
+        </TouchableOpacity>
+      )}
 
       <Modal
         visible={scannerVisible}
@@ -238,6 +238,6 @@ const ScannerHeader = ({navigation}) => {
       </Modal>
     </>
   );
-};
+});
 
 export default ScannerHeader;

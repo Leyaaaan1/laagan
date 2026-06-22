@@ -1,5 +1,6 @@
 package leyans.RidersHub.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
@@ -19,10 +20,12 @@ public class RiderType {
     private Integer riderTypeId;
 
 
+
     @Column(name = "rider_type", nullable = false, unique = true)
     private String riderType;
 
 
+    @JsonIgnore
     @ManyToMany(mappedBy = "riderTypes", fetch = FetchType.LAZY)
     private List<Rider> riders = new ArrayList<>();
 
