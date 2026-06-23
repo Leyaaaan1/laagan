@@ -1,4 +1,3 @@
-
 import React, {useCallback, useEffect, useState} from 'react';
 import {
   View,
@@ -18,17 +17,18 @@ import colors from '../../../styles/tokens/colors';
 import finishedRideStyles from '../../../styles/screens/finishedRideStyles';
 import rideDetailStyles from '../../../styles/screens/rideDetailStyles';
 
-import RideDetailHero from './RideDetailHero';
+import ShareCardButton from '../card/ShareCardButton';
 import RideDetailStats from './RideDetailStats';
 import RideDetailSpeedChart from './RideDetailSpeedChart';
 
 import FinishedRideSummary from '../FinishedRideSummary';
 import FinishedRideParticipants from '../FinishedRideParticipants';
 import FinishedRideCheckpoints from '../FinishedRideCheckpoints';
-import {getFinishedRideSummary, getPersonalSummary} from '../../../services/startService';
+import {
+  getFinishedRideSummary,
+  getPersonalSummary,
+} from '../../../services/startService';
 import checkpointModalStyles from '../../../styles/screens/checkpointModalStyles';
-
-
 
 const safe = val => (Array.isArray(val) ? val : []);
 
@@ -67,7 +67,6 @@ const RideDetailView = ({route, navigation}) => {
   const [personalError, setPersonalError] = useState(null);
 
   const [snapshotUrl, setSnapshotUrl] = useState(null);
-
 
   const NOT_YET_AVAILABLE_MESSAGE =
     "You haven't finished this ride yet — your detail view will appear once you do.";
@@ -228,6 +227,17 @@ const RideDetailView = ({route, navigation}) => {
     name: s.name ?? s.stopName,
   }));
 
+  const shareData = {
+    rideName: rideName ?? 'Unnamed Ride',
+    rideDate: startTime ?? null,
+    riderName: null,
+    generatedRidesId,
+    distanceMeters: distanceMeters ?? null,
+    durationMinutes: durationMinutes ?? null,
+    averageSpeedKph: averageSpeedKph ?? null,
+    snapshotUrl: snapshotUrl, // ← add this
+    speedSegments: speedSegments ?? [], // ← add this
+  };
   return (
     <SafeAreaView style={finishedRideStyles.container}>
       {/* ── Floating back button (overlays the hero) ───────────────────── */}
@@ -283,13 +293,11 @@ const RideDetailView = ({route, navigation}) => {
                 />
               </View>
             )}
-            <RideDetailStats
-              distanceMeters={distanceMeters}
-              durationMinutes={durationMinutes}
-              averageSpeedKph={averageSpeedKph}
-              segmentCount={speedSegments.length}
-              startTime={startTime}
-              endTime={endTime}
+            
+            <ShareCardButton
+              shareData={shareData}
+              format="story"
+              initialPhotoUri={snapshotUrl}
             />
           </>
         )}
@@ -388,7 +396,6 @@ const RideDetailView = ({route, navigation}) => {
         </View>
       </View>
 
-      {/* ── Media upload sheet ──────────────────────────────────────────── */}
     </SafeAreaView>
   );
 };
