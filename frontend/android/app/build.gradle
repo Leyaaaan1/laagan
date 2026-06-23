@@ -54,11 +54,18 @@ android {
             keyAlias 'newkey'
             keyPassword 'android'
         }
-        release {
-            storeFile file('laagan-release.keystore')
-            storePassword project.findProperty("LAAGAN_STORE_PASSWORD") ?: ""
-            keyAlias 'laagan'
-            keyPassword project.findProperty("LAAGAN_KEY_PASSWORD") ?: ""
+       release {
+            // Comment these out temporarily so local running doesn't look for the missing file
+            // storeFile file('laagan-release.keystore')
+            // storePassword project.findProperty("LAAGAN_STORE_PASSWORD") ?: ""
+            // keyAlias 'laagan'
+            // keyPassword project.findProperty("LAAGAN_KEY_PASSWORD") ?: ""
+            
+            // Point it to your debug key temporarily so the project syncs smoothly
+            storeFile file('debug_new.keystore')
+            storePassword 'android'
+            keyAlias 'newkey'
+            keyPassword 'android'
         }
     }
     buildTypes {
