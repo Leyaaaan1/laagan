@@ -6,7 +6,21 @@ const captureInFlight = new Set();
 
 /**
  * Captures a native screenshot of the view pointed to by `containerRef`.
- * Returns { skipped, reason? } or { skipped: false, snapshotUri }.
+ *
+ * Returns one of:
+ *   { skipped: true,  reason: string }          — capture was skipped
+ *   { skipped: false, snapshotUri: string }      — data-uri PNG, fully transparent background
+ *
+ * Transparency notes
+ * ──────────────────
+ * • format: 'png'   — PNG supports an alpha channel; JPEG does not.
+ * • result: 'data-uri' — returns "data:image/png;base64,…"; no temp file,
+ *   no storage permissions needed, works on both iOS and Android.
+ * • The View/Svg wrapper in RideSnapshotView must have
+ *   backgroundColor: 'transparent' (not omitted — on Android the default
+ *   background is white, which would bleed through into the capture).
+ * • quality is ignored for PNG (it only affects JPEG lossy compression)
+ *   but is kept at 1 for forward-compatibility.
  *
  * No AsyncStorage — caller owns the URI and decides what to do with it.
  */
@@ -26,13 +40,12 @@ export async function captureRideSnapshot({containerRef, generatedRidesId}) {
   captureInFlight.add(generatedRidesId);
 
   try {
-    // 'data-uri' → "data:image/png;base64,..." — no temp file, no permissions needed.
-    // react-native-view-shot renders exactly what is on screen (tiles included),
-    // bypassing the WebView canvas cross-origin restriction entirely.
     const snapshotUri = await captureRef(containerRef, {
-      format: 'png',
-      quality: 0.9,
-      result: 'data-uri',
+      format: 'png', // ← PNG preserves alpha channel (transparent BG)
+      quality: 1, // ignored for PNG, set for clarity
+      result: 'data-uri', // "data:image/png;base64,…" — no temp file needed
+      // useRenderInContext: false (default) — use the platform's native
+      // screenshot path; sufficient for an off-screen SVG view.
     });
 
     return {skipped: false, snapshotUri};

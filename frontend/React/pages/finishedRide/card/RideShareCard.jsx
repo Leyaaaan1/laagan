@@ -1,4 +1,3 @@
-
 import React, {forwardRef, useMemo} from 'react';
 import {View, Text, Image, ImageBackground, StyleSheet} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -388,7 +387,8 @@ const RideShareCard = forwardRef(function RideShareCard(
     <View
       ref={ref}
       style={[cardStyle, {backgroundColor: T.bgDeep}]}
-      collapsable={false}>        
+      collapsable={false}
+      pointerEvents="none">
       <CardContent
         data={data}
         format={format}

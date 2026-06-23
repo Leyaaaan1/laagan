@@ -6,12 +6,11 @@ import Svg, {
   Circle,
   Text as SvgText,
   Rect,
-  Line,
 } from 'react-native-svg';
 
 const W = 600;
-const H = 400;
-const MAP_H = 340; // route area height (leaves 60px for stats bar)
+// Height is now route-only — no stats bar section
+const H = 340;
 const PADDING = 44; // inner padding so labels don't clip
 
 // GeoJSON coords are [lng, lat] — this normalizes everything to {lat, lng}
@@ -37,7 +36,7 @@ function buildProjection(allCoords) {
   const lngSpan = maxLng - minLng || 0.001;
 
   const drawW = W - PADDING * 2;
-  const drawH = MAP_H - PADDING * 2;
+  const drawH = H - PADDING * 2;
 
   // Preserve aspect ratio — don't stretch
   const scaleX = drawW / lngSpan;
@@ -77,13 +76,13 @@ const RideSnapshotView = forwardRef(
       endingPoint,
       stopPoints = [],
       routeData = null, // GeoJSON FeatureCollection from your API
-      distance = null, // string e.g. "24.6 km"
-      duration = null, // string e.g. "1h 22min"
+      // distance, duration, stopCount props are intentionally removed —
+      // the stats bar has been eliminated per design update.
       appName = 'LAAGAN',
     },
     ref,
   ) => {
-    const {polylineStr, landmarks, hasRoute} = useMemo(() => {
+    const {polylineStr, landmarks} = useMemo(() => {
       // ── 1. Extract route coords from GeoJSON ──────────────────────────
       const routeCoords = extractGeoJSONCoords(routeData);
 
@@ -100,10 +99,10 @@ const RideSnapshotView = forwardRef(
           : landmarkPoints;
 
       if (allPoints.length === 0)
-        return {polylineStr: '', landmarks: [], hasRoute: false};
+        return {polylineStr: '', landmarks: []};
 
       const project = buildProjection(allPoints);
-      if (!project) return {polylineStr: '', landmarks: [], hasRoute: false};
+      if (!project) return {polylineStr: '', landmarks: []};
 
       // ── 3. Polyline string ────────────────────────────────────────────
       const drawPoints =
@@ -154,40 +153,26 @@ const RideSnapshotView = forwardRef(
           });
       }
 
-      return {polylineStr, landmarks, hasRoute: routeCoords.length > 0};
+      return {polylineStr, landmarks};
     }, [startingPoint, endingPoint, stopPoints, routeData]);
 
-    const stopCount = (stopPoints || []).filter(Boolean).length;
-
     return (
+      // `backgroundColor: 'transparent'` on the wrapper View ensures
+      // react-native-view-shot captures nothing behind the SVG layer.
+      // collapsable={false} is required on Android so the ref is a real
+      // native view node that captureRef can target.
       <View ref={ref} style={styles.container} collapsable={false}>
-        <Svg width={W} height={H}>
-          {/* ── Background ── */}
-          <Rect x={0} y={0} width={W} height={H} fill="#0f172a" />
-
-          {/* ── Subtle grid ── */}
-          {[1, 2, 3].map(i => (
-            <Line
-              key={`h${i}`}
-              x1={0}
-              y1={i * 85}
-              x2={W}
-              y2={i * 85}
-              stroke="#1e293b"
-              strokeWidth={0.5}
-            />
-          ))}
-          {[1, 2, 3, 4].map(i => (
-            <Line
-              key={`v${i}`}
-              x1={i * 120}
-              y1={0}
-              x2={i * 120}
-              y2={MAP_H}
-              stroke="#1e293b"
-              strokeWidth={0.5}
-            />
-          ))}
+        {/*
+          No fill Rect here — the SVG itself has no background, so the
+          captured PNG will be fully transparent wherever no route/pin is drawn.
+          react-native-view-shot respects SVG transparency correctly when
+          format='png' and result='data-uri'.
+        */}
+        <Svg
+          width={W}
+          height={H}
+          // Explicit transparent viewBox background
+          style={{backgroundColor: 'transparent'}}>
 
           {/* ── Route glow ── */}
           {polylineStr ? (
@@ -196,7 +181,7 @@ const RideSnapshotView = forwardRef(
               fill="none"
               stroke="#f97316"
               strokeWidth={14}
-              strokeOpacity={0.12}
+              strokeOpacity={0.18}
               strokeLinecap="round"
               strokeLinejoin="round"
             />
@@ -258,99 +243,7 @@ const RideSnapshotView = forwardRef(
             );
           })}
 
-          {/* ── Stats bar ── */}
-          <Rect x={0} y={MAP_H} width={W} height={H - MAP_H} fill="#0a0f1e" />
-          <Line
-            x1={0}
-            y1={MAP_H}
-            x2={W}
-            y2={MAP_H}
-            stroke="#1e293b"
-            strokeWidth={1}
-          />
-
-          {/* Distance */}
-          <SvgText
-            x={80}
-            y={MAP_H + 18}
-            textAnchor="middle"
-            fontSize={9}
-            fontWeight="700"
-            fill="#64748b"
-            letterSpacing={0.8}>
-            DISTANCE
-          </SvgText>
-          <SvgText
-            x={80}
-            y={MAP_H + 40}
-            textAnchor="middle"
-            fontSize={17}
-            fontWeight="700"
-            fill="#f1f5f9">
-            {distance }
-          </SvgText>
-
-          <Line
-            x1={185}
-            y1={MAP_H + 8}
-            x2={185}
-            y2={MAP_H + 52}
-            stroke="#1e293b"
-            strokeWidth={1}
-          />
-
-          {/* Duration */}
-          <SvgText
-            x={320}
-            y={MAP_H + 18}
-            textAnchor="middle"
-            fontSize={9}
-            fontWeight="700"
-            fill="#64748b"
-            letterSpacing={0.8}>
-            DURATION
-          </SvgText>
-          <SvgText
-            x={320}
-            y={MAP_H + 40}
-            textAnchor="middle"
-            fontSize={17}
-            fontWeight="700"
-            fill="#f1f5f9">
-            {duration}
-          </SvgText>
-
-          <Line
-            x1={455}
-            y1={MAP_H + 8}
-            x2={455}
-            y2={MAP_H + 52}
-            stroke="#1e293b"
-            strokeWidth={1}
-          />
-
-          {/* Stops */}
-          <SvgText
-            x={540}
-            y={MAP_H + 18}
-            textAnchor="middle"
-            fontSize={9}
-            fontWeight="700"
-            fill="#64748b"
-            letterSpacing={0.8}>
-            STOPS
-          </SvgText>
-          <SvgText
-            x={540}
-            y={MAP_H + 40}
-            textAnchor="middle"
-            fontSize={17}
-            fontWeight="700"
-            fill="#f1f5f9">
-            {String(stopCount)}
-          </SvgText>
-
-          {/* Branding pill */}
+          {/* ── Branding pill (top-right, kept) ── */}
           <Rect
             x={W - 100}
             y={12}
@@ -380,10 +273,14 @@ const styles = StyleSheet.create({
   container: {
     width: W,
     height: H,
+    // Render off-screen — the view is invisible to the user but
+    // react-native-view-shot can still capture it.
     position: 'absolute',
     top: -9999,
     left: -9999,
-    // opacity must stay 1 — react-native-view-shot won't capture opacity:0
+    // opacity must stay 1 — react-native-view-shot will not capture
+    // a view whose opacity is 0.
+    backgroundColor: 'transparent',
   },
 });
 

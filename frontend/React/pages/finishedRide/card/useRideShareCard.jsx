@@ -21,18 +21,24 @@ try {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 async function requestGalleryPermission() {
   if (Platform.OS !== 'android') return true;
+
+  // Android 13+ (API 33+): launchImageLibrary uses the system Photo Picker,
+  // which needs NO runtime permission at all — the OS handles access itself.
+  // Our manifest also no longer declares READ_MEDIA_IMAGES (avoids the Play
+  // Console sensitive-permission declaration), so requesting it here would
+  // just silently fail with no system dialog and no way to grant it.
+  if (Platform.Version >= 33) return true;
+
   try {
-    const sdkInt = Platform.Version;
-    const permission =
-      sdkInt >= 33
-        ? PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES
-        : PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
-    const result = await PermissionsAndroid.request(permission, {
-      title: 'Photo Access',
-      message: 'RideSync needs access to your photos to create a share card.',
-      buttonPositive: 'Allow',
-      buttonNegative: 'Cancel',
-    });
+    const result = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+      {
+        title: 'Photo Access',
+        message: 'RideSync needs access to your photos to create a share card.',
+        buttonPositive: 'Allow',
+        buttonNegative: 'Cancel',
+      },
+    );
     return result === PermissionsAndroid.RESULTS.GRANTED;
   } catch {
     return false;
@@ -76,18 +82,24 @@ async function deleteTempFile(filePath) {
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
 export function useRideShareCard({
-  data,
-  format = 'story',
-  AppLogo = null,
-  initialPhotoUri = null,
-} = {}) {
+                                   data,
+                                   format = 'story',
+                                   AppLogo = null,
+                                   initialPhotoUri = null,
+                                 } = {}) {
   const cardRef = useRef(null);
 
   const [photoUri, setPhotoUri] = useState(initialPhotoUri ?? null); // user-picked photo (or pre-loaded snapshot)
-  const [picking, setPicking] = useState(false); // image picker open
+  const [picking, setPicking] = useState(false); // image picker open (UI only)
   const [sharing, setSharing] = useState(false); // share in progress
   const [saving, setSaving] = useState(false); // save in progress
   const [lastUri, setLastUri] = useState(null); // cached data-uri
+
+  // Ref-based in-flight guard for pickPhoto.
+  // Using a ref (not state) means the guard is synchronous and never captured
+  // as a stale closure — this is what prevents the double-launch that causes:
+  //   "Invariant Violation: No callback found with cbID … for ImagePicker.launchImageLibrary"
+  const pickingRef = useRef(false);
 
   // Invalidate capture cache when data or photo changes
   const prevDataRef = useRef(null);
@@ -107,12 +119,22 @@ export function useRideShareCard({
       );
       return;
     }
-    if (picking) return;
+
+    // ── Ref guard (synchronous, never stale) ──────────────────────────────
+    // DO NOT use the `picking` state value here. Because `picking` was in the
+    // dep array, useCallback re-created this function on every state flip,
+    // creating a window where a fast double-tap could launch the picker twice.
+    // That double-launch is the direct cause of:
+    //   "Invariant Violation: No callback found with cbID … for
+    //    ImagePicker.launchImageLibrary — most likely the callback was already invoked"
+    if (pickingRef.current) return;
+    pickingRef.current = true;
 
     // ── Permission first, BEFORE setting picking=true ─────────────────────
     // This way the button never gets stuck if permission fails or is denied.
     const granted = await requestGalleryPermission();
     if (!granted) {
+      pickingRef.current = false;
       Alert.alert(
         'Permission denied',
         'Please allow photo access in your device settings.',
@@ -128,7 +150,9 @@ export function useRideShareCard({
     try {
       const response = await launchImageLibrary({
         mediaType: 'photo',
-        quality: 1,
+        quality: 0.8,
+        maxWidth: 1080,
+        maxHeight: 1920,
         selectionLimit: 1,
       });
       if (!response.didCancel && !response.errorCode) {
@@ -138,10 +162,11 @@ export function useRideShareCard({
     } catch (e) {
       console.warn('[pickPhoto] image picker error:', e);
     } finally {
-      // Always reset — no matter what happens above
+      // Always reset both — no matter what happens above
+      pickingRef.current = false;
       setPicking(false);
     }
-  }, [picking]);
+  }, []); // ← no deps: ref guard makes this safe as a stable reference
 
   const clearPhoto = useCallback(() => setPhotoUri(null), []);
 
