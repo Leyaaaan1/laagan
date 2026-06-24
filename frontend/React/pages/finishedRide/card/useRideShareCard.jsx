@@ -155,12 +155,26 @@ export function useRideShareCard({
         maxHeight: 1920,
         selectionLimit: 1,
       });
-      if (!response.didCancel && !response.errorCode) {
+      console.log('[pickPhoto] response:', JSON.stringify(response));
+      if (response.didCancel) {
+        console.log('[pickPhoto] user cancelled');
+      } else if (response.errorCode) {
+        console.warn(
+          '[pickPhoto] picker error:',
+          response.errorCode,
+          response.errorMessage,
+        );
+        Alert.alert(
+          'Photo picker error',
+          `${response.errorCode}: ${response.errorMessage ?? 'unknown'}`,
+        );
+      } else {
         const asset = response.assets?.[0];
         if (asset?.uri) setPhotoUri(asset.uri);
       }
     } catch (e) {
-      console.warn('[pickPhoto] image picker error:', e);
+      console.warn('[pickPhoto] image picker threw:', e);
+      Alert.alert('Photo picker crashed', String(e?.message ?? e));
     } finally {
       // Always reset both — no matter what happens above
       pickingRef.current = false;
@@ -173,10 +187,12 @@ export function useRideShareCard({
   // ── Capture ────────────────────────────────────────────────────────────────
   const capture = useCallback(async () => {
     if (lastUri) return lastUri;
-    const uri = await captureShareCard(cardRef);
+    // Pass format so captureShareCard can derive the correct pixelRatio to
+    // compensate for the viewport-safe renderScale applied in RideShareCard.
+    const uri = await captureShareCard(cardRef, format);
     if (uri) setLastUri(uri);
     return uri;
-  }, [lastUri]);
+  }, [lastUri, format]);
 
   // ── Share via OS sheet ─────────────────────────────────────────────────────
   const triggerShare = useCallback(async () => {

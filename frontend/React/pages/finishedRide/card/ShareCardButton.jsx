@@ -1,16 +1,14 @@
-
-
 import React from 'react';
 import {
   View,
   TouchableOpacity,
   Text,
   ActivityIndicator,
-  StyleSheet,
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import {useRideShareCard} from './useRideShareCard';
 import colors from '../../../styles/tokens/colors';
+import {buttonStyles as ss} from '../../../styles/screens/shareCard';
 
 const ShareCardButton = ({
   shareData,
@@ -46,13 +44,13 @@ const ShareCardButton = ({
           {picking ? (
             <ActivityIndicator
               size="small"
-              color={photoUri ? '#fff' : colors.primary}
+              color={photoUri ? colors.white : colors.primary}
             />
           ) : (
             <FontAwesome
               name="image"
               size={14}
-              color={photoUri ? '#fff' : colors.primary}
+              color={photoUri ? colors.white : colors.primary}
             />
           )}
           <Text style={[ss.photoBtnText, photoUri && ss.photoBtnTextActive]}>
@@ -88,9 +86,9 @@ const ShareCardButton = ({
           activeOpacity={0.75}
           disabled={isLocked}>
           {sharing ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color={colors.white} />
           ) : (
-            <FontAwesome name="share-alt" size={15} color="#fff" />
+            <FontAwesome name="share-alt" size={15} color={colors.white} />
           )}
           <Text style={ss.btnTextPrimary}>
             {sharing ? 'Preparing…' : 'Share Ride Card'}
@@ -117,98 +115,5 @@ const ShareCardButton = ({
     </>
   );
 };
-
-const ss = StyleSheet.create({
-  // Photo picker
-  photoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 8,
-    gap: 8,
-  },
-  photoBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-  },
-  photoBtnActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  photoBtnText: {
-    color: colors.primary,
-    fontWeight: '500',
-    fontSize: 14,
-  },
-  photoBtnTextActive: {
-    color: '#fff',
-  },
-  clearChip: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-  },
-
-  // Share / Save
-  row: {
-    flexDirection: 'row',
-    gap: 10,
-    marginHorizontal: 16,
-    marginTop: 4,
-    marginBottom: 4,
-  },
-  btn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 12,
-    justifyContent: 'center',
-  },
-  btnPrimary: {
-    flex: 3,
-    backgroundColor: colors.primary,
-  },
-  btnSecondary: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-  },
-  btnDisabled: {opacity: 0.5},
-  btnTextPrimary: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-  btnTextSecondary: {
-    color: colors.primary,
-    fontWeight: '600',
-    fontSize: 14,
-  },
-
-  // Hint
-  hint: {
-    textAlign: 'center',
-    color: 'rgba(255,255,255,0.28)',
-    fontSize: 12,
-    marginBottom: 8,
-    letterSpacing: 0.4,
-  },
-});
 
 export default ShareCardButton;

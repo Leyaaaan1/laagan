@@ -4,6 +4,7 @@ import io.lettuce.core.ClientOptions;
 import io.lettuce.core.SocketOptions;
 import io.lettuce.core.TimeoutOptions;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.DataAccessException;
@@ -18,10 +19,13 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.springframework.cache.interceptor.KeyGenerator;
+import leyans.RidersHub.DTO.Request.RidesDTO.StopPointDTO;
+import java.util.List;
 import java.time.Duration;
 
 @Configuration
+@EnableCaching  
 public class RedisConfig {
 
     private static final Logger log = LoggerFactory.getLogger(RedisConfig.class);
@@ -125,4 +129,18 @@ public class RedisConfig {
         log.info("RedisCacheManager configured with 1-hour TTL and JSON serialization");
         return cacheManager;
     }
+        @Bean
+        public KeyGenerator routeKeyGenerator() {
+    return (target, method, params) -> {
+        double startLat = (double) params[1];
+        double startLng = (double) params[0];
+        double endLat   = (double) params[3];
+        double endLng   = (double) params[2];
+        List<StopPointDTO> stops = (List<StopPointDTO>) params[4];
+        String profile = (String) params[5];
+        return String.format("%.5f,%.5f-%.5f,%.5f-%s-%s",
+                startLat, startLng, endLat, endLng, stops, profile);
+    };
+}
+    
 }

@@ -21,6 +21,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.cache.annotation.EnableCaching;
+import leyans.RidersHub.Service.MapService.utilities.GraphHopperQuotaGuard;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Cacheable;
+import leyans.RidersHub.Service.MapService.utilities.ApiHelper;
 
 import java.util.List;
 
@@ -41,21 +47,29 @@ public class RouteService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final RidesRepository ridesRepository;
+     private final GraphHopperQuotaGuard quotaGuard;
 
     public RouteService(ApiHelper apiHelper,
                         RestTemplate restTemplate,
                         ObjectMapper objectMapper,
-                        RidesRepository ridesRepository) {
+                        RidesRepository ridesRepository,
+                        GraphHopperQuotaGuard quotaGuard) {
         this.apiHelper = apiHelper;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
         this.ridesRepository = ridesRepository;
+        this.quotaGuard = quotaGuard;   
     }
+    @Cacheable(value = "routes", keyGenerator = "routeKeyGenerator")
     @RateLimiter(name = "graphhopper", fallbackMethod = "routeFallback")
     public String getRouteDirections(double startLng, double startLat,
                                      double endLng,   double endLat,
                                      List<StopPointDTO> stopPoints,
                                      String profile) {
+        if (!quotaGuard.tryConsume(1)) {
+    AppLogger.warn(this.getClass(), "GraphHopper daily credit budget exhausted");
+    return routeFallback(startLng, startLat, endLng, endLat, stopPoints, profile, null);
+}
         try {
             AppLogger.info(this.getClass(), "getRouteDirections called", "profile", profile, "startLat", startLat, "startLng", startLng);
             List<String> points = apiHelper.buildPointList(startLat, startLng, stopPoints, endLat, endLng);
