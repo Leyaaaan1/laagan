@@ -21,6 +21,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.cache.annotation.EnableCaching;
+import leyans.RidersHub.Service.MapService.utilities.GraphHopperQuotaGuard;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Cacheable;
+import leyans.RidersHub.Service.MapService.utilities.ApiHelper;
 
 import java.util.List;
 
@@ -52,9 +58,10 @@ public class RouteService {
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
         this.ridesRepository = ridesRepository;
+        this.quotaGuard = quotaGuard;   
     }
-@Cacheable(value = "routes", keyGenerator = "routeKeyGenerator")
-@RateLimiter(name = "graphhopper", fallbackMethod = "routeFallback")
+    @Cacheable(value = "routes", keyGenerator = "routeKeyGenerator")
+    @RateLimiter(name = "graphhopper", fallbackMethod = "routeFallback")
     public String getRouteDirections(double startLng, double startLat,
                                      double endLng,   double endLat,
                                      List<StopPointDTO> stopPoints,
