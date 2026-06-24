@@ -187,10 +187,12 @@ export function useRideShareCard({
   // ── Capture ────────────────────────────────────────────────────────────────
   const capture = useCallback(async () => {
     if (lastUri) return lastUri;
-    const uri = await captureShareCard(cardRef);
+    // Pass format so captureShareCard can derive the correct pixelRatio to
+    // compensate for the viewport-safe renderScale applied in RideShareCard.
+    const uri = await captureShareCard(cardRef, format);
     if (uri) setLastUri(uri);
     return uri;
-  }, [lastUri]);
+  }, [lastUri, format]);
 
   // ── Share via OS sheet ─────────────────────────────────────────────────────
   const triggerShare = useCallback(async () => {

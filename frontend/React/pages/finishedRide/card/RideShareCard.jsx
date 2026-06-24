@@ -1,5 +1,5 @@
 import React, {forwardRef, useMemo} from 'react';
-import {View, Text, Image, ImageBackground, StyleSheet} from 'react-native';
+import {View, Text, Image, ImageBackground, StyleSheet, Dimensions} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Svg, {
   Polyline,
@@ -12,33 +12,29 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
-const T = {
-  accent: '#1D9E75',
-  accentSoft: 'rgba(29,158,117,0.18)',
-  blue: '#378ADD',
-  textPrimary: '#FFFFFF',
-  textSecondary: 'rgba(255,255,255,0.68)',
-  textMuted: 'rgba(255,255,255,0.38)',
-  bgDeep: '#0D0F14',
-  bgCard: 'rgba(13,15,20,0.80)',
-  bgSurface: 'rgba(27,31,46,0.88)',
-  border: 'rgba(255,255,255,0.10)',
-  borderMid: 'rgba(255,255,255,0.16)',
-};
+// ─── Centralized styles (card's own brand — see shareCard.styles.js) ──────────
+import {cardTokens as T, cardStyles as ss} from '../../../styles/screens/shareCard';
 
 const FORMATS = {
   story: {width: 1080, height: 1920, mapHeight: 520, graphHeight: 280},
   feed: {width: 1080, height: 1080, mapHeight: 300, graphHeight: 200},
 };
 
+// Read once at module load — safe because RN doesn't change screen size at runtime.
+const {width: SCREEN_W, height: SCREEN_H} = Dimensions.get('window');
+
+// Scale factor that makes the card fit entirely within the device viewport.
+// Android silently skips rendering views that extend past the viewport boundary,
+// which causes the bottom half of a 1920-dp story card to vanish in captures.
+function computeRenderScale(format) {
+  const {width, height} = FORMATS[format] ?? FORMATS.story;
+  return Math.min(SCREEN_W / width, SCREEN_H / height, 1);
+}
+
 // ─── Formatters ───────────────────────────────────────────────────────────────
-const fmtDistance = m => {
-  if (m == null) return {value: '—', unit: ''};
-  const km = m / 1000;
-  return km >= 1
-    ? {value: km.toFixed(2), unit: 'km'}
-    : {value: String(Math.round(m)), unit: 'm'};
+const fmtDistance = km => {
+  if (km == null) return {value: '—', unit: ''};
+  return {value: km.toFixed(2), unit: 'km'};
 };
 const fmtDuration = min => {
   if (min == null) return '—';
@@ -254,12 +250,6 @@ const CardContent = ({data, format, mapHeight, graphHeight, width}) => {
     <View style={ss.inner}>
       {/* ── Header ── */}
       <View style={ss.header}>
-        <View style={ss.logoRow}>
-          <View style={ss.logoDot}>
-            <Text style={ss.logoEmoji}>🏍</Text>
-          </View>
-          <Text style={ss.appName}>RideSync</Text>
-        </View>
         <View style={{alignItems: 'flex-end', gap: 4}}>
           {date ? <Text style={ss.headerDate}>{date}</Text> : null}
           {riderName ? <Text style={ss.headerRider}>@{riderName}</Text> : null}
@@ -294,9 +284,6 @@ const CardContent = ({data, format, mapHeight, graphHeight, width}) => {
       {/* ── Speed graph (transparent background) ── */}
       {hasGraph && (
         <View style={ss.graphWrapper}>
-          <View style={ss.graphHeader}>
-            <Text style={ss.graphLabel}>SPEED PROFILE</Text>
-          </View>
           <SpeedGraph
             segments={speedSegments}
             averageSpeedKph={averageSpeedKph}
@@ -326,13 +313,7 @@ const CardContent = ({data, format, mapHeight, graphHeight, width}) => {
 
       <View style={{flex: 1}} />
 
-      {/* ── Footer ── */}
-      <View style={ss.footer}>
-        <Text style={ss.slogan}>Ride together. Every km counts.</Text>
-        {generatedRidesId ? (
-          <Text style={ss.refCode}>ref · {generatedRidesId}</Text>
-        ) : null}
-      </View>
+    
     </View>
   );
 };
@@ -345,32 +326,88 @@ const RideShareCard = forwardRef(function RideShareCard(
   const cfg = FORMATS[format] ?? FORMATS.story;
   const {width, height, mapHeight, graphHeight} = cfg;
 
-  // Positioned off-screen so it renders without being visible to the user.
-  // react-native-view-shot captures it at full resolution.
-  // opacity:0 keeps card in render tree (ImageBackground loads) but invisible.
-  // top:-height breaks Android capture — Android skips off-viewport views.
-  const cardStyle = [ss.cardRoot, {width, height, opacity: 0}];
+  // ── Viewport-safe rendering ───────────────────────────────────────────────
+  // The card is 1080×1920 dp for "story", which exceeds any phone screen
+  // (~800–900 dp tall). Android skips GPU compositing for views whose layout
+  // extends past the viewport, so react-native-view-shot only captures the
+  // on-screen portion — that's why the bottom half of the image goes missing.
+  //
+  // Fix: the OUTER wrapper is scaled to fit within the viewport (opacity:0 so
+  // the user never sees it). The INNER view (where the ref lives) renders at
+  // full 1080×1920 dp but is visually shrunk via transform so its post-transform
+  // visual bounds sit entirely on-screen. Android composites it in full.
+  // captureShareCard uses pixelRatio = 1/renderScale so the final PNG is still
+  // output at the full target resolution.
+  const renderScale = computeRenderScale(format);
+  const scaledW = Math.ceil(width * renderScale);
+  const scaledH = Math.ceil(height * renderScale);
+
+  // Outer: defines the on-screen footprint (invisible, no touch events).
+  const outerStyle = {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: scaledW,
+    height: scaledH,
+    opacity: 0,
+    overflow: 'visible', // don't clip the inner view's layout area
+  };
+
+  // Inner (ref target): full card dimensions + transform that maps the
+  // top-left corner to (0,0) in the outer container after scaling.
+  // RN applies transform array in order: translate → scale.
+  const innerStyle = {
+    width,
+    height,
+    transform: [
+      {translateX: -(width * (1 - renderScale)) / 2},
+      {translateY: -(height * (1 - renderScale)) / 2},
+      {scale: renderScale},
+    ],
+  };
 
   // ── User picked a background photo ───────────────────────────────────────
   if (photoUri) {
     return (
-      <View ref={ref} style={cardStyle} collapsable={false} pointerEvents="none">
-        <ImageBackground
-          source={{uri: photoUri}}
-          style={StyleSheet.absoluteFill}
-          resizeMode="cover"
-        />
-        {/* Heavy gradient so text stays readable over any photo */}
-        <LinearGradient
-          colors={[
-            'rgba(0,0,0,0.08)',
-            'rgba(0,0,0,0.45)',
-            'rgba(0,0,0,0.82)',
-            'rgba(0,0,0,0.96)',
-          ]}
-          locations={[0, 0.28, 0.62, 1]}
-          style={StyleSheet.absoluteFill}
-        />
+      <View style={outerStyle} pointerEvents="none">
+        <View ref={ref} style={innerStyle} collapsable={false}>
+          <ImageBackground
+            source={{uri: photoUri}}
+            style={StyleSheet.absoluteFill}
+            resizeMode="cover"
+          />
+          {/* Gradient keeps text readable without burying the photo.
+              Reduced bottom opacity (0.72 vs previous 0.96) so the
+              background image remains visible in the lower half. */}
+          <LinearGradient
+            colors={[
+              'rgba(0,0,0,0.05)',
+              'rgba(0,0,0,0.35)',
+              'rgba(0,0,0,0.58)',
+              'rgba(0,0,0,0.72)',
+            ]}
+            locations={[0, 0.30, 0.65, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+          <CardContent
+            data={data}
+            format={format}
+            mapHeight={mapHeight}
+            graphHeight={graphHeight}
+            width={width}
+          />
+        </View>
+      </View>
+    );
+  }
+
+  // ── Dark card (no user photo) ─────────────────────────────────────────────
+  return (
+    <View style={outerStyle} pointerEvents="none">
+      <View
+        ref={ref}
+        style={[innerStyle, {backgroundColor: T.bgDeep}]}
+        collapsable={false}>
         <CardContent
           data={data}
           format={format}
@@ -379,197 +416,36 @@ const RideShareCard = forwardRef(function RideShareCard(
           width={width}
         />
       </View>
-    );
-  }
-
-  // ── Dark card (no user photo) ─────────────────────────────────────────────
-  return (
-    <View
-      ref={ref}
-      style={[cardStyle, {backgroundColor: T.bgDeep}]}
-      collapsable={false}
-      pointerEvents="none">
-      <CardContent
-        data={data}
-        format={format}
-        mapHeight={mapHeight}
-        graphHeight={graphHeight}
-        width={width}
-      />
     </View>
   );
 });
 
 export default RideShareCard;
 
-// ─── Capture helper (unchanged) ───────────────────────────────────────────────
-export async function captureShareCard(cardRef) {
+// ─── Capture helper ───────────────────────────────────────────────────────────
+// `format` must match what was passed to <RideShareCard> so we can derive the
+// same renderScale used when laying out the inner view, and compensate with
+// pixelRatio so the output image is still the full target resolution
+// (1080×1920 for story, 1080×1080 for feed) regardless of screen size.
+export async function captureShareCard(cardRef, format = 'story') {
   if (!cardRef?.current) {
     console.warn('[captureShareCard] ref not attached');
     return null;
   }
   try {
     const {captureRef} = require('react-native-view-shot');
+    // The inner view renders at full card dp dimensions but is visually scaled
+    // down by renderScale. pixelRatio = 1/renderScale restores the output to
+    // the original target pixel count (e.g. 1080×1920 px for story).
+    const renderScale = computeRenderScale(format);
     return await captureRef(cardRef, {
       format: 'png',
       quality: 0.95,
       result: 'data-uri',
+      pixelRatio: 1 / renderScale,
     });
   } catch (e) {
     console.warn('[captureShareCard] failed:', e);
     return null;
   }
 }
-
-// ─── Styles (all values in 1080-space — card renders at 1080px wide) ─────────
-const ss = StyleSheet.create({
-  cardRoot: {
-    position: 'absolute',
-    left: 0,
-    overflow: 'hidden',
-  },
-  inner: {flex: 1},
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 56,
-    paddingTop: 72,
-    paddingBottom: 20,
-  },
-  logoRow: {flexDirection: 'row', alignItems: 'center'},
-  logoDot: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: 'rgba(29,158,117,0.20)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoEmoji: {fontSize: 26},
-  appName: {
-    color: T.textPrimary,
-    fontWeight: '700',
-    fontSize: 28,
-    letterSpacing: 0.5,
-    marginLeft: 14,
-  },
-  headerDate: {color: T.textSecondary, fontSize: 20},
-  headerRider: {color: T.accent, fontWeight: '600', fontSize: 20},
-
-  accentLine: {
-    height: 2,
-    backgroundColor: T.accent,
-    opacity: 0.65,
-    marginHorizontal: 56,
-    borderRadius: 2,
-    marginBottom: 32,
-  },
-
-  // Snapshot map
-  mapWrapper: {
-    marginHorizontal: 48,
-    borderRadius: 20,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: T.border,
-    marginBottom: 36,
-  },
-  mapImage: {width: '100%'},
-  mapPlaceholder: {
-    backgroundColor: T.bgSurface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  mapPlaceholderText: {color: T.textMuted, fontSize: 28},
-
-  // Ride name
-  nameWrapper: {
-    paddingHorizontal: 56,
-    marginBottom: 16,
-  },
-  rideName: {
-    color: T.textPrimary,
-    fontWeight: '800',
-    fontSize: 72,
-    letterSpacing: -0.5,
-    lineHeight: 82,
-  },
-
-  // Speed graph (no background — transparent)
-  graphWrapper: {marginBottom: 20},
-  graphHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 56,
-    marginBottom: 4,
-  },
-  graphLabel: {
-    color: T.textMuted,
-    fontSize: 18,
-    letterSpacing: 2.5,
-    fontWeight: '600',
-  },
-
-  // Stats card
-  statsCard: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    backgroundColor: T.bgCard,
-    borderWidth: 1,
-    borderColor: T.border,
-    marginHorizontal: 48,
-    borderRadius: 20,
-    paddingVertical: 32,
-    paddingHorizontal: 8,
-    marginBottom: 24,
-  },
-  statBlock: {flex: 1, alignItems: 'center', paddingHorizontal: 12},
-  statValue: {
-    color: T.textPrimary,
-    fontWeight: '700',
-    fontSize: 46,
-    lineHeight: 54,
-  },
-  statUnit: {
-    color: T.textSecondary,
-    fontWeight: '400',
-    fontSize: 26,
-  },
-  statLabel: {
-    color: T.textMuted,
-    fontSize: 17,
-    marginTop: 6,
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
-  },
-  dividerV: {
-    width: 1,
-    backgroundColor: T.borderMid,
-    marginVertical: 8,
-  },
-
-  // Footer
-  footer: {
-    paddingHorizontal: 56,
-    paddingBottom: 72,
-    paddingTop: 24,
-    borderTopWidth: 1,
-    borderTopColor: T.border,
-  },
-  slogan: {
-    color: T.textSecondary,
-    fontSize: 20,
-    fontStyle: 'italic',
-    letterSpacing: 0.2,
-  },
-  refCode: {
-    color: T.textMuted,
-    fontFamily: 'monospace',
-    fontSize: 16,
-    letterSpacing: 0.8,
-    marginTop: 4,
-  },
-});

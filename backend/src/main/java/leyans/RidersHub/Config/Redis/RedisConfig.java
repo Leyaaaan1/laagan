@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 
 @Configuration
+@EnableCaching  
 public class RedisConfig {
 
     private static final Logger log = LoggerFactory.getLogger(RedisConfig.class);
