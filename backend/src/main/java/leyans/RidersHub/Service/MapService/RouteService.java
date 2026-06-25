@@ -21,19 +21,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-import org.springframework.cache.annotation.EnableCaching;
 import leyans.RidersHub.Service.MapService.utilities.GraphHopperQuotaGuard;
 import org.springframework.cache.annotation.Cacheable;
-import leyans.RidersHub.Service.MapService.utilities.ApiHelper;
 
 import java.util.List;
-
 
 @Service
 public class RouteService {
 
     private static final String GH_BASE_URL = "https://graphhopper.com/api/1/route";
-
 
     @Value("${GRASS_HOPPER}")
     private String grassApiKey;
@@ -45,31 +41,33 @@ public class RouteService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final RidesRepository ridesRepository;
-     private final GraphHopperQuotaGuard quotaGuard;
+    private final GraphHopperQuotaGuard quotaGuard;
 
     public RouteService(ApiHelper apiHelper,
-                        RestTemplate restTemplate,
-                        ObjectMapper objectMapper,
-                        RidesRepository ridesRepository,
-                        GraphHopperQuotaGuard quotaGuard) {
+            RestTemplate restTemplate,
+            ObjectMapper objectMapper,
+            RidesRepository ridesRepository,
+            GraphHopperQuotaGuard quotaGuard) {
         this.apiHelper = apiHelper;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
         this.ridesRepository = ridesRepository;
-        this.quotaGuard = quotaGuard;   
+        this.quotaGuard = quotaGuard;
     }
+
     @Cacheable(value = "routes", keyGenerator = "routeKeyGenerator")
     @RateLimiter(name = "graphhopper", fallbackMethod = "routeFallback")
     public String getRouteDirections(double startLng, double startLat,
-                                     double endLng,   double endLat,
-                                     List<StopPointDTO> stopPoints,
-                                     String profile) {
+            double endLng, double endLat,
+            List<StopPointDTO> stopPoints,
+            String profile) {
         if (!quotaGuard.tryConsume(1)) {
-    AppLogger.warn(this.getClass(), "GraphHopper daily credit budget exhausted");
-    return routeFallback(startLng, startLat, endLng, endLat, stopPoints, profile, null);
-}
+            AppLogger.warn(this.getClass(), "GraphHopper daily credit budget exhausted");
+            return routeFallback(startLng, startLat, endLng, endLat, stopPoints, profile, null);
+        }
         try {
-            AppLogger.info(this.getClass(), "getRouteDirections called", "profile", profile, "startLat", startLat, "startLng", startLng);
+            AppLogger.info(this.getClass(), "getRouteDirections called", "profile", profile, "startLat", startLat,
+                    "startLng", startLng);
             List<String> points = apiHelper.buildPointList(startLat, startLng, stopPoints, endLat, endLng);
 
             // UriComponentsBuilder doesn't support repeated same-key params natively,
@@ -77,13 +75,13 @@ public class RouteService {
             UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(GH_BASE_URL);
             points.forEach(p -> builder.queryParam("point", p));
 
-            builder.queryParam("vehicle",        apiHelper.mapProfile(profile))
-                    .queryParam("type",            "json")
-                    .queryParam("points_encoded",  "false")
-                    .queryParam("simplify",        "true")   // ← reduce coordinate count
-                    .queryParam("instructions",    "true")
-                    .queryParam("locale",          "en")
-                    .queryParam("key",             grassApiKey);
+            builder.queryParam("vehicle", apiHelper.mapProfile(profile))
+                    .queryParam("type", "json")
+                    .queryParam("points_encoded", "false")
+                    .queryParam("simplify", "true") // ← reduce coordinate count
+                    .queryParam("instructions", "true")
+                    .queryParam("locale", "en")
+                    .queryParam("key", grassApiKey);
 
             String url = builder.build(false).toUriString();
             HttpHeaders headers = new HttpHeaders();
@@ -107,8 +105,7 @@ public class RouteService {
     @Transactional(readOnly = true)
     public JsonNode getSavedRouteGeoJson(String generatedRidesId) {
         try {
-            String routeGeoJson =
-                    ridesRepository.findRouteCoordinatesByGeneratedRidesId(generatedRidesId);
+            String routeGeoJson = ridesRepository.findRouteCoordinatesByGeneratedRidesId(generatedRidesId);
             if (routeGeoJson == null || routeGeoJson.isBlank()) {
                 return objectMapper.createObjectNode();
             }
@@ -119,30 +116,28 @@ public class RouteService {
         }
     }
 
-
     /**
      * Builds a RestTemplate backed by a pooled Apache HttpClient 5.
      *
      * Why this matters:
-     *   Default SimpleClientHttpRequestFactory creates a new TCP connection
-     *   (+ TLS handshake ~150-200 ms) for every request to graphhopper.com.
-     *   A pooled manager reuses existing connections — latency drops to ~20 ms
-     *   for subsequent calls to the same host.
+     * Default SimpleClientHttpRequestFactory creates a new TCP connection
+     * (+ TLS handshake ~150-200 ms) for every request to graphhopper.com.
+     * A pooled manager reuses existing connections — latency drops to ~20 ms
+     * for subsequent calls to the same host.
      */
 
     private static RestTemplate buildDefaultRestTemplate() {
-        HttpClientConnectionManager connectionManager =
-                PoolingHttpClientConnectionManagerBuilder.create()
-                        .setMaxConnTotal(20)
-                        .setMaxConnPerRoute(10)
-                        .build();
+        HttpClientConnectionManager connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
+                .setMaxConnTotal(20)
+                .setMaxConnPerRoute(10)
+                .build();
 
         RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectTimeout(Timeout.ofSeconds(3))
                 .setResponseTimeout(Timeout.ofSeconds(10))
                 .build();
 
-       HttpClient httpClient = HttpClients.custom()
+        HttpClient httpClient = HttpClients.custom()
                 .setConnectionManager(connectionManager)
                 .setDefaultRequestConfig(requestConfig)
                 .build();
@@ -150,18 +145,15 @@ public class RouteService {
         return new RestTemplate(new HttpComponentsClientHttpRequestFactory(httpClient));
     }
 
-
     public String routeFallback(double startLng, double startLat,
-                                double endLng,   double endLat,
-                                List<StopPointDTO> stopPoints,
-                                String profile, Exception ex) {
+            double endLng, double endLat,
+            List<StopPointDTO> stopPoints,
+            String profile, Exception ex) {
         AppLogger.warn(this.getClass(), "GraphHopper rate limit exceeded", "profile", profile, ex);
         return """
-              {"type":"FeatureCollection","features":[],
-               "error":"Rate limit exceeded. Please try again shortly."}
-              """;
+                {"type":"FeatureCollection","features":[],
+                 "error":"Rate limit exceeded. Please try again shortly."}
+                """;
     }
-
-
 
 }

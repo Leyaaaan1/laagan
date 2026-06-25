@@ -67,13 +67,6 @@ export const createRide = async (rideData) => {
   }
 };
 
-export const fetchRideMapImage = async (generatedRidesId ) => {
-  const response = await api.get(
-    `/riders/${generatedRidesId}/map-image`
-  );
-  if (!response.ok) throw new Error('Failed to fetch map image');
-  return response.text();
-};
 
 export const getRideDetails = async (generatedRidesId, ) => {
   const response = await api.get(`/riders/details/${generatedRidesId}`);

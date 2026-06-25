@@ -6,7 +6,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
@@ -33,9 +32,7 @@ public class RidersHubApplication {
 				Dotenv dotenv = Dotenv.configure()
 						.ignoreIfMissing()
 						.load();
-				dotenv.entries().forEach(entry ->
-						System.setProperty(entry.getKey(), entry.getValue())
-				);
+				dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
 				System.out.println("Loaded .env from classpath");
 				return;
 			}
@@ -57,9 +54,7 @@ public class RidersHubApplication {
 						.ignoreIfMissing()
 						.load();
 				if (!dotenv.entries().isEmpty()) {
-					dotenv.entries().forEach(entry ->
-							System.setProperty(entry.getKey(), entry.getValue())
-					);
+					dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
 					System.out.println("Loaded .env from: " + path);
 					return;
 				}

@@ -1,11 +1,5 @@
 package leyans.RidersHub.Utility;
 
-
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.WriterException;
-import com.google.zxing.client.j2se.MatrixToImageWriter;
-import com.google.zxing.common.BitMatrix;
-import com.google.zxing.qrcode.QRCodeWriter;
 import jakarta.persistence.EntityNotFoundException;
 import leyans.RidersHub.DTO.Request.InviteDetailDTO;
 import leyans.RidersHub.DTO.Request.JoinDTO.JoinerDto;
@@ -18,49 +12,38 @@ import leyans.RidersHub.model.Rides;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
-import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
-
 
 @Service
 public class ParticipantUtil {
 
-    private final InviteRequestService inviteRequestService;
     private final InviteRequestRepository inviteRequestRepository;
 
     private final JoinRequestRepository joinRequestRepository;
     private final RiderUtil riderUtil;
 
-    public ParticipantUtil(InviteRequestService inviteRequestService, InviteRequestRepository inviteRequestRepository, JoinRequestRepository joinRequestRepository, RiderUtil riderUtil) {
-        this.inviteRequestService = inviteRequestService;
+    public ParticipantUtil(InviteRequestService inviteRequestService, InviteRequestRepository inviteRequestRepository,
+            JoinRequestRepository joinRequestRepository, RiderUtil riderUtil) {
         this.inviteRequestRepository = inviteRequestRepository;
         this.joinRequestRepository = joinRequestRepository;
         this.riderUtil = riderUtil;
     }
 
-
-
     @Transactional(readOnly = true)
     public String getQrCodeUrlByRideId(String generatedRidesId) {
         InviteRequest invite = findInviteByRideId(generatedRidesId);
-//        validateInviteNotExpired(invite);
+        // validateInviteNotExpired(invite);
         return invite.getQr();
     }
-
 
     public InviteDetailDTO convertInviteToDetailDto(InviteRequest invite) {
         return new InviteDetailDTO(
                 invite.getInviteToken(),
                 invite.getRides().getGeneratedRidesId(),
-                invite.getInviteStatus().toString()
-        );
+                invite.getInviteStatus().toString());
     }
-
 
     public InviteRequest findInviteByToken(String inviteToken) {
         return inviteRequestRepository.findByInviteToken(inviteToken)
@@ -81,6 +64,7 @@ public class ParticipantUtil {
                     (invite.getRides() != null ? invite.getRides().getGeneratedRidesId() : "unknown"));
         }
     }
+
     public boolean isExpired(InviteRequest invite) {
         LocalDateTime now = LocalDateTime.now();
         if (invite.getExpiresAt() != null) {
@@ -104,18 +88,9 @@ public class ParticipantUtil {
 
         if (!ride.getUsername().getUsername().equals(currentUsername)) {
             throw new org.springframework.security.access.AccessDeniedException(
-                    "Only the ride creator can approve/reject join requests"
-            );
+                    "Only the ride creator can approve/reject join requests");
         }
     }
-
-//    @Transactional(readOnly = true)
-//    public List<JoinerDto> listJoinersByRideId(Integer rideId) {
-//        return listJoinRequestsByRideId(rideId).stream()
-//                .map(j -> new JoinerDto(j.getRequester().getUsername(), j.getJoinStatus(), j.getRequestedAt()))
-//                .map(j -> new JoinerDto(j.getRequester().getUsername(), j.getJoinStatus(), j.getRequestedAt()))
-//                .collect(Collectors.toList());
-//    }
 
     @Transactional(readOnly = true)
     public boolean hasJoinRequest(String generatedRidesId, String username) {
@@ -124,7 +99,6 @@ public class ParticipantUtil {
                 .stream()
                 .anyMatch(joinRequest -> joinRequest.getRequester().getUsername().equals(username));
     }
-
 
     @Transactional(readOnly = true)
     public List<JoinerDto> listJoinersByRideIdAndStatus(String generatedRidesId, JoinRequest.JoinStatus status) {
@@ -137,21 +111,15 @@ public class ParticipantUtil {
     @Transactional(readOnly = true)
     public String getInviteUrlByRideId(String generatedRidesId) {
         InviteRequest invite = findInviteByRideId(generatedRidesId);
-//        validateInviteNotExpired(invite);
+        // validateInviteNotExpired(invite);
         return invite.getInviteLink();
     }
-
 
     @Transactional(readOnly = true)
     public String getQrCodeBase64ByRideId(String generatedRidesId) {
         InviteRequest invite = findInviteByRideId(generatedRidesId);
-//        validateInviteNotExpired(invite);
+        // validateInviteNotExpired(invite);
         return invite.getQrCodeBase64();
     }
-
-
-
-
-
 
 }

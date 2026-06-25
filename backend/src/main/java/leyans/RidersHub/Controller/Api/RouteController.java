@@ -19,10 +19,6 @@ public class RouteController {
         this.routeService = routeService;
     }
 
-    /**
-     * Get route directions between points using existing DirectionsService
-     * Returns simplified coordinate array for frontend
-     */
     @PostMapping("/preview")
     public ResponseEntity<JsonNode> getRoutePreview(@RequestBody RouteRequestDTO routeRequest) {
         try {
@@ -48,7 +44,6 @@ public class RouteController {
             );
 
             if (routeGeoJSON != null && !routeGeoJSON.trim().isEmpty()) {
-                // Return the full GeoJSON instead of extracted coordinates
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode geoJsonNode = mapper.readTree(routeGeoJSON);
                 System.out.println("Returning full GeoJSON route data");

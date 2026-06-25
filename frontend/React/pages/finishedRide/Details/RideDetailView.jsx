@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,8 +11,8 @@ import {
   StyleSheet,
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {finishedRideService} from '../../../services/finishedRideService';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { finishedRideService } from '../../../services/finishedRideService';
 import colors from '../../../styles/tokens/colors';
 import finishedRideStyles from '../../../styles/screens/finishedRideStyles';
 import rideDetailStyles from '../../../styles/screens/rideDetailStyles';
@@ -42,12 +42,12 @@ const enrichParticipants = (
     const reached = checkpointArrivals.filter(
       a => a.riderUsername === p.username,
     ).length;
-    return {...p, checkpointsReached: reached, totalCheckpoints};
+    return { ...p, checkpointsReached: reached, totalCheckpoints };
   });
 };
 
-const RideDetailView = ({route, navigation}) => {
-  const {generatedRidesId} = route.params ?? {};
+const RideDetailView = ({ route, navigation }) => {
+  const { generatedRidesId } = route.params ?? {};
 
   const insets = useSafeAreaInsets();
 
@@ -83,8 +83,10 @@ const RideDetailView = ({route, navigation}) => {
         if (!isRefresh) {
           setLoading(true);
         }
-        const data = await finishedRideService.getRideDetail(generatedRidesId);
+        const data = await getPersonalSummary(generatedRidesId); // ← was finishedRideService.getRideDetail
+        console.log('🟢 rideDetail:', JSON.stringify(data, null, 2)); // ← ADD
         setRideDetail(data);
+        console.log('Ride detail fetched:', data);
         setError(null);
       } catch (err) {
         setError(
@@ -128,6 +130,8 @@ const RideDetailView = ({route, navigation}) => {
         setFinishedError(null);
         try {
           const data = await getFinishedRideSummary(generatedRidesId);
+          console.log('🔵 finishedData:', JSON.stringify(data, null, 2)); // ← ADD
+
           setFinishedData(data);
         } catch (err) {
           setFinishedError(err.message ?? 'Failed to load finished summary');
@@ -215,10 +219,10 @@ const RideDetailView = ({route, navigation}) => {
   const enrichedParticipants = finishedParticipantProgress.length
     ? finishedParticipantProgress
     : enrichParticipants(
-        safe(finishedData?.completedParticipants),
-        finishedArrivals,
-        finishedStopPoints,
-      );
+      safe(finishedData?.completedParticipants),
+      finishedArrivals,
+      finishedStopPoints,
+    );
 
   const personalArrivals = safe(personalData?.checkpointArrivals);
   const personalStopPoints = safe(personalData?.stopPoints).map(s => ({
@@ -256,7 +260,7 @@ const RideDetailView = ({route, navigation}) => {
           <FontAwesome name="arrow-left" size={16} color={colors.primary} />
         </TouchableOpacity>
         <View style={rideDetailStyles.viewPrBadgeWrap}></View>
-        <View style={{width: 36}} />
+        <View style={{ width: 36 }} />
       </View>
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -277,7 +281,7 @@ const RideDetailView = ({route, navigation}) => {
             {snapshotUrl && (
               <View style={localStyles.snapshotWrapper}>
                 <Image
-                  source={{uri: snapshotUrl}}
+                  source={{ uri: snapshotUrl }}
                   style={localStyles.snapshotImage}
                   resizeMode="cover"
                 />
@@ -293,12 +297,14 @@ const RideDetailView = ({route, navigation}) => {
                 />
               </View>
             )}
-            
+
+
             <ShareCardButton
               shareData={shareData}
               format="story"
               initialPhotoUri={snapshotUrl}
             />
+
           </>
         )}
 
@@ -358,7 +364,7 @@ const RideDetailView = ({route, navigation}) => {
             style={[
               checkpointModalStyles.footerSegment,
               activeTab === 'Ride Summary' &&
-                checkpointModalStyles.footerSegmentClose,
+              checkpointModalStyles.footerSegmentClose,
             ]}
             onPress={() => handleTabPress('Ride Summary')}>
             <Text style={checkpointModalStyles.footerSegmentText}>
@@ -372,7 +378,7 @@ const RideDetailView = ({route, navigation}) => {
             style={[
               checkpointModalStyles.footerSegment,
               activeTab === 'My Stats' &&
-                checkpointModalStyles.footerSegmentClose,
+              checkpointModalStyles.footerSegmentClose,
             ]}
             onPress={() => handleTabPress('My Stats')}>
             <Text style={checkpointModalStyles.footerSegmentText}>
@@ -386,7 +392,7 @@ const RideDetailView = ({route, navigation}) => {
             style={[
               checkpointModalStyles.footerSegment,
               activeTab === 'My Summary' &&
-                checkpointModalStyles.footerSegmentClose,
+              checkpointModalStyles.footerSegmentClose,
             ]}
             onPress={() => handleTabPress('My Summary')}>
             <Text style={checkpointModalStyles.footerSegmentText}>

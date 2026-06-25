@@ -24,7 +24,6 @@ public record RideSummaryDTO(
         String  endingPointName,
         double  endLat,
         double  endLng,
-        String  mapImageUrl,
         String  username,
         List<String> participants,
         String  description,

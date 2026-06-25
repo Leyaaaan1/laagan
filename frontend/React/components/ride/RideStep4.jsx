@@ -12,7 +12,6 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import {
-  fetchRideMapImage,
   getRideDetails,
   getLocationImage,
 } from '../../services/rideService';
@@ -184,14 +183,7 @@ const RideStep4 = props => {
       .finally(() => patchState({rideNameImageLoading: false}));
   }, [locationName]);
 
-  useEffect(() => {
-    if (!generatedRidesId) return;
-    patchState({imageLoading: true});
-    fetchRideMapImage(generatedRidesId)
-      .then(url => patchState({mapImage: url}))
-      .catch(err => console.error('Map image fetch error:', err?.message))
-      .finally(() => patchState({imageLoading: false}));
-  }, [generatedRidesId]);
+
 
   useEffect(() => {
     if (!generatedRidesId || hasFetchedRef.current) return;

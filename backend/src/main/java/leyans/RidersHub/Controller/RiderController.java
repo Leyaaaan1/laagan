@@ -103,19 +103,6 @@ public class RiderController {
         return ridesUtil.getStopPointsDTOByGeneratedRideId(generatedRidesId);
     }
 
-    @GetMapping("/{generatedRidesId}/map-image")
-    public ResponseEntity<String> getRideMapImage(@PathVariable String generatedRidesId) {
-        try {
-            String mapImageUrl = ridesUtil.getRideMapImageUrlById(generatedRidesId);
-            return ResponseEntity.ok(mapImageUrl);
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error retrieving map image: " + e.getMessage());
-        }
-    }
 
     @GetMapping("/details/{generatedRidesId}")
     public ResponseEntity<?> getRideDetailsByGeneratedId(@PathVariable String generatedRidesId) {

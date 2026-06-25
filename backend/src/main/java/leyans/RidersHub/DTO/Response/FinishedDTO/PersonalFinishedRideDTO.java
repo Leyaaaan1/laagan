@@ -1,7 +1,5 @@
 package leyans.RidersHub.DTO.Response.FinishedDTO;
 
-
-
 import leyans.RidersHub.DTO.Request.RidesDTO.StopPointDTO;
 import leyans.RidersHub.DTO.Response.CheckpointArrivalResponse;
 import leyans.RidersHub.model.FinishedRide.PersonalFinishedRide;
@@ -24,21 +22,24 @@ public class PersonalFinishedRideDTO {
     private Integer distanceMeters;
 
     private Double averageSpeedKph;
-    public PersonalFinishedRideDTO() {}
+    private List<SpeedSegmentDTO> speedSegments;
+
+    public PersonalFinishedRideDTO() {
+    }
 
     public PersonalFinishedRideDTO(Integer id,
-                                   String riderUsername,
-                                   String generatedRidesId,
-                                   LocalDateTime startTime,
-                                   LocalDateTime endTime,
-                                   Integer durationMinutes,
-                                   LocalDateTime createdAt,
-                                   List<CheckpointArrivalResponse> checkpointArrivals,
-                                   List<StopPointDTO> stopPoints,
-                                   String startingPointName,
-                                   String endingPointName,
-                                   Integer distanceMeters,
-                                   Double averageSpeedKph) {
+            String riderUsername,
+            String generatedRidesId,
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            Integer durationMinutes,
+            LocalDateTime createdAt,
+            List<CheckpointArrivalResponse> checkpointArrivals,
+            List<StopPointDTO> stopPoints,
+            String startingPointName,
+            String endingPointName,
+            Integer distanceMeters,
+            Double averageSpeedKph, List<SpeedSegmentDTO> speedSegments) {
         this.id = id;
         this.riderUsername = riderUsername;
         this.generatedRidesId = generatedRidesId;
@@ -52,24 +53,32 @@ public class PersonalFinishedRideDTO {
         this.endingPointName = endingPointName;
         this.distanceMeters = distanceMeters;
         this.averageSpeedKph = averageSpeedKph;
+        this.speedSegments = speedSegments;
     }
+
     public PersonalFinishedRideDTO(Integer id,
-                                   String riderUsername,
-                                   String generatedRidesId,
-                                   LocalDateTime startTime,
-                                   LocalDateTime endTime,
-                                   Integer durationMinutes,
-                                   LocalDateTime createdAt,
-                                   List<CheckpointArrivalResponse> checkpointArrivals,
-                                   List<StopPointDTO> stopPoints,
-                                   String startingPointName,
-                                   String endingPointName) {
+            String riderUsername,
+            String generatedRidesId,
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            Integer durationMinutes,
+            LocalDateTime createdAt,
+            List<CheckpointArrivalResponse> checkpointArrivals,
+            List<StopPointDTO> stopPoints,
+            String startingPointName,
+            String endingPointName) {
         this(id, riderUsername, generatedRidesId, startTime, endTime,
                 durationMinutes, createdAt, checkpointArrivals, stopPoints,
-                startingPointName, endingPointName, null, null);
+                startingPointName, endingPointName, null, null, null);
     }
 
+    public List<SpeedSegmentDTO> getSpeedSegments() {
+        return speedSegments;
+    }
 
+    public void setSpeedSegments(List<SpeedSegmentDTO> speedSegments) {
+        this.speedSegments = speedSegments;
+    }
 
     public Integer getDistanceMeters() {
         return distanceMeters;
@@ -120,24 +129,59 @@ public class PersonalFinishedRideDTO {
     }
 
     // Getters and Setters
-    public Integer getId() { return id; }
-    public void setId(Integer id) { this.id = id; }
+    public Integer getId() {
+        return id;
+    }
 
-    public String getRiderUsername() { return riderUsername; }
-    public void setRiderUsername(String riderUsername) { this.riderUsername = riderUsername; }
+    public void setId(Integer id) {
+        this.id = id;
+    }
 
-    public String getGeneratedRidesId() { return generatedRidesId; }
-    public void setGeneratedRidesId(String generatedRidesId) { this.generatedRidesId = generatedRidesId; }
+    public String getRiderUsername() {
+        return riderUsername;
+    }
 
-    public LocalDateTime getStartTime() { return startTime; }
-    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
+    public void setRiderUsername(String riderUsername) {
+        this.riderUsername = riderUsername;
+    }
 
-    public LocalDateTime getEndTime() { return endTime; }
-    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
+    public String getGeneratedRidesId() {
+        return generatedRidesId;
+    }
 
-    public Integer getDurationMinutes() { return durationMinutes; }
-    public void setDurationMinutes(Integer durationMinutes) { this.durationMinutes = durationMinutes; }
+    public void setGeneratedRidesId(String generatedRidesId) {
+        this.generatedRidesId = generatedRidesId;
+    }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public LocalDateTime getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
+    }
+
+    public LocalDateTime getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(LocalDateTime endTime) {
+        this.endTime = endTime;
+    }
+
+    public Integer getDurationMinutes() {
+        return durationMinutes;
+    }
+
+    public void setDurationMinutes(Integer durationMinutes) {
+        this.durationMinutes = durationMinutes;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
 }
