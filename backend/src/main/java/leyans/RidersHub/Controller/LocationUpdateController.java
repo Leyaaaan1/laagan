@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import leyans.RidersHub.DTO.Request.LocationDTO.LocationUpdateRequestDTO;
+import leyans.RidersHub.DTO.Response.LocationShareResponseDTO;
 import leyans.RidersHub.ExceptionHandler.UnauthorizedAccessException;
 import leyans.RidersHub.Service.RideLocationEmitterRegistry;
 import leyans.RidersHub.Service.RideLocationService;
@@ -86,10 +87,10 @@ public class LocationUpdateController {
             @RequestParam double longitude) {
 
         try {
-            List<LocationUpdateRequestDTO> allLocations =
+            LocationShareResponseDTO response =                     // ← changed
                     rideLocationService.updateLocationAndFetchAll(
                             startedRideId, latitude, longitude);
-            return ResponseEntity.ok(allLocations);
+            return ResponseEntity.ok(response);                     // ← changed
 
         } catch (UnauthorizedAccessException.UnauthorizedException e) {
             Map<String, Object> error = new HashMap<>();

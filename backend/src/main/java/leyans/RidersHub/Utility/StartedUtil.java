@@ -4,13 +4,11 @@ package leyans.RidersHub.Utility;
 import leyans.RidersHub.DTO.Request.ParticipantLocationDTO;
 import leyans.RidersHub.DTO.Response.ActiveRideDTO;
 import leyans.RidersHub.DTO.Response.RideDetailDTO;
-import leyans.RidersHub.DTO.Response.RideResponseDTO;
 import leyans.RidersHub.DTO.Response.StartRideResponseDTO;
 import leyans.RidersHub.ExceptionHandler.RideAuthorizationException;
 import leyans.RidersHub.Repository.ParticipantLocationRepository;
 import leyans.RidersHub.Repository.StartedRideRepository;
 import leyans.RidersHub.Service.LocationService;
-import leyans.RidersHub.Service.RidesService;
 import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.Rides;
 import leyans.RidersHub.model.StartedRide;
@@ -37,7 +35,8 @@ public class StartedUtil {
 
     private final RidesUtil ridesUtil;
 
-    public StartedUtil(RiderUtil riderUtil, ParticipantLocationRepository participantLocationRepository, LocationService locationService, StartedRideRepository startedRideRepository, RidesUtil ridesUtil) {
+    public StartedUtil(RiderUtil riderUtil, ParticipantLocationRepository participantLocationRepository,
+            LocationService locationService, StartedRideRepository startedRideRepository, RidesUtil ridesUtil) {
         this.riderUtil = riderUtil;
         this.participantLocationRepository = participantLocationRepository;
         this.locationService = locationService;
@@ -45,13 +44,11 @@ public class StartedUtil {
         this.ridesUtil = ridesUtil;
     }
 
-    // ✅ Removed throws AccessDeniedException — let RideAuthorizationException propagate
     public Rider authenticateAndGetInitiator() {
         String username = riderUtil.getCurrentUsername();
         Rider initiator = riderUtil.findRiderByUsername(username);
 
         if (initiator == null) {
-            // ✅ Use semantic exception for authorization failures
             throw new RideAuthorizationException("Rider not found with username: " + username);
         }
 
@@ -72,8 +69,8 @@ public class StartedUtil {
 
             // Create a new Point instance for each participant with the same coordinates
             Point participantStartPoint = locationService.createPoint(
-                    startingPoint.getX(),  // longitude
-                    startingPoint.getY()   // latitude
+                    startingPoint.getX(), // longitude
+                    startingPoint.getY() // latitude
             );
 
             // Use the correct setter name from ParticipantLocation entity
@@ -131,7 +128,7 @@ public class StartedUtil {
         // Get the ride's starting location
         Point startPoint = ride.getStartingLocation();
         if (startPoint != null) {
-            response.setStartLatitude(startPoint.getY());  // latitude
+            response.setStartLatitude(startPoint.getY()); // latitude
             response.setStartLongitude(startPoint.getX()); // longitude
         }
 
@@ -147,18 +144,16 @@ public class StartedUtil {
         List<ParticipantLocationDTO> participantDTOs = participantLocations.stream()
                 .map(pl -> new ParticipantLocationDTO(
                         pl.getRider().getUsername(),
-                        pl.getParticipantLocation().getY(),  // latitude
-                        pl.getParticipantLocation().getX(),  // longitude
-                        pl.getLastUpdate()
-                ))
+                        pl.getParticipantLocation().getY(), // latitude
+                        pl.getParticipantLocation().getX(), // longitude
+                        pl.getLastUpdate()))
                 .collect(Collectors.toList());
 
         response.setParticipants(participantDTOs);
         response.setParticipantUsernames(
                 participantLocations.stream()
                         .map(pl -> pl.getRider().getUsername())
-                        .collect(Collectors.toList())
-        );
+                        .collect(Collectors.toList()));
 
         return response;
     }

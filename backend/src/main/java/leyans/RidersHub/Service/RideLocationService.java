@@ -1,6 +1,8 @@
 package leyans.RidersHub.Service;
 
 import leyans.RidersHub.DTO.Request.LocationDTO.LocationUpdateRequestDTO;
+import leyans.RidersHub.DTO.Response.LocationShareResponseDTO;
+import leyans.RidersHub.DTO.Response.RerouteResultDTO;
 import leyans.RidersHub.ExceptionHandler.UnauthorizedAccessException;
 import leyans.RidersHub.Repository.*;
 import leyans.RidersHub.Utility.AppLogger;
@@ -26,14 +28,14 @@ import java.util.stream.Collectors;
 public class RideLocationService {
 
     private final RiderLocationRepository locationRepo;
-    private final PsgcDataRepository psgcDataRepository;
     private final LocationService locationService;
 
     private final RiderUtil riderUtil;
     private final ParticipantLocationRepository participantLocationRepository;
     private final CheckPointUtility checkPointUtility;
     private final RideLocationEmitterRegistry rideLocationEmitterRegistry;
-    private final RideCalculationUtils rideCalculationUtils;
+    private final RouteDeviationService routeDeviationService;
+
 
 
 
@@ -43,16 +45,16 @@ public class RideLocationService {
     public RideLocationService(RiderLocationRepository locationRepo,
                                PsgcDataRepository psgcDataRepository,
                                LocationService locationService,
-                               RiderUtil riderUtil, ParticipantLocationRepository participantLocationRepository, CheckPointUtility checkPointUtility, RideLocationEmitterRegistry rideLocationEmitterRegistry, RideCalculationUtils rideCalculationUtils) {
+                               RiderUtil riderUtil, ParticipantLocationRepository participantLocationRepository, CheckPointUtility checkPointUtility, RideLocationEmitterRegistry rideLocationEmitterRegistry, RouteDeviationService routeDeviationService) {
         this.locationRepo = locationRepo;
-        this.psgcDataRepository = psgcDataRepository;
         this.locationService = locationService;
         this.riderUtil = riderUtil;
         this.participantLocationRepository = participantLocationRepository;
         this.checkPointUtility = checkPointUtility;
         this.rideLocationEmitterRegistry = rideLocationEmitterRegistry;
-        this.rideCalculationUtils = rideCalculationUtils;
+        this.routeDeviationService = routeDeviationService;
     }
+
 
     @Transactional(readOnly = true)
     public List<LocationUpdateRequestDTO> getAllRiderLocations(Integer startedRideId) {
@@ -269,36 +271,46 @@ public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer star
 
 }
 
-    @Transactional
-    public List<LocationUpdateRequestDTO> updateLocationAndFetchAll(
+     @Transactional
+    public LocationShareResponseDTO updateLocationAndFetchAll(    // ← return type changed
             Integer startedRideId,
             double latitude,
             double longitude) {
-
+ 
         updateLocation(startedRideId, latitude, longitude);
-
+ 
+        // ── NEW: per-rider reroute check — runs after the location is saved ───
+        StartedRide started = riderUtil.findStartedRideById(startedRideId);
+        String username     = riderUtil.getCurrentUsername();
+        Rides ride          = started.getRide();
+ 
+        RerouteResultDTO rerouteResult = routeDeviationService.checkAndRerouteIfNeeded(
+                ride.getGeneratedRidesId(),
+                username,
+                latitude,
+                longitude,
+                ride
+        );
+        // ─────────────────────────────────────────────────────────────────────
+ 
         List<RiderLocation> locations =
                 locationRepo.findLatestLocationPerParticipantOptimized(startedRideId);
-
+ 
         if (locations.isEmpty()) {
-            return List.of();
+            return new LocationShareResponseDTO(List.of(), rerouteResult);
         }
-
-        // Resolve generatedRidesId once from the StartedRide — all locations in this
-        // list belong to the same ride, so we only need to look it up once.
+ 
         String generatedRidesId = locations.get(0)
                 .getStartedRide().getRide().getGeneratedRidesId();
-
+ 
         List<LocationUpdateRequestDTO> result = locations.stream()
                 .map(loc -> {
                     Point p = loc.getLocation();
                     String locUsername = loc.getUsername().getUsername();
-
-                    // Check finished status per-rider so every participant in the
-                    // broadcast gets the correct tag, not just the caller.
+ 
                     boolean isFinished = checkPointUtility.isRiderFinished(
                             generatedRidesId, locUsername);
-
+ 
                     return new LocationUpdateRequestDTO(
                             startedRideId,
                             locUsername,
@@ -311,11 +323,13 @@ public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer star
                     );
                 })
                 .collect(Collectors.toList());
-
+ 
         rideLocationEmitterRegistry.broadcast(startedRideId, result);
-
-        return result;
+ 
+        return new LocationShareResponseDTO(result, rerouteResult);   // ← wrapped
     }
+ 
+ 
     @Transactional
     public void clearRiderLocation(Integer startedRideId, String username) {
         try {

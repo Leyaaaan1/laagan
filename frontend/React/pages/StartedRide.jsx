@@ -65,6 +65,7 @@ const StartedRide = ({route, navigation}) => {
       activeRide?.startedRideId,
       pollingEnabled,
       () => setCheckpointModalVisible(true), // ← onRiderFinished
+      mapRef,
     );
 
   // Cache route when online

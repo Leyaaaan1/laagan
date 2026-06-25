@@ -39,9 +39,17 @@ const AdaptiveMapView = forwardRef(
           const target = isOffline ? offlineRef : onlineRef;
           return target.current?.fitMapToRoute?.() ?? Promise.resolve(false);
         },
-        // getContainerRef is no longer used for snapshots — kept for anything else that needs it
         getContainerRef: () => containerViewRef,
-        // captureSnapshot: DELETED — snapshots now go through RideSnapshotView + captureRef
+
+        // ── NEW ──────────────────────────────────────────────────────────────
+        applyReroute: coordinatesJson => {
+          // Only meaningful on the online map — offline mode shows a cached
+          // static route and has no live rerouting.
+          onlineRef.current?.applyReroute?.(coordinatesJson);
+        },
+        clearReroute: () => {
+          onlineRef.current?.clearReroute?.();
+        },
       }),
       [isOffline],
     );

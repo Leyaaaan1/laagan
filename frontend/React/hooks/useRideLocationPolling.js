@@ -121,11 +121,12 @@ export const useLocationPermission = () => {
 // ─── useRideLocationPolling ────────────────────────────────────────────────
 
 export const useRideLocationPolling = ({
-                                         rideId,
-                                         enabled = true,
-                                         onLocationsUpdate,
-                                         onError,
-                                       }) => {
+  rideId,
+  enabled = true,
+  onLocationsUpdate,
+  onReroute,
+  onError,
+}) => {
   const {token} = useAuth();
 
   // ── exposed state ────────────────────────────────────────────────────────
@@ -159,8 +160,12 @@ export const useRideLocationPolling = ({
   const isFirstPollRef = useRef(true);
 
   // ── sync mutable refs ─────────────────────────────────────────────────────
-  useEffect(() => { enabledRef.current = enabled; }, [enabled]);
-  useEffect(() => { isOfflineRef.current = isOffline; }, [isOffline]);
+  useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
+  useEffect(() => {
+    isOfflineRef.current = isOffline;
+  }, [isOffline]);
   useEffect(() => {
     tokenRef.current = token;
   }, [token]);
@@ -177,7 +182,6 @@ export const useRideLocationPolling = ({
       esRef.current.close();
       esRef.current = null;
     }
-
   }, [rideId]);
 
   // =========================================================================
@@ -196,7 +200,6 @@ export const useRideLocationPolling = ({
       },
       () => {
         esRef.current = null;
-        // ✅ Auto-reconnect after 5s if polling is still active
         if (isPollingRef.current) {
           setTimeout(() => {
             if (isPollingRef.current) openStream();
@@ -280,7 +283,12 @@ export const useRideLocationPolling = ({
       const lastUpload = lastUploadTimestampRef.current;
 
       const distanceMoved = lastPos
-        ? haversineMeters(lastPos.latitude, lastPos.longitude, latitude, longitude)
+        ? haversineMeters(
+            lastPos.latitude,
+            lastPos.longitude,
+            latitude,
+            longitude,
+          )
         : Infinity;
 
       const timeElapsedMs = lastUpload ? Date.now() - lastUpload : Infinity;
@@ -291,15 +299,10 @@ export const useRideLocationPolling = ({
       const mustUpload =
         isFirst || hasMovedEnough || skipLimitHit || timeLimitHit;
 
-
-
       // ── branch: skip upload ─────────────────────────────────────────────
-      // SSE handles the receive side so we only need fetchAllLocations when
-      // the SSE stream is down (esRef.current === null).
       if (!mustUpload) {
         consecutiveSkipCountRef.current += 1;
 
-        // Only hit the GET endpoint if SSE is not open
         if (!esRef.current) {
           const allLocations = await fetchAllLocations(rideId);
           _handleLocationsResponse(allLocations);
@@ -310,22 +313,30 @@ export const useRideLocationPolling = ({
       // ── branch: full upload + fetch ─────────────────────────────────────
       isFirstPollRef.current = false;
 
-      const allLocations = await shareLocationAndFetchAll(rideId, latitude, longitude);
+      // ── NEW: response is now { locations, reroute } not a bare array ────
+      const {locations, reroute} = await shareLocationAndFetchAll(
+        rideId,
+        latitude,
+        longitude,
+      );
 
       lastSentPositionRef.current = {latitude, longitude};
       consecutiveSkipCountRef.current = 0;
       lastUploadTimestampRef.current = Date.now();
 
-      // The server will also broadcast via SSE after this update,
-      // but we apply the response here immediately so our own marker
-      // updates without waiting for the event round-trip.
-      _handleLocationsResponse(allLocations);
+      // Locations update — same path as before, just using the extracted array.
+      _handleLocationsResponse(locations);
+
+      // ── NEW: personal reroute — only fires for this rider when off-route ─
+      if (reroute?.rerouted && reroute.newRouteCoordinates) {
+        onReroute?.(reroute.newRouteCoordinates);
+      }
     } catch (err) {
       handlePollingError(err);
     } finally {
       pollLock.current.release();
     }
-  }, [rideId, handlePollingError, onLocationsUpdate]); // eslint-disable-line
+  }, [rideId, handlePollingError, onLocationsUpdate, onReroute]); // eslint-disable-line
 
   /**
    * Shared response normalisation used by both the upload and SSE event paths.
@@ -400,7 +411,6 @@ export const useRideLocationPolling = ({
   // =========================================================================
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
-
       if (!state.isConnected) {
         stopPolling(); // also closes SSE via closeStream()
         setIsOffline(true);
