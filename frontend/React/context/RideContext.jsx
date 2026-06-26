@@ -6,9 +6,7 @@ import React, {
   useRef,
 } from 'react';
 import {getActiveRide} from '../services/startService';
-import {
-  checkNetworkStatus
-} from '../utilities/offlineUtils';
+import {checkNetworkStatus} from '../utilities/offlineUtils';
 import {
   saveActiveRide,
   loadCachedActiveRide,
@@ -27,18 +25,21 @@ const toSerializable = ride => {
   }
   return out;
 };
-export const RideProvider = ({children}) => {
+export const RideProvider = ({children, token}) => {
   const [activeRide, setActiveRideState] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const pollingIntervalRef = useRef(null);
   const isPollingRef = useRef(false);
 
   // ─────────────────────────────────────────────────────────────────────────
-  // NEW: Load cached ride from AsyncStorage on first mount so the
-  //      "Active Ride" banner is visible immediately, even before the
-  //      network fetch finishes — and even when the device is offline.
+  // Load cached ride from AsyncStorage on first mount ONLY when a session
+  // exists. Skipping the cache load when there is no token prevents a
+  // previous account's ride from flashing on screen before the server
+  // fetch returns NOT_FOUND for the new (or logged-out) user.
   // ─────────────────────────────────────────────────────────────────────────
   useEffect(() => {
+    if (!token) return; // ← guard: don't restore cache without a session
+
     const initFromCache = async () => {
       const cached = await loadCachedActiveRide();
       if (cached) {
@@ -51,7 +52,26 @@ export const RideProvider = ({children}) => {
       }
     };
     initFromCache();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // still runs only on mount — token guard above handles cold-start
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // When the user logs out (token becomes null) immediately wipe the in-
+  // memory ride state. The AsyncStorage entry is already cleared by
+  // AuthContext._clearStorage, but resetting state here ensures the UI
+  // never shows a stale ride after switching accounts in the same session.
+  // ─────────────────────────────────────────────────────────────────────────
+  const prevTokenRef = useRef(token);
+  useEffect(() => {
+    const wasLoggedIn = prevTokenRef.current !== null;
+    const isNowLoggedOut = token === null;
+    if (wasLoggedIn && isNowLoggedOut) {
+      setActiveRideState(null);
+      stopPolling();
+    }
+    prevTokenRef.current = token;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
   // ─────────────────────────────────────────────────────────────────────────
   // NEW: Wrap the state setter so every change is automatically persisted.
   //      Components that call setActiveRide(ride) or setActiveRide(null)
@@ -126,7 +146,6 @@ export const RideProvider = ({children}) => {
     }, 10000);
   }, [fetchActiveRide]);
 
-  // ✅ FIXED: Properly stop polling
   const stopPolling = useCallback(() => {
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);

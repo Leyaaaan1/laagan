@@ -443,6 +443,7 @@ const RiderPage = ({navigation}) => {
             inside a ScrollView anymore. ─────────────────────────────── */}
       <RidesList
         mode="my"
+        userId={username}
         onRideSelect={handleRideSelect}
         style={{flex: 1}}
         contentContainerStyle={{paddingHorizontal: 15, paddingBottom: 40}}

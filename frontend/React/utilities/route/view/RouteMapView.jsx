@@ -69,30 +69,22 @@ const RouteMapView = forwardRef(
           webViewRef.current.injectJavaScript(script);
         },
 
-        // ─── Fit map to show entire route ───
         fitMapToRoute: () => {
           return new Promise(resolve => {
             if (!webViewRef.current || !webViewReadyRef.current) {
               resolve(false);
               return;
             }
-
             const script = `
           (function() {
             if (window.fitMapToRoute) {
               window.fitMapToRoute();
-              true;
-            } else {
-              false;
             }
           })();
           true;
         `;
-
             window.fitMapResolve = resolve;
-
             webViewRef.current.injectJavaScript(script);
-
             setTimeout(() => {
               if (window.fitMapResolve) {
                 window.fitMapResolve(false);
@@ -102,6 +94,31 @@ const RouteMapView = forwardRef(
           });
         },
 
+        // ── NEW: draw this rider's personal reroute in orange over the shared route
+        applyReroute: coordinatesJson => {
+          if (!webViewRef.current || !webViewReadyRef.current) return;
+          // Guard: drawRerouteForRider must exist (injected via routeDisplayScript)
+          webViewRef.current.injectJavaScript(
+            `(function() {
+      if (typeof window.drawRerouteForRider !== 'function') {
+        window.ReactNativeWebView?.postMessage(JSON.stringify({
+          type: 'rerouteError',
+          error: 'drawRerouteForRider not defined — routeDisplayScript not injected'
+        }));
+        return;
+      }
+      window.drawRerouteForRider(${JSON.stringify(coordinatesJson)});
+    })(); true;`,
+          );
+        },
+
+        // ── NEW: remove the personal reroute line (back on track, or ride ended)
+        clearReroute: () => {
+          if (!webViewRef.current || !webViewReadyRef.current) return;
+          webViewRef.current.injectJavaScript(
+            `window.clearRerouteForRider(); true;`,
+          );
+        },
       }),
       [riderMarkers, currentUsername],
     );

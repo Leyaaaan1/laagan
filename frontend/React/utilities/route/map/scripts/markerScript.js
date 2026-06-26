@@ -57,7 +57,7 @@ export const markerScript = () => `
                     [startPoint.lat, startPoint.lng],
                     '#16a34a',
                     name,
-                    \`<strong>🚀 Starting Point</strong><br><b>\${name}</b>\`
+                    \`<strong> Starting Point</strong><br><b>\${name}</b>\`
                 );
             }
 
@@ -70,7 +70,7 @@ export const markerScript = () => `
                             [stop.lat, stop.lng],
                             '#d97706',
                             name,
-                            \`<strong>🛑 Stop Point \${index + 1}</strong><br><b>\${name}</b>\`
+                            \`<strong> Stop Point \${index + 1}</strong><br><b>\${name}</b>\`
                         );
                     }
                 });
@@ -83,7 +83,7 @@ export const markerScript = () => `
                     [endPoint.lat, endPoint.lng],
                     '#dc2626',
                     name,
-                    \`<strong>🏁 Ending Point</strong><br><b>\${name}</b>\`
+                    \`<strong> Ending Point</strong><br><b>\${name}</b>\`
                 );
             }
 

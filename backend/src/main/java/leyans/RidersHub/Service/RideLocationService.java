@@ -1,6 +1,8 @@
 package leyans.RidersHub.Service;
 
 import leyans.RidersHub.DTO.Request.LocationDTO.LocationUpdateRequestDTO;
+import leyans.RidersHub.DTO.Response.LocationShareResponseDTO;
+import leyans.RidersHub.DTO.Response.RerouteResultDTO;
 import leyans.RidersHub.ExceptionHandler.UnauthorizedAccessException;
 import leyans.RidersHub.Repository.*;
 import leyans.RidersHub.Utility.AppLogger;
@@ -21,334 +23,334 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-
 @Service
 public class RideLocationService {
 
-    private final RiderLocationRepository locationRepo;
-    private final PsgcDataRepository psgcDataRepository;
-    private final LocationService locationService;
+        private final RiderLocationRepository locationRepo;
+        private final LocationService locationService;
 
-    private final RiderUtil riderUtil;
-    private final ParticipantLocationRepository participantLocationRepository;
-    private final CheckPointUtility checkPointUtility;
-    private final RideLocationEmitterRegistry rideLocationEmitterRegistry;
-    private final RideCalculationUtils rideCalculationUtils;
+        private final RiderUtil riderUtil;
+        private final CheckPointUtility checkPointUtility;
+        private final RideLocationEmitterRegistry rideLocationEmitterRegistry;
+        private final RouteDeviationService routeDeviationService;
+        private final ParticipantLocationRepository participantLocationRepository;
 
+        private static final double MOVEMENT_THRESHOLD_METERS = 15.0;
 
+        public RideLocationService(RiderLocationRepository locationRepo,
+                        PsgcDataRepository psgcDataRepository,
+                        LocationService locationService,
+                        RiderUtil riderUtil,
+                        CheckPointUtility checkPointUtility, RideLocationEmitterRegistry rideLocationEmitterRegistry,
+                        RideCalculationUtils rideCalculationUtils, RouteDeviationService routeDeviationService,
+                        ParticipantLocationRepository participantLocationRepository) {
+                this.locationRepo = locationRepo;
+                this.locationService = locationService;
+                this.riderUtil = riderUtil;
+                this.checkPointUtility = checkPointUtility;
+                this.rideLocationEmitterRegistry = rideLocationEmitterRegistry;
+                this.routeDeviationService = routeDeviationService;
+                this.participantLocationRepository = participantLocationRepository;
+        }
 
+        @Transactional(readOnly = true)
+        public List<LocationUpdateRequestDTO> getAllRiderLocations(Integer startedRideId) {
+                StartedRide started = riderUtil.findStartedRideById(startedRideId);
+                String currentUsername = riderUtil.getCurrentUsername();
+                boolean isOwner = started.getUsername().getUsername().equals(currentUsername);
+                boolean isParticipant = started.getParticipants().stream()
+                                .anyMatch(p -> p.getUsername().equals(currentUsername));
+                if (!isOwner && !isParticipant) {
+                        throw new UnauthorizedAccessException.UnauthorizedException(
+                                        "User is not authorised for this ride");
+                }
 
-    private static final double MOVEMENT_THRESHOLD_METERS = 15.0;
+                List<RiderLocation> locations = locationRepo.findLatestLocationPerParticipantOptimized(started.getId());
+                AppLogger.info(this.getClass(), "Retrieved location updates", "count", locations.size());
 
-    public RideLocationService(RiderLocationRepository locationRepo,
-                               PsgcDataRepository psgcDataRepository,
-                               LocationService locationService,
-                               RiderUtil riderUtil, ParticipantLocationRepository participantLocationRepository, CheckPointUtility checkPointUtility, RideLocationEmitterRegistry rideLocationEmitterRegistry, RideCalculationUtils rideCalculationUtils) {
-        this.locationRepo = locationRepo;
-        this.psgcDataRepository = psgcDataRepository;
-        this.locationService = locationService;
-        this.riderUtil = riderUtil;
-        this.participantLocationRepository = participantLocationRepository;
-        this.checkPointUtility = checkPointUtility;
-        this.rideLocationEmitterRegistry = rideLocationEmitterRegistry;
-        this.rideCalculationUtils = rideCalculationUtils;
-    }
+                List<LocationUpdateRequestDTO> result = locations.stream().map(loc -> {
+                        Point p = loc.getLocation();
+                        return new LocationUpdateRequestDTO(
+                                        startedRideId, // ← Pass Integer directly
+                                        loc.getUsername().getUsername(),
+                                        p.getY(), // latitude
+                                        p.getX(), // longitude
+                                        loc.getDistanceMeters(),
+                                        loc.getTimestamp(),
+                                        null);
+                }).collect(Collectors.toList());
 
-    @Transactional(readOnly = true)
-    public List<LocationUpdateRequestDTO> getAllRiderLocations(Integer startedRideId) {
-            StartedRide started = riderUtil.findStartedRideById(startedRideId);
-            String currentUsername = riderUtil.getCurrentUsername();
-            boolean isOwner = started.getUsername().getUsername().equals(currentUsername);
-            boolean isParticipant = started.getParticipants().stream()
-                    .anyMatch(p -> p.getUsername().equals(currentUsername));
-            if (!isOwner && !isParticipant) {
-                throw new UnauthorizedAccessException.UnauthorizedException(
-                        "User is not authorised for this ride");
-            }
+                AppLogger.info(this.getClass(), "Returning location updates", "count", result.size());
+                return result;
 
-            List<RiderLocation> locations = locationRepo.findLatestLocationPerParticipantOptimized(started.getId());
-            AppLogger.info(this.getClass(), "Retrieved location updates", "count", locations.size());
+        }
 
-            List<LocationUpdateRequestDTO> result = locations.stream().map(loc -> {
-                Point p = loc.getLocation();
+        // =========================================================================
+        // UPDATE LOCATION
+        // =========================================================================
+        @Transactional
+        public LocationUpdateRequestDTO updateLocation(Integer startedRideId,
+                        double latitude,
+                        double longitude) {
+                if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+                        throw new IllegalArgumentException(
+                                        "Invalid coordinates: lat=" + latitude + ", lng=" + longitude);
+                }
+                AppLogger.info(this.getClass(), "updateLocation called", "startedRideId", startedRideId, "latitude",
+                                latitude, "longitude", longitude);
+                StartedRide started = riderUtil.findStartedRideById(startedRideId);
+
+                String username = riderUtil.getCurrentUsername();
+                Rider rider = riderUtil.findRiderByUsername(username);
+
+                boolean isOwner = started.getUsername().getUsername().equals(username);
+                boolean isParticipant = started.getParticipants().stream()
+                                .anyMatch(p -> p.getUsername().equals(username));
+
+                if (!isOwner && !isParticipant) {
+                        throw new UnauthorizedAccessException.UnauthorizedException(
+                                        "User is not authorised for this ride");
+                }
+
+                Point userPoint = locationService.createPoint(longitude, latitude);
+
+                Point startPoint = started.getLocation();
+                double distanceMeters = locationRepo.getDistanceBetweenPoints(userPoint, startPoint);
+
+                RiderLocation loc = locationRepo
+                                .findFirstByStartedRideAndUsernameOrderByIdDesc(started, rider)
+                                .orElse(new RiderLocation());
+
+                if (loc.getId() != null && loc.getLocation() != null) {
+                        Point lastPoint = loc.getLocation();
+                        double delta = RideCalculationUtils.haversineMeters(
+                                        lastPoint.getY(), lastPoint.getX(), // last lat, lng
+                                        latitude, longitude // new lat, lng
+                        );
+                        if (delta < MOVEMENT_THRESHOLD_METERS) {
+                                AppLogger.debug(this.getClass(), "Skipping update — rider has not moved",
+                                                "username", username, "deltaMeters", delta);
+                                // Return the existing record without touching the DB
+                                return new LocationUpdateRequestDTO(
+                                                startedRideId, username, latitude, longitude,
+                                                loc.getDistanceMeters(),
+                                                loc.getTimestamp(), null);
+                        }
+                }
+                loc.setStartedRide(started);
+                loc.setUsername(rider);
+                loc.setLocation(userPoint);
+                loc.setTimestamp(LocalDateTime.now());
+                loc.setDistanceMeters(distanceMeters);
+
+                loc = locationRepo.save(loc);
+                locationRepo.deleteOldDuplicates(started, rider, loc.getId());
+
+                checkPointUtility.autoMarkCheckpoints(started, rider, userPoint);
+
+                AppLogger.info(this.getClass(), "Location updated successfully", "username", username, "distance",
+                                distanceMeters);
                 return new LocationUpdateRequestDTO(
-                        startedRideId,  // ← Pass Integer directly
-                        loc.getUsername().getUsername(),
-                        p.getY(),   // latitude
-                        p.getX(),   // longitude
-                        loc.getLocationName(),
-                        loc.getDistanceMeters(),
-                        loc.getTimestamp(),
-                        null
-                );
-            }).collect(Collectors.toList());
+                                startedRideId,
+                                username,
+                                latitude,
+                                longitude,
+                                distanceMeters,
+                                loc.getTimestamp(),
+                                null);
+        } // =========================================================================
+          // GET LATEST PARTICIPANT LOCATIONS
+          // =========================================================================
 
-            AppLogger.info(this.getClass(), "Returning location updates", "count", result.size());
-            return result;
+        @Transactional(readOnly = true)
+        public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer startedRideId) {
+                AppLogger.info(this.getClass(), "getLatestParticipantLocations called",
+                                "startedRideId", startedRideId);
 
-            }
+                StartedRide started = riderUtil.findStartedRideById(startedRideId);
+                String currentUsername = riderUtil.getCurrentUsername();
+                boolean isOwner = started.getUsername().getUsername().equals(currentUsername);
+                boolean isParticipant = started.getParticipants().stream()
+                                .anyMatch(p -> p.getUsername().equals(currentUsername));
+                if (!isOwner && !isParticipant) {
+                        throw new UnauthorizedAccessException.UnauthorizedException(
+                                        "User is not authorised for this ride");
+                }
+                Set<String> allRiderUsernames = new LinkedHashSet<>();
+                if (started.getUsername() != null) {
+                        allRiderUsernames.add(started.getUsername().getUsername());
+                        AppLogger.info(this.getClass(), "Owner found", "username",
+                                        started.getUsername().getUsername());
+                }
 
-    // =========================================================================
-// UPDATE LOCATION
-// =========================================================================
-    @Transactional
-    public LocationUpdateRequestDTO updateLocation(Integer startedRideId,
-                                                   double latitude,
-                                                   double longitude) {
-        if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
-            throw new IllegalArgumentException(
-                    "Invalid coordinates: lat=" + latitude + ", lng=" + longitude);
-        }
-        AppLogger.info(this.getClass(), "updateLocation called", "startedRideId", startedRideId, "latitude", latitude, "longitude", longitude);
-        StartedRide started = riderUtil.findStartedRideById(startedRideId);
+                for (Rider participant : started.getParticipants()) {
+                        boolean added = allRiderUsernames.add(participant.getUsername());
+                        if (added) {
+                                AppLogger.debug(this.getClass(), "Participant found", "username",
+                                                participant.getUsername());
+                        }
+                }
 
-        String username = riderUtil.getCurrentUsername();
-        Rider rider = riderUtil.findRiderByUsername(username);
+                AppLogger.info(this.getClass(), "Total unique riders", "count",
+                                allRiderUsernames.size());
 
-        boolean isOwner = started.getUsername().getUsername().equals(username);
-        boolean isParticipant = started.getParticipants().stream()
-                .anyMatch(p -> p.getUsername().equals(username));
+                // Step 1: Get latest LIVE locations from rider_locations
+                List<RiderLocation> liveLocations = locationRepo
+                                .findLatestLocationPerParticipantOptimized(started.getId());
 
-        if (!isOwner && !isParticipant) {
-            throw new UnauthorizedAccessException.UnauthorizedException(
-                    "User is not authorised for this ride");
-        }
+                AppLogger.info(this.getClass(), "Live locations retrieved", "count",
+                                liveLocations.size());
 
-        Point userPoint = locationService.createPoint(longitude, latitude);
+                // Step 2: Find who is missing
+                Set<String> ridersWithLiveLocations = liveLocations.stream()
+                                .map(rl -> rl.getUsername().getUsername())
+                                .collect(Collectors.toSet());
 
-        String locationName = locationService.resolveBarangayName("Unknown Location", latitude, longitude);
+                Set<String> ridersWithoutLiveLocations = new LinkedHashSet<>(allRiderUsernames);
+                ridersWithoutLiveLocations.removeAll(ridersWithLiveLocations);
 
+                if (!ridersWithoutLiveLocations.isEmpty()) {
+                        AppLogger.warn(this.getClass(), "Riders without live locations", "count",
+                                        ridersWithoutLiveLocations.size());
+                } else {
+                        AppLogger.debug(this.getClass(), "All riders have live locations");
+                }
+                ;
 
-        Point startPoint = started.getLocation();
-        double distanceMeters = locationRepo.getDistanceBetweenPoints(userPoint, startPoint);
+                // Step 3: For those missing, get from participant_location (fallback)
+                List<ParticipantLocation> fallbackLocations = new ArrayList<>();
+                for (String username : ridersWithoutLiveLocations) {
+                        Rider rider = riderUtil.findRiderByUsername(username);
+                        List<ParticipantLocation> participantLocs = participantLocationRepository
+                                        .findByStartedRideAndRider(started, rider);
 
-        RiderLocation loc = locationRepo
-                .findFirstByStartedRideAndUsernameOrderByIdDesc(started, rider)
-                .orElse(new RiderLocation());
+                        if (!participantLocs.isEmpty()) {
+                                fallbackLocations.add(participantLocs.get(0));
+                                AppLogger.info(this.getClass(), "Using fallback location", "username",
+                                                username);
+                        }
+                }
 
-        if (loc.getId() != null && loc.getLocation() != null) {
-            Point lastPoint = loc.getLocation();
-            double delta = RideCalculationUtils.haversineMeters(
-                    lastPoint.getY(), lastPoint.getX(),   // last lat, lng
-                    latitude, longitude                    // new lat, lng
-            );
-            if (delta < MOVEMENT_THRESHOLD_METERS) {
-                AppLogger.debug(this.getClass(), "Skipping update — rider has not moved",
-                        "username", username, "deltaMeters", delta);
-                // Return the existing record without touching the DB
-                return new LocationUpdateRequestDTO(
-                        startedRideId, username, latitude, longitude,
-                        loc.getLocationName(), loc.getDistanceMeters(),
-                        loc.getTimestamp(), null
-                );
-            }
-        }
-        loc.setStartedRide(started);
-        loc.setUsername(rider);
-        loc.setLocation(userPoint);
-        loc.setTimestamp(LocalDateTime.now());
-        loc.setDistanceMeters(distanceMeters);
-        loc.setLocationName(locationName); // ← always set, never null
+                // Step 4: Combine and convert to DTOs
+                List<LocationUpdateRequestDTO> result = new ArrayList<>();
 
-        loc = locationRepo.save(loc);
-        locationRepo.deleteOldDuplicates(started, rider, loc.getId());
+                // Add live locations
+                result.addAll(liveLocations.stream().map(loc -> {
+                        Point p = loc.getLocation();
+                        return new LocationUpdateRequestDTO(
+                                        startedRideId,
+                                        loc.getUsername().getUsername(),
+                                        p.getY(), // latitude
+                                        p.getX(), // longitude
+                                        loc.getDistanceMeters(),
+                                        loc.getTimestamp(),
+                                        null);
+                }).collect(Collectors.toList()));
 
-        checkPointUtility.autoMarkCheckpoints(started, rider, userPoint);
+                // Add fallback locations (from participant_location)
+                result.addAll(fallbackLocations.stream().map(loc -> {
+                        Point p = loc.getParticipantLocation();
+                        return new LocationUpdateRequestDTO(
+                                        startedRideId,
+                                        loc.getRider().getUsername(),
+                                        p.getY(), // latitude
+                                        p.getX(), // longitude
+                                        0.0, // no distance available
+                                        loc.getLastUpdate(),
+                                        null);
+                }).collect(Collectors.toList()));
 
-        AppLogger.info(this.getClass(), "Location updated successfully", "username", username, "distance", distanceMeters);
-        return new LocationUpdateRequestDTO(
-                startedRideId,
-                username,
-                latitude,
-                longitude,
-                locationName,
-                distanceMeters,
-                loc.getTimestamp(),
-                null
-        );
-    }    // =========================================================================
-// GET LATEST PARTICIPANT LOCATIONS
-// =========================================================================
-@Transactional(readOnly = true)
-public List<LocationUpdateRequestDTO> getLatestParticipantLocations(Integer startedRideId) {
-    AppLogger.info(this.getClass(), "getLatestParticipantLocations called", "startedRideId", startedRideId);
+                AppLogger.info(this.getClass(), "Returning participant locations", "total",
+                                result.size());
+                return result;
 
-        StartedRide started = riderUtil.findStartedRideById(startedRideId);
-            String currentUsername = riderUtil.getCurrentUsername();
-            boolean isOwner = started.getUsername().getUsername().equals(currentUsername);
-            boolean isParticipant = started.getParticipants().stream()
-                    .anyMatch(p -> p.getUsername().equals(currentUsername));
-            if (!isOwner && !isParticipant) {
-                throw new UnauthorizedAccessException.UnauthorizedException(
-                        "User is not authorised for this ride");
-            }
-        Set<String> allRiderUsernames = new LinkedHashSet<>();
-        if (started.getUsername() != null) {
-            allRiderUsernames.add(started.getUsername().getUsername());
-            AppLogger.info(this.getClass(), "Owner found", "username", started.getUsername().getUsername());
-        }
-
-        for (Rider participant : started.getParticipants()) {
-            boolean added = allRiderUsernames.add(participant.getUsername());
-            if (added) {
-                AppLogger.debug(this.getClass(), "Participant found", "username", participant.getUsername());
-            }
         }
 
-        AppLogger.info(this.getClass(), "Total unique riders", "count", allRiderUsernames.size());
+        @Transactional
+        public LocationShareResponseDTO updateLocationAndFetchAll( // ← return type changed
+                        Integer startedRideId,
+                        double latitude,
+                        double longitude) {
 
-        // Step 1: Get latest LIVE locations from rider_locations
-        List<RiderLocation> liveLocations = locationRepo
-                .findLatestLocationPerParticipantOptimized(started.getId());
+                updateLocation(startedRideId, latitude, longitude);
 
-        AppLogger.info(this.getClass(), "Live locations retrieved", "count", liveLocations.size());
+                // ── NEW: per-rider reroute check — runs after the location is saved ───
+                StartedRide started = riderUtil.findStartedRideById(startedRideId);
+                String username = riderUtil.getCurrentUsername();
+                Rides ride = started.getRide();
 
-        // Step 2: Find who is missing
-        Set<String> ridersWithLiveLocations = liveLocations.stream()
-                .map(rl -> rl.getUsername().getUsername())
-                .collect(Collectors.toSet());
+                RerouteResultDTO rerouteResult = routeDeviationService.checkAndRerouteIfNeeded(
+                                ride.getGeneratedRidesId(),
+                                username,
+                                latitude,
+                                longitude,
+                                ride);
+                // ─────────────────────────────────────────────────────────────────────
 
-        Set<String> ridersWithoutLiveLocations = new LinkedHashSet<>(allRiderUsernames);
-        ridersWithoutLiveLocations.removeAll(ridersWithLiveLocations);
+                List<RiderLocation> locations = locationRepo.findLatestLocationPerParticipantOptimized(startedRideId);
 
-        if (!ridersWithoutLiveLocations.isEmpty()) {
-            AppLogger.warn(this.getClass(), "Riders without live locations", "count", ridersWithoutLiveLocations.size());
-        } else {
-            AppLogger.debug(this.getClass(), "All riders have live locations");
-        };
+                if (locations.isEmpty()) {
+                        return new LocationShareResponseDTO(List.of(), rerouteResult);
+                }
 
-        // Step 3: For those missing, get from participant_location (fallback)
-        List<ParticipantLocation> fallbackLocations = new ArrayList<>();
-        for (String username : ridersWithoutLiveLocations) {
-            Rider rider = riderUtil.findRiderByUsername(username);
-            List<ParticipantLocation> participantLocs = participantLocationRepository
-                    .findByStartedRideAndRider(started, rider);
+                String generatedRidesId = locations.get(0)
+                                .getStartedRide().getRide().getGeneratedRidesId();
 
-            if (!participantLocs.isEmpty()) {
-                fallbackLocations.add(participantLocs.get(0));
-                AppLogger.info(this.getClass(), "Using fallback location", "username", username);
-            }
+                List<LocationUpdateRequestDTO> result = locations.stream()
+                                .map(loc -> {
+                                        Point p = loc.getLocation();
+                                        String locUsername = loc.getUsername().getUsername();
+
+                                        boolean isFinished = checkPointUtility.isRiderFinished(
+                                                        generatedRidesId, locUsername);
+
+                                        return new LocationUpdateRequestDTO(
+                                                        startedRideId,
+                                                        locUsername,
+                                                        p.getY(),
+                                                        p.getX(),
+                                                        loc.getDistanceMeters(),
+                                                        loc.getTimestamp(),
+                                                        isFinished ? "RIDER_FINISHED" : null);
+                                })
+                                .collect(Collectors.toList());
+
+                rideLocationEmitterRegistry.broadcast(startedRideId, result);
+
+                return new LocationShareResponseDTO(result, rerouteResult); // ← wrapped
         }
 
-        // Step 4: Combine and convert to DTOs
-        List<LocationUpdateRequestDTO> result = new ArrayList<>();
-
-        // Add live locations
-        result.addAll(liveLocations.stream().map(loc -> {
-            Point p = loc.getLocation();
-            return new LocationUpdateRequestDTO(
-                    startedRideId,
-                    loc.getUsername().getUsername(),
-                    p.getY(),   // latitude
-                    p.getX(),   // longitude
-                    loc.getLocationName(),
-                    loc.getDistanceMeters(),
-                    loc.getTimestamp(),
-                    null
-            );
-        }).collect(Collectors.toList()));
-
-        // Add fallback locations (from participant_location)
-        result.addAll(fallbackLocations.stream().map(loc -> {
-            Point p = loc.getParticipantLocation();
-            return new LocationUpdateRequestDTO(
-                    startedRideId,
-                    loc.getRider().getUsername(),
-                    p.getY(),   // latitude
-                    p.getX(),   // longitude
-                    "Starting Point",  // or get from location name
-                    0.0,  // no distance available
-                    loc.getLastUpdate(),
-                    null
-            );
-        }).collect(Collectors.toList()));
-
-        AppLogger.info(this.getClass(), "Returning participant locations", "total", result.size());
-        return result;
-
-
-}
-
-    @Transactional
-    public List<LocationUpdateRequestDTO> updateLocationAndFetchAll(
-            Integer startedRideId,
-            double latitude,
-            double longitude) {
-
-        updateLocation(startedRideId, latitude, longitude);
-
-        List<RiderLocation> locations =
-                locationRepo.findLatestLocationPerParticipantOptimized(startedRideId);
-
-        if (locations.isEmpty()) {
-            return List.of();
+        @Transactional
+        public void clearRiderLocation(Integer startedRideId, String username) {
+                try {
+                        StartedRide started = riderUtil.findStartedRideById(startedRideId);
+                        Rider rider = riderUtil.findRiderByUsername(username);
+                        locationRepo.deleteByStartedRideAndRider(started, rider);
+                        // Also broadcast the updated list so SSE clients see the removal immediately
+                        List<LocationUpdateRequestDTO> updated = getAllRiderLocations(startedRideId);
+                        rideLocationEmitterRegistry.broadcast(startedRideId, updated);
+                        AppLogger.info(this.getClass(), "Cleared rider location on leave/logout",
+                                        "username", username, "startedRideId", startedRideId);
+                } catch (Exception e) {
+                        // Non-fatal — log and continue, don't block the leave/logout flow
+                        AppLogger.warn(this.getClass(), "Failed to clear rider location",
+                                        "username", username, "error", e.getMessage());
+                }
         }
 
-        // Resolve generatedRidesId once from the StartedRide — all locations in this
-        // list belong to the same ride, so we only need to look it up once.
-        String generatedRidesId = locations.get(0)
-                .getStartedRide().getRide().getGeneratedRidesId();
+        @Transactional(readOnly = true)
+        public void validateRideAccess(Integer startedRideId) {
+                StartedRide started = riderUtil.findStartedRideById(startedRideId);
+                String currentUsername = riderUtil.getCurrentUsername();
 
-        List<LocationUpdateRequestDTO> result = locations.stream()
-                .map(loc -> {
-                    Point p = loc.getLocation();
-                    String locUsername = loc.getUsername().getUsername();
+                boolean isOwner = started.getUsername().getUsername().equals(currentUsername);
+                boolean isParticipant = started.getParticipants().stream()
+                                .anyMatch(p -> p.getUsername().equals(currentUsername));
 
-                    // Check finished status per-rider so every participant in the
-                    // broadcast gets the correct tag, not just the caller.
-                    boolean isFinished = checkPointUtility.isRiderFinished(
-                            generatedRidesId, locUsername);
-
-                    return new LocationUpdateRequestDTO(
-                            startedRideId,
-                            locUsername,
-                            p.getY(),
-                            p.getX(),
-                            loc.getLocationName(),
-                            loc.getDistanceMeters(),
-                            loc.getTimestamp(),
-                            isFinished ? "RIDER_FINISHED" : null
-                    );
-                })
-                .collect(Collectors.toList());
-
-        rideLocationEmitterRegistry.broadcast(startedRideId, result);
-
-        return result;
-    }
-    @Transactional
-    public void clearRiderLocation(Integer startedRideId, String username) {
-        try {
-            StartedRide started = riderUtil.findStartedRideById(startedRideId);
-            Rider rider = riderUtil.findRiderByUsername(username);
-            locationRepo.deleteByStartedRideAndRider(started, rider);
-            // Also broadcast the updated list so SSE clients see the removal immediately
-            List<LocationUpdateRequestDTO> updated =
-                    getAllRiderLocations(startedRideId);
-            rideLocationEmitterRegistry.broadcast(startedRideId, updated);
-            AppLogger.info(this.getClass(), "Cleared rider location on leave/logout",
-                    "username", username, "startedRideId", startedRideId);
-        } catch (Exception e) {
-            // Non-fatal — log and continue, don't block the leave/logout flow
-            AppLogger.warn(this.getClass(), "Failed to clear rider location",
-                    "username", username, "error", e.getMessage());
+                if (!isOwner && !isParticipant) {
+                        throw new UnauthorizedAccessException.UnauthorizedException(
+                                        "User is not authorised for this ride");
+                }
         }
-    }
-
-
-    @Transactional(readOnly = true)
-    public void validateRideAccess(Integer startedRideId) {
-        StartedRide started = riderUtil.findStartedRideById(startedRideId);
-        String currentUsername = riderUtil.getCurrentUsername();
-
-        boolean isOwner = started.getUsername().getUsername().equals(currentUsername);
-        boolean isParticipant = started.getParticipants().stream()
-                .anyMatch(p -> p.getUsername().equals(currentUsername));
-
-        if (!isOwner && !isParticipant) {
-            throw new UnauthorizedAccessException.UnauthorizedException(
-                    "User is not authorised for this ride");
-        }
-    }
 
 }

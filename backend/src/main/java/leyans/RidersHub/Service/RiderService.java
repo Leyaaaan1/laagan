@@ -1,20 +1,15 @@
 package leyans.RidersHub.Service;
 
-
 import jakarta.transaction.Transactional;
-import leyans.RidersHub.DTO.Request.RiderDTO.RiderDTO;
-import leyans.RidersHub.DTO.Response.RiderResponseDTO;
 import leyans.RidersHub.Repository.RiderTypeRepository;
 import leyans.RidersHub.Service.Auth.AccountLockoutService;
 import leyans.RidersHub.Utility.AppLogger;
 import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.RiderType;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import leyans.RidersHub.Repository.RiderRepository;
 import java.util.ArrayList;
-
 
 @Service
 @Transactional
@@ -24,12 +19,9 @@ public class RiderService {
     private final RiderTypeRepository riderTypeRepository;
     private final PasswordEncoder passwordEncoder;
 
-
-
-
     public RiderService(RiderRepository riderRepository,
-                        RiderTypeRepository riderTypeRepository,
-                        PasswordEncoder passwordEncoder) {
+            RiderTypeRepository riderTypeRepository,
+            PasswordEncoder passwordEncoder) {
         this.riderRepository = riderRepository;
         this.riderTypeRepository = riderTypeRepository;
         this.passwordEncoder = passwordEncoder;
@@ -41,20 +33,15 @@ public class RiderService {
         return riderTypeRepository.save(riderType);
     }
 
-
-
-
-
     public String registerRiderWithValidation(String displayUsername, String email,
-                                              String password, String clientIp,
-                                              AccountLockoutService lockoutService) {
+            String password, String clientIp,
+            AccountLockoutService lockoutService) {
         int attempts = lockoutService.getRegisterAttempts(clientIp);
         if (attempts >= 3) {
             throw new RuntimeException("Registration limit exceeded for this IP");
         }
         return registerRider(displayUsername, password, email);
     }
-
 
     // RiderService.java
     public String registerRider(String username, String password, String email) {
@@ -86,11 +73,9 @@ public class RiderService {
 
     }
 
-
     public Rider getRiderByUsername(String username) {
         AppLogger.info(this.getClass(), "getRiderByUsername called", "username", username);
 
-        // ✅ Use orElseThrow to handle Optional
         Rider rider = riderRepository.findByUsername(username)
                 .orElseThrow(() -> {
                     AppLogger.throwResourceNotFound(this.getClass(),
@@ -114,8 +99,4 @@ public class RiderService {
         return riderRepository.findByUsername(username).isPresent();
     }
 
-
 }
-
-
-

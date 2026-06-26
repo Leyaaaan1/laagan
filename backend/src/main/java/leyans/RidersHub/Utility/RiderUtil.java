@@ -36,7 +36,6 @@ public class RiderUtil {
 
 
     public Rider findRiderByUsername(String username) {
-        // ✅ Use orElseThrow with Optional
         return riderRepository.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("Rider not found with username: " + username));
     }

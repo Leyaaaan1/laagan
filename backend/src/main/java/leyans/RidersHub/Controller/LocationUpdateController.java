@@ -1,10 +1,10 @@
 package leyans.RidersHub.Controller;
 
-
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import leyans.RidersHub.DTO.Request.LocationDTO.LocationUpdateRequestDTO;
+import leyans.RidersHub.DTO.Response.LocationShareResponseDTO;
 import leyans.RidersHub.ExceptionHandler.UnauthorizedAccessException;
 import leyans.RidersHub.Service.RideLocationEmitterRegistry;
 import leyans.RidersHub.Service.RideLocationService;
@@ -26,17 +26,18 @@ public class LocationUpdateController {
     final private RideLocationService rideLocationService;
     private final RideLocationEmitterRegistry emitterRegistry;
 
-
-    public LocationUpdateController(RideLocationService rideLocationService, RideLocationEmitterRegistry emitterRegistry) {
+    public LocationUpdateController(RideLocationService rideLocationService,
+            RideLocationEmitterRegistry emitterRegistry) {
         this.rideLocationService = rideLocationService;
         this.emitterRegistry = emitterRegistry;
     }
 
-    @GetMapping("/{startedRideId}/all-riders")  // ← Update path variable name
+    @GetMapping("/{startedRideId}/all-riders") // ← Update path variable name
     public ResponseEntity<List<LocationUpdateRequestDTO>> getAllRiderLocations(
-            @PathVariable Integer startedRideId) {  // ← Changed to Integer
+            @PathVariable Integer startedRideId) { // ← Changed to Integer
 
-        System.out.println("\n [GET /{startedRideId}/all-riders] Fetching all rider locations for Ride: " + startedRideId);
+        System.out.println(
+                "\n [GET /{startedRideId}/all-riders] Fetching all rider locations for Ride: " + startedRideId);
         try {
             List<LocationUpdateRequestDTO> locations = rideLocationService.getAllRiderLocations(startedRideId);
             return ResponseEntity.ok(locations);
@@ -44,6 +45,7 @@ public class LocationUpdateController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
     @GetMapping(value = "/{startedRideId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamLocations(
             @PathVariable Integer startedRideId,
@@ -58,14 +60,12 @@ public class LocationUpdateController {
         return emitterRegistry.subscribe(startedRideId);
     }
 
-
-    @GetMapping("/{startedRideId}/locations")  // ← Update path variable name
+    @GetMapping("/{startedRideId}/locations") // ← Update path variable name
     public ResponseEntity<List<LocationUpdateRequestDTO>> getParticipantsLocations(
-            @PathVariable Integer startedRideId) {  // ← Changed to Integer
+            @PathVariable Integer startedRideId) { // ← Changed to Integer
         AppLogger.info(this.getClass(), "GET /{startedRideId}/locations called");
         try {
-            List<LocationUpdateRequestDTO> locations =
-                    rideLocationService.getLatestParticipantLocations(startedRideId);
+            List<LocationUpdateRequestDTO> locations = rideLocationService.getLatestParticipantLocations(startedRideId);
             AppLogger.info(this.getClass(), "Fetched participant locations");
             return ResponseEntity.ok(locations);
 
@@ -77,8 +77,6 @@ public class LocationUpdateController {
         }
     }
 
-
-
     @PostMapping("/{startedRideId}/share")
     public ResponseEntity<?> shareLocationAndGetParticipants(
             @PathVariable Integer startedRideId,
@@ -86,10 +84,10 @@ public class LocationUpdateController {
             @RequestParam double longitude) {
 
         try {
-            List<LocationUpdateRequestDTO> allLocations =
+            LocationShareResponseDTO response = // ← changed
                     rideLocationService.updateLocationAndFetchAll(
                             startedRideId, latitude, longitude);
-            return ResponseEntity.ok(allLocations);
+            return ResponseEntity.ok(response); // ← changed
 
         } catch (UnauthorizedAccessException.UnauthorizedException e) {
             Map<String, Object> error = new HashMap<>();
@@ -118,36 +116,6 @@ public class LocationUpdateController {
             error.put("error", "Internal Server Error");
             error.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-        }
-    }
-
-
-    @GetMapping("/{startedRideId}/test")
-    public ResponseEntity<Map<String, Object>> testDatabaseState(
-            @PathVariable Integer startedRideId) {
-
-        System.out.println("\n🧪 [TEST] Database check for started ride: " + startedRideId);
-
-        Map<String, Object> response = new HashMap<>();
-
-        try {
-            List<LocationUpdateRequestDTO> locations =
-                    rideLocationService.getLatestParticipantLocations(startedRideId);
-            response.put("startedRideId", startedRideId);
-            response.put("success", true);
-            response.put("locationCount", locations.size());
-            response.put("locations", locations);
-            response.put("message", "Database query successful");
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            response.put("startedRideId", startedRideId);
-            response.put("success", false);
-            response.put("error", e.getMessage());
-            response.put("type", e.getClass().getSimpleName());
-
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 

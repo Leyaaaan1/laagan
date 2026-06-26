@@ -16,7 +16,6 @@ public class LocationUpdateRequestDTO {
     @DecimalMax(value = "180.0", message = "Longitude must be between -180 and 180")
     private double longitude;
 
-    private String locationName;
     private double distanceMeters;
 
     private String username;
@@ -24,14 +23,12 @@ public class LocationUpdateRequestDTO {
     private String riderStatus;
 
     public LocationUpdateRequestDTO(Integer startedRideId, String username,
-                                    double latitude, double longitude,
-                                    String locationName, double distanceMeters,
-                                    LocalDateTime timestamp, String riderStatus) {
+            double latitude, double longitude, double distanceMeters,
+            LocalDateTime timestamp, String riderStatus) {
         this.startedRideId = startedRideId;
         this.username = username;
         this.latitude = latitude;
         this.longitude = longitude;
-        this.locationName = locationName;
         this.distanceMeters = distanceMeters;
         this.timestamp = timestamp;
         this.riderStatus = riderStatus;
@@ -51,14 +48,6 @@ public class LocationUpdateRequestDTO {
 
     public void setRiderStatus(String riderStatus) {
         this.riderStatus = riderStatus;
-    }
-
-    public String getLocationName() {
-        return locationName;
-    }
-
-    public void setLocationName(String locationName) {
-        this.locationName = locationName;
     }
 
     public String getUsername() {

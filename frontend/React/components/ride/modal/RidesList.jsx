@@ -21,6 +21,7 @@ const RidesList = ({
   ListHeaderComponent,
   style,
   contentContainerStyle = {padding: 15},
+  userId,
 }) => {
   const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -93,8 +94,22 @@ const RidesList = ({
   useEffect(() => () => clearRetryTimers(), []);
 
   useEffect(() => {
-    loadRides(0, true);
+    setRides([]);
+    setError('');
+    setIsTimeout(false);
+    setHasMore(true);
+    setPage(0);
   }, [mode]);
+
+  useEffect(() => {
+    if (!userId) return;
+    setRides([]);
+    setError('');
+    setIsTimeout(false);
+    setHasMore(true);
+    setPage(0);
+    loadRides(0, true);
+  }, [userId]);
 
   const handleRefresh = useCallback(() => loadRides(0, true), [mode]);
   const handleLoadMore = useCallback(() => {

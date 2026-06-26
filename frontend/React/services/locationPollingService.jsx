@@ -1,8 +1,37 @@
 // === locationPollingService.jsx ===
 
-import {api} from './Apiclient';
+import { api } from './Apiclient';
 import Geolocation from '@react-native-community/geolocation';
-import {AppState, Platform, PermissionsAndroid} from 'react-native'; // AppState added
+import { AppState, Platform, PermissionsAndroid } from 'react-native'; // AppState added
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// ─── Reroute cache helpers ────────────────────────────────────────────────────
+// Persists the last known reroute per rideId so the map can restore it
+// instantly when the ride screen is closed and reopened — before the first
+// poll response comes back from the server.
+
+const rerouteKey = rideId => `reroute_cache_${rideId}`;
+
+export const saveRerouteCache = async (rideId, coordinates) => {
+  try {
+    await AsyncStorage.setItem(rerouteKey(rideId), coordinates);
+  } catch (_) { /* non-fatal — live poll will still work */ }
+};
+
+export const loadRerouteCache = async rideId => {
+  try {
+    return await AsyncStorage.getItem(rerouteKey(rideId));
+  } catch (_) {
+    return null;
+  }
+};
+
+export const clearRerouteCache = async rideId => {
+  try {
+    await AsyncStorage.removeItem(rerouteKey(rideId));
+  } catch (_) { /* non-fatal */ }
+};
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Movement-based skip logic lives in useRideLocationPolling (hook layer).
 // The service layer is intentionally stateless — it just executes what it's told.
@@ -43,9 +72,9 @@ export const getCurrentPosition = async () => {
             }),
           err => reject(new Error(`GPS Error (${err.code}): ${err.message}`)),
           {
-            enableHighAccuracy: false,
+            enableHighAccuracy: true,   // ← GPS provider, what the emulator actually feeds
             timeout: 10000,
-            maximumAge: 60000,
+            maximumAge: 30000,
           },
         );
       },
@@ -60,7 +89,6 @@ export const getCurrentPosition = async () => {
 
 export const shareLocationAndFetchAll = async (rideId, latitude, longitude) => {
   if (!rideId) throw new Error('Missing rideId');
-
 
   try {
     const response = await api.post(
@@ -79,11 +107,22 @@ export const shareLocationAndFetchAll = async (rideId, latitude, longitude) => {
       throw new Error(errorMsg);
     }
 
-    return response.json();
+    const data = await response.json();
+
+    // ── NEW: backend now returns { locations: [...], reroute: {...} }
+    // Guard against old response shape (bare array) during any transition.
+    if (Array.isArray(data)) {
+      // Old shape — backend not yet deployed; treat as locations only.
+      return { locations: data, reroute: null };
+    }
+
+    return {
+      locations: data.locations ?? [],
+      reroute: data.reroute ?? null, // { rerouted: bool, newRouteCoordinates: string|null }
+    };
   } catch (error) {
     const errorMsg = error.message || String(error);
 
-    // Authentication errors (fatal)
     if (
       errorMsg.includes('AUTH_EXPIRED') ||
       errorMsg.includes('Session expired') ||
@@ -91,7 +130,6 @@ export const shareLocationAndFetchAll = async (rideId, latitude, longitude) => {
     ) {
       throw new Error('Session expired. Please log in again.');
     }
-
     if (
       errorMsg.includes('AUTH_FORBIDDEN') ||
       errorMsg.includes('Unauthorized') ||
@@ -99,14 +137,11 @@ export const shareLocationAndFetchAll = async (rideId, latitude, longitude) => {
     ) {
       throw new Error('Unauthorized to share location.');
     }
-
     if (errorMsg.includes('AUTH_MISSING')) {
       const err = new Error('Please log in again.');
-      err.code = 'AUTH_MISSING'; // code used for logic branching in isAuthError()
+      err.code = 'AUTH_MISSING';
       throw err;
     }
-
-    // Server errors (retryable)
     if (
       errorMsg.includes('500') ||
       errorMsg.includes('502') ||
@@ -115,8 +150,6 @@ export const shareLocationAndFetchAll = async (rideId, latitude, longitude) => {
     ) {
       throw new Error(`SERVER_ERROR - ${errorMsg}`);
     }
-
-    // Ride errors (fatal)
     if (
       errorMsg.includes('404') ||
       errorMsg.includes('not found') ||

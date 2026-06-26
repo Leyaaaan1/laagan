@@ -23,7 +23,7 @@ public class Rides {
     @Column(name = "rides_id", nullable = false)
     private Integer ridesId;
 
-    @Column(name = "generated_rides_id", nullable = false, unique = true, length = 12)
+    @Column(name = "generated_rides_id", nullable = false, unique = true, length = 12)  
     private String generatedRidesId;
 
     @Column(name = "location_name", nullable = false)
@@ -80,8 +80,6 @@ public class Rides {
     @Column(name = "location", columnDefinition = "geometry(Point,4326)")
     private Point location;
 
-    @Column(name = "map_image_url", length = 500)
-    private String mapImageUrl;
 
 
     @Column(name = "route_coordinates", columnDefinition = "TEXT")
@@ -103,7 +101,6 @@ public class Rides {
                  String endingPointName, Point location, Point startingLocation,
                  Point endingLocation, String ridesName, String description,
                  Rider username, RiderType riderType, Integer distance, LocalDateTime date,
-                 String mapImageUrl,
                  String routeCoordinates, Boolean active) {
         this.generatedRidesId = generatedRidesId;
         this.locationName = locationName;
@@ -118,7 +115,6 @@ public class Rides {
         this.endingLocation = endingLocation;
         this.startingPointName = startingPointName;
         this.endingPointName = endingPointName;
-        this.mapImageUrl = mapImageUrl;
 
         this.routeCoordinates = routeCoordinates;
         this.active = active;
@@ -156,14 +152,6 @@ public class Rides {
 
     public void setGeneratedRidesId(String generatedRidesId) {
         this.generatedRidesId = generatedRidesId;
-    }
-
-    public String getMapImageUrl() {
-        return mapImageUrl;
-    }
-
-    public void setMapImageUrl(String mapImageUrl) {
-        this.mapImageUrl = mapImageUrl;
     }
 
     public String getStartingPointName() {

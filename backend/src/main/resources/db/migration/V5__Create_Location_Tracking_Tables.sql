@@ -42,7 +42,10 @@ CREATE TABLE public.finished_rides (
                                        start_time TIMESTAMP NOT NULL,
                                        end_time TIMESTAMP NOT NULL,
                                        duration_minutes INTEGER,
+                                       average_speed_kph DOUBLE PRECISION,
+                                       snapshot_url VARCHAR(1000),
                                        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+
 );
 
 -- FINISHED RIDE PARTICIPANTS
@@ -59,6 +62,8 @@ CREATE TABLE public.personal_finished_rides (
                                                 start_time TIMESTAMP NOT NULL,
                                                 end_time TIMESTAMP NOT NULL,
                                                 duration_minutes INTEGER,
+                                                average_speed_kph DOUBLE PRECISION,
+                                                snapshot_url VARCHAR(1000),
                                                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                                                 CONSTRAINT uq_personal_finished_ride UNIQUE (generated_rides_id, rider_username)
 );

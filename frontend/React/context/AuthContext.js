@@ -20,6 +20,7 @@ import {
   checkNetworkStatus,
   getStoredCredentials,
 } from '../utilities/offlineUtils';
+import {clearCachedActiveRide} from '../utilities/activeRideStorage';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({children}) => {
@@ -70,7 +71,6 @@ export const AuthProvider = ({children}) => {
 
       // 3. Check network status
       const networkStatus = await checkNetworkStatus();
-
 
       // 4. Load refresh token from Keychain
       const credentials = await getStoredCredentials();
@@ -184,14 +184,16 @@ export const AuthProvider = ({children}) => {
 
       await saveCachedAccessToken(newAccessToken);
 
-
       await Keychain.setGenericPassword('userToken', newRefreshToken, {
         accessibilityLevel: Keychain.ACCESSIBLE_WHEN_UNLOCKED_THIS_DEVICE_ONLY,
         service: 'com.ridershub.auth',
       });
 
       await AsyncStorage.setItem('username', newUsername);
-      await AsyncStorage.setItem('onboardingCompleted', onboardingDone ? 'true' : 'false'); // ← ADD
+      await AsyncStorage.setItem(
+        'onboardingCompleted',
+        onboardingDone ? 'true' : 'false',
+      ); // ← ADD
 
       return newAccessToken;
     } catch (error) {
@@ -206,7 +208,6 @@ export const AuthProvider = ({children}) => {
 
     setIsRefreshing(true);
     try {
-
       const response = await fetch(`${API_BASE_URL}/riders/refresh`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -214,7 +215,6 @@ export const AuthProvider = ({children}) => {
       });
 
       if (!response.ok) {
-
         // NEW: Handle token refresh failure
         if (response.status === 401 || response.status === 403) {
           await onTokenRefreshFailed(
@@ -256,7 +256,6 @@ export const AuthProvider = ({children}) => {
 
   const onTokenRefreshFailed = async message => {
     try {
-
       // Clear token metadata
       await clearTokenExpiry();
 
@@ -266,8 +265,7 @@ export const AuthProvider = ({children}) => {
 
       // Re-export this in context so screens can call it
       return {shouldRedirectToAuth: true, message};
-    } catch (err) {
-    }
+    } catch (err) {}
   };
   useEffect(() => {
     if (!token) return;
@@ -292,18 +290,20 @@ export const AuthProvider = ({children}) => {
   const _clearStorage = async () => {
     try {
       await Keychain.resetGenericPassword({service: 'com.ridershub.auth'});
-    } catch (err) {
-    }
+    } catch (err) {}
     try {
       await AsyncStorage.removeItem('username');
       await AsyncStorage.removeItem('onboardingCompleted');
-    } catch (err) {
-    }
+    } catch (err) {}
     try {
       await clearTokenExpiry();
       // ✅ clearTokenExpiry already clears cachedAccessToken
-    } catch (err) {
-    }
+    } catch (err) {}
+    try {
+      // ✅ Clear the active ride cache so a stale ride from a previous
+      //    account is never shown to the next user on this device.
+      await clearCachedActiveRide();
+    } catch (err) {}
   };
   // ─── Public: reset all auth state + persisted storage ───
   // Pass a callback to AuthProvider that will be called on logout
@@ -333,8 +333,7 @@ export const AuthProvider = ({children}) => {
         'autoLoginPreference',
         prefer ? 'true' : 'false',
       );
-    } catch (err) {
-    }
+    } catch (err) {}
   };
 
   const logout = async () => {
@@ -351,8 +350,7 @@ export const AuthProvider = ({children}) => {
           Authorization: `Bearer ${currentToken}`,
           'Content-Type': 'application/json',
         },
-      }).catch(err => {
-      });
+      }).catch(err => {});
     }
   };
 
@@ -367,8 +365,7 @@ export const AuthProvider = ({children}) => {
           Authorization: `Bearer ${currentToken}`,
           'Content-Type': 'application/json',
         },
-      }).catch(err => {
-      });
+      }).catch(err => {});
     }
   };
 

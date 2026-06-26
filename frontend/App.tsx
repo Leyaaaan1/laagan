@@ -82,6 +82,7 @@ const NavigationContent = () => {
   useDeepLinking();
   setAuthContextRef(auth);
   GoogleSignin.configure({webClientId: googleclientid, offlineAccess: false});
+  
   useEffect(() => {
     Promise.all([
       AsyncStorage.getItem('@rideapp_onboarding_done'),

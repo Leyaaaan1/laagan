@@ -7,13 +7,11 @@ import leyans.RidersHub.Utility.AppLogger;
 import leyans.RidersHub.Utility.FinishedRideUtility;
 import leyans.RidersHub.Utility.StartedUtil;
 import leyans.RidersHub.model.*;
-import leyans.RidersHub.model.FinishedRide.FinishedRide;
 import leyans.RidersHub.model.participant.RideCheckpointArrival;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-
 
 @Service
 public class FinishedRideService {
@@ -28,12 +26,13 @@ public class FinishedRideService {
     private final PersonalFinishedRideService personalFinishedRideService;
     private final RideLocationEmitterRegistry rideLocationEmitterRegistry;
 
-
     public FinishedRideService(StartedRideRepository startedRideRepository,
-                               RidesRepository ridesRepository,
-                               FinishedRideRepository finishedRideRepository,
-                               StartedUtil startedUtil,
-                               RideCheckpointArrivalRepository rideCheckpointArrivalRepository, FinishedRideUtility finishedRideUtility, RideStatusService rideStatusService, PersonalFinishedRideService personalFinishedRideService, RideLocationEmitterRegistry rideLocationEmitterRegistry) {
+            RidesRepository ridesRepository,
+            FinishedRideRepository finishedRideRepository,
+            StartedUtil startedUtil,
+            RideCheckpointArrivalRepository rideCheckpointArrivalRepository, FinishedRideUtility finishedRideUtility,
+            RideStatusService rideStatusService, PersonalFinishedRideService personalFinishedRideService,
+            RideLocationEmitterRegistry rideLocationEmitterRegistry) {
         this.startedRideRepository = startedRideRepository;
         this.ridesRepository = ridesRepository;
         this.finishedRideRepository = finishedRideRepository;
@@ -58,7 +57,8 @@ public class FinishedRideService {
             throw new IllegalStateException("Ride is not currently active");
         }
 
-        // NEW: if the ride was already force-finished by the creator, block personal finish
+        // NEW: if the ride was already force-finished by the creator, block personal
+        // finish
         if (finishedRideRepository.existsByRideGeneratedRidesId(generatedRidesId)) {
             throw new IllegalStateException("This ride has already been finished by the creator");
         }
@@ -67,8 +67,7 @@ public class FinishedRideService {
                 .existsByRideGeneratedRidesIdAndRiderUsernameAndCheckpointType(
                         ride.getGeneratedRidesId(),
                         requester.getUsername(),
-                        RideCheckpointArrival.CheckpointType.ENDING
-                );
+                        RideCheckpointArrival.CheckpointType.ENDING);
 
         if (!requesterAtEnding) {
             throw new IllegalStateException("You must reach the ending point before finishing the ride");
@@ -80,6 +79,7 @@ public class FinishedRideService {
 
         return finishedRideUtility.buildPersonalFinishResponse(generatedRidesId, requester);
     }
+
     @Transactional
     public FinishedRideResponseDTO forceFinishRide(String generatedRidesId) {
         AppLogger.info(this.getClass(), "forceFinishRide called", "generatedRidesId", generatedRidesId);
@@ -116,6 +116,7 @@ public class FinishedRideService {
 
         return finishedRideUtility.buildAndSaveFinishedRide(startedRide, ride, requester, generatedRidesId);
     }
+
     @Transactional
     public FinishedRideResponseDTO forceFinishOwnRide(String generatedRidesId) {
         AppLogger.info(this.getClass(), "forceFinishOwnRide called",
@@ -155,6 +156,5 @@ public class FinishedRideService {
 
         return finishedRideUtility.buildPersonalFinishResponse(generatedRidesId, requester);
     }
-
 
 }

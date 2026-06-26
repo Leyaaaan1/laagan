@@ -1,6 +1,5 @@
 package leyans.RidersHub.Utility;
 
-
 import jakarta.persistence.EntityNotFoundException;
 import leyans.RidersHub.DTO.Response.CheckpointArrivalResponse;
 import leyans.RidersHub.DTO.Response.FinishedDTO.FinishedRideResponseDTO;
@@ -24,164 +23,155 @@ import java.util.List;
 @Service
 public class FinishedRideUtility {
 
-    private final RideCheckpointArrivalRepository rideCheckpointArrivalRepository;
-    private final FinishedRideRepository finishedRideRepository;
-    private final RidesRepository ridesRepository;
-    private final StartedRideRepository startedRideRepository;
+        private final RideCheckpointArrivalRepository rideCheckpointArrivalRepository;
+        private final FinishedRideRepository finishedRideRepository;
+        private final RidesRepository ridesRepository;
+        private final StartedRideRepository startedRideRepository;
 
-    public FinishedRideUtility(RideCheckpointArrivalRepository rideCheckpointArrivalRepository,
-                               FinishedRideRepository finishedRideRepository,
-                               RidesRepository ridesRepository,
-                               StartedRideRepository startedRideRepository) {
-        this.rideCheckpointArrivalRepository = rideCheckpointArrivalRepository;
-        this.finishedRideRepository = finishedRideRepository;
-        this.ridesRepository = ridesRepository;
-        this.startedRideRepository = startedRideRepository;
-    }
+        public FinishedRideUtility(RideCheckpointArrivalRepository rideCheckpointArrivalRepository,
+                        FinishedRideRepository finishedRideRepository,
+                        RidesRepository ridesRepository,
+                        StartedRideRepository startedRideRepository) {
+                this.rideCheckpointArrivalRepository = rideCheckpointArrivalRepository;
+                this.finishedRideRepository = finishedRideRepository;
+                this.ridesRepository = ridesRepository;
+                this.startedRideRepository = startedRideRepository;
+        }
 
+        public FinishedRideResponseDTO buildAndSaveFinishedRide(
+                        StartedRide startedRide,
+                        Rides ride,
+                        Rider finishedBy,
+                        String generatedRidesId) {
 
-    public FinishedRideResponseDTO buildAndSaveFinishedRide(
-            StartedRide startedRide,
-            Rides ride,
-            Rider finishedBy,
-            String generatedRidesId) {
+                java.util.Set<Rider> participants = new java.util.HashSet<>(startedRide.getParticipants());
+                LocalDateTime startTime = startedRide.getStartTime();
 
-        java.util.Set<Rider> participants = new java.util.HashSet<>(startedRide.getParticipants());
-        LocalDateTime startTime = startedRide.getStartTime();
+                List<RideCheckpointArrival> allArrivals = rideCheckpointArrivalRepository
+                                .findByRideGeneratedRidesId(generatedRidesId);
 
-        List<RideCheckpointArrival> allArrivals =
-                rideCheckpointArrivalRepository.findByRideGeneratedRidesId(generatedRidesId);
+                LocalDateTime endTime = allArrivals.stream()
+                                .filter(a -> a.getCheckpointType() == RideCheckpointArrival.CheckpointType.ENDING)
+                                .map(RideCheckpointArrival::getArrivedAt)
+                                .max(Comparator.naturalOrder())
+                                .orElse(LocalDateTime.now());
 
-        LocalDateTime endTime = allArrivals.stream()
-                .filter(a -> a.getCheckpointType() == RideCheckpointArrival.CheckpointType.ENDING)
-                .map(RideCheckpointArrival::getArrivedAt)
-                .max(Comparator.naturalOrder())
-                .orElse(LocalDateTime.now());
+                int durationMinutes = (int) ChronoUnit.MINUTES.between(startTime, endTime);
 
-        int durationMinutes = (int) ChronoUnit.MINUTES.between(startTime, endTime);
+                Double averageSpeedKph = RideCalculationUtils.computeAverageSpeedKph(
+                                ride.getDistance(), durationMinutes);
 
-        Double averageSpeedKph = RideCalculationUtils.computeAverageSpeedKph(
-                ride.getDistance(), durationMinutes);
+                FinishedRide finishedRide = new FinishedRide(
+                                ride,
+                                finishedBy,
+                                startTime,
+                                endTime,
+                                durationMinutes,
+                                participants,
+                                null,
+                                averageSpeedKph);
 
-        FinishedRide finishedRide = new FinishedRide(
-                ride,
-                finishedBy,
-                startTime,
-                endTime,
-                durationMinutes,
-                participants,
-                null,
-                averageSpeedKph
-        );
+                FinishedRide saved = finishedRideRepository.save(finishedRide);
 
-        FinishedRide saved = finishedRideRepository.save(finishedRide);
+                ride.setActive(false);
+                ridesRepository.save(ride);
 
-        ride.setActive(false);
-        ridesRepository.save(ride);
+                startedRideRepository.delete(startedRide);
 
-        startedRideRepository.delete(startedRide);
+                AppLogger.info(this.getClass(), "Ride finished and StartedRide cleaned up",
+                                "generatedRidesId", generatedRidesId,
+                                "durationMinutes", durationMinutes);
 
-        AppLogger.info(this.getClass(), "Ride finished and StartedRide cleaned up",
-                "generatedRidesId", generatedRidesId,
-                "durationMinutes", durationMinutes);
+                FinishedRideResponseDTO response = new FinishedRideResponseDTO(saved);
 
-        FinishedRideResponseDTO response = new FinishedRideResponseDTO(saved);
+                response.setParticipantProgress(buildParticipantProgress(allArrivals, participants, ride));
 
-        int totalCheckpoints = 1 + (ride.getStopPoints() != null ? ride.getStopPoints().size() : 0) + 1;
+                List<CheckpointArrivalResponse> arrivals = allArrivals.stream()
+                                .map(CheckpointArrivalResponse::new)
+                                .toList();
+                response.setCheckpointArrivals(arrivals);
 
-        response.setParticipantProgress(buildParticipantProgress(allArrivals, participants, ride));
+                return response;
+        }
 
+        // =========================================================================
+        // GET FINISHED RIDE SUMMARY
+        // =========================================================================
+        @Transactional(readOnly = true)
+        public FinishedRideResponseDTO getFinishedRideSummary(String generatedRidesId) {
+                FinishedRide finishedRide = finishedRideRepository
+                                .findByRideGeneratedRidesId(generatedRidesId)
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                                "Finished ride not found: " + generatedRidesId));
 
-        List<CheckpointArrivalResponse> arrivals = allArrivals.stream()
-                .map(CheckpointArrivalResponse::new)
-                .toList();
-        response.setCheckpointArrivals(arrivals);
+                Rides ride = finishedRide.getRide();
 
-        return response;
-    }
+                java.util.Set<Rider> participants = finishedRide.getCompletedParticipants();
+                Hibernate.initialize(participants);
 
+                List<RideCheckpointArrival> allArrivals = rideCheckpointArrivalRepository
+                                .findByRideGeneratedRidesId(generatedRidesId);
 
-    // =========================================================================
-    // GET FINISHED RIDE SUMMARY
-    // =========================================================================
-    @Transactional(readOnly = true)
-    public FinishedRideResponseDTO getFinishedRideSummary(String generatedRidesId) {
-        FinishedRide finishedRide = finishedRideRepository
-                .findByRideGeneratedRidesId(generatedRidesId)
-                .orElseThrow(() -> new EntityNotFoundException("Finished ride not found: " + generatedRidesId));
+                FinishedRideResponseDTO response = new FinishedRideResponseDTO(finishedRide);
 
-        Rides ride = finishedRide.getRide();
+                response.setParticipantProgress(buildParticipantProgress(allArrivals, participants, ride));
 
-        java.util.Set<Rider> participants = finishedRide.getCompletedParticipants();
-        Hibernate.initialize(participants);
+                List<CheckpointArrivalResponse> arrivals = allArrivals.stream()
+                                .map(CheckpointArrivalResponse::new)
+                                .toList();
+                response.setCheckpointArrivals(arrivals);
 
-        List<RideCheckpointArrival> allArrivals =
-                rideCheckpointArrivalRepository.findByRideGeneratedRidesId(generatedRidesId);
+                return response;
+        }
 
-        FinishedRideResponseDTO response = new FinishedRideResponseDTO(finishedRide);
+        private List<ParticipantProgressDTO> buildParticipantProgress(
+                        List<RideCheckpointArrival> allArrivals,
+                        java.util.Set<Rider> participants,
+                        Rides ride) {
 
-        int totalCheckpoints = 1 + (ride.getStopPoints() != null ? ride.getStopPoints().size() : 0) + 1;
+                int totalCheckpoints = 2 + (ride.getStopPoints() != null ? ride.getStopPoints().size() : 0);
 
-        response.setParticipantProgress(buildParticipantProgress(allArrivals, participants, ride));
+                return participants.stream()
+                                .map(rider -> {
+                                        List<RideCheckpointArrival> riderArrivals = allArrivals.stream()
+                                                        .filter(a -> a.getRider().getUsername()
+                                                                        .equals(rider.getUsername()))
+                                                        .toList();
 
+                                        LocalDateTime arrivalTime = riderArrivals.stream()
+                                                        .filter(a -> a.getCheckpointType() == RideCheckpointArrival.CheckpointType.ENDING)
+                                                        .map(RideCheckpointArrival::getArrivedAt)
+                                                        .findFirst()
+                                                        .orElse(null);
 
-        List<CheckpointArrivalResponse> arrivals = allArrivals.stream()
-                .map(CheckpointArrivalResponse::new)
-                .toList();
-        response.setCheckpointArrivals(arrivals);
+                                        // riderArrivals already excludes the starting point (it's auto-marked
+                                        // but not re-counted here), so add 1 to match totalCheckpoints math.
+                                        int checkpointsReached = riderArrivals.size();
 
-        return response;
-    }
+                                        String status = checkpointsReached == totalCheckpoints ? "COMPLETED"
+                                                        : checkpointsReached > 0 ? "PARTIALLY_COMPLETED"
+                                                                        : "STARTED";
 
+                                        return new ParticipantProgressDTO(
+                                                        rider.getUsername(),
+                                                        checkpointsReached,
+                                                        totalCheckpoints,
+                                                        arrivalTime,
+                                                        status);
+                                })
+                                .toList();
+        }
 
-    private List<ParticipantProgressDTO> buildParticipantProgress(
-            List<RideCheckpointArrival> allArrivals,
-            java.util.Set<Rider> participants,
-            Rides ride) {
+        @Transactional(readOnly = true)
+        public FinishedRideResponseDTO buildPersonalFinishResponse(String generatedRidesId, Rider rider) {
+                List<RideCheckpointArrival> arrivals = rideCheckpointArrivalRepository
+                                .findByRideGeneratedRidesId(generatedRidesId);
 
-        int totalCheckpoints = 2 + (ride.getStopPoints() != null ? ride.getStopPoints().size() : 0);
-
-        return participants.stream()
-                .map(rider -> {
-                    List<RideCheckpointArrival> riderArrivals = allArrivals.stream()
-                            .filter(a -> a.getRider().getUsername().equals(rider.getUsername()))
-                            .toList();
-
-                    LocalDateTime arrivalTime = riderArrivals.stream()
-                            .filter(a -> a.getCheckpointType() == RideCheckpointArrival.CheckpointType.ENDING)
-                            .map(RideCheckpointArrival::getArrivedAt)
-                            .findFirst()
-                            .orElse(null);
-
-                    // riderArrivals already excludes the starting point (it's auto-marked
-                    // but not re-counted here), so add 1 to match totalCheckpoints math.
-                    int checkpointsReached = riderArrivals.size();
-
-                    String status = checkpointsReached == totalCheckpoints ? "COMPLETED"
-                            : checkpointsReached > 0 ? "PARTIALLY_COMPLETED"
-                              : "STARTED";
-
-                    return new ParticipantProgressDTO(
-                            rider.getUsername(),
-                            checkpointsReached,
-                            totalCheckpoints,
-                            arrivalTime,
-                            status
-                    );
-                })
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public FinishedRideResponseDTO buildPersonalFinishResponse(String generatedRidesId, Rider rider) {
-        List<RideCheckpointArrival> arrivals =
-                rideCheckpointArrivalRepository.findByRideGeneratedRidesId(generatedRidesId);
-
-        FinishedRideResponseDTO response = new FinishedRideResponseDTO();
-        response.setGeneratedRidesId(generatedRidesId);
-        response.setCheckpointArrivals(arrivals.stream()
-                .map(CheckpointArrivalResponse::new)
-                .toList());
-        return response;
-    }
+                FinishedRideResponseDTO response = new FinishedRideResponseDTO();
+                response.setGeneratedRidesId(generatedRidesId);
+                response.setCheckpointArrivals(arrivals.stream()
+                                .map(CheckpointArrivalResponse::new)
+                                .toList());
+                return response;
+        }
 }

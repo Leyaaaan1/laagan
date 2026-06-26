@@ -2,6 +2,7 @@ import routeMapStyles from './RouteMapStyles.js.jsx';
 import leafletCSS from '../assets/leaflet/leafletCSS.js';
 import leaflet from '../assets/leaflet/leaflet.js';
 import {createMapScript} from '../map/RouteMapScript';
+import {routeDisplayScript} from '../map/scripts/routeDisplayScript';
 
 export const createMapHTML = () => {
   return `    <!DOCTYPE html>
@@ -21,6 +22,7 @@ export const createMapHTML = () => {
         </div>
         <script>${leaflet}</script>
         <script>${createMapScript()}</script>
+        <script>${routeDisplayScript()}</script>
 
         <!-- ① Load html2canvas from CDN -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
