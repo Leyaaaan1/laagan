@@ -28,6 +28,28 @@ dist/
 .expo/
 .expo-shared/
 
+
+frontend/android/.gradle/
+
+# Gradle
+.gradle/
+
+# Build outputs
+build/
+**/build/
+
+# Local configuration
+local.properties
+
+# Android Studio
+.idea/
+*.iml
+
+# Generated files
+captures/
+.externalNativeBuild/
+.cxx/
+
 # React Native / Android
 android/build/
 android/app/build/

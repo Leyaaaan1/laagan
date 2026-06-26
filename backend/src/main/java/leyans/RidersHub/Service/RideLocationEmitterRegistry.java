@@ -1,6 +1,5 @@
 package leyans.RidersHub.Service;
 
-
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -38,7 +37,6 @@ public class RideLocationEmitterRegistry {
         return emitter;
     }
 
-
     public void broadcast(Integer rideId, Object payload) {
         List<SseEmitter> rideEmitters = emitters.getOrDefault(rideId, Collections.emptyList());
         List<SseEmitter> dead = new ArrayList<>();
@@ -67,7 +65,7 @@ public class RideLocationEmitterRegistry {
             List<SseEmitter> dead = new ArrayList<>();
             for (SseEmitter emitter : entry.getValue()) {
                 try {
-                    emitter.send(SseEmitter.event().name("ping").comment("keepalive"));
+                    emitter.send(SseEmitter.event().name("ping").data("keepalive"));
                 } catch (Exception e) {
                     dead.add(emitter);
                 }
@@ -87,7 +85,10 @@ public class RideLocationEmitterRegistry {
         List<SseEmitter> list = emitters.remove(rideId);
         if (list != null) {
             for (SseEmitter emitter : list) {
-                try { emitter.complete(); } catch (Exception ignored) {}
+                try {
+                    emitter.complete();
+                } catch (Exception ignored) {
+                }
             }
         }
     }

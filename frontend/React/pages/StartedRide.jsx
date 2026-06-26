@@ -1,4 +1,4 @@
-import React, {useState, useRef, useEffect, useMemo, useContext} from 'react';
+import React, { useState, useRef, useEffect, useMemo, useContext } from 'react';
 import {
   View,
   Text,
@@ -10,34 +10,34 @@ import {
   Alert,
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import {processRideCoordinates} from '../utilities/CoordinateUtils';
+import { processRideCoordinates } from '../utilities/CoordinateUtils';
 import startedRideStyles from '../styles/screens/startedRideStyles';
 import rideRoutes from '../styles/screens/rideRoutes';
 import feedback from '../styles/base/feedback';
 import AdaptiveMapView from '../utilities/route/view/AdaptiveMapView';
-import {useAuth} from '../context/AuthContext';
-import {RideContext} from '../context/RideContext';
-import {buildRideStep4Params} from '../utilities/NavigationParamsBuilder';
-import {buildMapData, buildRouteDataForMap} from './utilities/startedRideUtils';
-import {useStartedRideMarkers} from './utilities/hooks/useStartedRideMarkers';
-import {useStartedRideRouteCache} from './utilities/hooks/useStartedRideRouteCache';
-import {usePollingStatusPill} from './utilities/hooks/usePollingStatusPill';
-import {useStartedRideHandler} from './utilities/hooks/useStartedRideHandler';
-import {useOfflineRouteCache} from './utilities/hooks/useOfflineRouteCache';
+import { useAuth } from '../context/AuthContext';
+import { RideContext } from '../context/RideContext';
+import { buildRideStep4Params } from '../utilities/NavigationParamsBuilder';
+import { buildMapData, buildRouteDataForMap } from './utilities/startedRideUtils';
+import { useStartedRideMarkers } from './utilities/hooks/useStartedRideMarkers';
+import { useStartedRideRouteCache } from './utilities/hooks/useStartedRideRouteCache';
+import { usePollingStatusPill } from './utilities/hooks/usePollingStatusPill';
+import { useStartedRideHandler } from './utilities/hooks/useStartedRideHandler';
+import { useOfflineRouteCache } from './utilities/hooks/useOfflineRouteCache';
 import CheckpointArrivalsModal from './utilities/CheckpointArrivalsModal';
-import {useEndingPointAlert} from '../hooks/useEndingPointAlert';
+import { useEndingPointAlert } from '../hooks/useEndingPointAlert';
 import {
   getFinishedRideSummary,
   getPersonalSummary,
 } from '../services/startService';
-import {routeCache} from '../services/cache/routeCache';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {captureRideSnapshot} from '../utilities/captureRideSnapshot';
+import { routeCache } from '../services/cache/routeCache';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { captureRideSnapshot } from '../utilities/captureRideSnapshot';
 import RideSnapshotView from '../utilities/route/view/RideSnapshotView';
 
-const StartedRide = ({route, navigation}) => {
-  const {username: routeUsername} = route?.params || {};
-  const {username: authUsername} = useAuth();
+const StartedRide = ({ route, navigation }) => {
+  const { username: routeUsername } = route?.params || {};
+  const { username: authUsername } = useAuth();
   const username = authUsername || routeUsername;
   const [showRouteInfo, setShowRouteInfo] = useState(false);
   const [pollingEnabled, setPollingEnabled] = useState(true);
@@ -50,7 +50,7 @@ const StartedRide = ({route, navigation}) => {
     clearActiveRide,
   } = useContext(RideContext);
 
-  const {activeRide: initialActiveRide} = route?.params || {};
+  const { activeRide: initialActiveRide } = route?.params || {};
   const [checkpointModalVisible, setCheckpointModalVisible] = useState(false);
   // True while fetchActiveRide() is in-flight — prevents the "No ride data"
   // warning from flashing before the server responds.
@@ -60,7 +60,7 @@ const StartedRide = ({route, navigation}) => {
   const syncedRideIdRef = useRef(null);
   const snapshotRef = useRef(null);
 
-  const {riderMarkers, pollingError, isPolling, isOffline} =
+  const { riderMarkers, pollingError, isPolling, isOffline } =
     useStartedRideMarkers(
       activeRide?.startedRideId,
       pollingEnabled,
@@ -72,13 +72,13 @@ const StartedRide = ({route, navigation}) => {
   useStartedRideRouteCache(activeRide);
   const insets = useSafeAreaInsets();
 
-  const {cachedRouteData} = useOfflineRouteCache(
+  const { cachedRouteData } = useOfflineRouteCache(
     activeRide?.generatedRidesId,
     isOffline,
   );
 
   const pillVisible = usePollingStatusPill(isPolling, pollingError);
-  const {isLeaving, handleLeaveRide} = useStartedRideHandler(
+  const { isLeaving, handleLeaveRide } = useStartedRideHandler(
     activeRide,
     username,
     stopPolling,
@@ -124,7 +124,7 @@ const StartedRide = ({route, navigation}) => {
       // Pass generatedRidesId so participants use the correct lookup endpoint
       // (GET /started-ride/by-ride/{id}) instead of the owner-only endpoint.
       fetchActiveRide(activeRide.generatedRidesId)
-        .catch(err => {})
+        .catch(err => { })
         .finally(() => setIsFetchingRide(false));
     }
     // Intentionally only re-run when the ride ID changes or startedRideId appears
@@ -150,13 +150,13 @@ const StartedRide = ({route, navigation}) => {
         try {
           const parsed = JSON.parse(cachedRouteData.routeCoordinates);
           return parsed;
-        } catch (err) {}
+        } catch (err) { }
       }
       // Case 3: the whole thing is a JSON string
       if (typeof cachedRouteData === 'string') {
         try {
           return JSON.parse(cachedRouteData);
-        } catch (err) {}
+        } catch (err) { }
       }
       return null;
     }
@@ -235,7 +235,7 @@ const StartedRide = ({route, navigation}) => {
     // when the ride was finished via FinishedRideService / RideDetailService.
     if (!snapshotUri) {
       try {
-        const {getSnapshot} = await import('../services/startService');
+        const { getSnapshot } = await import('../services/startService');
         const result = await getSnapshot(rideId);
         snapshotUri = result?.snapshotUrl ?? null;
         console.log(
@@ -275,9 +275,9 @@ const StartedRide = ({route, navigation}) => {
       <Animated.View
         style={[
           rideRoutes.mapSection,
-          {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0},
+          { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
         ]}>
-        <View style={{height: insets.top}} />
+        <View style={{ height: insets.top }} />
 
         <AdaptiveMapView
           ref={mapRef}
@@ -286,7 +286,7 @@ const StartedRide = ({route, navigation}) => {
           startingPoint={mapData.startingPoint}
           endingPoint={mapData.endingPoint}
           stopPoints={mapData.stopPoints}
-          style={{flex: 1}}
+          style={{ flex: 1 }}
           routeData={routeDataForMap}
           isDark={true}
           riderMarkers={riderMarkers}
@@ -306,7 +306,7 @@ const StartedRide = ({route, navigation}) => {
             <View
               style={[
                 startedRideStyles.pollingStatusDot,
-                {backgroundColor: isPolling ? '#4CAF50' : '#f44336'},
+                { backgroundColor: isPolling ? '#4CAF50' : '#f44336' },
               ]}
             />
             <Text style={startedRideStyles.pollingStatusText}>
@@ -321,7 +321,7 @@ const StartedRide = ({route, navigation}) => {
             position: 'absolute',
             left: 0,
             top: '50%',
-            transform: [{translateY: -20}],
+            transform: [{ translateY: -20 }],
             backgroundColor: '#8c2323',
             paddingVertical: 12,
             paddingHorizontal: 8,
@@ -340,7 +340,7 @@ const StartedRide = ({route, navigation}) => {
         <View
           style={[
             startedRideStyles.routeInfoOverlay,
-            {pointerEvents: 'box-none', top: 100},
+            { pointerEvents: 'box-none', top: 100 },
           ]}>
           <TouchableOpacity
             pointerEvents="auto"
@@ -354,7 +354,7 @@ const StartedRide = ({route, navigation}) => {
                 name="map-marker"
                 size={18}
                 color="#fff"
-                style={{marginRight: 8}}
+                style={{ marginRight: 8 }}
               />
             </View>
             <FontAwesome
@@ -374,7 +374,7 @@ const StartedRide = ({route, navigation}) => {
               nestedScrollEnabled={true}>
               {/* Starting Point */}
               <View style={startedRideStyles.routePointContainer}>
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <View
                     style={[
                       startedRideStyles.routeMarker,
@@ -428,7 +428,7 @@ const StartedRide = ({route, navigation}) => {
 
               {/* Ending Point */}
               <View style={startedRideStyles.routePointContainer}>
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <View
                     style={[
                       startedRideStyles.routeMarker,
@@ -452,7 +452,7 @@ const StartedRide = ({route, navigation}) => {
                     name="users"
                     size={16}
                     color="#fff"
-                    style={{marginRight: 8}}
+                    style={{ marginRight: 8 }}
                   />
                   <Text style={startedRideStyles.participantsTitle}>
                     PARTICIPANTS ({activeRide.participants?.length ?? 0})
@@ -492,7 +492,7 @@ const StartedRide = ({route, navigation}) => {
                           {liveLocation ? (
                             <Text
                               style={startedRideStyles.participantLocationText}>
-                              {liveLocation.locationName} •{' '}
+                              {' '}
                               {Math.round(liveLocation.distanceMeters)}m away
                             </Text>
                           ) : (
@@ -507,7 +507,7 @@ const StartedRide = ({route, navigation}) => {
                           style={[
                             startedRideStyles.participantStatusDot,
                             liveLocation
-                              ? {backgroundColor: '#4CAF50'}
+                              ? { backgroundColor: '#4CAF50' }
                               : startedRideStyles.participantStatusActive,
                           ]}
                         />
@@ -535,14 +535,14 @@ const StartedRide = ({route, navigation}) => {
           )}
         </View>
         {/* Action Buttons */}
-        <View style={[startedRideStyles.actionButtonsContainer, {padding: 8}]}>
+        <View style={[startedRideStyles.actionButtonsContainer, { padding: 8 }]}>
           <View
             style={[
               startedRideStyles.actionPill,
-              {paddingHorizontal: 8, paddingVertical: 6, minHeight: 40},
+              { paddingHorizontal: 8, paddingVertical: 6, minHeight: 40 },
             ]}>
             <TouchableOpacity
-              style={{flexDirection: 'row', alignItems: 'center', gap: 6}}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
               onPress={handleSwipeToDetails}>
               <FontAwesome
                 name="info-circle"
@@ -555,7 +555,7 @@ const StartedRide = ({route, navigation}) => {
             <TouchableOpacity
               style={[
                 startedRideStyles.actionStopButton,
-                {backgroundColor: 'rgba(255,255,255,0.15)'},
+                { backgroundColor: 'rgba(255,255,255,0.15)' },
               ]}
               onPress={handleLeaveRide}
               disabled={isLeaving}>

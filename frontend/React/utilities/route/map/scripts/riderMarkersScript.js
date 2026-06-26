@@ -1,6 +1,14 @@
 export const riderMarkersScript = () => `
     let riderMarkerInstances = {};
 
+    function getRiderAcronym(name) {
+    const parts = name.split(/[\s_\-]+/).filter(Boolean);
+    if (parts.length > 1) {
+        return parts.map(p => p[0].toUpperCase()).join('').slice(0, 2);
+    }
+    return name.slice(0, 2).toUpperCase();
+}
+
     function updateRiderMarkers(riderMarkers, currentUsername) {
         try {
             
@@ -10,7 +18,7 @@ export const riderMarkersScript = () => `
 
             Object.entries(riderMarkers).forEach(([riderId, location]) => {
                 try {
-                    const { latitude, longitude, locationName, distanceMeters } = location;
+                    const { latitude, longitude, distanceMeters } = location;
                     
                     if (!latitude || !longitude) {
                         return;
@@ -21,7 +29,7 @@ export const riderMarkersScript = () => `
                     
                     const markerColor = isCurrentUser ? '#FF5722' : '#2196F3';
                     const markerClass = isCurrentUser ? 'rider-marker-self' : 'rider-marker-other';
-                    const iconSymbol = isCurrentUser ? '🏍' : '🚲';
+                    const iconSymbol = isCurrentUser ? 'Me' :  getRiderAcronym(riderId);
 
                     // If marker already exists, just move it
                     if (riderMarkerInstances[riderId]) {
@@ -33,10 +41,8 @@ export const riderMarkersScript = () => `
                         // Update popup content without recreating the icon
                         const popupText = \`
                             <div class="route-popup" style="border-color: \${markerColor}; border-left: 4px solid \${markerColor};">
-                                <strong>\${isCurrentUser ? '🏍 You' : '🚲 ' + riderId}</strong><br>
-                                <b>Location:</b> \${locationName || 'Unknown'}<br>
+                                <strong>\${isCurrentUser ? 'Me' : riderId}</strong><br>
                                 <b>Distance:</b> \${Math.round(distanceMeters || 0)}m away<br>
-                                <small style="color: #666; margin-top: 4px;">Live location</small>
                             </div>
                         \`;
                         existingMarker.setPopupContent(popupText);
@@ -46,7 +52,7 @@ export const riderMarkersScript = () => `
                         const riderIcon = L.divIcon({
                             className: 'custom-div-icon',
                             html: \`
-                                <div class="rider-marker \${markerClass}" style="
+                                   <div class="rider-marker \${markerClass}" style="
                                     background-color: \${markerColor};
                                     width: 32px;
                                     height: 32px;
@@ -56,7 +62,11 @@ export const riderMarkersScript = () => `
                                     justify-content: center;
                                     border: 3px solid white;
                                     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                                    font-size: 18px;
+                                    font-size: \${isCurrentUser ? '18px' : '11px'};
+                                    font-weight: \${isCurrentUser ? 'normal' : '700'};
+                                    color: white;
+                                    letter-spacing: 0.5px;
+                                    line-height: 1;
                                 ">
                                     \${iconSymbol}
                                 </div>
@@ -68,10 +78,8 @@ export const riderMarkersScript = () => `
 
                         const popupText = \`
                             <div class="route-popup" style="border-color: \${markerColor}; border-left: 4px solid \${markerColor};">
-                                <strong>\${isCurrentUser ? '🏍 You' : '🚲 ' + riderId}</strong><br>
-                                <b>Location:</b> \${locationName || 'Unknown'}<br>
+                                <strong>\${isCurrentUser ? 'Me' : getRiderAcronym(riderId) + ' ' + riderId}</strong><br>
                                 <b>Distance:</b> \${Math.round(distanceMeters || 0)}m away<br>
-                                <small style="color: #666; margin-top: 4px;">Live location</small>
                             </div>
                         \`;
 
@@ -87,7 +95,7 @@ export const riderMarkersScript = () => `
                             font-size: 11px;
                             font-weight: bold;
                             white-space: nowrap;
-                        ">\${riderId}\${isCurrentUser ? ' (You)' : ''}</span>\`;
+                        ">\${riderId}\${isCurrentUser ? ' (Me)' : ''}</span>\`;
 
                         const nameLabel = L.tooltip({
                             permanent: true,

@@ -10,8 +10,8 @@
 //                fetchAllLocations() is kept as the degraded fallback when SSE
 //                is unavailable (e.g. no EventSource polyfill installed yet).
 
-import {useEffect, useRef, useState, useCallback} from 'react';
-import {AppState, Platform, PermissionsAndroid} from 'react-native';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { AppState, Platform, PermissionsAndroid } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import NetInfo from '@react-native-community/netinfo';
 import EventSource from 'react-native-sse';
@@ -26,15 +26,17 @@ import {
   createIntervalManager,
   createTimeoutManager,
   createPollLock,
+  saveRerouteCache,   // ← add
+  loadRerouteCache,   // ← add
 } from '../services/locationPollingService';
-import {useAuth} from '../context/AuthContext';
-import {API_BASE_URL} from '../services/Apiclient';
+import { useAuth } from '../context/AuthContext';
+import { API_BASE_URL } from '../services/Apiclient';
 
 // ─── tuneable constants ────────────────────────────────────────────────────
-const POLL_INTERVAL_MS    = 8_000;   // GPS read cadence (unchanged)
+const POLL_INTERVAL_MS = 8_000;   // GPS read cadence (unchanged)
 const MOVEMENT_THRESHOLD_M = 15;     // skip upload below this (unchanged)
-const MAX_SKIP_COUNT      = 10;      // ↑ raised: ~80s before forced heartbeat
-const MAX_SKIP_MS         = 120_000; // ↑ raised: 2 min heartbeat when idle
+const MAX_SKIP_COUNT = 10;      // ↑ raised: ~80s before forced heartbeat
+const MAX_SKIP_MS = 120_000; // ↑ raised: 2 min heartbeat when idle
 // ──────────────────────────────────────────────────────────────────────────
 
 /**
@@ -56,7 +58,7 @@ export const openLocationStream = (rideId, token, onLocations, onError) => {
   console.log('[SSE] connecting to:', url);
 
   const es = new EventSource(url, {
-    headers: {Authorization: `Bearer ${token}`},
+    headers: { Authorization: `Bearer ${token}` },
   });
 
   es.addEventListener('open', () => {
@@ -115,7 +117,7 @@ export const useLocationPermission = () => {
     requestPermission();
   }, []);
 
-  return {granted, checked};
+  return { granted, checked };
 };
 
 // ─── useRideLocationPolling ────────────────────────────────────────────────
@@ -127,7 +129,7 @@ export const useRideLocationPolling = ({
   onReroute,
   onError,
 }) => {
-  const {token} = useAuth();
+  const { token } = useAuth();
 
   // ── exposed state ────────────────────────────────────────────────────────
   const [isPolling, setIsPolling] = useState(false);
@@ -172,6 +174,22 @@ export const useRideLocationPolling = ({
 
   // ── reset position tracking + close stale SSE when ride changes ──────────
   useEffect(() => {
+    if (!rideId) return;
+    let cancelled = false;
+
+    (async () => {
+      const cached = await loadRerouteCache(rideId);
+      if (cached && !cancelled) {
+        onReroute?.(cached);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [rideId, onReroute]);
+
+  useEffect(() => {
     lastSentPositionRef.current = null;
     consecutiveSkipCountRef.current = 0;
     lastUploadTimestampRef.current = null;
@@ -200,9 +218,9 @@ export const useRideLocationPolling = ({
       },
       () => {
         esRef.current = null;
-        if (isPollingRef.current) {
+        if (isPollingRef.current && enabledRef.current && rideId) {
           setTimeout(() => {
-            if (isPollingRef.current) openStream();
+            if (isPollingRef.current && enabledRef.current && rideId) openStream();
           }, 5_000);
         }
       },
@@ -274,7 +292,7 @@ export const useRideLocationPolling = ({
         throw new Error('AUTH_MISSING - No access token available');
       }
 
-      const {latitude, longitude} = await getCurrentPosition();
+      const { latitude, longitude } = await getCurrentPosition();
 
       // ── movement check ──────────────────────────────────────────────────
       const isFirst = isFirstPollRef.current;
@@ -284,11 +302,11 @@ export const useRideLocationPolling = ({
 
       const distanceMoved = lastPos
         ? haversineMeters(
-            lastPos.latitude,
-            lastPos.longitude,
-            latitude,
-            longitude,
-          )
+          lastPos.latitude,
+          lastPos.longitude,
+          latitude,
+          longitude,
+        )
         : Infinity;
 
       const timeElapsedMs = lastUpload ? Date.now() - lastUpload : Infinity;
@@ -314,13 +332,13 @@ export const useRideLocationPolling = ({
       isFirstPollRef.current = false;
 
       // ── NEW: response is now { locations, reroute } not a bare array ────
-      const {locations, reroute} = await shareLocationAndFetchAll(
+      const { locations, reroute } = await shareLocationAndFetchAll(
         rideId,
         latitude,
         longitude,
       );
 
-      lastSentPositionRef.current = {latitude, longitude};
+      lastSentPositionRef.current = { latitude, longitude };
       consecutiveSkipCountRef.current = 0;
       lastUploadTimestampRef.current = Date.now();
 
@@ -330,6 +348,7 @@ export const useRideLocationPolling = ({
       // ── NEW: personal reroute — only fires for this rider when off-route ─
       if (reroute?.rerouted && reroute.newRouteCoordinates) {
         onReroute?.(reroute.newRouteCoordinates);
+        saveRerouteCache(rideId, reroute.newRouteCoordinates); // ← persist for next mount
       }
     } catch (err) {
       handlePollingError(err);
@@ -389,6 +408,10 @@ export const useRideLocationPolling = ({
     setError(null);
 
     consecutiveSkipCountRef.current = 0;
+    // ── Reset isFirstPollRef so the first poll after any restart (foreground,
+    // re-enable, network restore) always hits POST /share and gets the reroute
+    // back from Redis — not just GET /all-riders which has no reroute data.
+    isFirstPollRef.current = true;
 
     // Open SSE stream for the receive side first
     openStream();
@@ -452,11 +475,9 @@ export const useRideLocationPolling = ({
       const isNowBackground = nextState.match(/inactive|background/);
 
       if (wasBackground && isNowActive) {
-        if (enabledRef.current && !isPollingRef.current && tokenRef.current) {
+        if (enabledRef.current && rideId && !isPollingRef.current && tokenRef.current) {
           startPolling();
         }
-      } else if (isNowBackground) {
-        stopPolling();
       }
 
       appStateRef.current = nextState;
@@ -483,5 +504,5 @@ export const useRideLocationPolling = ({
     };
   }, []);
 
-  return {isPolling, error, retryCount, nextRetryDelay, isOffline};
+  return { isPolling, error, retryCount, nextRetryDelay, isOffline };
 };
