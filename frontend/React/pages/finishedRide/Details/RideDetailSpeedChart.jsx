@@ -10,8 +10,8 @@
  *   segments        – SpeedSegmentDTO[]  ({ fromLabel, toLabel, averageSpeedKph, durationMinutes, distanceMeters })
  *   averageSpeedKph – number | null
  */
-import React, {useMemo} from 'react';
-import {View, Text, useColorScheme} from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, useColorScheme } from 'react-native';
 import WebView from 'react-native-webview';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import colors from '../../../styles/tokens/colors';
@@ -40,7 +40,7 @@ const buildHtml = (segments, avgSpeed, isDark) => {
 
   return `<!DOCTYPE html>
 <html>
-<head>
+<head>z 
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -177,7 +177,7 @@ const buildHtml = (segments, avgSpeed, isDark) => {
 </html>`;
 };
 
-const RideDetailSpeedChart = ({segments = [], averageSpeedKph}) => {
+const RideDetailSpeedChart = ({ segments = [], averageSpeedKph }) => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
 
@@ -187,6 +187,8 @@ const RideDetailSpeedChart = ({segments = [], averageSpeedKph}) => {
   );
 
   if (!segments.length) return null;
+
+
 
   const totalDur = segments.reduce((a, s) => a + (s.durationMinutes ?? 0), 0);
 
@@ -211,7 +213,7 @@ const RideDetailSpeedChart = ({segments = [], averageSpeedKph}) => {
           <View
             style={[
               rideDetailStyles.chartLegendDot,
-              {backgroundColor: '#1D9E75'},
+              { backgroundColor: '#1D9E75' },
             ]}
           />
           <Text style={rideDetailStyles.chartLegendLabel}>Speed (kph)</Text>
@@ -220,7 +222,7 @@ const RideDetailSpeedChart = ({segments = [], averageSpeedKph}) => {
           <View
             style={[
               rideDetailStyles.chartLegendDot,
-              {backgroundColor: 'rgba(55,138,221,0.5)'},
+              { backgroundColor: 'rgba(55,138,221,0.5)' },
             ]}
           />
           <Text style={rideDetailStyles.chartLegendLabel}>Duration (min)</Text>
@@ -242,10 +244,10 @@ const RideDetailSpeedChart = ({segments = [], averageSpeedKph}) => {
       </View>
 
       {/* ── Chart (WebView canvas) ────────────────────────────────────── */}
-      <View style={{height: 240, marginHorizontal: -4}}>
+      <View style={{ height: 240, marginHorizontal: -4 }}>
         <WebView
-          source={{html}}
-          style={{backgroundColor: 'transparent'}}
+          source={{ html }}
+          style={{ backgroundColor: 'transparent' }}
           scrollEnabled={false}
           showsVerticalScrollIndicator={false}
           showsHorizontalScrollIndicator={false}
@@ -263,10 +265,10 @@ const RideDetailSpeedChart = ({segments = [], averageSpeedKph}) => {
             diff == null
               ? colors.textMuted
               : diff >= 0
-              ? '#1D9E75'
-              : diff >= -5
-              ? '#f59e0b'
-              : colors.primary;
+                ? '#1D9E75'
+                : diff >= -5
+                  ? '#f59e0b'
+                  : colors.primary;
 
           return (
             <View
@@ -277,7 +279,7 @@ const RideDetailSpeedChart = ({segments = [], averageSpeedKph}) => {
               ]}>
               {/* leg label */}
               <View
-                style={{flexDirection: 'row', alignItems: 'center', gap: 4}}>
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <Text style={rideDetailStyles.chartFromLabel} numberOfLines={1}>
                   {seg.fromLabel ?? 'Start'}
                 </Text>
@@ -298,7 +300,7 @@ const RideDetailSpeedChart = ({segments = [], averageSpeedKph}) => {
                   <Text
                     style={[
                       rideDetailStyles.chartDetailValue,
-                      {color: '#1D9E75'},
+                      { color: '#1D9E75' },
                     ]}>
                     {speed > 0 ? speed.toFixed(1) + ' kph' : '—'}
                   </Text>
@@ -327,7 +329,7 @@ const RideDetailSpeedChart = ({segments = [], averageSpeedKph}) => {
                   <Text
                     style={[
                       rideDetailStyles.chartDetailValue,
-                      {color: diffColor},
+                      { color: diffColor },
                     ]}>
                     {diff != null
                       ? `${diff >= 0 ? '+' : ''}${diff.toFixed(1)} kph`
