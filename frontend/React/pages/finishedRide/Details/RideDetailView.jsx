@@ -109,7 +109,7 @@ const RideDetailView = ({ route, navigation }) => {
   useEffect(() => {
     if (snapshotUrl || !generatedRidesId) return;
     finishedRideService
-      .getSnapshot(generatedRidesId)
+      .getPersonalSnapshot(generatedRidesId)
       .then(url => setSnapshotUrl(url))
       .catch(() => {
         // No snapshot uploaded for this ride yet — screen just renders without it
@@ -260,7 +260,7 @@ const RideDetailView = ({ route, navigation }) => {
           <FontAwesome name="arrow-left" size={16} color={colors.primary} />
         </TouchableOpacity>
         <View style={rideDetailStyles.viewPrBadgeWrap}></View>
-        <View style={{ width: 36 }} />
+        <View style={{width: 36}} />
       </View>
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -281,9 +281,9 @@ const RideDetailView = ({ route, navigation }) => {
             {snapshotUrl && (
               <View style={localStyles.snapshotWrapper}>
                 <Image
-                  source={{ uri: snapshotUrl }}
+                  source={{uri: snapshotUrl}}
                   style={localStyles.snapshotImage}
-                  resizeMode="cover"
+                  resizeMode="contain"
                 />
               </View>
             )}
@@ -298,13 +298,11 @@ const RideDetailView = ({ route, navigation }) => {
               </View>
             )}
 
-
             <ShareCardButton
               shareData={shareData}
               format="story"
               initialPhotoUri={snapshotUrl}
             />
-
           </>
         )}
 
@@ -364,7 +362,7 @@ const RideDetailView = ({ route, navigation }) => {
             style={[
               checkpointModalStyles.footerSegment,
               activeTab === 'Ride Summary' &&
-              checkpointModalStyles.footerSegmentClose,
+                checkpointModalStyles.footerSegmentClose,
             ]}
             onPress={() => handleTabPress('Ride Summary')}>
             <Text style={checkpointModalStyles.footerSegmentText}>
@@ -378,7 +376,7 @@ const RideDetailView = ({ route, navigation }) => {
             style={[
               checkpointModalStyles.footerSegment,
               activeTab === 'My Stats' &&
-              checkpointModalStyles.footerSegmentClose,
+                checkpointModalStyles.footerSegmentClose,
             ]}
             onPress={() => handleTabPress('My Stats')}>
             <Text style={checkpointModalStyles.footerSegmentText}>
@@ -392,7 +390,7 @@ const RideDetailView = ({ route, navigation }) => {
             style={[
               checkpointModalStyles.footerSegment,
               activeTab === 'My Summary' &&
-              checkpointModalStyles.footerSegmentClose,
+                checkpointModalStyles.footerSegmentClose,
             ]}
             onPress={() => handleTabPress('My Summary')}>
             <Text style={checkpointModalStyles.footerSegmentText}>
@@ -401,7 +399,6 @@ const RideDetailView = ({ route, navigation }) => {
           </TouchableOpacity>
         </View>
       </View>
-
     </SafeAreaView>
   );
 };
@@ -415,6 +412,7 @@ const localStyles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: 'rgba(255,255,255,0.05)', // ← subtle fill for the gaps
   },
   snapshotImage: {
     flex: 1,

@@ -6,10 +6,10 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from 'react';
-import {View, ActivityIndicator, Text} from 'react-native';
-import {WebView} from 'react-native-webview';
-import {useRouteMapLogic} from '../RouteMapLogic';
-import {createMapHTML} from './RouteMapHTML';
+import { View, ActivityIndicator, Text } from 'react-native';
+import { WebView } from 'react-native-webview';
+import { useRouteMapLogic } from '../RouteMapLogic';
+import { createMapHTML } from './RouteMapHTML';
 import feedback from '../../../styles/base/feedback';
 import layout from '../../../styles/base/layout';
 
@@ -25,6 +25,7 @@ const RouteMapView = forwardRef(
       riderMarkers = {},
       currentUsername = '',
       onMapReady,
+      onRouteDataLoaded,
       ...restProps
     },
     ref,
@@ -129,8 +130,8 @@ const RouteMapView = forwardRef(
       const script = `
         if (typeof window.updateRiderMarkers === 'function') {
           window.updateRiderMarkers(${JSON.stringify(
-            markers,
-          )}, ${JSON.stringify(user)});
+        markers,
+      )}, ${JSON.stringify(user)});
         }
         true;
       `;
@@ -147,6 +148,14 @@ const RouteMapView = forwardRef(
         updateUserLocationOnMap(webViewRef, userLocation);
       }
     }, [userLocation, updateUserLocationOnMap]);
+
+    useEffect(() => {
+      console.log('[RouteMapView] routeData changed:', routeData ? 'HAS DATA' : 'NULL', typeof onRouteDataLoaded);
+      if (routeData) {
+        onRouteDataLoaded?.(routeData);
+      }
+    }, [routeData, onRouteDataLoaded]);
+
 
     const onWebViewLoad = useCallback(() => {
       webViewReadyRef.current = true;
@@ -236,12 +245,13 @@ const RouteMapView = forwardRef(
         <View style={[layout.screen, style, layout.center]}>
           <ActivityIndicator size="large" color="#1e40af" />
           <Text
-            style={[feedback.loadingText, {color: isDark ? '#fff' : '#000'}]}>
+            style={[feedback.loadingText, { color: isDark ? '#fff' : '#000' }]}>
             Loading map…
           </Text>
         </View>
       );
     }
+
 
     // ── Fatal error state ─────────────────────────────────────────────────────
     if (error && !routeData) {
@@ -250,7 +260,7 @@ const RouteMapView = forwardRef(
           <Text
             style={[
               feedback.errorText,
-              {color: isDark ? '#ff6b6b' : '#dc3545'},
+              { color: isDark ? '#ff6b6b' : '#dc3545' },
             ]}>
             {error}
           </Text>
@@ -284,10 +294,10 @@ const RouteMapView = forwardRef(
               borderRadius: 6,
               zIndex: 100,
             }}>
-            <Text style={{color: '#92400e', fontSize: 13, fontWeight: '600'}}>
+            <Text style={{ color: '#92400e', fontSize: 13, fontWeight: '600' }}>
               ⚠️ Route unavailable
             </Text>
-            <Text style={{color: '#b45309', fontSize: 12, marginTop: 4}}>
+            <Text style={{ color: '#b45309', fontSize: 12, marginTop: 4 }}>
               Showing landmarks and starting/ending points only
             </Text>
           </View>
@@ -295,8 +305,8 @@ const RouteMapView = forwardRef(
 
         <WebView
           ref={webViewRef}
-          source={{html: createMapHTML()}}
-          style={{flex: 1, backgroundColor: 'transparent'}}
+          source={{ html: createMapHTML() }}
+          style={{ flex: 1, backgroundColor: 'transparent' }}
           onLoadEnd={onWebViewLoad}
           onMessage={onWebViewMessage}
           onError={handleWebViewError}

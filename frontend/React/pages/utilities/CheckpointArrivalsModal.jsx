@@ -1,6 +1,6 @@
 // File: frontend/React/pages/utilities/CheckpointArrivalsModal.jsx
 
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useState, useEffect, useCallback, useRef} from 'react';
 import {
   View,
   Text,
@@ -116,29 +116,41 @@ const CheckpointArrivalsModal = ({
   stopPolling,
   setPollingEnabled,
   onRideFinished,
-  onNavigateToSummary, snapshotContainerRef,
+  onNavigateToSummary,
+  snapshotContainerRef,
+  polygonSnapshotOptions,
 }) => {
   const [arrivals, setArrivals] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [rideStatus, setRideStatus] = useState(null);
+  const isNavigatingRef = useRef(false);
+
+  // Keep stable refs so fetchCheckpointArrivals never needs these callbacks in
+  // its dependency array — prevents the re-creation loop that caused the modal
+  // to flicker open/close whenever the parent re-rendered.
+  const onCloseRef = useRef(onClose);
+  const onNavigateToSummaryRef = useRef(onNavigateToSummary);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+  useEffect(() => {
+    onNavigateToSummaryRef.current = onNavigateToSummary;
+  }, [onNavigateToSummary]);
 
   const {
     isFinishing,
     finishingAction,
     handleFinishRide,
     handleForceFinishRide,
-    captureAndUploadSnapshot,
   } = useFinishRideHandler(
     activeRide,
     stopPolling,
     setPollingEnabled,
     onRideFinished,
     snapshotContainerRef,
+    polygonSnapshotOptions,
   );
-
-
-
 
   const fetchCheckpointArrivals = useCallback(async () => {
     if (!generatedRidesId || generatedRidesId === 'undefined') return; // ← ADD
@@ -165,11 +177,11 @@ const CheckpointArrivalsModal = ({
       setRideStatus(statusData);
 
       if (statusData?.currentStatus === 'FINISHED') {
-        onNavigateToSummary?.(generatedRidesId);
+        onNavigateToSummaryRef.current?.(generatedRidesId);
         return;
       }
       if (statusData?.currentStatus === 'STOPPED') {
-        onClose?.();
+        onCloseRef.current?.();
         Alert.alert(
           'Ride Stopped',
           'This ride has been stopped by the creator.',
@@ -188,23 +200,17 @@ const CheckpointArrivalsModal = ({
     } finally {
       setLoading(false);
     }
-  }, [generatedRidesId, onNavigateToSummary, onClose]); // ← explicit deps
+  }, [generatedRidesId]); // ← only the ride ID; callbacks are accessed via refs
 
   useEffect(() => {
     if (!visible || !generatedRidesId || generatedRidesId === 'undefined')
       return;
     if (activeRide?.active === false) {
-      onNavigateToSummary?.(generatedRidesId);
+      onNavigateToSummaryRef.current?.(generatedRidesId);
       return;
     }
     fetchCheckpointArrivals();
-  }, [
-    visible,
-    generatedRidesId,
-    activeRide?.active,
-    onNavigateToSummary,
-    fetchCheckpointArrivals,
-  ]);
+  }, [visible, generatedRidesId, activeRide?.active, fetchCheckpointArrivals]);
 
   const currentUserAtEnding =
     !!username &&
@@ -219,9 +225,6 @@ const CheckpointArrivalsModal = ({
     rideStatus?.riderStatuses?.filter(r => r.status === 'RIDER_FINISHED')
       .length ?? 0;
   const totalRiderCount = rideStatus?.riderStatuses?.length ?? 0;
-  const allParticipantsFinished =
-    totalRiderCount > 0 && finishedRiderCount >= totalRiderCount;
-  const waitingCount = totalRiderCount - finishedRiderCount;
 
   const sortedCheckpoints = groupAndSortArrivals(
     arrivals,
@@ -402,7 +405,8 @@ const CheckpointArrivalsModal = ({
           </Text>
         </TouchableOpacity>
       </View>
-    );  };
+    );
+  };
 
   // ─── Arrivals content ─────────────────────────────────────────
   const renderContent = () => {
