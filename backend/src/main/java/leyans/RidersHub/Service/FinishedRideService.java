@@ -110,11 +110,34 @@ public class FinishedRideService {
                 "creator", requester.getUsername());
         rideStatusService.markFinished(generatedRidesId, "Ride finished by " + requester.getUsername());
 
-        // Ride is over for everyone — close any open SSE streams for it so they
-        // don't sit alive (and getting heartbeat-pinged) until their 300s timeout.
         rideLocationEmitterRegistry.closeAll(startedRide.getId());
+        LocalDateTime now = LocalDateTime.now();
+        for (Rider participant : startedRide.getParticipants()) {
+            try {
+                personalFinishedRideService.createPersonalSummaryOnArrival(participant, ride, now);
+            } catch (Exception e) {
+                AppLogger.warn(this.getClass(),
+                        "Failed to create personal summary for participant during force-finish",
+                        "username", participant.getUsername(),
+                        "generatedRidesId", generatedRidesId,
+                        "error", e.getMessage());
+            }
+        }
+// Owner is not always in the participants list — ensure they get a record too
+        try {
+            personalFinishedRideService.createPersonalSummaryOnArrival(requester, ride, now);
+        } catch (Exception e) {
+            AppLogger.warn(this.getClass(),
+                    "Failed to create personal summary for owner during force-finish",
+                    "username", requester.getUsername(),
+                    "generatedRidesId", generatedRidesId,
+                    "error", e.getMessage());
+        }
 
         return finishedRideUtility.buildAndSaveFinishedRide(startedRide, ride, requester, generatedRidesId);
+
+
+
     }
 
     @Transactional
