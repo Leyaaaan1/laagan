@@ -8,6 +8,9 @@ import leyans.RidersHub.Utility.FinishedRideUtility;
 import leyans.RidersHub.Utility.StartedUtil;
 import leyans.RidersHub.model.*;
 import leyans.RidersHub.model.participant.RideCheckpointArrival;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +28,9 @@ public class FinishedRideService {
     private final RideStatusService rideStatusService;
     private final PersonalFinishedRideService personalFinishedRideService;
     private final RideLocationEmitterRegistry rideLocationEmitterRegistry;
+    @Autowired
+    @Lazy
+    private FinishedRideService self;
 
     public FinishedRideService(StartedRideRepository startedRideRepository,
             RidesRepository ridesRepository,
@@ -80,8 +86,35 @@ public class FinishedRideService {
         return finishedRideUtility.buildPersonalFinishResponse(generatedRidesId, requester);
     }
 
-    @Transactional
+    // ① NEW — a thin wrapper. This is the only genuinely new code.
     public FinishedRideResponseDTO forceFinishRide(String generatedRidesId) {
+        int attempts = 0;
+        while (true) {
+            try {
+                return self.forceFinishRideTransactional(generatedRidesId);
+            } catch (CannotAcquireLockException e) {
+                attempts++;
+                if (attempts >= 3) {
+                    AppLogger.warn(this.getClass(), "Force-finish failed after deadlock retries",
+                            "generatedRidesId", generatedRidesId, "attempts", attempts);
+                    throw e;
+                }
+                AppLogger.warn(this.getClass(), "Deadlock detected on force-finish, retrying",
+                        "generatedRidesId", generatedRidesId, "attempt", attempts);
+                try {
+                    Thread.sleep(150L * attempts);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw e;
+                }
+            }
+        }
+    }
+
+
+
+    @Transactional
+    public FinishedRideResponseDTO forceFinishRideTransactional(String generatedRidesId) {
         AppLogger.info(this.getClass(), "forceFinishRide called", "generatedRidesId", generatedRidesId);
 
         Rider requester = startedUtil.authenticateAndGetInitiator();
@@ -123,7 +156,7 @@ public class FinishedRideService {
                         "error", e.getMessage());
             }
         }
-// Owner is not always in the participants list — ensure they get a record too
+        // Owner is not always in the participants list — ensure they get a record too
         try {
             personalFinishedRideService.createPersonalSummaryOnArrival(requester, ride, now);
         } catch (Exception e) {
@@ -135,9 +168,6 @@ public class FinishedRideService {
         }
 
         return finishedRideUtility.buildAndSaveFinishedRide(startedRide, ride, requester, generatedRidesId);
-
-
-
     }
 
     @Transactional
