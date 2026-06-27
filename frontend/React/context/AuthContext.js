@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Keychain from 'react-native-keychain';
-import {API_BASE_URL, setAuthContextRef} from '../services/Apiclient';
+import { API_BASE_URL, setAuthContextRef } from '../services/Apiclient';
 import {
   saveTokenExpiry,
   clearTokenExpiry,
@@ -20,10 +20,10 @@ import {
   checkNetworkStatus,
   getStoredCredentials,
 } from '../utilities/offlineUtils';
-import {clearCachedActiveRide} from '../utilities/activeRideStorage';
+import { clearCachedActiveRide } from '../utilities/activeRideStorage';
 const AuthContext = createContext(null);
 
-export const AuthProvider = ({children}) => {
+export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [username, setUsername] = useState(null);
   const [ready, setReady] = useState(false);
@@ -117,8 +117,8 @@ export const AuthProvider = ({children}) => {
     try {
       const response = await fetch(`${API_BASE_URL}/riders/refresh`, {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({refreshToken}),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
       });
 
       if (!response.ok) {
@@ -210,8 +210,8 @@ export const AuthProvider = ({children}) => {
     try {
       const response = await fetch(`${API_BASE_URL}/riders/refresh`, {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({refreshToken: refreshTokenRef.current}),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: refreshTokenRef.current }),
       });
 
       if (!response.ok) {
@@ -264,8 +264,8 @@ export const AuthProvider = ({children}) => {
       // For now, we just log it and clear state
 
       // Re-export this in context so screens can call it
-      return {shouldRedirectToAuth: true, message};
-    } catch (err) {}
+      return { shouldRedirectToAuth: true, message };
+    } catch (err) { }
   };
   useEffect(() => {
     if (!token) return;
@@ -289,21 +289,21 @@ export const AuthProvider = ({children}) => {
   // Replace lines 270-287:
   const _clearStorage = async () => {
     try {
-      await Keychain.resetGenericPassword({service: 'com.ridershub.auth'});
-    } catch (err) {}
+      await Keychain.resetGenericPassword({ service: 'com.ridershub.auth' });
+    } catch (err) { }
     try {
       await AsyncStorage.removeItem('username');
       await AsyncStorage.removeItem('onboardingCompleted');
-    } catch (err) {}
+    } catch (err) { }
     try {
       await clearTokenExpiry();
       // ✅ clearTokenExpiry already clears cachedAccessToken
-    } catch (err) {}
+    } catch (err) { }
     try {
       // ✅ Clear the active ride cache so a stale ride from a previous
       //    account is never shown to the next user on this device.
       await clearCachedActiveRide();
-    } catch (err) {}
+    } catch (err) { }
   };
   // ─── Public: reset all auth state + persisted storage ───
   // Pass a callback to AuthProvider that will be called on logout
@@ -317,12 +317,7 @@ export const AuthProvider = ({children}) => {
     setToken(null);
     setUsername(null);
 
-    // ✅ NEW: Clear cached token too
     await clearCachedAccessToken();
-
-    if (contextValue?.onLogout) {
-      contextValue.onLogout();
-    }
 
     await _clearStorage();
   };
@@ -333,7 +328,7 @@ export const AuthProvider = ({children}) => {
         'autoLoginPreference',
         prefer ? 'true' : 'false',
       );
-    } catch (err) {}
+    } catch (err) { }
   };
 
   const logout = async () => {
@@ -350,7 +345,7 @@ export const AuthProvider = ({children}) => {
           Authorization: `Bearer ${currentToken}`,
           'Content-Type': 'application/json',
         },
-      }).catch(err => {});
+      }).catch(err => { });
     }
   };
 
@@ -365,7 +360,7 @@ export const AuthProvider = ({children}) => {
           Authorization: `Bearer ${currentToken}`,
           'Content-Type': 'application/json',
         },
-      }).catch(err => {});
+      }).catch(err => { });
     }
   };
 

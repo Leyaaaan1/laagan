@@ -1,10 +1,10 @@
 import EventSource from 'react-native-sse';
-import React, {useEffect, useState} from 'react';
-import {NavigationContainer} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {AuthProvider, useAuth} from './React/context/AuthContext';
-import {RideProvider} from './React/context/RideContext';
-import {setAuthContextRef} from './React/services/Apiclient';
+import React, { useEffect, useState } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { AuthProvider, useAuth } from './React/context/AuthContext';
+import { RideProvider } from './React/context/RideContext';
+import { setAuthContextRef } from './React/services/Apiclient';
 import AuthScreen from './React/screens/AuthScreen';
 import RiderPage from './React/pages/RiderPage';
 import CreateRide from './React/pages/CreateRide';
@@ -13,13 +13,13 @@ import StartedRide from './React/pages/StartedRide';
 import RideRoutesPage from './React/components/ride/utilities/RideRoutesPage';
 import RiderProfile from './React/pages/RiderProfile';
 import HomeScreen from './React/screens/HomeScreen';
-import {GoogleSignin} from '@react-native-google-signin/google-signin';
-import {GOOGLE_CLIENT_ID} from '@env';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { GOOGLE_CLIENT_ID } from '@env';
 import LoadingScreen from '../frontend/React/commons/LoadingScreen';
 import LegalScreen from '../frontend/React/screens/LegalScreen';
 import FinishedRideView from './React/pages/finishedRide/FinishedRideView';
 import PersonalSummaryView from './React/pages/finishedRide/PersonalSummaryView';
-import {useDeepLinking} from './React/utilities/deepLinking';
+import { useDeepLinking } from './React/utilities/deepLinking';
 import EmailVerificationScreen from './React/screens/EmailVerificationScreen';
 import VerifyEmailLinkScreen from './React/screens/VerifyEmailLinkScreen';
 import OnboardingTour from './React/screens/OnboardingTour';
@@ -46,7 +46,7 @@ const Stack = createNativeStackNavigator();
 export const googleclientid = GOOGLE_CLIENT_ID;
 
 const AuthStack = () => (
-  <Stack.Navigator screenOptions={{headerShown: false}}>
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="AuthScreen" component={AuthScreen} />
     <Stack.Screen
       name="EmailVerification"
@@ -59,7 +59,7 @@ const AuthStack = () => (
 
 const AppStack = () => (
   <Stack.Navigator
-    screenOptions={{headerShown: false}}>
+    screenOptions={{ headerShown: false }}>
     <Stack.Screen name="RiderPage" component={RiderPage} />
     <Stack.Screen name="Home" component={HomeScreen} />
     <Stack.Screen name="CreateRide" component={CreateRide} />
@@ -81,8 +81,8 @@ const NavigationContent = () => {
 
   useDeepLinking();
   setAuthContextRef(auth);
-  GoogleSignin.configure({webClientId: googleclientid, offlineAccess: false});
-  
+  GoogleSignin.configure({ webClientId: googleclientid, offlineAccess: false });
+
   useEffect(() => {
     Promise.all([
       AsyncStorage.getItem('@rideapp_onboarding_done'),
@@ -106,7 +106,7 @@ const NavigationContent = () => {
     if (!onboardingDone) {
       return (
         <Stack.Navigator
-          screenOptions={{headerShown: false}}
+          screenOptions={{ headerShown: false }}
           screenListeners={{
             state: async e => {
               const route = e.data?.state?.routes?.find(
@@ -138,16 +138,21 @@ const NavigationContent = () => {
     </>
   );
 };
+// Add this bridge component between AuthProvider and RideProvider
+const RideProviderWithToken = ({ children }: { children: React.ReactNode }) => {
+  const { token } = useAuth();
+  return <RideProvider token={token}>{children}</RideProvider>;
+};
 
 export default function App() {
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-    <AuthProvider>
-        <RideProvider>
+      <AuthProvider>
+        <RideProviderWithToken>
           <NavigationContainer>
             <NavigationContent />
           </NavigationContainer>
-        </RideProvider>
+        </RideProviderWithToken>
       </AuthProvider>
     </SafeAreaProvider>
   );

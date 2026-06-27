@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback, useRef} from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 
-import {fetchRides, fetchMyRides} from '../../../services/rideService';
+import { fetchRides, fetchMyRides } from '../../../services/rideService';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import colors from '../../../styles/tokens/colors';
 import RideCard from './RideCard';
@@ -20,7 +20,7 @@ const RidesList = ({
   pageSize = 10,
   ListHeaderComponent,
   style,
-  contentContainerStyle = {padding: 15},
+  contentContainerStyle = { padding: 15 },
   userId,
 }) => {
   const [rides, setRides] = useState([]);
@@ -102,12 +102,16 @@ const RidesList = ({
   }, [mode]);
 
   useEffect(() => {
-    if (!userId) return;
+    // Always reset state when userId changes (including logout → null)
     setRides([]);
     setError('');
     setIsTimeout(false);
     setHasMore(true);
     setPage(0);
+    clearRetryTimers();
+
+    // Only fetch if we actually have a user
+    if (!userId) return;
     loadRides(0, true);
   }, [userId]);
 
@@ -117,7 +121,7 @@ const RidesList = ({
   }, [loading, hasMore, page]);
 
   const renderItem = useCallback(
-    ({item}) => (
+    ({ item }) => (
       <RideCard
         item={item}
         onPress={onRideSelect}
@@ -131,7 +135,7 @@ const RidesList = ({
   const renderFooter = () => {
     if (!loading || refreshing) return null;
     return (
-      <View style={{padding: 20, alignItems: 'center'}}>
+      <View style={{ padding: 20, alignItems: 'center' }}>
         <ActivityIndicator size="small" color={colors.primary} />
       </View>
     );
@@ -144,12 +148,12 @@ const RidesList = ({
     if (error) {
       if (isTimeout) {
         return (
-          <View style={{padding: 20, alignItems: 'center'}}>
+          <View style={{ padding: 20, alignItems: 'center' }}>
             <FontAwesome
               name="hourglass-half"
               size={36}
               color="#f59e0b"
-              style={{marginBottom: 12}}
+              style={{ marginBottom: 12 }}
             />
             <Text
               style={{
@@ -183,21 +187,21 @@ const RidesList = ({
                 clearRetryTimers();
                 handleRefresh();
               }}>
-              <Text style={{color: '#fff', fontWeight: 'bold'}}>Retry Now</Text>
+              <Text style={{ color: '#fff', fontWeight: 'bold' }}>Retry Now</Text>
             </TouchableOpacity>
           </View>
         );
       }
 
       return (
-        <View style={{padding: 20, alignItems: 'center'}}>
+        <View style={{ padding: 20, alignItems: 'center' }}>
           <FontAwesome
             name="exclamation-triangle"
             size={32}
             color="red"
-            style={{marginBottom: 15}}
+            style={{ marginBottom: 15 }}
           />
-          <Text style={{color: 'red', textAlign: 'center', marginBottom: 15}}>
+          <Text style={{ color: 'red', textAlign: 'center', marginBottom: 15 }}>
             {error}
           </Text>
           <TouchableOpacity
@@ -208,21 +212,21 @@ const RidesList = ({
               borderRadius: 8,
             }}
             onPress={handleRefresh}>
-            <Text style={{color: '#fff', fontWeight: 'bold'}}>Retry</Text>
+            <Text style={{ color: '#fff', fontWeight: 'bold' }}>Retry</Text>
           </TouchableOpacity>
         </View>
       );
     }
 
     return (
-      <View style={{padding: 40, alignItems: 'center'}}>
+      <View style={{ padding: 40, alignItems: 'center' }}>
         <FontAwesome
           name="road"
           size={48}
           color="#666"
-          style={{marginBottom: 15}}
+          style={{ marginBottom: 15 }}
         />
-        <Text style={{color: '#ddd', fontSize: 16}}>
+        <Text style={{ color: '#ddd', fontSize: 16 }}>
           {isMyRidesMode
             ? "You haven't created any rides yet"
             : 'No rides available'}

@@ -23,8 +23,8 @@ public class FinishedRideController {
 
     private final PersonalFinishedRideService personalFinishedRideService;
 
-
-    public FinishedRideController(FinishedRideService finishedRideService, FinishedRideUtility finishedRideUtility, CheckPointUtility checkPointUtility, PersonalFinishedRideService personalFinishedRideService) {
+    public FinishedRideController(FinishedRideService finishedRideService, FinishedRideUtility finishedRideUtility,
+            CheckPointUtility checkPointUtility, PersonalFinishedRideService personalFinishedRideService) {
         this.finishedRideService = finishedRideService;
         this.finishedRideUtility = finishedRideUtility;
         this.checkPointUtility = checkPointUtility;
@@ -47,7 +47,6 @@ public class FinishedRideController {
         return ResponseEntity.ok(response);
     }
 
-
     @PostMapping("/finished/{generatedRidesId}/force/ownride")
     public ResponseEntity<FinishedRideResponseDTO> forceFinishRideParticipants(
             @PathVariable String generatedRidesId) {
@@ -60,8 +59,7 @@ public class FinishedRideController {
     public ResponseEntity<List<CheckpointArrivalResponse>> getCheckpointArrivals(
             @PathVariable String generatedRidesId) {
 
-        List<CheckpointArrivalResponse> arrivals =
-                checkPointUtility.getCheckpointArrivalsByRide(generatedRidesId);
+        List<CheckpointArrivalResponse> arrivals = checkPointUtility.getCheckpointArrivalsByRide(generatedRidesId);
 
         return ResponseEntity.ok(arrivals);
     }
@@ -78,7 +76,5 @@ public class FinishedRideController {
             @PathVariable String generatedRidesId) {
         return ResponseEntity.ok(personalFinishedRideService.getPersonalSummaryDTO(generatedRidesId));
     }
-
-
 
 }

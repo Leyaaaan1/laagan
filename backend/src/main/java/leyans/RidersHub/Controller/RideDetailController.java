@@ -2,13 +2,13 @@ package leyans.RidersHub.Controller;
 
 import leyans.RidersHub.DTO.Response.FinishedDTO.DetailDTO;
 import leyans.RidersHub.DTO.Response.FinishedDTO.SnapshotResponseDTO;
+import leyans.RidersHub.Service.PersonalFinishedRideService;
 import leyans.RidersHub.Service.RideDetailService;
 import leyans.RidersHub.Service.UploadService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 
 @RestController
 @RequestMapping("/view")
@@ -17,7 +17,8 @@ public class RideDetailController {
     private final RideDetailService rideDetailService;
     private final UploadService uploadService;
 
-    public RideDetailController(RideDetailService rideDetailService, UploadService uploadService) {
+    public RideDetailController(RideDetailService rideDetailService, UploadService uploadService,
+            PersonalFinishedRideService personalFinishedRideService) {
         this.rideDetailService = rideDetailService;
         this.uploadService = uploadService;
     }
@@ -32,7 +33,6 @@ public class RideDetailController {
         return ResponseEntity.ok(rideDetailService.getRideDetail(generatedRidesId));
     }
 
-
     @PostMapping(value = "/{generatedRidesId}/snapshot", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<SnapshotResponseDTO> uploadSnapshot(
             @PathVariable String generatedRidesId,
@@ -46,10 +46,28 @@ public class RideDetailController {
      *
      * Returns the stored Cloudinary URL for the ride's snapshot.
      */
-    @GetMapping("/{generatedRidesId}/snapshot")
-    public ResponseEntity<SnapshotResponseDTO> getSnapshot(
-            @PathVariable String generatedRidesId) {
+    @PostMapping(value = "/{generatedRidesId}/personal-snapshot", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<SnapshotResponseDTO> uploadPersonalSnapshot(
+            @PathVariable String generatedRidesId,
+            @RequestPart("file") MultipartFile file) {
 
-        return ResponseEntity.ok(uploadService.getSnapshot(generatedRidesId));
+        try {
+            // 1. Upload bytes to Cloudinary
+            String snapshotUrl = uploadService.uploadSnapshot(file.getBytes());
+
+            // 2. Persist the URL to PersonalFinishedRide for this rider
+            SnapshotResponseDTO result = uploadService.savePersonalSnapshotUrl(
+                    generatedRidesId, snapshotUrl);
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to process personal snapshot: " + e.getMessage(), e);
+        }
+    }
+
+    @GetMapping("/{generatedRidesId}/personal-snapshot")
+    public ResponseEntity<SnapshotResponseDTO> getPersonalSnapshot(
+            @PathVariable String generatedRidesId) {
+        return ResponseEntity.ok(uploadService.getPersonalSnapshot(generatedRidesId));
     }
 }

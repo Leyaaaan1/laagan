@@ -9,6 +9,7 @@ export const useStartedRideMarkers = (
   pollingEnabled,
   onRiderFinished,
   mapRef,
+  onReroute,
 ) => {
   // ← add onRiderFinished
   const [riderMarkers, setRiderMarkers] = useState({});
@@ -96,10 +97,8 @@ export const useStartedRideMarkers = (
     rideId,
     enabled: pollingEnabled && !!rideId,
     onLocationsUpdate: handleLocationsUpdate,
+    onReroute,
     onError: handlePollingError,
-    onReroute: newRouteCoordinates => {
-      mapRef.current?.applyReroute(newRouteCoordinates);
-    },
   });
 
   return {

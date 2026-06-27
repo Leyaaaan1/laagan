@@ -19,7 +19,8 @@ export const parseRouteData = routeCoordinates => {
 export const buildRouteDataForMap = activeRide => {
   if (!activeRide) return null;
 
-  // ✅ FIXED: Ensure we have route coordinates in proper format
+
+
   let features = null;
   let coordinates = null;
 
@@ -50,7 +51,7 @@ export const buildRouteDataForMap = activeRide => {
 /** * Build map data from ride coordinates */
 export const buildMapData = (activeRide, processRideCoordinates) => {
   if (!activeRide) {
-    return {startingPoint: null, stopPoints: [], endingPoint: null};
+    return { startingPoint: null, stopPoints: [], endingPoint: null };
   }
   return processRideCoordinates(activeRide);
 };

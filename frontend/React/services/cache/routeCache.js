@@ -10,7 +10,7 @@ export const routeCache = {
   save: async (generatedRidesId, routeCoordinates) => {
     try {
       if (!routeCoordinates) return;
-      const entry = {data: routeCoordinates, savedAt: Date.now()};
+      const entry = { data: routeCoordinates, savedAt: Date.now() };
       await AsyncStorage.setItem(
         `${PREFIX}${generatedRidesId}`,
         JSON.stringify(entry),

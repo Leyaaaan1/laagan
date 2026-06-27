@@ -28,10 +28,10 @@ public class UploadService {
     private final PersonalFinishedRideRepository personalFinishedRideRepository;
 
     public UploadService(Cloudinary cloudinary,
-                         StartedUtil startedUtil,
-                         RidesRepository ridesRepository,
-                         FinishedRideRepository finishedRideRepository,
-                         PersonalFinishedRideRepository personalFinishedRideRepository) {
+            StartedUtil startedUtil,
+            RidesRepository ridesRepository,
+            FinishedRideRepository finishedRideRepository,
+            PersonalFinishedRideRepository personalFinishedRideRepository) {
         this.cloudinary = cloudinary;
         this.startedUtil = startedUtil;
         this.ridesRepository = ridesRepository;
@@ -45,8 +45,7 @@ public class UploadService {
         try {
             Map uploadResult = cloudinary.uploader().upload(imageBytes, ObjectUtils.asMap(
                     "resource_type", "image",
-                    "folder", "ride_snapshots"
-            ));
+                    "folder", "ride_snapshots"));
             return uploadResult.get("secure_url").toString();
         } catch (Exception e) {
             AppLogger.error(this.getClass(), "Cloudinary upload failed", "error", e.getMessage());
@@ -57,8 +56,8 @@ public class UploadService {
     // ── Upload snapshot for a ride ────────────────────────────────────────────
     //
     // One endpoint handles both cases:
-    //   - If the ride has a FinishedRide record  → save URL there (group ride)
-    //   - If the rider has a PersonalFinishedRide → save URL there (solo ride)
+    // - If the ride has a FinishedRide record → save URL there (group ride)
+    // - If the rider has a PersonalFinishedRide → save URL there (solo ride)
     // The frontend doesn't need to know which entity is backing the storage.
 
     @Transactional
@@ -83,8 +82,8 @@ public class UploadService {
             String imageUrl = uploadSnapshot(file.getBytes());
 
             // Try group ride first, then fall back to personal
-            java.util.Optional<FinishedRide> groupOpt =
-                    finishedRideRepository.findByRideGeneratedRidesId(generatedRidesId);
+            java.util.Optional<FinishedRide> groupOpt = finishedRideRepository
+                    .findByRideGeneratedRidesId(generatedRidesId);
 
             if (groupOpt.isPresent()) {
                 FinishedRide finishedRide = groupOpt.get();
@@ -109,6 +108,25 @@ public class UploadService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public SnapshotResponseDTO getPersonalSnapshot(String generatedRidesId) {
+        Rider requester = startedUtil.authenticateAndGetInitiator();
+
+        String url = personalFinishedRideRepository
+                .findByRideGeneratedRidesIdAndRiderUsername(
+                        generatedRidesId, requester.getUsername())
+                .map(PersonalFinishedRide::getSnapshotUrl)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No personal snapshot found for ride: " + generatedRidesId));
+
+        if (url == null) {
+            throw new IllegalArgumentException(
+                    "No personal snapshot found for ride: " + generatedRidesId);
+        }
+
+        return new SnapshotResponseDTO(url);
+    }
+
     // ── Get snapshot URL for a ride ───────────────────────────────────────────
 
     @Transactional(readOnly = true)
@@ -118,8 +136,7 @@ public class UploadService {
         Rider requester = startedUtil.authenticateAndGetInitiator();
 
         // Check group ride first
-        java.util.Optional<FinishedRide> groupOpt =
-                finishedRideRepository.findByRideGeneratedRidesId(generatedRidesId);
+        java.util.Optional<FinishedRide> groupOpt = finishedRideRepository.findByRideGeneratedRidesId(generatedRidesId);
 
         if (groupOpt.isPresent() && groupOpt.get().getSnapshotUrl() != null) {
             return new SnapshotResponseDTO(groupOpt.get().getSnapshotUrl());
@@ -137,5 +154,24 @@ public class UploadService {
         }
 
         return new SnapshotResponseDTO(url);
+    }
+
+    @Transactional
+    public SnapshotResponseDTO savePersonalSnapshotUrl(String generatedRidesId, String snapshotUrl) {
+        Rider requester = startedUtil.authenticateAndGetInitiator();
+
+        PersonalFinishedRide personal = personalFinishedRideRepository
+                .findByRideGeneratedRidesIdAndRiderUsername(generatedRidesId, requester.getUsername())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Snapshots can only be uploaded for finished rides"));
+
+        personal.setSnapshotUrl(snapshotUrl);
+        personalFinishedRideRepository.save(personal);
+
+        AppLogger.info(this.getClass(), "Personal snapshot URL saved",
+                "generatedRidesId", generatedRidesId,
+                "rider", requester.getUsername());
+
+        return new SnapshotResponseDTO(snapshotUrl);
     }
 }

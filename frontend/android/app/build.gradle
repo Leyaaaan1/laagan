@@ -37,8 +37,8 @@ android {
         applicationId "com.laagan"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 24
-        versionName "1.0.24"
+        versionCode 26
+        versionName "1.0.26"
 
 
 
@@ -48,26 +48,19 @@ android {
         resValue "string", "fb_login_protocol_scheme", "fb" + (envVars["FACEBOOK_APP_ID"] ?: "")
     }
     signingConfigs {
-        debug {
-            storeFile file('debug_new.keystore')
-            storePassword 'android'
-            keyAlias 'newkey'
-            keyPassword 'android'
-        }
-       release {
-            // Comment these out temporarily so local running doesn't look for the missing file
-            // storeFile file('laagan-release.keystore')
-            // storePassword project.findProperty("LAAGAN_STORE_PASSWORD") ?: ""
-            // keyAlias 'laagan'
-            // keyPassword project.findProperty("LAAGAN_KEY_PASSWORD") ?: ""
-            
-            // Point it to your debug key temporarily so the project syncs smoothly
-            storeFile file('debug_new.keystore')
-            storePassword 'android'
-            keyAlias 'newkey'
-            keyPassword 'android'
-        }
+    debug {
+        storeFile file('debug_new.keystore')
+        storePassword 'android'
+        keyAlias 'newkey'
+        keyPassword 'android'
     }
+    release {
+        storeFile file('laagan-release.keystore')
+        storePassword project.findProperty("LAAGAN_STORE_PASSWORD") ?: ""
+        keyAlias 'laagan'
+        keyPassword project.findProperty("LAAGAN_KEY_PASSWORD") ?: ""
+    }
+}
     buildTypes {
         debug {
             signingConfig signingConfigs.debug

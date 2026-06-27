@@ -1,137 +1,116 @@
-import {useState, useCallback} from 'react';
-import {Alert} from 'react-native';
+import { useState, useCallback } from 'react';
+import { Alert } from 'react-native';
 import {
   finishRide,
   forceFinishRide,
   forceFinishOwnRide,
 } from '../../../services/startService';
-import {finishedRideService} from '../../../services/finishedRideService';
-import {captureRideSnapshot} from '../../../utilities/captureRideSnapshot';
+import { finishedRideService } from '../../../services/finishedRideService';
+import { captureRideSnapshot } from '../../../utilities/captureRideSnapshot';
 
 export const useFinishRideHandler = (
   activeRide,
   stopPolling,
   setPollingEnabled,
   onRideFinished,
-  snapshotContainerRef, // ← renamed from mapRef — now points to the off-screen SVG View
+  snapshotContainerRef,
+  polygonSnapshotOptions = {},
 ) => {
   const [finishingAction, setFinishingAction] = useState(null); // null | 'normal' | 'force'
-  const isFinishing = finishingAction !== null; // keep this — still useful for disabling both buttons while one is in flight
-
-  const captureAndUploadSnapshot = useCallback(async () => {
-    let snapshotUrl = null;
-
-    try {
-      if (!snapshotContainerRef?.current) {
-        console.warn(
-          '[Snapshot] snapshotContainerRef.current is null — view not mounted. Skipping.',
-        );
-        return null;
-      }
-
-      const result = await captureRideSnapshot({
-        containerRef: snapshotContainerRef,
-        generatedRidesId: activeRide?.generatedRidesId,
-      });
-
-      if (result.skipped) {
-        console.warn('[Snapshot] Capture skipped:', result.reason);
-        return null;
-      }
-
-      const file = {
-        uri: result.snapshotUri,
-        type: 'image/png',
-        fileName: `snapshot-${activeRide?.generatedRidesId}-${Date.now()}.png`,
-      };
-
-      snapshotUrl = await finishedRideService.uploadSnapshot(
-        activeRide.generatedRidesId,
-        file,
-      );
-    } catch (error) {
-      console.warn(
-        '[Snapshot] Capture or upload failed:',
-        error?.message ?? error,
-      );
-    }
-
-    return snapshotUrl;
-  }, [snapshotContainerRef, activeRide?.generatedRidesId]);
-
-  // ── handleFinishRide and handleForceFinishRide stay exactly the same ──
-  // (no changes needed below this point — they just call captureAndUploadSnapshot)
+  const isFinishing = finishingAction !== null;
+  const { prepareView: preparePolygonView } = polygonSnapshotOptions;
 
   const handleFinishRide = useCallback(async () => {
     if (!activeRide?.generatedRidesId) return;
     try {
       setFinishingAction('normal');
-
       setPollingEnabled(false);
 
-      //  Capture while the polygon view is still mounted
-      const snapshotUrl = await captureAndUploadSnapshot();
+      // ── 1. CAPTURE while the view is still mounted ─────────────────────
+      if (preparePolygonView) await preparePolygonView();
 
+      const capture = await captureRideSnapshot({
+        containerRef: snapshotContainerRef,
+        generatedRidesId: activeRide.generatedRidesId,
+      });
+
+      // ── 2. FINISH — creates PersonalFinishedRide record ─────────────────
       const data = await finishRide(activeRide.generatedRidesId);
       stopPolling();
 
-      onRideFinished?.(data, snapshotUrl); //  pass snapshotUrl up
+      // ── 3. UPLOAD + save URL to PersonalFinishedRide (record now exists)
+      let snapshotUrl = null;
+
+      if (!capture.skipped) {
+        snapshotUrl = await finishedRideService.uploadPersonalSnapshot(
+          activeRide.generatedRidesId,
+          {
+            uri: capture.snapshotUri,
+            type: 'image/png',
+            fileName: `snapshot-${activeRide.generatedRidesId}-${Date.now()}.png`,
+          },
+        ).catch(e => { console.warn('[Snapshot] upload failed:', e?.message); return null; });
+      }
+
+      onRideFinished?.(data, snapshotUrl);
     } catch (err) {
       setPollingEnabled(true);
       Alert.alert('Could not finish ride', err.message || 'Please try again.');
     } finally {
       setFinishingAction(null);
     }
-  }, [
-    activeRide,
-    stopPolling,
-    setPollingEnabled,
-    onRideFinished,
-    captureAndUploadSnapshot,
-  ]);
+  }, [activeRide, stopPolling, setPollingEnabled, onRideFinished,
+    snapshotContainerRef, preparePolygonView]);
 
-  const handleForceFinishRide = useCallback(
-    async (endForAll = false) => {
-      if (!activeRide?.generatedRidesId) return;
 
-      try {
-        setFinishingAction('force');
-        setPollingEnabled(false);
+  const handleForceFinishRide = useCallback(async (endForAll = false) => {
+    if (!activeRide?.generatedRidesId) return;
+    try {
+      setFinishingAction('force');
+      setPollingEnabled(false);
 
-        // Capture before the ride is ended on the backend
-        const snapshotUrl = await captureAndUploadSnapshot();
+      // ── 1. CAPTURE ───────────────────────────────────────────────────────
+      if (preparePolygonView) await preparePolygonView();
 
-        const data = endForAll
-          ? await forceFinishRide(activeRide.generatedRidesId)
-          : await forceFinishOwnRide(activeRide.generatedRidesId);
+      const capture = await captureRideSnapshot({
+        containerRef: snapshotContainerRef,
+        generatedRidesId: activeRide.generatedRidesId,
+      });
 
-        stopPolling();
+      // ── 2. FINISH ─────────────────────────────────────────────────────────
+      const data = endForAll
+        ? await forceFinishRide(activeRide.generatedRidesId)
+        : await forceFinishOwnRide(activeRide.generatedRidesId);
+      stopPolling();
 
-        onRideFinished?.(data, snapshotUrl);
-      } catch (err) {
-        setPollingEnabled(true);
-        Alert.alert(
-          'Could not force-end ride',
-          err.message || 'Please try again.',
-        );
-      } finally {
-        setFinishingAction(null);
+      // ── 3. UPLOAD to PersonalFinishedRide ───────────────────────────────
+      let snapshotUrl = null;
+
+      if (!capture.skipped) {
+        snapshotUrl = await finishedRideService.uploadPersonalSnapshot(
+          activeRide.generatedRidesId,
+          {
+            uri: capture.snapshotUri,
+            type: 'image/png',
+            fileName: `snapshot-${activeRide.generatedRidesId}-${Date.now()}.png`,
+          },
+        ).catch(e => { console.warn('[Snapshot] upload failed:', e?.message); return null; });
       }
-    },
-    [
-      activeRide,
-      stopPolling,
-      setPollingEnabled,
-      onRideFinished,
-      captureAndUploadSnapshot,
-    ],
-  );
+
+      onRideFinished?.(data, snapshotUrl);
+    } catch (err) {
+      setPollingEnabled(true);
+      Alert.alert('Could not force-end ride', err.message || 'Please try again.');
+    } finally {
+      setFinishingAction(null);
+    }
+  }, [activeRide, stopPolling, setPollingEnabled, onRideFinished,
+    snapshotContainerRef, preparePolygonView]);
 
   return {
     isFinishing,
     handleFinishRide,
     finishingAction,
     handleForceFinishRide,
-    captureAndUploadSnapshot,
   };
 };

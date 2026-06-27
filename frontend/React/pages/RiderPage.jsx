@@ -20,27 +20,27 @@ import {
   Alert,
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import {getActiveRide} from '../services/startService';
-import {getRideDetails} from '../services/rideService';
+import { getActiveRide } from '../services/startService';
+import { getRideDetails } from '../services/rideService';
 import ScannerHeader from './utilities/ScannerHeader';
 import layout from '../styles/base/layout';
 import header from '../styles/base/header';
 import s from '../styles/screens/riderPage';
-import {getMyProfile} from '../services/profileService';
+import { getMyProfile } from '../services/profileService';
 import colors from '../styles/tokens/colors';
-import {buildRideStep4Params} from '../utilities/NavigationParamsBuilder';
-import {getRideTypeIcon} from '../utilities/rideTypes';
-import {useAuth} from '../context/AuthContext';
-import {RideContext} from '../context/RideContext';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import { buildRideStep4Params } from '../utilities/NavigationParamsBuilder';
+import { getRideTypeIcon } from '../utilities/rideTypes';
+import { useAuth } from '../context/AuthContext';
+import { RideContext } from '../context/RideContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RidesList from '../components/ride/modal/RidesList';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 const getGreeting = () => {
   const hour = new Date().getHours();
-  if (hour < 5) {return 'Riding late tonight';}
-  if (hour < 12) {return 'Good morning';}
-  if (hour < 18) {return 'Good afternoon';}
+  if (hour < 5) { return 'Riding late tonight'; }
+  if (hour < 12) { return 'Good morning'; }
+  if (hour < 18) { return 'Good afternoon'; }
   return 'Good evening';
 };
 
@@ -49,10 +49,10 @@ const getGreeting = () => {
 // TODO(backend): once the API returns an explicit `status` field on a ride
 // ("upcoming" | "active" | "finished"), this can be simplified to just read it.
 const getRideStatus = ride => {
-  if (!ride) {return 'active';}
+  if (!ride) { return 'active'; }
   const raw = (ride.status || ride.rideStatus || '').toString().toLowerCase();
-  if (raw.includes('finish') || raw.includes('complete')) {return 'finished';}
-  if (raw.includes('upcoming') || raw.includes('scheduled')) {return 'upcoming';}
+  if (raw.includes('finish') || raw.includes('complete')) { return 'finished'; }
+  if (raw.includes('upcoming') || raw.includes('scheduled')) { return 'upcoming'; }
   return 'active';
 };
 
@@ -78,17 +78,17 @@ const STATUS_META = {
 };
 
 const formatNumber = value => {
-  if (value === null || value === undefined || Number.isNaN(value)) {return '—';}
+  if (value === null || value === undefined || Number.isNaN(value)) { return '—'; }
   return String(value);
 };
 
 // ─── ProfileAvatar ────────────────────────────────────────────────────────────
-const ProfileAvatar = ({profile, avatarStyle}) => {
+const ProfileAvatar = ({ profile, avatarStyle }) => {
   if (profile?.profilePictureUrl) {
     return (
       <Image
-        source={{uri: profile.profilePictureUrl}}
-        style={[avatarStyle, {borderRadius: avatarStyle.borderRadius ?? 25}]}
+        source={{ uri: profile.profilePictureUrl }}
+        style={[avatarStyle, { borderRadius: avatarStyle.borderRadius ?? 25 }]}
         resizeMode="cover"
       />
     );
@@ -96,7 +96,7 @@ const ProfileAvatar = ({profile, avatarStyle}) => {
   const initial = profile?.displayName || profile?.username || '';
   if (initial) {
     return (
-      <Text style={{color: '#cc0000', fontSize: 18, fontWeight: '700'}}>
+      <Text style={{ color: '#cc0000', fontSize: 18, fontWeight: '700' }}>
         {initial[0].toUpperCase()}
       </Text>
     );
@@ -107,7 +107,7 @@ const ProfileAvatar = ({profile, avatarStyle}) => {
 // ─── AnimatedPress ────────────────────────────────────────────────────────────
 // Lightweight press-scale wrapper so the quick action cards feel tactile,
 // without pulling in any new dependency.
-const AnimatedPress = ({onPress, style, disabled, children}) => {
+const AnimatedPress = ({ onPress, style, disabled, children }) => {
   const scale = useRef(new Animated.Value(1)).current;
 
   const animateTo = value =>
@@ -119,14 +119,14 @@ const AnimatedPress = ({onPress, style, disabled, children}) => {
     }).start();
 
   return (
-    <Animated.View style={[style, {transform: [{scale}]}]}>
+    <Animated.View style={[style, { transform: [{ scale }] }]}>
       <TouchableOpacity
         activeOpacity={0.9}
         disabled={disabled}
         onPress={onPress}
         onPressIn={() => animateTo(0.96)}
         onPressOut={() => animateTo(1)}
-        style={{flex: 1, width: '100%'}}>
+        style={{ flex: 1, width: '100%' }}>
         {children}
       </TouchableOpacity>
     </Animated.View>
@@ -134,12 +134,12 @@ const AnimatedPress = ({onPress, style, disabled, children}) => {
 };
 
 // ─── StatusBadge ──────────────────────────────────────────────────────────────
-const StatusBadge = ({status}) => {
+const StatusBadge = ({ status }) => {
   const meta = STATUS_META[status] ?? STATUS_META.active;
   return (
     <View style={[s.statusBadge, s[meta.style]]}>
-      <View style={[s.statusBadgeDot, {backgroundColor: meta.dotColor}]} />
-      <Text style={[s.statusBadgeText, {color: meta.textColor}]}>
+      <View style={[s.statusBadgeDot, { backgroundColor: meta.dotColor }]} />
+      <Text style={[s.statusBadgeText, { color: meta.textColor }]}>
         {meta.label}
       </Text>
     </View>
@@ -147,8 +147,8 @@ const StatusBadge = ({status}) => {
 };
 
 // ─── RiderPage ────────────────────────────────────────────────────────────────
-const RiderPage = ({navigation}) => {
-  const {username, ready, logout} = useAuth();
+const RiderPage = ({ navigation }) => {
+  const { username, ready, logout } = useAuth();
 
   const {
     activeRide: contextActiveRide,
@@ -173,17 +173,30 @@ const RiderPage = ({navigation}) => {
   const insets = useSafeAreaInsets();
   const prevUsernameRef = useRef(null);
 
+  // AFTER
+  // Find this existing useEffect (~line 176) and replace it:
+
   useEffect(() => {
-    if (
-      prevUsernameRef.current !== null &&
-      prevUsernameRef.current !== username
-    ) {
+    const prev = prevUsernameRef.current;
+    const didChange = prev !== null && prev !== username;
+    const didLogout = prev !== null && username === null;
+
+    if (didChange || didLogout) {
       clearContextActiveRide();
+      setFetchedActiveRide(null);  // ← add
+      setProfile(null);            // ← add
+      setRideCode('');             // ← add
+      setSearchError('');          // ← add
+      ridesListRefRef.current?.reset?.(); // ← add (if RidesList exposes reset)
     }
+
+    // only update ref on real username, so logout (null) is still
+    // caught as a change when the next user logs in
     if (username) {
       prevUsernameRef.current = username;
     }
   }, [username, clearContextActiveRide]);
+  ;
 
   // ── Fetch active ride ─────────────────────────────────────────────────────
   const fetchActiveRide = useCallback(async () => {
@@ -222,7 +235,7 @@ const RiderPage = ({navigation}) => {
   }, []);
 
   useEffect(() => {
-    if (!ready) {return;}
+    if (!ready) { return; }
     fetchActiveRide();
     fetchProfile();
   }, [ready, fetchActiveRide, fetchProfile]);
@@ -249,7 +262,7 @@ const RiderPage = ({navigation}) => {
       profile?.totalDistanceKm ??
       null;
     const lastRide = profile?.lastRide ?? null;
-    return {ridesJoined, ridesCreated, distance, lastRide};
+    return { ridesJoined, ridesCreated, distance, lastRide };
   }, [profile]);
 
   const rideStatus = useMemo(
@@ -263,7 +276,7 @@ const RiderPage = ({navigation}) => {
       <View
         style={[
           layout.screen,
-          {alignItems: 'center', justifyContent: 'center'},
+          { alignItems: 'center', justifyContent: 'center' },
         ]}>
         <ActivityIndicator color={colors.primary} size="large" />
       </View>
@@ -280,10 +293,10 @@ const RiderPage = ({navigation}) => {
       Alert.alert('Error', err.message || 'Failed to open ride');
     }
   };
-  const handleCreateRide = () => navigation.navigate('CreateRide', {username});
+  const handleCreateRide = () => navigation.navigate('CreateRide', { username });
 
   const handleOpenActiveRide = () => {
-    if (!displayActiveRide) {return;}
+    if (!displayActiveRide) { return; }
     navigation.navigate('StartedRide', {
       activeRide: displayActiveRide,
       username,
@@ -291,7 +304,7 @@ const RiderPage = ({navigation}) => {
   };
 
   const handleOpenProfile = () =>
-    navigation.navigate('RiderProfile', {username});
+    navigation.navigate('RiderProfile', { username });
 
   // Uses getRideDetails (same as SearchHeader) — fetches full ride then navigates
   const handleSearchRide = async () => {
@@ -341,9 +354,9 @@ const RiderPage = ({navigation}) => {
           style={header.avatar}>
           <ProfileAvatar profile={profile} avatarStyle={header.avatar} />
         </TouchableOpacity>
-        <View style={{flex: 1, marginLeft: 10}}>
+        <View style={{ flex: 1, marginLeft: 10 }}>
           <Text
-            style={[header.username, {fontSize: 14, flexShrink: 1}]}
+            style={[header.username, { fontSize: 14, flexShrink: 1 }]}
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.6}>
@@ -353,16 +366,16 @@ const RiderPage = ({navigation}) => {
             <ActivityIndicator
               color="#fff"
               size="small"
-              style={{marginTop: 4}}
+              style={{ marginTop: 4 }}
             />
           ) : (
             <View>
-              <Text style={[header.username, {fontSize: 14, flexShrink: 1}]}>
+              <Text style={[header.username, { fontSize: 14, flexShrink: 1 }]}>
                 <FontAwesome
                   name={getRideTypeIcon(riderType)}
                   size={11}
                   color={colors.primary}
-                  style={{marginRight: 4, paddingRight: 8}}
+                  style={{ marginRight: 4, paddingRight: 8 }}
                 />{' '}
                 {riderType ?? 'unknown'}
               </Text>
@@ -372,7 +385,7 @@ const RiderPage = ({navigation}) => {
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => setMenuVisible(true)}
-          style={{padding: 6}}>
+          style={{ padding: 6 }}>
           <FontAwesome name="cog" size={18} color={colors.textSecondary} />
         </TouchableOpacity>
         {menuVisible && (
@@ -404,7 +417,7 @@ const RiderPage = ({navigation}) => {
                 zIndex: 100,
                 elevation: 12,
                 shadowColor: '#000',
-                shadowOffset: {width: 0, height: 4},
+                shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.3,
                 shadowRadius: 10,
               }}>
@@ -413,8 +426,8 @@ const RiderPage = ({navigation}) => {
                   setMenuVisible(false);
                   handleOpenProfile();
                 }}
-                style={{paddingVertical: 12, paddingHorizontal: 16}}>
-                <Text style={{color: colors.white}}>Profile</Text>
+                style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
+                <Text style={{ color: colors.white }}>Profile</Text>
               </TouchableOpacity>
 
               <View
@@ -430,8 +443,8 @@ const RiderPage = ({navigation}) => {
                   setMenuVisible(false);
                   logout();
                 }}
-                style={{paddingVertical: 12, paddingHorizontal: 16}}>
-                <Text style={{color: '#dc2626'}}>Logout</Text>
+                style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
+                <Text style={{ color: '#dc2626' }}>Logout</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -445,8 +458,8 @@ const RiderPage = ({navigation}) => {
         mode="my"
         userId={username}
         onRideSelect={handleRideSelect}
-        style={{flex: 1}}
-        contentContainerStyle={{paddingHorizontal: 15, paddingBottom: 40}}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: 15, paddingBottom: 40 }}
         ListHeaderComponent={
           <>
             <View style={s.heroContainer}>
@@ -467,7 +480,7 @@ const RiderPage = ({navigation}) => {
                   name="search"
                   size={15}
                   color={colors.textSecondary}
-                  style={{marginLeft: 4}}
+                  style={{ marginLeft: 4 }}
                 />
                 <TextInput
                   style={s.searchInput}
@@ -587,7 +600,7 @@ const RiderPage = ({navigation}) => {
 
                   <View style={s.rideCardMetaRow}>
                     {displayActiveRide.participantsCount != null ||
-                    displayActiveRide.ridersCount != null ? (
+                      displayActiveRide.ridersCount != null ? (
                       <>
                         <FontAwesome
                           name="users"
