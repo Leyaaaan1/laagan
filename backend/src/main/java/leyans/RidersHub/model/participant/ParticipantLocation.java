@@ -32,6 +32,9 @@ public class ParticipantLocation {
     @Column(name = "last_update", nullable = false)
     private LocalDateTime lastUpdate;
 
+    @Column(name = "active", nullable = false)
+    private Boolean active = true;
+
     public ParticipantLocation( StartedRide startedRide, Rider rider, Point participantLocation, LocalDateTime lastUpdate) {
         this.startedRide = startedRide;
         this.rider = rider;
@@ -39,6 +42,14 @@ public class ParticipantLocation {
         this.lastUpdate = lastUpdate;
     }
     public ParticipantLocation() {
+    }
+
+    public Boolean getActive() {
+        return active;
+    }
+
+    public void setActive(Boolean active) {
+        this.active = active;
     }
 
     public Integer getParticipantLocationId() {

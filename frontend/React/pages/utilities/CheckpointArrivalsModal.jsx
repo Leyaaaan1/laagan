@@ -235,7 +235,7 @@ const CheckpointArrivalsModal = ({
 
   // ─── Status banner ────────────────────────────────────────────
   const renderStatusBanner = () => {
-    // Creator has NOT reached ending
+    // Not at the finish line yet
     if (!currentUserAtEnding) {
       return (
         <View style={s.bannerWarning}>
@@ -249,40 +249,23 @@ const CheckpointArrivalsModal = ({
               You haven't reached the finish line yet.
             </Text>
           </View>
+
+          {/* Everyone: end your own ride early — single clear confirm, no nested branching */}
           <TouchableOpacity
             disabled={isFinishing}
             onPress={() => {
-              if (isCreator) {
-                Alert.alert(
-                  'Force End Ride',
-                  'End just your own ride, or end it for every participant?',
-                  [
-                    {text: 'Cancel', style: 'cancel'},
-                    {
-                      text: 'End My Ride Only',
-                      onPress: () => handleForceFinishRide(false),
-                    },
-                    {
-                      text: 'End For Everyone',
-                      style: 'destructive',
-                      onPress: () => handleForceFinishRide(true),
-                    },
-                  ],
-                );
-              } else {
-                Alert.alert(
-                  'Force End Ride',
-                  'This will end the ride for you only — other riders can continue. Are you sure?',
-                  [
-                    {text: 'Cancel', style: 'cancel'},
-                    {
-                      text: 'Force End',
-                      style: 'destructive',
-                      onPress: () => handleForceFinishRide(false),
-                    },
-                  ],
-                );
-              }
+              Alert.alert(
+                'End My Ride Now',
+                "You'll stop being tracked and your ride ends here — you can't resume. Continue?",
+                [
+                  {text: 'Cancel', style: 'cancel'},
+                  {
+                    text: 'End My Ride',
+                    style: 'destructive',
+                    onPress: () => handleForceFinishRide(false),
+                  },
+                ],
+              );
             }}
             style={[
               s.bannerButton,
@@ -295,98 +278,67 @@ const CheckpointArrivalsModal = ({
               <FontAwesome name="stop-circle" size={13} color="#ef4444" />
             )}
             <Text style={s.bannerButtonDangerText}>
-              {finishingAction === 'force' ? 'Ending…' : 'Force End Ride'}
+              {finishingAction === 'force' ? 'Ending…' : 'End My Ride Now'}
             </Text>
           </TouchableOpacity>
+
+          {/* Creator only: nuclear option, always available, own confirm */}
+          {isCreator && (
+            <TouchableOpacity
+              disabled={isFinishing}
+              onPress={() => {
+                Alert.alert(
+                  'End Ride For Everyone',
+                  "This stops the ride for every rider right now, even if they haven't reached the finish line. This cannot be undone.",
+                  [
+                    {text: 'Cancel', style: 'cancel'},
+                    {
+                      text: 'End For Everyone',
+                      style: 'destructive',
+                      onPress: () => handleForceFinishRide(true),
+                    },
+                  ],
+                );
+              }}
+              style={[
+                s.bannerButton,
+                s.bannerButtonDanger,
+                s.bannerButtonOutline,
+                isFinishing && s.bannerButtonDisabled,
+              ]}>
+              {finishingAction === 'force' ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <FontAwesome
+                  name="stop-circle"
+                  size={13}
+                  color={colors.primary}
+                />
+              )}
+              <Text style={s.bannerButtonDangerText}>
+                {finishingAction === 'force'
+                  ? 'Ending…'
+                  : 'End Ride For Everyone'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       );
     }
 
-    // At ending — creator
-    if (isCreator) {
-      return (
-        <View style={s.bannerSuccess}>
-          <View style={s.bannerIconRow}>
-            <FontAwesome name="flag-checkered" size={20} color="#4CAF50" />
-            <Text style={s.bannerSuccessTitle}>Finish line reached!</Text>
-          </View>
-
-          {/* End Your Ride */}
-          <TouchableOpacity
-            disabled={isFinishing}
-            onPress={handleFinishRide}
-            style={[
-              s.bannerButton,
-              s.bannerButtonSuccess,
-              isFinishing && s.bannerButtonDisabled,
-            ]}>
-            {finishingAction === 'normal' ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <FontAwesome name="check-circle" size={13} color="#fff" />
-            )}
-            <Text style={s.bannerButtonSuccessText}>
-              {finishingAction === 'normal' ? 'Ending…' : 'End Your Ride'}
-            </Text>
-          </TouchableOpacity>
-
-          <View style={s.bannerDivider}>
-            <View style={s.bannerDividerLine} />
-            <Text style={s.bannerDividerText}>or</Text>
-            <View style={s.bannerDividerLine} />
-          </View>
-
-          <TouchableOpacity
-            disabled={isFinishing}
-            onPress={() => {
-              Alert.alert(
-                'Force End Ride',
-                'End just your own ride, or end it for every participant?',
-                [
-                  {text: 'Cancel', style: 'cancel'},
-                  {
-                    text: 'End My Ride Only',
-                    onPress: () => handleForceFinishRide(false),
-                  },
-                  {
-                    text: 'End For Everyone',
-                    style: 'destructive',
-                    onPress: () => handleForceFinishRide(true),
-                  },
-                ],
-              );
-            }}
-            style={[
-              s.bannerButton,
-              s.bannerButtonDanger,
-              s.bannerButtonOutline,
-              isFinishing && s.bannerButtonDisabled,
-            ]}>
-            {finishingAction === 'force' ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <FontAwesome
-                name="stop-circle"
-                size={13}
-                color={colors.primary}
-              />
-            )}
-            <Text style={s.bannerButtonDangerText}>
-              {finishingAction === 'force' ? 'Ending…' : 'Force End Ride'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
-    // At ending — participant
+    // At the finish line — same banner shape for creator and participant,
+    // only the secondary action differs
     return (
       <View style={s.bannerSuccess}>
         <View style={s.bannerIconRow}>
           <FontAwesome name="flag-checkered" size={20} color="#4CAF50" />
           <Text style={s.bannerSuccessTitle}>
-            Great job completing the ride!
+            {isCreator
+              ? 'Finish line reached!'
+              : 'Great job completing the ride!'}
           </Text>
         </View>
+
         <TouchableOpacity
           disabled={isFinishing}
           onPress={handleFinishRide}
@@ -395,19 +347,66 @@ const CheckpointArrivalsModal = ({
             s.bannerButtonSuccess,
             isFinishing && s.bannerButtonDisabled,
           ]}>
-          {isFinishing ? (
+          {finishingAction === 'normal' ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
             <FontAwesome name="check-circle" size={13} color="#fff" />
           )}
           <Text style={s.bannerButtonSuccessText}>
-            {isFinishing ? 'Ending…' : 'End Your Ride'}
+            {finishingAction === 'normal' ? 'Ending…' : 'End Your Ride'}
           </Text>
         </TouchableOpacity>
+
+        {isCreator && (
+          <>
+            <View style={s.bannerDivider}>
+              <View style={s.bannerDividerLine} />
+              <Text style={s.bannerDividerText}>or</Text>
+              <View style={s.bannerDividerLine} />
+            </View>
+
+            <TouchableOpacity
+              disabled={isFinishing}
+              onPress={() => {
+                Alert.alert(
+                  'End Ride For Everyone',
+                  "This stops the ride for every rider right now, even if they haven't reached the finish line. This cannot be undone.",
+                  [
+                    {text: 'Cancel', style: 'cancel'},
+                    {
+                      text: 'End For Everyone',
+                      style: 'destructive',
+                      onPress: () => handleForceFinishRide(true),
+                    },
+                  ],
+                );
+              }}
+              style={[
+                s.bannerButton,
+                s.bannerButtonDanger,
+                s.bannerButtonOutline,
+                isFinishing && s.bannerButtonDisabled,
+              ]}>
+              {finishingAction === 'force' ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <FontAwesome
+                  name="stop-circle"
+                  size={13}
+                  color={colors.primary}
+                />
+              )}
+              <Text style={s.bannerButtonDangerText}>
+                {finishingAction === 'force'
+                  ? 'Ending…'
+                  : 'End Ride For Everyone'}
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     );
   };
-
   // ─── Arrivals content ─────────────────────────────────────────
   const renderContent = () => {
     if (loading) {

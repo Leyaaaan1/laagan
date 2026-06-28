@@ -22,6 +22,7 @@ CREATE TABLE public.participant_location (
                                              rider_username VARCHAR(255) NOT NULL REFERENCES public.rider(username) ON DELETE CASCADE,
                                              participant_location GEOMETRY(Point, 4326),
                                              last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                            active BOOLEAN NOT NULL DEFAULT TRUE,
                                              UNIQUE(started_ride_id, rider_username)
 );
 

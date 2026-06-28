@@ -77,28 +77,6 @@ public class StartRideService {
         startedRide = startedRideRepository.save(startedRide);
         AppLogger.info(this.getClass(), "Ride started successfully", "rideId", generatedRidesId);
 
-        // Mark the creator's STARTING_POINT arrival immediately on ride start,
-        // but only if one doesn't already exist (guards against retries / re-starts).
-        boolean startingAlreadyMarked = rideCheckpointArrivalRepository
-                .existsByRideGeneratedRidesIdAndRiderUsernameAndCheckpointType(
-                        generatedRidesId,
-                        initiator.getUsername(),
-                        RideCheckpointArrival.CheckpointType.STARTING_POINT
-                );
-
-        if (!startingAlreadyMarked && startingPoint != null) {
-            RideCheckpointArrival startArrival = new RideCheckpointArrival(
-                    ride,
-                    initiator,
-                    RideCheckpointArrival.CheckpointType.STARTING_POINT,
-                    null,
-                    LocalDateTime.now()
-            );
-            rideCheckpointArrivalRepository.save(startArrival);
-            AppLogger.info(this.getClass(), "Marked creator STARTING_POINT arrival",
-                    "rider", initiator.getUsername(), "rideId", generatedRidesId);
-        }
-
         ride.setActive(true);
         ridesRepository.save(ride);
         rideStatusService.markStarted(generatedRidesId);

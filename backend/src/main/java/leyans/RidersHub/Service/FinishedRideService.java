@@ -63,8 +63,6 @@ public class FinishedRideService {
             throw new IllegalStateException("Ride is not currently active");
         }
 
-        // NEW: if the ride was already force-finished by the creator, block personal
-        // finish
         if (finishedRideRepository.existsByRideGeneratedRidesId(generatedRidesId)) {
             throw new IllegalStateException("This ride has already been finished by the creator");
         }
@@ -79,9 +77,18 @@ public class FinishedRideService {
             throw new IllegalStateException("You must reach the ending point before finishing the ride");
         }
 
-        // Delegates to service which handles startTime, duration, and repository.save()
         personalFinishedRideService.createPersonalSummaryOnArrival(
                 requester, ride, LocalDateTime.now());
+
+        StartedRide startedRide = startedRideRepository
+                .findByRideGeneratedRidesId(generatedRidesId)
+                .orElseThrow(() -> new IllegalStateException("StartedRide record missing"));
+
+        if (personalFinishedRideService.allParticipantsFinished(startedRide, ride)) {
+            AppLogger.info(this.getClass(), "Last rider finished — finalizing whole ride",
+                    "generatedRidesId", generatedRidesId, "finishedBy", requester.getUsername());
+            return finishedRideUtility.buildAndSaveFinishedRide(startedRide, ride, requester, generatedRidesId);
+        }
 
         return finishedRideUtility.buildPersonalFinishResponse(generatedRidesId, requester);
     }
@@ -206,6 +213,12 @@ public class FinishedRideService {
 
         personalFinishedRideService.createPersonalSummaryOnArrival(
                 requester, ride, LocalDateTime.now());
+
+        if (personalFinishedRideService.allParticipantsFinished(startedRide, ride)) {
+            AppLogger.info(this.getClass(), "Last rider force-finished their own ride — finalizing whole ride",
+                    "generatedRidesId", generatedRidesId, "finishedBy", requester.getUsername());
+            return finishedRideUtility.buildAndSaveFinishedRide(startedRide, ride, requester, generatedRidesId);
+        }
 
         return finishedRideUtility.buildPersonalFinishResponse(generatedRidesId, requester);
     }
