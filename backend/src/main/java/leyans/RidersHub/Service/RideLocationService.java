@@ -111,6 +111,21 @@ public class RideLocationService {
                         throw new UnauthorizedAccessException.UnauthorizedException(
                                         "User is not authorised for this ride");
                 }
+                boolean isActive = participantLocationRepository.findByStartedRideAndRider(started, rider)
+                        .stream()
+                        .findFirst()
+                        .map(ParticipantLocation::getActive)
+                        .orElseGet(() -> {
+                                AppLogger.warn(this.getClass(),
+                                        "No ParticipantLocation row found for active check — failing open",
+                                        "username", username, "startedRideId", startedRideId);
+                                return true;
+                        });
+
+                if (!isActive) {
+                        throw new IllegalStateException("Rider has already finished this ride and cannot update location");
+                }
+
 
                 Point userPoint = locationService.createPoint(longitude, latitude);
 

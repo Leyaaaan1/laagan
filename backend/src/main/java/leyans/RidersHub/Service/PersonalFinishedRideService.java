@@ -5,6 +5,7 @@ import leyans.RidersHub.DTO.Request.RidesDTO.StopPointDTO;
 import leyans.RidersHub.DTO.Response.CheckpointArrivalResponse;
 import leyans.RidersHub.DTO.Response.FinishedDTO.PersonalFinishedRideDTO;
 import leyans.RidersHub.DTO.Response.FinishedDTO.SpeedSegmentDTO;
+import leyans.RidersHub.Repository.ParticipantLocationRepository;
 import leyans.RidersHub.Repository.PersonalFinishedRideRepository;
 import leyans.RidersHub.Repository.RideCheckpointArrivalRepository;
 import leyans.RidersHub.Repository.StartedRideRepository;
@@ -15,6 +16,7 @@ import leyans.RidersHub.model.Rider;
 import leyans.RidersHub.model.Rides;
 import leyans.RidersHub.model.StartedRide;
 import leyans.RidersHub.model.FinishedRide.PersonalFinishedRide;
+import leyans.RidersHub.model.participant.ParticipantLocation;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,15 +33,17 @@ public class PersonalFinishedRideService {
         private final StartedUtil startedUtil;
         private final StartedRideRepository startedRideRepository;
         private final RideCheckpointArrivalRepository rideCheckpointArrivalRepository;
+        private final ParticipantLocationRepository participantLocationRepository;
 
         public PersonalFinishedRideService(PersonalFinishedRideRepository personalFinishedRideRepository,
-                        RideCheckpointArrivalRepository rideCheckpointArrivalRepository, // ← ADD THIS
-                        StartedUtil startedUtil,
-                        StartedRideRepository startedRideRepository) {
+                                           RideCheckpointArrivalRepository rideCheckpointArrivalRepository, // ← ADD THIS
+                                           StartedUtil startedUtil,
+                                           StartedRideRepository startedRideRepository, ParticipantLocationRepository participantLocationRepository) {
                 this.personalFinishedRideRepository = personalFinishedRideRepository;
                 this.rideCheckpointArrivalRepository = rideCheckpointArrivalRepository; // ← ADD THIS
                 this.startedUtil = startedUtil;
                 this.startedRideRepository = startedRideRepository;
+            this.participantLocationRepository = participantLocationRepository;
         }
 
         // ── Read ──────────────────────────────────────────────────────────────────
@@ -78,7 +82,6 @@ public class PersonalFinishedRideService {
                                                 .toList()
                                 : new ArrayList<>();
 
-                // Average speed is computed once at write-time (createPersonalSummaryOnArrival)
                 // and stored on the entity — read it directly instead of recomputing.
                 Double personalAverageSpeedKph = personalFinishedRide.getAverageSpeedKph();
 
@@ -130,15 +133,25 @@ public class PersonalFinishedRideService {
                 String generatedRidesId = ride.getGeneratedRidesId();
                 String username = rider.getUsername();
 
-                if (personalFinishedRideRepository
-                                .existsByRideGeneratedRidesIdAndRiderUsername(generatedRidesId, username)) {
-                        return;
-                }
 
                 StartedRide startedRide = startedRideRepository
                                 .findByRideGeneratedRidesId(generatedRidesId)
                                 .orElseThrow(() -> new IllegalStateException(
                                                 "StartedRide not found for ride: " + generatedRidesId));
+
+                participantLocationRepository.findByStartedRideAndRider(startedRide, rider)
+                        .stream()
+                        .findFirst()
+                        .ifPresent(pl -> {
+                                pl.setActive(false);
+                                participantLocationRepository.save(pl);
+                        });
+
+                if (personalFinishedRideRepository
+                        .existsByRideGeneratedRidesIdAndRiderUsername(generatedRidesId, username)) {
+                        return;
+                }
+
 
                 LocalDateTime startTime = startedRide.getStartTime();
                 int durationMinutes = (int) ChronoUnit.MINUTES.between(startTime, endTime);
@@ -216,6 +229,16 @@ public class PersonalFinishedRideService {
                                                 : "Stop " + (idx == null ? "?" : idx + 1);
                         }
                 };
+        }
+        @Transactional(readOnly = true)
+        public boolean allParticipantsFinished(StartedRide startedRide, Rides ride) {
+                java.util.Set<Rider> all = new java.util.HashSet<>(startedRide.getParticipants());
+                all.add(ride.getUsername()); // owner isn't always inside participants
+                String generatedRidesId = ride.getGeneratedRidesId();
+
+                return all.stream().allMatch(r ->
+                        personalFinishedRideRepository.existsByRideGeneratedRidesIdAndRiderUsername(
+                                generatedRidesId, r.getUsername()));
         }
 
 }
