@@ -101,7 +101,7 @@ export const fetchMyRides = async (page = 0, size = 10) => {
     return cached;
   }
 
-  const response = await api.get(`/riders/my-rides?page=${page}&size=${size}`);
+  const response = await api.get(`/riders/feed?page=${page}&size=${size}`);
   if (!response.ok)
     throw new Error(`Failed to fetch my rides: ${response.status}`);
 

@@ -10,6 +10,7 @@ export const useStartedRideMarkers = (
   onRiderFinished,
   mapRef,
   onReroute,
+  currentUsername,
 ) => {
   // ← add onRiderFinished
   const [riderMarkers, setRiderMarkers] = useState({});
@@ -96,6 +97,7 @@ export const useStartedRideMarkers = (
   const {isPolling, isOffline, retryCount} = useRideLocationPolling({
     rideId,
     enabled: pollingEnabled && !!rideId,
+    currentUsername,
     onLocationsUpdate: handleLocationsUpdate,
     onReroute,
     onError: handlePollingError,

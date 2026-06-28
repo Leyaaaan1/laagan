@@ -34,8 +34,8 @@ import { useAuth } from '../context/AuthContext';
 import { RideContext } from '../context/RideContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RidesList from '../components/ride/modal/RidesList';
+import {useFocusEffect} from '@react-navigation/native';
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
 const getGreeting = () => {
   const hour = new Date().getHours();
   if (hour < 5) { return 'Riding late tonight'; }
@@ -44,10 +44,6 @@ const getGreeting = () => {
   return 'Good evening';
 };
 
-// Normalizes whatever shape the active-ride / profile payloads happen to have
-// into a simple status, so the UI never breaks if a field is missing.
-// TODO(backend): once the API returns an explicit `status` field on a ride
-// ("upcoming" | "active" | "finished"), this can be simplified to just read it.
 const getRideStatus = ride => {
   if (!ride) { return 'active'; }
   const raw = (ride.status || ride.rideStatus || '').toString().toLowerCase();
@@ -77,10 +73,6 @@ const STATUS_META = {
   },
 };
 
-const formatNumber = value => {
-  if (value === null || value === undefined || Number.isNaN(value)) { return '—'; }
-  return String(value);
-};
 
 // ─── ProfileAvatar ────────────────────────────────────────────────────────────
 const ProfileAvatar = ({ profile, avatarStyle }) => {
@@ -234,36 +226,20 @@ const RiderPage = ({ navigation }) => {
     }
   }, []);
 
+// AFTER
   useEffect(() => {
     if (!ready) { return; }
-    fetchActiveRide();
     fetchProfile();
-  }, [ready, fetchActiveRide, fetchProfile]);
+  }, [ready, fetchProfile]);
 
-  // ── Derived display data ─────────────────────────────────────────────────
-  // These read from whatever the profile payload already provides. If/when
-  // the backend adds dedicated aggregate fields (rides joined/created,
-  // distance traveled, last ride summary) they will be picked up automatically
-  // via the fallbacks below — nothing else in this component needs to change.
-  const stats = useMemo(() => {
-    const ridesJoined =
-      profile?.totalRidesJoined ??
-      profile?.ridesJoinedCount ??
-      profile?.ridesJoined ??
-      null;
-    const ridesCreated =
-      profile?.totalRidesCreated ??
-      profile?.ridesCreatedCount ??
-      profile?.ridesCreated ??
-      null;
-    const distance =
-      profile?.totalDistance ??
-      profile?.distanceTraveled ??
-      profile?.totalDistanceKm ??
-      null;
-    const lastRide = profile?.lastRide ?? null;
-    return { ridesJoined, ridesCreated, distance, lastRide };
-  }, [profile]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!ready) { return; }
+      fetchActiveRide();
+    }, [ready, fetchActiveRide]),
+  );
+
+
 
   const rideStatus = useMemo(
     () => getRideStatus(displayActiveRide),
@@ -299,7 +275,7 @@ const RiderPage = ({ navigation }) => {
     if (!displayActiveRide) { return; }
     navigation.navigate('StartedRide', {
       activeRide: displayActiveRide,
-      username,
+      currentUsername: username,
     });
   };
 
@@ -354,9 +330,9 @@ const RiderPage = ({ navigation }) => {
           style={header.avatar}>
           <ProfileAvatar profile={profile} avatarStyle={header.avatar} />
         </TouchableOpacity>
-        <View style={{ flex: 1, marginLeft: 10 }}>
+        <View style={{flex: 1, marginLeft: 10}}>
           <Text
-            style={[header.username, { fontSize: 14, flexShrink: 1 }]}
+            style={[header.username, {fontSize: 14, flexShrink: 1}]}
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.6}>
@@ -366,16 +342,16 @@ const RiderPage = ({ navigation }) => {
             <ActivityIndicator
               color="#fff"
               size="small"
-              style={{ marginTop: 4 }}
+              style={{marginTop: 4}}
             />
           ) : (
             <View>
-              <Text style={[header.username, { fontSize: 14, flexShrink: 1 }]}>
+              <Text style={[header.username, {fontSize: 14, flexShrink: 1}]}>
                 <FontAwesome
                   name={getRideTypeIcon(riderType)}
                   size={11}
                   color={colors.primary}
-                  style={{ marginRight: 4, paddingRight: 8 }}
+                  style={{marginRight: 4, paddingRight: 8}}
                 />{' '}
                 {riderType ?? 'unknown'}
               </Text>
@@ -385,7 +361,7 @@ const RiderPage = ({ navigation }) => {
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => setMenuVisible(true)}
-          style={{ padding: 6 }}>
+          style={{padding: 6}}>
           <FontAwesome name="cog" size={18} color={colors.textSecondary} />
         </TouchableOpacity>
         {menuVisible && (
@@ -417,7 +393,7 @@ const RiderPage = ({ navigation }) => {
                 zIndex: 100,
                 elevation: 12,
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
+                shadowOffset: {width: 0, height: 4},
                 shadowOpacity: 0.3,
                 shadowRadius: 10,
               }}>
@@ -426,8 +402,8 @@ const RiderPage = ({ navigation }) => {
                   setMenuVisible(false);
                   handleOpenProfile();
                 }}
-                style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
-                <Text style={{ color: colors.white }}>Profile</Text>
+                style={{paddingVertical: 12, paddingHorizontal: 16}}>
+                <Text style={{color: colors.white}}>Profile</Text>
               </TouchableOpacity>
 
               <View
@@ -443,8 +419,8 @@ const RiderPage = ({ navigation }) => {
                   setMenuVisible(false);
                   logout();
                 }}
-                style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
-                <Text style={{ color: '#dc2626' }}>Logout</Text>
+                style={{paddingVertical: 12, paddingHorizontal: 16}}>
+                <Text style={{color: '#dc2626'}}>Logout</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -458,8 +434,8 @@ const RiderPage = ({ navigation }) => {
         mode="my"
         userId={username}
         onRideSelect={handleRideSelect}
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 15, paddingBottom: 40 }}
+        style={{flex: 1}}
+        contentContainerStyle={{paddingHorizontal: 15, paddingBottom: 40}}
         ListHeaderComponent={
           <>
             <View style={s.heroContainer}>
@@ -480,7 +456,7 @@ const RiderPage = ({ navigation }) => {
                   name="search"
                   size={15}
                   color={colors.textSecondary}
-                  style={{ marginLeft: 4 }}
+                  style={{marginLeft: 4}}
                 />
                 <TextInput
                   style={s.searchInput}
@@ -566,9 +542,7 @@ const RiderPage = ({ navigation }) => {
             </View>
 
             <View style={s.ridesSection}>
-              <View style={s.sectionHeaderRow}>
-                <Text style={s.sectionLabel}>My rides</Text>
-              </View>
+
               {activeRideLoading && !displayActiveRide ? (
                 <View style={s.rideCardSkeleton}>
                   <ActivityIndicator color={colors.primary} size="small" />
@@ -600,7 +574,7 @@ const RiderPage = ({ navigation }) => {
 
                   <View style={s.rideCardMetaRow}>
                     {displayActiveRide.participantsCount != null ||
-                      displayActiveRide.ridersCount != null ? (
+                    displayActiveRide.ridersCount != null ? (
                       <>
                         <FontAwesome
                           name="users"
@@ -674,6 +648,9 @@ const RiderPage = ({ navigation }) => {
                   </TouchableOpacity>
                 </View>
               )}
+            </View>
+            <View style={s.sectionHeaderRow}>
+              <Text style={s.sectionLabel}>My rides</Text>
             </View>
           </>
         }

@@ -3,6 +3,7 @@ package leyans.RidersHub.Service;
 import leyans.RidersHub.DTO.Request.RidesDTO.StopPointDTO;
 import leyans.RidersHub.DTO.Response.RerouteResultDTO;
 import leyans.RidersHub.Repository.RideCheckpointArrivalRepository;
+import leyans.RidersHub.Repository.RidesRepository;
 import leyans.RidersHub.Service.MapService.RouteService;
 import leyans.RidersHub.Utility.AppLogger;
 import leyans.RidersHub.Utility.RouteDeviationCalculator;
@@ -11,12 +12,16 @@ import leyans.RidersHub.model.StopPoint;
 import leyans.RidersHub.model.participant.RideCheckpointArrival;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -54,15 +59,17 @@ public class RouteDeviationService {
     private final RouteDeviationCalculator calculator;
     private final RouteService routeService;
     private final RideCheckpointArrivalRepository checkpointRepo;
+    private final RidesRepository ridesRepository;
 
     public RouteDeviationService(StringRedisTemplate redis,
-            RouteDeviationCalculator calculator,
-            RouteService routeService,
-            RideCheckpointArrivalRepository checkpointRepo) {
+                                 RouteDeviationCalculator calculator,
+                                 RouteService routeService,
+                                 RideCheckpointArrivalRepository checkpointRepo, RidesRepository ridesRepository) {
         this.redis = redis;
         this.calculator = calculator;
         this.routeService = routeService;
         this.checkpointRepo = checkpointRepo;
+        this.ridesRepository = ridesRepository;
     }
 
     // ── Redis key helpers ─────────────────────────────────────────────────────
@@ -202,13 +209,36 @@ public class RouteDeviationService {
         }
     }
 
+    @Async("externalApiExecutor")
+    @Transactional
+    public void checkAndRerouteAsync(String rideId, Integer startedRideId,
+                                     String username, double lat, double lon,
+                                     RideLocationEmitterRegistry emitterRegistry) {
+        // Load a fresh Rides entity inside this thread's own Hibernate session.
+        // The entity passed from the HTTP thread cannot be used here — its session
+        // was closed the moment updateLocationAndFetchAll returned.
+        Rides ride = ridesRepository.findByGeneratedRidesId(rideId).orElse(null);
+        if (ride == null) {
+            AppLogger.warn(this.getClass(), "Ride not found in async reroute thread — skipping",
+                    "rideId", rideId);
+            return;
+        }
+
+        RerouteResultDTO result = checkAndRerouteIfNeeded(rideId, username, lat, lon, ride);
+        if (result.isRerouted() && result.getNewRouteCoordinates() != null) {
+            emitterRegistry.broadcastReroute(startedRideId, username, result.getNewRouteCoordinates());
+        }
+    }
+
     /**
      * Deletes all Redis keys for this rider when they leave the ride.
      * Called from {@code StartRideService.leaveRide}.
      */
     public void clearRiderState(String rideId, String username) {
-        redis.delete(streakKey(rideId, username));
-        redis.delete(lastTimeKey(rideId, username));
+        // Clear in-memory
+        streakMap.remove(memKey(rideId, username));
+        lastRerouteMap.remove(memKey(rideId, username));
+        // Keep only Redis active route key removal
         redis.delete(activeRouteKey(rideId, username));
         AppLogger.info(this.getClass(), "Cleared reroute state for rider on leave",
                 "rider", username, "rideId", rideId);
@@ -270,34 +300,40 @@ public class RouteDeviationService {
         return waypoints;
     }
 
+    // ── In-memory state (replaces Redis for streak + cooldown) ───────────────
+// Key: "rideId:username"  —  bounded by active rides × active riders (small)
+    private final ConcurrentHashMap<String, AtomicInteger>
+            streakMap = new  ConcurrentHashMap<>();
+
+    private final ConcurrentHashMap<String, Long>
+            lastRerouteMap = new ConcurrentHashMap<>();
+
+    private String memKey(String rideId, String username) {
+        return rideId + ":" + username;
+    }
+
+// ── Replace the three Redis streak/cooldown methods ───────────────────────
+
     private int incrementStreak(String rideId, String username) {
-        String key = streakKey(rideId, username);
-        Long count = redis.opsForValue().increment(key);
-        redis.expire(key, redisTtlHours, TimeUnit.HOURS);
-        return (count != null) ? count.intValue() : 1;
+        return streakMap
+                .computeIfAbsent(memKey(rideId, username),
+                        k -> new AtomicInteger(0))
+                .incrementAndGet();
     }
 
     private void resetStreak(String rideId, String username) {
-        redis.delete(streakKey(rideId, username));
+        streakMap.remove(memKey(rideId, username));
     }
 
     private boolean isInCooldown(String rideId, String username) {
-        String value = redis.opsForValue().get(lastTimeKey(rideId, username));
-        if (value == null)
-            return false;
-        try {
-            long lastReroute = Long.parseLong(value);
-            return (System.currentTimeMillis() - lastReroute) < cooldownSeconds * 1_000L;
-        } catch (NumberFormatException e) {
-            return false;
-        }
+        Long last = lastRerouteMap.get(memKey(rideId, username));
+        if (last == null) return false;
+        return (System.currentTimeMillis() - last) < cooldownSeconds * 1_000L;
     }
 
     private void setLastRerouteTime(String rideId, String username) {
-        redis.opsForValue().set(
-                lastTimeKey(rideId, username),
-                String.valueOf(System.currentTimeMillis()),
-                redisTtlHours,
-                TimeUnit.HOURS);
+        lastRerouteMap.put(memKey(rideId, username), System.currentTimeMillis());
     }
+
+
 }

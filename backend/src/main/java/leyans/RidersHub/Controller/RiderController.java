@@ -119,14 +119,14 @@ public class RiderController {
         }
     }
 
-    @GetMapping("/my-rides")
+    @GetMapping("/feed")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> getMyRides(
+    public ResponseEntity<?> getMyRidesFeed(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         try {
             String username = SecurityContextHolder.getContext().getAuthentication().getName();
-            Page<RideSummaryDTO> rides = ridesUtil.findRidesByUsernamePaginated(username, page, size);  // ← RideSummaryDTO
+            Page<RideSummaryDTO> rides = ridesUtil.findMyAndParticipatingRidesPaginated(username, page, size);
             return ResponseEntity.ok(rides);
         } catch (Exception e) {
             e.printStackTrace();
@@ -135,24 +135,7 @@ public class RiderController {
         }
     }
 
-    @GetMapping("/rides")
-    public ResponseEntity<?> getPaginatedRides(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        try {
-            ResponseEntity<?> authResponse = SecurityUtils.validateAuthentication();
-            if (authResponse != null) {
-                return authResponse;
-            }
 
-            Page<RideSummaryDTO> rides = ridesUtil.getPaginatedRides(page, size); // ← Page is fine
-            return ResponseEntity.ok(rides);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error retrieving rides: " + e.getMessage());
-        }
-    }
 
 
 

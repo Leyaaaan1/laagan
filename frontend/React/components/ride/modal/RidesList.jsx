@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 
-import { fetchRides, fetchMyRides } from '../../../services/rideService';
+import { fetchMyRides } from '../../../services/rideService';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import colors from '../../../styles/tokens/colors';
 import RideCard from './RideCard';
@@ -37,9 +37,9 @@ const RidesList = ({
   const isMyRidesMode = mode === 'my';
 
   const clearRetryTimers = () => {
-    if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+    if (retryTimerRef.current) {clearTimeout(retryTimerRef.current);}
     if (countdownIntervalRef.current)
-      clearInterval(countdownIntervalRef.current);
+      {clearInterval(countdownIntervalRef.current);}
   };
 
   const loadRides = useCallback(
@@ -51,9 +51,7 @@ const RidesList = ({
         setError('');
         setIsTimeout(false);
 
-        const result = isMyRidesMode
-          ? await fetchMyRides(pageNum, pageSize)
-          : await fetchRides(pageNum, pageSize);
+        const result =  await fetchMyRides(pageNum, pageSize)
 
         if (result?.content) {
           setRides(prev =>
@@ -76,7 +74,7 @@ const RidesList = ({
           countdownIntervalRef.current = setInterval(() => {
             seconds -= 1;
             setRetryCountdown(seconds);
-            if (seconds <= 0) clearInterval(countdownIntervalRef.current);
+            if (seconds <= 0) {clearInterval(countdownIntervalRef.current);}
           }, 1000);
           retryTimerRef.current = setTimeout(() => {
             loadRides(0, true);

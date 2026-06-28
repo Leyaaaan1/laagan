@@ -22,10 +22,11 @@ const RideCard = ({item, onPress}) => (
     onPress={() => onPress(item)}
     style={rideCard.container}>
     <Text style={rideCard.locationName} numberOfLines={1}>
-      {item.locationName?.toUpperCase()}
+      {item.ridesName}
     </Text>
+    <Text style={rideCard.idText}>Rides ID: #{item.generatedRidesId}</Text>
 
-    <Text style={rideCard.idText}>ID: #{item.generatedRidesId}</Text>
+    <Text style={rideCard.rideName}>{item.locationName}</Text>
 
     <View style={rideCard.routeRow}>
       <FontAwesome name="map-marker" size={14} color={colors.primary} />

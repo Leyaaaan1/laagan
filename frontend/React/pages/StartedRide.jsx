@@ -91,6 +91,7 @@ const StartedRide = ({route, navigation}) => {
           console.warn('[StartedRide] Failed to parse live reroute:', e);
         }
       },
+      username,
     );
 
   // Cache route when online

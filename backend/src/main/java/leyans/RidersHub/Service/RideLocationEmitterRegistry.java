@@ -55,6 +55,30 @@ public class RideLocationEmitterRegistry {
     }
 
     /**
+     * Pushes a per-rider reroute result to all SSE clients on this ride.
+     * Only the matching rider's frontend will apply it — others ignore it.
+     */
+    public void broadcastReroute(Integer rideId, String username, String newRouteCoordinates) {
+        Map<String, Object> payload = Map.of(
+                "type",                "reroute",
+                "username",            username,
+                "newRouteCoordinates", newRouteCoordinates
+        );
+        List<SseEmitter> rideEmitters = emitters.getOrDefault(rideId, Collections.emptyList());
+        List<SseEmitter> dead = new ArrayList<>();
+        for (SseEmitter emitter : rideEmitters) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("reroute")
+                        .data(payload));
+            } catch (Exception e) {
+                dead.add(emitter);
+            }
+        }
+        rideEmitters.removeAll(dead);
+    }
+
+    /**
      * Keeps idle connections alive through proxies/load balancers (e.g. Render's
      * edge) that drop connections with no traffic for a while. Runs independently
      * of location updates, so a stalled ride doesn't lose its stream.
