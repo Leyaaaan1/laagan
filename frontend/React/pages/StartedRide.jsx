@@ -91,6 +91,7 @@ const StartedRide = ({route, navigation}) => {
           console.warn('[StartedRide] Failed to parse live reroute:', e);
         }
       },
+      username,
     );
 
   // Cache route when online
@@ -102,7 +103,7 @@ const StartedRide = ({route, navigation}) => {
     isOffline,
   );
   const [liveRouteData, setLiveRouteData] = useState(null);
-
+  const [rerouteHistory, setRerouteHistory] = useState([]);
   const pillVisible = usePollingStatusPill(isPolling, pollingError);
   const {isLeaving, handleLeaveRide} = useStartedRideHandler(
     activeRide,
@@ -162,6 +163,7 @@ const StartedRide = ({route, navigation}) => {
   // Reset any stale reroute data when switching to a different ride.
   useEffect(() => {
     setRerouteRouteData(null);
+    setRerouteHistory([]);
     setLiveRouteData(null);
     mapRef.current?.clearReroute();
   }, [activeRide?.generatedRidesId]);
@@ -250,27 +252,27 @@ const StartedRide = ({route, navigation}) => {
     const rideId = activeRide?.generatedRidesId;
     if (!rideId) return;
 
-    // Load reroute from cache — non-fatal if absent
-    const cachedReroute = await loadRerouteCache(rideId);
-    if (cachedReroute) {
-      try {
-        const parsed =
-          typeof cachedReroute === 'string'
-            ? JSON.parse(cachedReroute)
-            : cachedReroute;
-        setRerouteRouteData(parsed);
-      } catch (e) {
-        console.warn('[Snapshot] Failed to parse cached reroute:', e);
-      }
+    const cachedHistory = await loadRerouteCache(rideId); // array, oldest → newest
+    if (cachedHistory.length) {
+      const parsedHistory = cachedHistory
+        .map(entry => {
+          try {
+            return typeof entry === 'string' ? JSON.parse(entry) : entry;
+          } catch (e) {
+            console.warn('[Snapshot] Failed to parse cached reroute entry:', e);
+            return null;
+          }
+        })
+        .filter(Boolean);
+
+      setRerouteHistory(parsedHistory);
+      setRerouteRouteData(parsedHistory[parsedHistory.length - 1] ?? null);
     }
 
-    // Always wait for React to commit the new state (and liveRouteData)
-    // before captureRideSnapshot fires — two rAFs guarantees the paint cycle.
     await new Promise(resolve =>
       requestAnimationFrame(() => requestAnimationFrame(resolve)),
     );
   };
-
   return (
     <View style={startedRideStyles.container}>
       <StatusBar
@@ -582,6 +584,7 @@ const StartedRide = ({route, navigation}) => {
         ref={polygonRef}
         fixedRoutePolygon={liveRouteData || routeDataForMap}
         reroutePolygon={rerouteRouteData}
+        reroutePolygons={rerouteHistory}
         startingPoint={mapData.startingPoint}
         endingPoint={mapData.endingPoint}
         stopPoints={mapData.stopPoints}

@@ -38,13 +38,15 @@ public interface RidesRepository extends JpaRepository<Rides, Integer> {
             "LEFT JOIN FETCH r.riderType " +
             "WHERE r.username.username = :username " +
             "ORDER BY r.generatedRidesId DESC")
-    Page<Rides> findByUsername_UsernamePaginated(@Param("username") String username, Pageable pageable);
+    Page<Rides> findByUsername_Paginated(@Param("username") String username, Pageable pageable);
 
-    @Query("SELECT r FROM Rides r " +
+    @Query("SELECT DISTINCT r FROM Rides r " +
             "LEFT JOIN FETCH r.username " +
             "LEFT JOIN FETCH r.riderType " +
+            "LEFT JOIN r.participants p " +
+            "WHERE r.username.username = :username OR p.username = :username " +
             "ORDER BY r.generatedRidesId DESC")
-    Page<Rides> findAllActiveSummary(Pageable pageable);
+    Page<Rides> findByUsernameOrParticipants_UsernamePaginated(@Param("username") String username, Pageable pageable);
 
     @EntityGraph(attributePaths = {
             "username",

@@ -3,38 +3,13 @@
 import { api } from './Apiclient';
 import Geolocation from '@react-native-community/geolocation';
 import { AppState, Platform, PermissionsAndroid } from 'react-native'; // AppState added
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// ─── Reroute cache helpers ────────────────────────────────────────────────────
-// Persists the last known reroute per rideId so the map can restore it
-// instantly when the ride screen is closed and reopened — before the first
-// poll response comes back from the server.
+export {
+  saveRerouteCache,
+  loadRerouteCache,
+  clearRerouteCache,
+} from './cache/rerouteCacheService';
 
-const rerouteKey = rideId => `reroute_cache_${rideId}`;
-
-export const saveRerouteCache = async (rideId, coordinates) => {
-  try {
-    await AsyncStorage.setItem(rerouteKey(rideId), coordinates);
-  } catch (_) { /* non-fatal — live poll will still work */ }
-};
-
-export const loadRerouteCache = async rideId => {
-  try {
-    return await AsyncStorage.getItem(rerouteKey(rideId));
-  } catch (_) {
-    return null;
-  }
-};
-
-export const clearRerouteCache = async rideId => {
-  try {
-    await AsyncStorage.removeItem(rerouteKey(rideId));
-  } catch (_) { /* non-fatal */ }
-};
-// ─────────────────────────────────────────────────────────────────────────────
-
-// Movement-based skip logic lives in useRideLocationPolling (hook layer).
-// The service layer is intentionally stateless — it just executes what it's told.
 
 export const getCurrentPosition = async () => {
   return new Promise(async (resolve, reject) => {

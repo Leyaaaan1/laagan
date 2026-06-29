@@ -282,7 +282,6 @@ const CheckpointArrivalsModal = ({
             </Text>
           </TouchableOpacity>
 
-          {/* Creator only: nuclear option, always available, own confirm */}
           {isCreator && (
             <TouchableOpacity
               disabled={isFinishing}
@@ -326,8 +325,6 @@ const CheckpointArrivalsModal = ({
       );
     }
 
-    // At the finish line — same banner shape for creator and participant,
-    // only the secondary action differs
     return (
       <View style={s.bannerSuccess}>
         <View style={s.bannerIconRow}>

@@ -19,6 +19,7 @@ import timeline from '../../../styles/components/timeline';
 import feedback from '../../../styles/base/feedback';
 import {useAuth} from '../../../context/AuthContext';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import finishedRideStyles from '../../../styles/screens/finishedRideStyles';
 
 // Enable LayoutAnimation on Android
 if (
@@ -94,7 +95,6 @@ const TimelineStopCard = ({
     LayoutAnimation.easeInEaseOut();
     onPress();
   };
-  const insets = useSafeAreaInsets();
 
   return (
     <TouchableOpacity
@@ -102,7 +102,6 @@ const TimelineStopCard = ({
       onPress={handleCardPress}
       style={[
         timeline.cardContainer,
-        {paddingTop: insets.top}, // apply top safe area
       ]}>
       <View style={timeline.card}>
         {/* Stop Type Label */}
@@ -235,7 +234,8 @@ const TimelineStopCard = ({
   );
 };
 
-const RideRoutesPage = ({route}) => {
+const RideRoutesPage = ({route, navigation}) => {
+  const insets = useSafeAreaInsets();
   const {token: authToken} = useAuth();
   const {
     startingPoint,
@@ -243,7 +243,6 @@ const RideRoutesPage = ({route}) => {
     endingPoint,
     token: paramToken,
   } = route.params;
-
 
   const token = paramToken || authToken;
   const [stopPoints, setStopPoints] = useState([]);
@@ -296,18 +295,6 @@ const RideRoutesPage = ({route}) => {
     [token],
   );
 
-  const loadAllImages = useCallback(async () => {
-    if (stopPoints.length > 0) {
-      await fetchImagesForStop(startingPoint);
-    }
-    for (const point of stopPoints) {
-      await fetchImagesForStop(point.stopName);
-    }
-    if (endingPoint) {
-      await fetchImagesForStop(endingPoint);
-    }
-  }, [stopPoints, startingPoint, endingPoint, fetchImagesForStop]);
-
   useEffect(() => {
     if (generatedRidesId && token) {
       fetchStopPoints();
@@ -354,6 +341,28 @@ const RideRoutesPage = ({route}) => {
         backgroundColor="transparent"
       />
 
+      <View
+        style={{
+          paddingTop: insets.top + 8,
+          paddingHorizontal: 16,
+          paddingBottom: 10,
+          backgroundColor: '#0f0f0f',
+        }}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            alignSelf: 'flex-start',
+            gap: 6,
+            padding: 8,
+          }}>
+          <FontAwesome name="chevron-left" size={14} color="#fff" />
+          <Text style={{color: '#fff', fontSize: 14, fontWeight: '600'}}>
+            Back
+          </Text>
+        </TouchableOpacity>
+      </View>
       <ScrollView
         style={rideRoutes.scrollView}
         contentContainerStyle={{paddingBottom: 40}}>

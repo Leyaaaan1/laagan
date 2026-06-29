@@ -1,17 +1,5 @@
-// frontend/React/hooks/useRideLocationPolling.js
-//
-// OPTIMIZATION: Dual-threshold polling strategy + SSE receive
-//
-// ARCHITECTURE:
-//   SEND side  — setInterval still runs; device uploads its own GPS position
-//                via shareLocationAndFetchAll() only when Haversine says it moved.
-//   RECEIVE side — SSE (EventSource) listens for server-pushed location-update
-//                events so other riders' markers refresh instantly without polling.
-//                fetchAllLocations() is kept as the degraded fallback when SSE
-//                is unavailable (e.g. no EventSource polyfill installed yet).
-
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { AppState, Platform, PermissionsAndroid } from 'react-native';
+import {useEffect, useRef, useState, useCallback} from 'react';
+import {AppState, Platform, PermissionsAndroid} from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import NetInfo from '@react-native-community/netinfo';
 import EventSource from 'react-native-sse';
@@ -26,16 +14,16 @@ import {
   createIntervalManager,
   createTimeoutManager,
   createPollLock,
-  saveRerouteCache,   // ← add
-  loadRerouteCache,   // ← add
+  saveRerouteCache, // ← add
+  loadRerouteCache, // ← add
 } from '../services/locationPollingService';
-import { useAuth } from '../context/AuthContext';
-import { API_BASE_URL } from '../services/Apiclient';
+import {useAuth} from '../context/AuthContext';
+import {API_BASE_URL} from '../services/Apiclient';
 
 // ─── tuneable constants ────────────────────────────────────────────────────
-const POLL_INTERVAL_MS = 8_000;   // GPS read cadence (unchanged)
-const MOVEMENT_THRESHOLD_M = 15;     // skip upload below this (unchanged)
-const MAX_SKIP_COUNT = 10;      // ↑ raised: ~80s before forced heartbeat
+const POLL_INTERVAL_MS = 8_000; // GPS read cadence (unchanged)
+const MOVEMENT_THRESHOLD_M = 15; // skip upload below this (unchanged)
+const MAX_SKIP_COUNT = 10; // ↑ raised: ~80s before forced heartbeat
 const MAX_SKIP_MS = 120_000; // ↑ raised: 2 min heartbeat when idle
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -53,12 +41,24 @@ function haversineMeters(lat1, lng1, lat2, lng2) {
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
-export const openLocationStream = (rideId, token, onLocations, onError) => {
+// Change the function signature to accept the new params
+// NOTE: currentUsernameRef is a ref (not a raw string) so the SSE listener
+// below always reads the *latest* username, even though this listener
+// closure is created once when the stream opens and lives for the whole
+// connection lifetime.
+export const openLocationStream = (
+  rideId,
+  token,
+  currentUsernameRef,
+  onLocations,
+  onReroute,
+  onError,
+) => {
   const url = `${API_BASE_URL}/location/${rideId}/stream`;
   console.log('[SSE] connecting to:', url);
 
   const es = new EventSource(url, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: {Authorization: `Bearer ${token}`},
   });
 
   es.addEventListener('open', () => {
@@ -75,14 +75,30 @@ export const openLocationStream = (rideId, token, onLocations, onError) => {
     }
   });
 
+  es.addEventListener('reroute', event => {
+    try {
+      const data = JSON.parse(event.data);
+      // Only apply to this rider — other riders' reroutes arrive on the
+      // same SSE stream but should be ignored by everyone else.
+      if (
+        data.username === currentUsernameRef.current &&
+        data.newRouteCoordinates
+      ) {
+        saveRerouteCache(rideId, data.newRouteCoordinates); // persist for snapshot
+        onReroute?.(data.newRouteCoordinates); // draw on map
+      }
+    } catch (e) {
+      console.warn('[SSE] reroute parse error:', e);
+    }
+  });
+
   es.addEventListener('error', err => {
     console.log('[SSE] error event:', JSON.stringify(err));
     onError?.(err);
   });
 
   return es;
-};
-// ─── useLocationPermission ────────────────────────────────────────────────
+}; // ─── useLocationPermission ────────────────────────────────────────────────
 
 export const useLocationPermission = () => {
   const [granted, setGranted] = useState(false);
@@ -117,7 +133,7 @@ export const useLocationPermission = () => {
     requestPermission();
   }, []);
 
-  return { granted, checked };
+  return {granted, checked};
 };
 
 // ─── useRideLocationPolling ────────────────────────────────────────────────
@@ -127,9 +143,10 @@ export const useRideLocationPolling = ({
   enabled = true,
   onLocationsUpdate,
   onReroute,
+  currentUsername,
   onError,
 }) => {
-  const { token } = useAuth();
+  const {token} = useAuth();
 
   // ── exposed state ────────────────────────────────────────────────────────
   const [isPolling, setIsPolling] = useState(false);
@@ -146,6 +163,12 @@ export const useRideLocationPolling = ({
   // ── SSE ref — holds the active EventSource (or null when closed/unavailable)
   const esRef = useRef(null);
 
+  // ── auth ref — always holds the latest authenticated username, so the
+  // long-lived SSE 'reroute' listener (created once per stream) never reads
+  // a stale value from a closure.
+  const currentUsernameRef = useRef(currentUsername ?? null);
+  const onRerouteRef = useRef(onReroute);
+
   // ── mutable state refs ───────────────────────────────────────────────────
   const retryCountRef = useRef(0);
   const appStateRef = useRef(AppState.currentState);
@@ -154,6 +177,8 @@ export const useRideLocationPolling = ({
   const isOfflineRef = useRef(false);
   const tokenRef = useRef(token);
   const jitterTimeoutRef = useRef(null);
+  const sseReconnectTimeoutRef = useRef(null);
+
 
   // ── movement-tracking refs ───────────────────────────────────────────────
   const lastSentPositionRef = useRef(null);
@@ -171,6 +196,9 @@ export const useRideLocationPolling = ({
   useEffect(() => {
     tokenRef.current = token;
   }, [token]);
+  useEffect(() => {
+    currentUsernameRef.current = currentUsername;
+  }, [currentUsername]);
 
   // ── reset position tracking + close stale SSE when ride changes ──────────
   useEffect(() => {
@@ -180,14 +208,14 @@ export const useRideLocationPolling = ({
     (async () => {
       const cached = await loadRerouteCache(rideId);
       if (cached && !cancelled) {
-        onReroute?.(cached);
+        onRerouteRef.current?.(cached);
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [rideId, onReroute]);
+  }, [rideId]); // ← onReroute removed;
 
   useEffect(() => {
     lastSentPositionRef.current = null;
@@ -202,10 +230,6 @@ export const useRideLocationPolling = ({
     }
   }, [rideId]);
 
-  // =========================================================================
-  // HELPERS
-  // =========================================================================
-
   const openStream = useCallback(() => {
     if (esRef.current) return;
     if (!tokenRef.current || !rideId) return;
@@ -213,28 +237,38 @@ export const useRideLocationPolling = ({
     esRef.current = openLocationStream(
       rideId,
       tokenRef.current,
+      currentUsernameRef,
       locations => {
         _handleLocationsResponse(locations);
       },
+      newRouteCoordinates => {
+        onRerouteRef.current?.(newRouteCoordinates); // ← was onReroute
+      },
       () => {
-        esRef.current = null;
+        closeStream(); // actually closes the dead EventSource, not just drops the reference
+
         if (isPollingRef.current && enabledRef.current && rideId) {
-          setTimeout(() => {
-            if (isPollingRef.current && enabledRef.current && rideId) openStream();
+          if (sseReconnectTimeoutRef.current) return; // don't stack multiple pending reconnects
+          sseReconnectTimeoutRef.current = setTimeout(() => {
+            sseReconnectTimeoutRef.current = null;
+            if (isPollingRef.current && enabledRef.current && rideId) {
+              openStream();
+            }
           }, 5_000);
         }
       },
     );
-  }, [rideId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  /** Close the SSE stream (receive side). */
+  }, [rideId]); // ← onReroute removed from deps
   const closeStream = useCallback(() => {
+    if (sseReconnectTimeoutRef.current) {
+      clearTimeout(sseReconnectTimeoutRef.current);
+      sseReconnectTimeoutRef.current = null;
+    }
     if (esRef.current) {
       esRef.current.close();
       esRef.current = null;
     }
   }, []);
-
   // =========================================================================
   // ERROR HANDLER
   // =========================================================================
@@ -292,7 +326,7 @@ export const useRideLocationPolling = ({
         throw new Error('AUTH_MISSING - No access token available');
       }
 
-      const { latitude, longitude } = await getCurrentPosition();
+      const {latitude, longitude} = await getCurrentPosition();
 
       // ── movement check ──────────────────────────────────────────────────
       const isFirst = isFirstPollRef.current;
@@ -302,11 +336,11 @@ export const useRideLocationPolling = ({
 
       const distanceMoved = lastPos
         ? haversineMeters(
-          lastPos.latitude,
-          lastPos.longitude,
-          latitude,
-          longitude,
-        )
+            lastPos.latitude,
+            lastPos.longitude,
+            latitude,
+            longitude,
+          )
         : Infinity;
 
       const timeElapsedMs = lastUpload ? Date.now() - lastUpload : Infinity;
@@ -331,31 +365,27 @@ export const useRideLocationPolling = ({
       // ── branch: full upload + fetch ─────────────────────────────────────
       isFirstPollRef.current = false;
 
-      // ── NEW: response is now { locations, reroute } not a bare array ────
-      const { locations, reroute } = await shareLocationAndFetchAll(
+      // ── NEW: response is now { locations, reroute } — reroute is always
+      // none() now that the SSE 'reroute' event is the sole delivery path,
+      // so we only need the locations array here.
+      const {locations} = await shareLocationAndFetchAll(
         rideId,
         latitude,
         longitude,
       );
 
-      lastSentPositionRef.current = { latitude, longitude };
+      lastSentPositionRef.current = {latitude, longitude};
       consecutiveSkipCountRef.current = 0;
       lastUploadTimestampRef.current = Date.now();
 
       // Locations update — same path as before, just using the extracted array.
       _handleLocationsResponse(locations);
-
-      // ── NEW: personal reroute — only fires for this rider when off-route ─
-      if (reroute?.rerouted && reroute.newRouteCoordinates) {
-        onReroute?.(reroute.newRouteCoordinates);
-        saveRerouteCache(rideId, reroute.newRouteCoordinates); // ← persist for next mount
-      }
     } catch (err) {
       handlePollingError(err);
     } finally {
       pollLock.current.release();
     }
-  }, [rideId, handlePollingError, onLocationsUpdate, onReroute]); // eslint-disable-line
+  }, [rideId, handlePollingError, onLocationsUpdate]); // eslint-disable-line
 
   /**
    * Shared response normalisation used by both the upload and SSE event paths.
@@ -401,22 +431,16 @@ export const useRideLocationPolling = ({
   }, [closeStream]);
 
   const startPolling = useCallback(() => {
-    if (intervalManager.current.isRunning()) return;
+    if (isPollingRef.current) return; // ← was: intervalManager.current.isRunning()
 
     setIsPolling(true);
     isPollingRef.current = true;
     setError(null);
 
     consecutiveSkipCountRef.current = 0;
-    // ── Reset isFirstPollRef so the first poll after any restart (foreground,
-    // re-enable, network restore) always hits POST /share and gets the reroute
-    // back from Redis — not just GET /all-riders which has no reroute data.
     isFirstPollRef.current = true;
 
-    // Open SSE stream for the receive side first
     openStream();
-
-    // Kick off an immediate upload tick
     pollOnceRef.current();
 
     const jitter = Math.floor(Math.random() * 2000);
@@ -428,7 +452,6 @@ export const useRideLocationPolling = ({
       );
     }, jitter);
   }, [openStream]);
-
   // =========================================================================
   // NETWORK LISTENER
   // =========================================================================
@@ -475,7 +498,12 @@ export const useRideLocationPolling = ({
       const isNowBackground = nextState.match(/inactive|background/);
 
       if (wasBackground && isNowActive) {
-        if (enabledRef.current && rideId && !isPollingRef.current && tokenRef.current) {
+        if (
+          enabledRef.current &&
+          rideId &&
+          !isPollingRef.current &&
+          tokenRef.current
+        ) {
           startPolling();
         }
       }
@@ -504,5 +532,5 @@ export const useRideLocationPolling = ({
     };
   }, []);
 
-  return { isPolling, error, retryCount, nextRetryDelay, isOffline };
+  return {isPolling, error, retryCount, nextRetryDelay, isOffline};
 };

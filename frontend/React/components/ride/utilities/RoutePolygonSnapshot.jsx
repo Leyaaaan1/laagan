@@ -110,7 +110,12 @@ const normalizeRouteCoords = (raw, sourceLabel = 'route') => {
 // snapshot can render the fixed route and the reroute at the same time.
 // `routeCoordinates` (legacy single-prop) only fills in for the fixed route
 // when `fixedRoutePolygon` itself wasn't provided, for back-compat.
-const resolveRoutePoints = ({ reroutePolygon, fixedRoutePolygon, routeCoordinates }) => {
+const resolveRoutePoints = ({
+  reroutePolygon,
+  fixedRoutePolygon,
+  routeCoordinates,
+  reroutePolygons,
+}) => {
   if (__DEV__) {
     console.log('[RoutePolygonSnapshot] resolveRoutePoints input:', {
       reroutePolygon: typeof reroutePolygon,
@@ -120,16 +125,27 @@ const resolveRoutePoints = ({ reroutePolygon, fixedRoutePolygon, routeCoordinate
   }
 
   const reroutePoints = normalizeRouteCoords(reroutePolygon, 'reroutePolygon');
-  if (__DEV__) {console.log('[RoutePolygonSnapshot] reroute points:', reroutePoints.length);}
+  if (__DEV__) {
+    console.log('[RoutePolygonSnapshot] reroute points:', reroutePoints.length);
+  }
 
-  let fixedPoints = normalizeRouteCoords(fixedRoutePolygon, 'fixedRoutePolygon');
+  let fixedPoints = normalizeRouteCoords(
+    fixedRoutePolygon,
+    'fixedRoutePolygon',
+  );
   if (fixedPoints.length < 2) {
     // back-compat fallback only — doesn't override a real fixedRoutePolygon
     fixedPoints = normalizeRouteCoords(routeCoordinates, 'routeCoordinates');
   }
-  if (__DEV__) {console.log('[RoutePolygonSnapshot] fixed points:', fixedPoints.length);}
+  if (__DEV__) {
+    console.log('[RoutePolygonSnapshot] fixed points:', fixedPoints.length);
+  }
+  const historyPointGroups = (reroutePolygons || [])
+    .map((entry, i) => normalizeRouteCoords(entry, `reroutePolygons[${i}]`))
+    .filter(pts => pts.length >= 2);
 
-  return { reroutePoints, fixedPoints };
+
+  return {reroutePoints, fixedPoints, historyPointGroups};
 };
 
 function truncate(str, max = 14) {
@@ -143,6 +159,7 @@ const RoutePolygonSnapshot = forwardRef(
       reroutePolygon = null,
       fixedRoutePolygon = null,
       routeCoordinates = null,
+      reroutePolygons = [],
       startingPoint,
       endingPoint,
       stopPoints = [],
@@ -151,11 +168,14 @@ const RoutePolygonSnapshot = forwardRef(
     },
     ref,
   ) => {
-    const {reroutePoints, fixedPoints} = resolveRoutePoints({
-      reroutePolygon,
-      fixedRoutePolygon,
-      routeCoordinates,
-    });
+    const {reroutePoints, fixedPoints, historyPointGroups} = resolveRoutePoints(
+      {
+        reroutePolygon,
+        fixedRoutePolygon,
+        routeCoordinates,
+        reroutePolygons,
+      },
+    );
 
     if (__DEV__ && reroutePoints.length === 0 && fixedPoints.length === 0) {
       console.warn(
@@ -205,8 +225,16 @@ const RoutePolygonSnapshot = forwardRef(
           }
         : null,
     ].filter(isValidPt);
+    const validHistoryGroups = historyPointGroups.map(pts =>
+      pts.filter(isValidPt),
+    );
 
-    const allPoints = [...validFixed, ...validReroute, ...landmarkDefs];
+    const allPoints = [
+      ...validFixed,
+      ...validReroute,
+      ...validHistoryGroups.flat(), // ← new
+      ...landmarkDefs,
+    ];
 
     if (allPoints.length === 0) {
       return (
@@ -235,6 +263,9 @@ const RoutePolygonSnapshot = forwardRef(
     const projectedReroute = validReroute.length
       ? projected.slice(cursor, (cursor += validReroute.length))
       : [];
+    const projectedHistoryGroups = validHistoryGroups.map(group =>
+      group.length ? projected.slice(cursor, (cursor += group.length)) : [],
+    );
     const projectedLandmarks = projected.slice(cursor);
 
     const fixedPolyStr = projectedFixed.map(p => `${p.x},${p.y}`).join(' ');
@@ -256,6 +287,26 @@ const RoutePolygonSnapshot = forwardRef(
       <View ref={ref} style={styles.container} collapsable={false}>
         <Svg width={WIDTH} height={HEIGHT}>
           <Rect width={WIDTH} height={HEIGHT} fill="transparent" />
+
+          {projectedHistoryGroups.map((pts, i) => {
+            if (pts.length === 0) return null;
+            const polyStr = pts.map(p => `${p.x},${p.y}`).join(' ');
+            const opacity =
+              0.15 + (0.35 * (i + 1)) / projectedHistoryGroups.length;
+            return (
+              <Polyline
+                key={`history-${i}`}
+                points={polyStr}
+                fill="none"
+                stroke="#f97316"
+                strokeWidth={2.5}
+                strokeOpacity={opacity}
+                strokeDasharray="4,5"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+            );
+          })}
 
           {/* ── Fixed planned route — solid blue ── */}
           {fixedPolyStr.length > 0 && (

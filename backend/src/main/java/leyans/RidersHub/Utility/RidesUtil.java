@@ -149,18 +149,12 @@ public class RidesUtil {
     }
 
     @Transactional(readOnly = true)
-    public Page<RideSummaryDTO> findRidesByUsernamePaginated(String username, int page, int size) {
+    public Page<RideSummaryDTO> findMyAndParticipatingRidesPaginated(String username, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<Rides> ridesPage = ridesRepository.findByUsername_UsernamePaginated(username, pageable);
-        return ridesPage.map(this::mapToSummaryDTO);    // ← summary mapper
+        Page<Rides> ridesPage = ridesRepository.findByUsernameOrParticipants_UsernamePaginated(username, pageable);
+        return ridesPage.map(this::mapToSummaryDTO);
     }
 
-    @Transactional(readOnly = true)
-    public Page<RideSummaryDTO> getPaginatedRides(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Rides> ridesPage = ridesRepository.findAllActiveSummary(pageable);
-        return ridesPage.map(this::mapToSummaryDTO);    // ← summary mapper
-    }
 
     @Transactional
     public Rides findRideEntityByGeneratedId(String generatedRidesId) {

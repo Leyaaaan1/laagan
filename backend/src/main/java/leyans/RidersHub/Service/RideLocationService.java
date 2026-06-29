@@ -294,18 +294,15 @@ public class RideLocationService {
                 String username = riderUtil.getCurrentUsername();
                 Rides ride = started.getRide();
 
-                RerouteResultDTO rerouteResult = routeDeviationService.checkAndRerouteIfNeeded(
-                                ride.getGeneratedRidesId(),
-                                username,
-                                latitude,
-                                longitude,
-                                ride);
+                routeDeviationService.checkAndRerouteAsync(
+                        ride.getGeneratedRidesId(), startedRideId, username,
+                        latitude, longitude, rideLocationEmitterRegistry);
                 // ─────────────────────────────────────────────────────────────────────
 
                 List<RiderLocation> locations = locationRepo.findLatestLocationPerParticipantOptimized(startedRideId);
 
                 if (locations.isEmpty()) {
-                        return new LocationShareResponseDTO(List.of(), rerouteResult);
+                        return new LocationShareResponseDTO(List.of(), RerouteResultDTO.none()); // ✓
                 }
 
                 String generatedRidesId = locations.get(0)
@@ -332,7 +329,7 @@ public class RideLocationService {
 
                 rideLocationEmitterRegistry.broadcast(startedRideId, result);
 
-                return new LocationShareResponseDTO(result, rerouteResult); // ← wrapped
+                return new LocationShareResponseDTO(result, RerouteResultDTO.none());
         }
 
         @Transactional
