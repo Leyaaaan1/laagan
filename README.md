@@ -26,9 +26,8 @@ Built for the way riders actually travel — whether you're joining a group or r
 - **Checkpoint tracking** — Set checkpoints along your route and track who has passed them. Perfect for long-distance group rides.
 - **Ride summaries** — Duration, total distance, average speed, and checkpoints, with detailed insights for each checkpoint including time, distance, and performance at every stage of the route.
 - **Offline support** — Lost signal? Laagan keeps your GPS running and syncs back up automatically when you're reconnected.
+- **Share ride stats**, photos, and route details with others or in social media.
 
-**Share Your Rides** *(Soon)*
-- Share ride stats, photos, and route details with others.
 
 ---
 
