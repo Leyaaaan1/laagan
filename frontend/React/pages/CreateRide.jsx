@@ -1,5 +1,5 @@
 import React from 'react';
-import {View} from 'react-native';
+import {View, ActivityIndicator, Text } from 'react-native';
 import RideStep1 from '../components/ride/RideStep1';
 import RideStep2 from '../components/ride/RideStep2';
 import RideStep3 from '../components/ride/RideStep3';
@@ -37,6 +37,12 @@ const CreateRide = ({}) => {
       )}
 
       {ride.currentStep === 2 && (
+        ride.locationLoading ? (
+          <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+            <ActivityIndicator size="large" color="#8c2323" />
+            <Text style={{marginTop: 12, color: '#666'}}>Getting your location…</Text>
+          </View>
+        ) : (
         <RideStep2
           isSearching={ride.isSearching}
           searchResults={ride.searchResults}
@@ -53,6 +59,7 @@ const CreateRide = ({}) => {
           prevStep={ride.prevStep}
           nextStep={ride.nextStep}
         />
+        )
       )}
 
       {ride.currentStep === 3 && (

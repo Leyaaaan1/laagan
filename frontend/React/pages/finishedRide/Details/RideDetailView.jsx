@@ -83,10 +83,8 @@ const RideDetailView = ({ route, navigation }) => {
         if (!isRefresh) {
           setLoading(true);
         }
-        const data = await getPersonalSummary(generatedRidesId); // ← was finishedRideService.getRideDetail
-        console.log('🟢 rideDetail:', JSON.stringify(data, null, 2)); // ← ADD
+        const data = await getPersonalSummary(generatedRidesId); //
         setRideDetail(data);
-        console.log('Ride detail fetched:', data);
         setError(null);
       } catch (err) {
         setError(
@@ -232,16 +230,10 @@ const RideDetailView = ({ route, navigation }) => {
   }));
 
   const shareData = {
-    rideName: rideName ?? 'Unnamed Ride',
-    rideDate: startTime ?? null,
-    riderName: null,
-    generatedRidesId,
-    distanceMeters: distanceMeters ?? null,
-    durationMinutes: durationMinutes ?? null,
-    averageSpeedKph: averageSpeedKph ?? null,
-    snapshotUrl: snapshotUrl, // ← add this
-    speedSegments: speedSegments ?? [], // ← add this
+    ...rideDetail, // All DTO fields from getPersonalSummary
+    snapshotUrl: snapshotUrl ?? null, // Only add the snapshot separately
   };
+
   return (
     <SafeAreaView style={finishedRideStyles.container}>
       {/* ── Floating back button (overlays the hero) ───────────────────── */}
@@ -287,8 +279,6 @@ const RideDetailView = ({ route, navigation }) => {
                 />
               </View>
             )}
-
-            {/* ── Speed chart ──────────────────────────────────────────── */}
             {hasSegments && (
               <View style={rideDetailStyles.viewChartSection}>
                 <RideDetailSpeedChart
@@ -297,6 +287,14 @@ const RideDetailView = ({ route, navigation }) => {
                 />
               </View>
             )}
+            <RideDetailStats
+              distanceMeters={distanceMeters}
+              durationMinutes={durationMinutes}
+              averageSpeedKph={averageSpeedKph}
+              segmentCount={speedSegments.length}
+              startTime={startTime}
+              endTime={endTime}
+            />
 
             <ShareCardButton
               shareData={shareData}

@@ -1,8 +1,7 @@
-
 import {StyleSheet} from 'react-native';
 import colors from '../../../React/styles/tokens/colors';
 import spacing from '../../../React/styles/tokens/spacing';
-import {fontSize, fontWeight} from '../../../React/styles/tokens/typography';
+import {fontSize, fontWeight} from '../tokens/typography';
 
 // ════════════════════════════════════════════════════════════════════
 // 1. CARD TOKENS — brand palette for the exported image only
@@ -19,156 +18,193 @@ export const cardTokens = {
   bgSurface: 'rgba(27,31,46,0.88)',
   border: 'rgba(255,255,255,0.10)',
   borderMid: 'rgba(255,255,255,0.16)',
+
+  // ── New: "glass" panel tokens for stat/graph cards over a photo bg ──
+  glassBg: 'rgba(18,20,26,0.55)',
+  glassBgStrong: 'rgba(14,16,22,0.68)',
+  glassBorder: 'rgba(255,255,255,0.14)',
+  shadowColor: 'rgba(0,0,0,0.45)',
 };
 
 // ════════════════════════════════════════════════════════════════════
 // 2. CARD STYLES — RideShareCard.jsx (all values in 1080-card-space)
+//    Layout: header → centered focal map+title → two-column
+//    (stats left / graph right) → footer.
 // ════════════════════════════════════════════════════════════════════
 export const cardStyles = StyleSheet.create({
   inner: {flex: 1},
 
-  // Header
+  // ── Header ──────────────────────────────────────────────────────
   header: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    paddingTop: 64,
     paddingHorizontal: 56,
-    paddingTop: 72,
-    paddingBottom: 20,
+    marginBottom: 8,
   },
-  logoRow: {flexDirection: 'row', alignItems: 'center'},
-  logoDot: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: 'rgba(29,158,117,0.20)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoEmoji: {fontSize: 26},
-  appName: {
-    color: cardTokens.textPrimary,
-    fontWeight: '700',
-    fontSize: 28,
-    letterSpacing: 0.5,
-    marginLeft: 14,
-  },
-  headerDate: {color: cardTokens.textSecondary, fontSize: 20},
-  headerRider: {color: cardTokens.accent, fontWeight: '600', fontSize: 20},
-
-  accentLine: {
-    height: 2,
-    backgroundColor: cardTokens.accent,
-    opacity: 0.65,
-    marginHorizontal: 56,
-    borderRadius: 2,
-    marginBottom: 32,
-  },
-
-  // Snapshot map
-  mapWrapper: {
-    marginHorizontal: 48,
-    borderRadius: 20,
-    overflow: 'hidden',
+  headerPill: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: cardTokens.glassBg,
     borderWidth: 1,
-    borderColor: cardTokens.border,
-    marginBottom: 36,
+    borderColor: cardTokens.glassBorder,
   },
-  mapImage: {width: '100%'},
+  headerText: {
+    color: cardTokens.textSecondary,
+    fontSize: 22,
+    textAlign: 'center',
+  },
+  headerRider: {
+    color: cardTokens.accent,
+    fontWeight: '700',
+  },
+
+  // ── Centered focal point: map + ride name ────────────────────────
+  focalWrapper: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 48,
+    gap: 28,
+  },
+  mapCard: {
+    overflow: 'hidden',
+    borderColor: 'rgba(255,255,255,0.22)',
+    shadowColor: cardTokens.shadowColor,
+    shadowOffset: {width: 0, height: 18},
+    shadowOpacity: 0.5,
+    shadowRadius: 32,
+    elevation: 14,
+  },
+  mapImage: {width: '100%', height: '100%'},
   mapPlaceholder: {
-    backgroundColor: cardTokens.bgSurface,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  mapPlaceholderText: {color: cardTokens.textMuted, fontSize: 28},
+  mapPlaceholderText: {color: cardTokens.textMuted, fontSize: 22},
 
-  // Ride name
-  nameWrapper: {
-    paddingHorizontal: 56,
-    marginBottom: 16,
-  },
   rideName: {
     color: cardTokens.textPrimary,
     fontWeight: '800',
-    fontSize: 72,
+    fontSize: 64,
     letterSpacing: -0.5,
-    lineHeight: 82,
+    lineHeight: 72,
+    textAlign: 'center',
+    maxWidth: 880,
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowOffset: {width: 0, height: 3},
+    textShadowRadius: 12,
   },
 
-  // Speed graph (no background — transparent)
-  graphWrapper: {marginBottom: 20},
-  graphHeader: {
+  // ── Two-column row: stats (left) · graph (right) ─────────────────
+  columnsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 64,
+    gap: 28,
+    marginBottom: 56,
+  },
+
+  // Left column — key stats, stacked vertically for a clear hierarchy.
+  statsColumn: {
+    paddingVertical: 8,
+    paddingHorizontal: 28,
+    justifyContent: 'center',
+  },
+  statRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 56,
-    marginBottom: 4,
+    paddingVertical: 18,
   },
-  graphLabel: {
-    color: cardTokens.textMuted,
-    fontSize: 18,
-    letterSpacing: 2.5,
-    fontWeight: '600',
+  statAccentBar: {
+    width: 6,
+    height: 46,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    marginRight: 20,
   },
-
-  // Stats card
-  statsCard: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    marginHorizontal: 48,
-    paddingVertical: 32,
-    paddingHorizontal: 8,
-    marginBottom: 24,
-  },
-  statBlock: {flex: 1, alignItems: 'center', paddingHorizontal: 12},
+  statTextWrap: {flexShrink: 1},
   statValue: {
     color: cardTokens.textPrimary,
-    fontWeight: '700',
-    fontSize: 46,
-    lineHeight: 54,
+    fontWeight: '800',
+    fontSize: 44,
+    lineHeight: 50,
   },
   statUnit: {
     color: cardTokens.textSecondary,
     fontWeight: '400',
-    fontSize: 26,
+    fontSize: 24,
   },
   statLabel: {
     color: cardTokens.textMuted,
     fontSize: 17,
-    marginTop: 6,
+    marginTop: 2,
     textTransform: 'uppercase',
-    letterSpacing: 1.2,
+    letterSpacing: 1.4,
   },
-  dividerV: {
-    width: 1,
+  statDivider: {
+    height: 1,
     backgroundColor: cardTokens.borderMid,
-    marginVertical: 8,
+    marginHorizontal: 4,
   },
 
-  // Footer
+  // Right column — performance graph, same visual weight as the left card.
+  graphColumn: {
+    borderRadius: 28,
+    backgroundColor: cardTokens.glassBg,
+    borderWidth: 1,
+    borderColor: cardTokens.glassBorder,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  graphLabel: {
+    color: cardTokens.textMuted,
+    fontSize: 17,
+    letterSpacing: 2.5,
+    fontWeight: '600',
+    marginBottom: 4,
+    alignSelf: 'flex-start',
+    marginLeft: 4,
+  },
+  graphEmpty: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ── Footer ─────────────────────────────────────────────────────
   footer: {
-    paddingHorizontal: 56,
-    paddingBottom: 72,
-    paddingTop: 24,
-    borderTopWidth: 1,
-    borderTopColor: cardTokens.border,
+    alignItems: 'center',
+    paddingBottom: 48,
   },
   slogan: {
-    color: cardTokens.textSecondary,
-    fontSize: 20,
-    fontStyle: 'italic',
-    letterSpacing: 0.2,
-  },
-  refCode: {
     color: cardTokens.textMuted,
-    fontFamily: 'monospace',
-    fontSize: 16,
-    letterSpacing: 0.8,
-    marginTop: 4,
+    fontSize: 20,
+    letterSpacing: 0.6,
   },
+
+  // ── Optional app logo badge (top-right) ─────────────────────────
+  logoBadge: {
+    position: 'absolute',
+    top: 56,
+    right: 48,
+    width: 72,
+    height: 72,
+    borderRadius: 18,
+    backgroundColor: cardTokens.glassBg,
+    borderWidth: 1,
+    borderColor: cardTokens.glassBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+  },
+  logoImage: {width: '100%', height: '100%'},
 });
 
 // ════════════════════════════════════════════════════════════════════
 // 3. BUTTON STYLES — ShareCardButton.jsx (real app UI, uses app tokens)
+//    Unchanged from the previous version.
 // ════════════════════════════════════════════════════════════════════
 export const buttonStyles = StyleSheet.create({
   // Photo picker

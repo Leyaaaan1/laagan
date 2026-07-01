@@ -28,7 +28,7 @@ export const drawRoadRoute = async ({
   setRouteLoading,
 }) => {
   if (!canDrawRoute(sLat, sLng, eLat, eLng)) {
-    return;
+    return false;
   }
 
   setRouteLoading(true);
@@ -54,7 +54,7 @@ export const drawRoadRoute = async ({
           stopPoints,
         }),
       );
-      return; // done — setRouteLoading(false) runs in finally
+      return true; // done — setRouteLoading(false) runs in finally
     }
 
     // ── 2. Cache miss — call GraphHopper ────────────────────────────────────
@@ -62,7 +62,7 @@ export const drawRoadRoute = async ({
     const routeGeoJSON = await getRoutePreview(routeData, token);
 
     if (!routeGeoJSON?.features?.length) {
-      return;
+      return false;
     }
 
     // ── 3. Persist so the next call is instant ──────────────────────────────
@@ -82,7 +82,9 @@ export const drawRoadRoute = async ({
         stopPoints,
       }),
     );
+    return true;
   } catch (e) {
+    return false;
   } finally {
     setRouteLoading(false);
   }
@@ -298,5 +300,9 @@ export const getMapModeLabel = mapMode =>
     stop: 'STOPS',
   }[mapMode] || '');
 
-export const canCreateRide = (startingPoint, endingPoint, loading) =>
-  !!startingPoint && !!endingPoint && !loading;
+export const canCreateRide = (
+  startingPoint,
+  endingPoint,
+  loading,
+  routeGenerated,
+) => !!startingPoint && !!endingPoint && !loading && !!routeGenerated;

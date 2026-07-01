@@ -33,6 +33,7 @@ const buildHtml = (segments, avgSpeed, isDark) => {
   const labels = segments.map(s => `${s.fromLabel} → ${s.toLabel}`);
   const speeds = segments.map(s => s.averageSpeedKph ?? 0);
   const durs = segments.map(s => s.durationMinutes ?? 0);
+  const singlePoint = segments.length < 2;
 
   const bg = 'transparent';
   const textColor = 'rgba(255,255,255,0.55)';
@@ -60,34 +61,40 @@ const buildHtml = (segments, avgSpeed, isDark) => {
   const labels = ${JSON.stringify(labels)};
   const speeds = ${JSON.stringify(speeds)};
   const durs   = ${JSON.stringify(durs)};
-
+  const singlePoint = ${singlePoint};
+  
   new Chart(document.getElementById('c'), {
     data: {
       labels,
       datasets: [
-        {
+{
           type: 'line',
           label: 'Duration (min)',
           data: durs,
           borderColor: 'rgba(55,138,221,0.85)',
           pointBackgroundColor: 'rgba(55,138,221,0.9)',
           borderWidth: 2,
-          pointRadius: 4,
-          pointHoverRadius: 6,
+          pointRadius: singlePoint ? 9 : 4,
+          pointHoverRadius: singlePoint ? 11 : 6,
+          pointBorderWidth: singlePoint ? 2 : 1,
+          pointBorderColor: '#fff',
           fill: false,
           tension: 0.35,
           yAxisID: 'yDur',
           order: 2,
         },
-        {
+        
+         {
           type: 'line',
           label: 'Speed (kph)',
           data: speeds,
           borderColor: '${colors.primary}',
           borderWidth: 2.5,
           pointBackgroundColor: '${colors.primary}',
-          pointRadius: 5,
-          pointHoverRadius: 7,
+          pointRadius: singlePoint ? 9 : 5,
+          pointHoverRadius: singlePoint ? 11 : 7,
+          pointBorderWidth: singlePoint ? 2 : 1,
+          pointBorderColor: '#fff',
           fill: false,
           tension: 0.35,
           yAxisID: 'ySpeed',
@@ -128,7 +135,8 @@ const buildHtml = (segments, avgSpeed, isDark) => {
         },
       },
       scales: {
-        x: {
+        x: {  
+          offset: true,
           ticks: {
             color: '${textColor}',
             font: { size: 10 },

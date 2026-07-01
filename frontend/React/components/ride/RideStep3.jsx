@@ -8,6 +8,7 @@ import {
   StatusBar,
   ActivityIndicator,
   Animated,
+  Alert,
 } from 'react-native';
 import {WebView} from 'react-native-webview';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
@@ -79,7 +80,8 @@ const RideStep3 = ({
   const debounceRef = useRef(null);
   const [localQuery, setLocalQuery] = useState(searchQuery || '');
   const insets = useSafeAreaInsets();
-
+  const [routeGenerated, setRouteGenerated] = useState(false);
+  const routeReadyAlertShownRef = useRef(false);
   const {handleLocalChange, handleClearSearch} = buildSearchHandlers({
     debounceRef,
     setLocalQuery,
@@ -102,8 +104,8 @@ const RideStep3 = ({
     return getMapHTML(lat, lng, false);
   }, []);
   // ── Route draw callback ───────────────────────────────────────────────────
-  const triggerDrawRoute = useCallback(() => {
-    drawRoadRoute({
+  const triggerDrawRoute = useCallback(async () => {
+    const success = await drawRoadRoute({
       sLat: parseFloat(startingLatitude),
       sLng: parseFloat(startingLongitude),
       eLat: parseFloat(endingLatitude),
@@ -113,6 +115,17 @@ const RideStep3 = ({
       webViewRef,
       setRouteLoading,
     });
+
+    setRouteGenerated(success);
+
+    if (success && !routeReadyAlertShownRef.current) {
+      routeReadyAlertShownRef.current = true;
+      Alert.alert(
+        'Route Ready! ',
+        'Your route has been generated. You can optionally add stop points along the way, or go ahead and create your ride.',
+        [{text: 'Got it'}],
+      );
+    }
   }, [
     startingLatitude,
     startingLongitude,
@@ -122,7 +135,6 @@ const RideStep3 = ({
     token,
     webViewRef,
   ]);
-
   // Auto-draw when endpoints / stops change (debounced)
   useEffect(() => {
     const bothSet =
@@ -132,6 +144,7 @@ const RideStep3 = ({
       endingLongitude;
     const notPicking = mapMode !== 'starting' && mapMode !== 'ending';
     if (!bothSet || !notPicking) {
+      setRouteGenerated(false); // ← add this line
       return;
     }
     const timer = setTimeout(triggerDrawRoute, 1000);
@@ -257,7 +270,13 @@ const RideStep3 = ({
   const searchPlaceholder = getSearchPlaceholder(mapMode);
   const modeLabel = getMapModeLabel(mapMode);
   const finalizeLabel = getFinalizeButtonLabel(mapMode);
-  const canCreate = canCreateRide(startingPoint, endingPoint, loading);
+  const canCreate = canCreateRide(
+    startingPoint,
+    endingPoint,
+    loading,
+    routeGenerated,
+  );
+
 
   const showFinalizeBtn =
     (mapMode === 'starting' && startingPoint) ||
@@ -502,22 +521,27 @@ const RideStep3 = ({
                 </TouchableOpacity>
               )}
 
-              {startingPoint && endingPoint && !isAddingStop && (
-                <TouchableOpacity
-                  style={[
-                    ridestep3style.createBtn,
-                    ridestep3style.actionBtnFlex,
-                    !canCreate && ridestep3style.confirmStopBtnDisabled,
-                  ]}
-                  onPress={handleCreateRide}
-                  disabled={!canCreate}>
-                  {loading ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Text style={ridestep3style.createBtnText}>🏁 Create</Text>
-                  )}
-                </TouchableOpacity>
-              )}
+              {startingPoint &&
+                endingPoint &&
+                !isAddingStop &&
+                routeGenerated && (
+                  <TouchableOpacity
+                    style={[
+                      ridestep3style.createBtn,
+                      ridestep3style.actionBtnFlex,
+                      !canCreate && ridestep3style.confirmStopBtnDisabled,
+                    ]}
+                    onPress={handleCreateRide}
+                    disabled={!canCreate}>
+                    {loading ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={ridestep3style.createBtnText}>
+                        🏁 Create
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                )}
             </View>
           </ScrollView>
         )}

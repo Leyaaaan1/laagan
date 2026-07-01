@@ -122,10 +122,12 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (!response.ok) {
-        // 401 here is expected when the user previously logged out — the server
-        // already invalidated the token. Clear stale Keychain/storage silently.
-
-        await _clearStorage();
+        // Same rule: only a definitive 401/403 clears storage. Transient
+        // errors (cold-start 502/503/504, 500, rate limits) keep the token
+        // so the offline-restore fallback right after this can still work.
+        if (response.status === 401 || response.status === 403) {
+          await _clearStorage();
+        }
         return false;
       }
 
@@ -210,19 +212,20 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await fetch(`${API_BASE_URL}/riders/refresh`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: refreshTokenRef.current }),
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({refreshToken: refreshTokenRef.current}),
       });
-
       if (!response.ok) {
-        // NEW: Handle token refresh failure
+        // Only 401/403 mean the server has definitively invalidated this
+        // refresh token (revoked/expired/reused). Everything else — cold
+        // start 502/503/504, 500, 429 — is transient. Keep the credentials
+        // and let the next attempt retry.
         if (response.status === 401 || response.status === 403) {
           await onTokenRefreshFailed(
             'Your session has expired. Please login again.',
           );
+          await clearAuth();
         }
-
-        await clearAuth();
         return null;
       }
 
@@ -243,10 +246,9 @@ export const AuthProvider = ({ children }) => {
 
       return data.accessToken;
     } catch (error) {
-      await onTokenRefreshFailed(
-        'Network error while refreshing session. Please try again.',
-      );
-      await clearAuth();
+      // Couldn't reach the server — the refresh token was never validated
+      // as invalid. Leave it in Keychain; the next interval tick / API call
+      // / app open will retry.
       return null;
     } finally {
       setIsRefreshing(false);

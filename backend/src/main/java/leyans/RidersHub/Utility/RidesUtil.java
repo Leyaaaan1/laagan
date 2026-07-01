@@ -165,6 +165,9 @@ public class RidesUtil {
 
     // ─── Summary mapper — used by paginated list endpoints ───────────────────────
     public RideSummaryDTO mapToSummaryDTO(Rides ride) {
+        String creatorUsername = (ride.getUsername() != null)
+                ? ride.getUsername().getUsername()
+                : "Unknown";
         return new RideSummaryDTO(
                 ride.getGeneratedRidesId(),
                 ride.getRidesName(),
@@ -180,7 +183,7 @@ public class RidesUtil {
                 ride.getEndingPointName(),
                 ride.getEndingLocation().getY(),
                 ride.getEndingLocation().getX(),
-                ride.getUsername().getUsername(),
+                creatorUsername,
                 ride.getParticipants().stream()
                         .map(r -> r.getUsername())
                         .collect(Collectors.toList()),

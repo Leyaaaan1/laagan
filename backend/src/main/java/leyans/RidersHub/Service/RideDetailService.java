@@ -19,7 +19,6 @@ import leyans.RidersHub.model.participant.RideCheckpointArrival;
 import org.locationtech.jts.geom.Point;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -76,7 +75,7 @@ public class RideDetailService {
                 .toList());
 
         String snapshotUrl = groupOpt.map(FinishedRide::getSnapshotUrl)
-                .filter(Objects::nonNull)
+                .filter(obj -> true)
                 .orElseGet(() -> personalOpt.map(PersonalFinishedRide::getSnapshotUrl).orElse(null));
         dto.setSnapshotUrl(snapshotUrl);
 

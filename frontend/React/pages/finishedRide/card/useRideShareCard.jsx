@@ -281,8 +281,8 @@ export function useRideShareCard({
 
       await CameraRoll.saveAsset(tempPath, {type: 'photo', album: 'RideSync'});
       Alert.alert(
-        'Saved! 🎉',
-        'Your ride card has been saved to your gallery under the RideSync album.',
+        'Saved!',
+        'Your ride card has been saved to your gallery.',
       );
     } catch (e) {
       Alert.alert('Save error', e?.message ?? 'Unknown error');
