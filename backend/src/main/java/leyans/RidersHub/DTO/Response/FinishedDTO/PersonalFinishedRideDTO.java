@@ -10,6 +10,7 @@ public class PersonalFinishedRideDTO {
 
     private Integer id;
     private String riderUsername;
+    private String ridesName;
     private String generatedRidesId;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
@@ -29,6 +30,7 @@ public class PersonalFinishedRideDTO {
 
     public PersonalFinishedRideDTO(Integer id,
             String riderUsername,
+            String ridesName,
             String generatedRidesId,
             LocalDateTime startTime,
             LocalDateTime endTime,
@@ -42,6 +44,7 @@ public class PersonalFinishedRideDTO {
             Double averageSpeedKph, List<SpeedSegmentDTO> speedSegments) {
         this.id = id;
         this.riderUsername = riderUsername;
+        this.ridesName = ridesName;
         this.generatedRidesId = generatedRidesId;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -58,6 +61,7 @@ public class PersonalFinishedRideDTO {
 
     public PersonalFinishedRideDTO(Integer id,
             String riderUsername,
+            String ridesName,
             String generatedRidesId,
             LocalDateTime startTime,
             LocalDateTime endTime,
@@ -67,9 +71,17 @@ public class PersonalFinishedRideDTO {
             List<StopPointDTO> stopPoints,
             String startingPointName,
             String endingPointName) {
-        this(id, riderUsername, generatedRidesId, startTime, endTime,
+        this(id, riderUsername, ridesName, generatedRidesId, startTime, endTime,
                 durationMinutes, createdAt, checkpointArrivals, stopPoints,
                 startingPointName, endingPointName, null, null, null);
+    }
+
+    public String getRidesName() {
+        return ridesName;
+    }
+
+    public void setRidesName(String ridesName) {
+        this.ridesName = ridesName;
     }
 
     public List<SpeedSegmentDTO> getSpeedSegments() {

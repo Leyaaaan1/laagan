@@ -18,7 +18,7 @@ export const DEFAULT_LOCATION_NAME = 'Selected Location';
 export const GEOLOCATION_OPTIONS = {
   fast: {
     enableHighAccuracy: false,
-    timeout: 5000,
+    timeout: 2000,
     maximumAge: 60000,
   },
   accurate: {

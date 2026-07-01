@@ -88,6 +88,7 @@ public class PersonalFinishedRideService {
                 PersonalFinishedRideDTO dto = new PersonalFinishedRideDTO(
                                 personalFinishedRide.getId(),
                                 riderUsername,
+                                ride.getRidesName(),
                                 generatedRidesId,
                                 personalFinishedRide.getStartTime(),
                                 personalFinishedRide.getEndTime(),

@@ -130,6 +130,7 @@ const RideStep2 = ({
   prevStep,
   nextStep,
   handleSearchInputChange,
+
   token,
 }) => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -161,6 +162,23 @@ const RideStep2 = ({
     const initLng = parseFloat(longitude) || DEFAULT_LNG;
     return getMapHTML(initLat, initLng);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Pan map to real GPS location once it resolves ─────────────────────────
+  // ── Track whether map is ready, pan immediately if GPS arrives after mapReady
+  const mapReadyRef = useRef(false);
+
+  useEffect(() => {
+    if (!mapReadyRef.current) return;
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
+    if (!lat || !lng) return;
+    webViewRef.current?.injectJavaScript(`
+    if (window.map) {
+      window.map.setView([${lat}, ${lng}], 13);
+    }
+    true;
+  `);
+  }, [latitude, longitude, webViewRef]);
 
   // ── Fetch photos whenever the location name changes ───────────────────────
   const fetchLocationImages = useCallback(async name => {
@@ -199,7 +217,26 @@ const RideStep2 = ({
           ref={webViewRef}
           source={{html: mapHtml}}
           style={{flex: 1}}
-          onMessage={handleMessage}
+          onMessage={event => {
+            try {
+              const data = JSON.parse(event.nativeEvent.data);
+              if (data.type === 'mapReady') {
+                mapReadyRef.current = true;
+                const lat = parseFloat(latitude);
+                const lng = parseFloat(longitude);
+                if (lat && lng) {
+                  webViewRef.current?.injectJavaScript(`
+            if (window.map) {
+              window.map.setView([${lat}, ${lng}], 13);
+            }
+            true;
+          `);
+                }
+                return;
+              }
+            } catch (_) {}
+            handleMessage(event);
+          }}
           javaScriptEnabled
           domStorageEnabled
           startInLoadingState

@@ -38,7 +38,6 @@ import {
   loadRerouteCache,
   clearRerouteCache,
 } from '../services/locationPollingService'; // adjust path
-
 import {getFinishedRideSummary} from '../services/startService';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {captureRideSnapshot} from '../utilities/captureRideSnapshot';

@@ -56,9 +56,12 @@ public class TokenBlacklistService {
             Boolean exists = redisTemplate.hasKey(key);
             return exists != null && exists;
         } catch (Exception e) {
-            log.warn("Error checking token blacklist for: {}", jti, e);
-            // Fail secure: treat as invalid if Redis is unreachable
-            return true;
+            log.warn("Redis unavailable - cannot check token blacklist for: {}. Failing open.", jti, e);
+            // Fail open — consistent with AccountLockoutService's pattern elsewhere
+            // in this codebase. A Redis blip must never be indistinguishable from
+            // "this token was explicitly revoked"; that's what was forcing full
+            // re-logins on transient Redis timeouts.
+            return false;
         }
     }
 

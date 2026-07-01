@@ -1,6 +1,7 @@
 import React, {useRef, useState, useCallback, useMemo} from 'react';
 import {Share, Alert, Platform, PermissionsAndroid} from 'react-native';
 import RideShareCard, {captureShareCard} from './RideShareCard';
+import laraganLogo from '../../../styles/asset/icon-original.png';
 
 // ── Optional native deps ──────────────────────────────────────────────────────
 let launchImageLibrary = null;
@@ -281,8 +282,8 @@ export function useRideShareCard({
 
       await CameraRoll.saveAsset(tempPath, {type: 'photo', album: 'RideSync'});
       Alert.alert(
-        'Saved! 🎉',
-        'Your ride card has been saved to your gallery under the RideSync album.',
+        'Saved!',
+        'Your ride card has been saved to your gallery.',
       );
     } catch (e) {
       Alert.alert('Save error', e?.message ?? 'Unknown error');
@@ -300,7 +301,7 @@ export function useRideShareCard({
         data={data}
         format={format}
         photoUri={photoUri}
-        AppLogo={AppLogo}
+        AppLogo={laraganLogo}
       />
     ),
     [data, format, photoUri, AppLogo],

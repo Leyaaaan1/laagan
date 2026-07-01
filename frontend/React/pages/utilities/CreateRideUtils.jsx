@@ -29,7 +29,8 @@ const useCreateRide = ({}) => {
   const webViewRef = useRef(null);
   const pendingRideIdRef = useRef(null);
 
-  const {location} = useUserLocation();
+  const {location, loading: locationLoading} = useUserLocation();
+
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(false);
@@ -460,11 +461,12 @@ const useCreateRide = ({}) => {
   return {
     webViewRef,
     pendingRideIdRef,
+    locationLoading,
     loading,
     error,
     currentStep,
-    nextStep, // ✅ Now wrapped
-    prevStep, // ✅ Now wrapped
+    nextStep, //
+    prevStep, //
     rideName,
     setRideName,
     riderType,
