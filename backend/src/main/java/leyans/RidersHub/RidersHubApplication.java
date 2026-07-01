@@ -19,7 +19,7 @@ import java.nio.file.Paths;
 @EnableCaching
 @EnableJpaRepositories(basePackages = "leyans.RidersHub.Repository")
 public class RidersHubApplication {
-
+/*
 	static {
 		loadEnvVariables();
 	}
@@ -61,7 +61,7 @@ public class RidersHubApplication {
 			}
 		}
 
-	}
+	}*/
 
 	public static void main(String[] args) {
 		SpringApplication.run(RidersHubApplication.class, args);
