@@ -97,73 +97,78 @@ export const cardStyles = StyleSheet.create({
     textShadowRadius: 12,
   },
 
-  // ── Two-column row: stats (left) · graph (right) ─────────────────
+  // ── Two-column row: stats (left 10%) · graph (right 90%) ─────────────────
+  // Unified container with 2px border, no background fill
   columnsRow: {
     flexDirection: 'row',
-    paddingHorizontal: 64,
-    gap: 28,
+    marginHorizontal: 64,
     marginBottom: 56,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: cardTokens.glassBorder,
+    overflow: 'hidden',
   },
 
-  // Left column — key stats, stacked vertically for a clear hierarchy.
+  // Left column — key stats, stacked vertically (10% width)
   statsColumn: {
-    paddingVertical: 8,
-    paddingHorizontal: 28,
+    width: '10%',
+    paddingVertical: 20,
+    paddingHorizontal: 12,
     justifyContent: 'center',
+    borderRightWidth: 2,
+    borderRightColor: cardTokens.glassBorder,
   },
   statRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 18,
+    paddingVertical: 12,
   },
   statAccentBar: {
-    width: 6,
-    height: 46,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.22)',
-    marginRight: 20,
+    width: 4,
+    height: 36,
+    borderRadius: 2,
+    backgroundColor: cardTokens.accent,
+    marginRight: 8,
   },
   statTextWrap: {flexShrink: 1},
   statValue: {
     color: cardTokens.textPrimary,
     fontWeight: '800',
-    fontSize: 44,
-    lineHeight: 50,
+    fontSize: 28,
+    lineHeight: 32,
   },
   statUnit: {
     color: cardTokens.textSecondary,
     fontWeight: '400',
-    fontSize: 24,
+    fontSize: 14,
   },
   statLabel: {
     color: cardTokens.textMuted,
-    fontSize: 17,
-    marginTop: 2,
+    fontSize: 11,
+    marginTop: 1,
     textTransform: 'uppercase',
-    letterSpacing: 1.4,
+    letterSpacing: 0.8,
   },
   statDivider: {
     height: 1,
     backgroundColor: cardTokens.borderMid,
-    marginHorizontal: 4,
+    marginVertical: 6,
   },
 
-  // Right column — performance graph, same visual weight as the left card.
+  // Right column — performance graph (90% width, no background)
   graphColumn: {
-    borderRadius: 28,
-    backgroundColor: cardTokens.glassBg,
-    borderWidth: 1,
-    borderColor: cardTokens.glassBorder,
-    paddingVertical: 20,
-    paddingHorizontal: 16,
+    flex: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   graphLabel: {
     color: cardTokens.textMuted,
-    fontSize: 17,
-    letterSpacing: 2.5,
+    fontSize: 14,
+    letterSpacing: 2.2,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 8,
     alignSelf: 'flex-start',
     marginLeft: 4,
   },
@@ -186,20 +191,20 @@ export const cardStyles = StyleSheet.create({
 
   // ── Optional app logo badge (top-right) ─────────────────────────
   logoBadge: {
-    position: 'absolute',
-    top: 56,
-    right: 48,
-    width: 72,
-    height: 72,
-    borderRadius: 18,
-    backgroundColor: cardTokens.glassBg,
-    borderWidth: 1,
-    borderColor: cardTokens.glassBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-  },
-  logoImage: {width: '100%', height: '100%'},
+      position: 'absolute',
+      top: 56,
+      right: 48,
+      width: 120,        // ← Change from 72
+      height: 120,       // ← Change from 72
+      borderRadius: 24,  // ← Increase proportionally (was 18)
+      backgroundColor: cardTokens.glassBg,
+      borderWidth: 2,    // ← Optional: thicker border for larger badge
+      borderColor: cardTokens.glassBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 16,       // ← Increase padding (was 12)
+    },
+    logoImage: {width: '100%', height: '100%'},
 });
 
 // ════════════════════════════════════════════════════════════════════

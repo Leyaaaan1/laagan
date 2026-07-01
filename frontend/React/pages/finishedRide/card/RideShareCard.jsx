@@ -248,7 +248,7 @@ const SpeedGraph = ({segments, averageSpeedKph, width, height}) => {
 // ─── Stat row (left column) — accent bar + big value + label ──────────────────
 const StatRow = ({label, value, unit, accent}) => (
   <View style={ss.statRow}>
-    <View style={[ss.statAccentBar, accent && {backgroundColor: T.accent}]} />
+    <View style={[ accent && {backgroundColor: T.accent}]} />
     <View style={ss.statTextWrap}>
       <Text style={ss.statValue} numberOfLines={1}>
         {value}
@@ -279,9 +279,10 @@ const CardContent = ({data, cfg}) => {
 
   const {width, mapSize, columnHeight, graphHeight} = cfg;
   const sidePad = 64;
-  const colGap = 28;
-  const columnWidth = (width - sidePad * 2 - colGap) / 2;
-  const graphInnerWidth = columnWidth - 32; // minus the graph card's own horizontal padding
+  const containerWidth = width - sidePad * 2;
+  const statsWidth = containerWidth * 0.1;
+  const graphWidth = containerWidth * 0.9;
+  const graphInnerWidth = graphWidth - 40; // minus graph card's padding (20px each side)
 
   return (
     <View style={ss.inner}>
@@ -324,14 +325,10 @@ const CardContent = ({data, cfg}) => {
       </View>
 
       {/* ── Two-column row: stats (left) · graph (right) ── */}
+      {/* ── Two-column row: stats (left 10%) · graph (right 90%) ── */}
       <View style={[ss.columnsRow, {height: columnHeight}]}>
-        <View style={[ss.statsColumn, {width: columnWidth}]}>
-          <StatRow
-            label="Distance"
-            value={dist.value}
-            unit="km"
-            accent
-          />
+        <View style={ss.statsColumn}>
+          <StatRow label="Distance" value={dist.value} unit={dist.unit} accent />
           <View style={ss.statDivider} />
           <StatRow label="Duration" value={dur} />
           <View style={ss.statDivider} />
@@ -342,7 +339,7 @@ const CardContent = ({data, cfg}) => {
           />
         </View>
 
-        <View style={[ss.graphColumn, {width: columnWidth}]}>
+        <View style={ss.graphColumn}>
           <Text style={ss.graphLabel}>SPEED</Text>
           {hasGraph ? (
             <SpeedGraph
@@ -358,7 +355,6 @@ const CardContent = ({data, cfg}) => {
           )}
         </View>
       </View>
-
       {/* ── Footer branding ── */}
       <View style={ss.footer}>
         <Text style={ss.slogan}>Shared via RideSync</Text>

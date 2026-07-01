@@ -1,6 +1,7 @@
 import React, {useRef, useState, useCallback, useMemo} from 'react';
 import {Share, Alert, Platform, PermissionsAndroid} from 'react-native';
 import RideShareCard, {captureShareCard} from './RideShareCard';
+import laraganLogo from '../../../styles/asset/icon-original.png';
 
 // ── Optional native deps ──────────────────────────────────────────────────────
 let launchImageLibrary = null;
@@ -300,7 +301,7 @@ export function useRideShareCard({
         data={data}
         format={format}
         photoUri={photoUri}
-        AppLogo={AppLogo}
+        AppLogo={laraganLogo}
       />
     ),
     [data, format, photoUri, AppLogo],

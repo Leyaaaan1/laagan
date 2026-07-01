@@ -21,6 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.interceptor.KeyGenerator;
 import leyans.RidersHub.DTO.Request.RidesDTO.StopPointDTO;
+import org.springframework.scheduling.annotation.Scheduled;
+
 import java.util.List;
 import java.time.Duration;
 
@@ -142,5 +144,15 @@ public class RedisConfig {
                 startLat, startLng, endLat, endLng, stops, profile);
     };
 }
+    @Scheduled(fixedRate = 240_000) // every 4 minutes
+    public void pingRedis() {
+        try {
+            RedisTemplate<String, String> template2 = new RedisTemplate<>();
+            assert template2.getConnectionFactory() != null;
+            template2.getConnectionFactory().getConnection().ping();
+        } catch (Exception e) {
+            log.debug("Redis keepalive ping failed — will reconnect on next real command");
+        }
+    }
     
 }
