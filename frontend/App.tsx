@@ -83,7 +83,9 @@ const NavigationContent = () => {
     });
   }, []);
 
-  if (!auth.ready || onboardingDone === null) return <LoadingScreen />;
+  if (!auth.ready || onboardingDone === null) {
+    return <LoadingScreen />;
+  }
 
   /** Renders the correct stack for the current app state */
   const renderStack = () => {

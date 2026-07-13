@@ -1,17 +1,4 @@
-/**
- * RideDetailStats.jsx
- *
- * 2×2 grid of glanceable stat cards.
- * Reads from RideDetailDTO fields; gracefully handles nulls.
- *
- * Props:
- *   distanceMeters  – number | null
- *   durationMinutes – number | null
- *   averageSpeedKph – number | null
- *   segmentCount    – number          (derived from speedSegments.length)
- *   startTime       – string | null   (ISO string)
- *   endTime         – string | null   (ISO string)
- */
+
 import React from 'react';
 import {View, Text} from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
