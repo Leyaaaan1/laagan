@@ -19,25 +19,6 @@ Create a ride. Bring your crew. Stay connected — live location, checkpoints, a
 
 </div>
 
----
-
-##  Table of Contents
-
-1. [Project Overview](#-project-overview)
-2. [Key Features](#-key-features)
-3. [Technology Stack](#-technology-stack)
-4. [System Architecture](#-system-architecture)
-5. [Application Screenshots](#-application-screenshots)
-6. [Installation and Setup](#-installation-and-setup)
-7. [Environment Variables](#-environment-variables)
-8. [Project Structure](#-project-structure)
-9. [API Overview](#-api-overview)
-10. [Database Overview](#-database-overview)
-11. [Security Features](#-security-features)
-12. [Future Improvements](#-future-improvements)
-13. [Contributing](#-contributing)
-14. [License](#-license)
-15. [Contact Information](#-contact-information)
 
 ---
 
@@ -231,22 +212,6 @@ The API is organized around five core domains. All endpoints are prefixed as sho
 | **Finished Rides** | `POST /ride/finished/{id}`, `GET /ride/{id}/summary`, `GET /view/{id}/detail` |
 
 >  A full endpoint index with methods, auth requirements, and descriptions is maintained in the project's internal technical documentation.
-
----
-
-##  Database Overview
-
-PostgreSQL with the **PostGIS** extension, hosted on **Supabase**, with the schema managed entirely through versioned Flyway migrations. Spatial data (rider locations, ride start/end/stop points) uses PostGIS `Point` geometry, mapped through Hibernate Spatial to JTS types.
-
-**Core table groups:**
-- **Identity & Auth** — `rider`, `rider_profile`, `refresh_tokens`, `google_account`, `facebook_account`, `email_verification_token`
-- **Ride Definition** — `event_rides`, `ride_stop_points`, `ride_participants`
-- **Active Ride Tracking** — `started_rides`, `rider_locations`, `participant_location`, `ride_checkpoint_arrivals`, `ride_status_entries`
-- **Ride Completion** — `finished_rides`, `personal_finished_rides`, `finished_ride_participants`
-- **Invitations** — `invite_requests`, `join_requests`, `ride_join_requests`
-- **Reference Data** — `psgc_data` (official PH geographic codes), `rider_type` (motorcycle models)
-
-Row-Level Security is enabled on the `rider` table, restricting visibility to active (`enabled = true`) accounts.
 
 ---
 
