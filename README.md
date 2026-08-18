@@ -34,7 +34,7 @@ The backend is a Spring Boot REST API. The mobile app is built with React Native
 
 ---
 
-## ✨ Key Features
+##  Key Features
 
 - **Live Location Sharing** — Every rider's position streams to the group in real time over Server-Sent Events (SSE), so no one has to ask "where are you?"
 - **Group & Solo Rides** — Create a ride for your crew or ride solo; join via invite link or QR code.
