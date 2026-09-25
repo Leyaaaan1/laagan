@@ -19,9 +19,6 @@ public class HealthController {
 
     private static final Logger log = LoggerFactory.getLogger(HealthController.class);
 
-    // CHANGED: Added @Qualifier to explicitly pick our custom bean.
-    // Without it, Spring finds both ridersHubRedisTemplate and Spring Boot's
-    // stringRedisTemplate and fails with "expected single matching bean but found 2".
     @Autowired(required = false)
     @Qualifier("ridersHubRedisTemplate")
     private RedisTemplate<String, String> redisTemplate;
@@ -39,28 +36,29 @@ public class HealthController {
 
                 if (value != null) {
                     response.put("status", "UP");
-                    response.put("database", "✅ Connected");
-                    response.put("redis", "✅ Connected");
-                    log.info("✅ Health check passed - Redis OK");
+                    response.put("database", " Connected");
+                    response.put("redis", " Connected");
+                    log.info(" Health check passed - Redis OK");
                     return ResponseEntity.ok(response);
                 } else {
                     throw new Exception("Redis returned null");
                 }
             } else {
                 response.put("status", "PARTIAL");
-                response.put("database", "✅ Connected");
-                response.put("redis", "⚠️  Not configured");
+                response.put("database", " Connected");
+                response.put("redis", "  Not configured");
                 return ResponseEntity.ok(response);
             }
 
         } catch (Exception e) {
-            log.error("❌ Health check failed: {}", e.getMessage());
+            log.error(" Health check failed: {}", e.getMessage());
             response.put("status", "DOWN");
-            response.put("database", "⚠️  Unknown");
-            response.put("redis", "❌ " + e.getMessage());
+            response.put("database", "  Unknown");
+            response.put("redis", " " + e.getMessage());
             return ResponseEntity.status(503).body(response);
         }
     }
+
     @GetMapping("/ping")
     public ResponseEntity<String> ping() {
         return ResponseEntity.ok("pong");
