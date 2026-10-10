@@ -54,11 +54,11 @@ android {
         keyAlias 'newkey'
         keyPassword 'android'
     }
-    release {
+     release {
         storeFile file('laagan-release.keystore')
-        storePassword project.findProperty("LAAGAN_STORE_PASSWORD") ?: ""
+        storePassword envVars["LAAGAN_STORE_PASSWORD"] ?: System.getenv("LAAGAN_STORE_PASSWORD") ?: ""
         keyAlias 'laagan'
-        keyPassword project.findProperty("LAAGAN_KEY_PASSWORD") ?: ""
+        keyPassword envVars["LAAGAN_KEY_PASSWORD"] ?: System.getenv("LAAGAN_KEY_PASSWORD") ?: ""
     }
 }
     buildTypes {
@@ -66,7 +66,7 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            signingConfig signingConfigs.release  // ← fixed
+            signingConfig signingConfigs.release  // ← f
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
