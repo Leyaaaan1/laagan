@@ -21,23 +21,6 @@ Create a ride. Bring your crew. Stay connected — live location, checkpoints, a
 
 ---
 
-##  Table of Contents
-
-1. [Project Overview](#-project-overview)
-2. [Key Features](#-key-features)
-3. [Technology Stack](#-technology-stack)
-4. [System Architecture](#-system-architecture)
-5. [Application Screenshots](#-application-screenshots)
-6. [Installation and Setup](#-installation-and-setup)
-7. [Environment Variables](#-environment-variables)
-8. [Project Structure](#-project-structure)
-9. [API Overview](#-api-overview)
-10. [Database Overview](#-database-overview)
-11. [Security Features](#-security-features)
-12. [Future Improvements](#-future-improvements)
-13. [Contributing](#-contributing)
-14. [License](#-license)
-15. [Contact Information](#-contact-information)
 
 ---
 
@@ -53,7 +36,7 @@ The backend is a Spring Boot REST API. The mobile app is built with React Native
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 - **Live Location Sharing** — Every rider's position streams to the group in real time over Server-Sent Events (SSE), so no one has to ask "where are you?"
 - **Group & Solo Rides** — Create a ride for your crew or ride solo; join via invite link or QR code.
@@ -90,44 +73,7 @@ The backend is a Spring Boot REST API. The mobile app is built with React Native
 
 ---
 
-##  System Architecture
 
-The backend follows a clean layered architecture:
-
-```
-Model (JPA Entities)
-   ↓
-Repository (Spring Data JPA)
-   ↓
-Service (Business Logic)
-   ↓
-Utility (Shared Domain Logic)
-   ↓
-DTO (Request / Response Contracts)
-   ↓
-Controller (REST Endpoints)
-```
-
-Two cross-cutting layers support this stack:
-- **Config** — Security, JWT, Redis, async task execution, Cloudinary, and rate limiting.
-- **Global Exception Handling** — a single `@RestControllerAdvice` converts every domain exception into a consistent JSON error response.
-
-**High-level flow:**
-
-1. **Authenticate** → password, Google, or Facebook login issues a JWT access token and a rotating refresh token.
-2. **Create a ride** → the backend resolves place names and route geometry concurrently (parallel calls to Nominatim + GraphHopper), then persists the ride and generates a QR invite.
-3. **Join a ride** → via invite token/QR or a direct join request, subject to creator approval.
-4. **Start the ride** → converts it into a live session; every participant's location streams over SSE.
-5. **Track progress** → checkpoint arrivals are auto-detected; off-route riders get a personal reroute.
-6. **Finish the ride** → each rider's personal summary is recorded on arrival; once everyone's done (or the creator force-finishes), a permanent group summary is created.
-
----
-
-##  Application Screenshots
-
-| Graph | Ride View | Snapshot |
-|:---:|:---:|:---:|
-| ![Graph](image/graph.png) | ![Ride View](image/ride-view.png) | ![Snapshot](image/snapshot.png) |
 ---
 
 ##  Installation and Setup
@@ -218,36 +164,6 @@ The backend is fully configured via environment variables — no credentials are
 
 ---
 
-## 🔌 API Overview
-
-The API is organized around five core domains. All endpoints are prefixed as shown; authenticated endpoints require a `Bearer` JWT access token.
-
-| Domain | Example Endpoints |
-|---|---|
-| **Authentication** | `POST /riders/login`, `POST /riders/register`, `POST /riders/refresh`, `POST /riders/google-login`, `POST /riders/facebook-login` |
-| **Rides** | `POST /riders/create`, `PUT /riders/{id}`, `GET /riders/feed`, `GET /status/{id}` |
-| **Live Tracking** | `POST /start/{id}`, `POST /update/{startedRideId}`, `GET /location/{startedRideId}/stream` (SSE) |
-| **Invites & Join Requests** | `GET /invite-request/{id}/qr-url`, `POST /join-request/{token}`, `PUT /join-request/approve/{joinId}` |
-| **Finished Rides** | `POST /ride/finished/{id}`, `GET /ride/{id}/summary`, `GET /view/{id}/detail` |
-
->  A full endpoint index with methods, auth requirements, and descriptions is maintained in the project's internal technical documentation.
-
----
-
-##  Database Overview
-
-PostgreSQL with the **PostGIS** extension, hosted on **Supabase**, with the schema managed entirely through versioned Flyway migrations. Spatial data (rider locations, ride start/end/stop points) uses PostGIS `Point` geometry, mapped through Hibernate Spatial to JTS types.
-
-**Core table groups:**
-- **Identity & Auth** — `rider`, `rider_profile`, `refresh_tokens`, `google_account`, `facebook_account`, `email_verification_token`
-- **Ride Definition** — `event_rides`, `ride_stop_points`, `ride_participants`
-- **Active Ride Tracking** — `started_rides`, `rider_locations`, `participant_location`, `ride_checkpoint_arrivals`, `ride_status_entries`
-- **Ride Completion** — `finished_rides`, `personal_finished_rides`, `finished_ride_participants`
-- **Invitations** — `invite_requests`, `join_requests`, `ride_join_requests`
-- **Reference Data** — `psgc_data` (official PH geographic codes), `rider_type` (motorcycle models)
-
-Row-Level Security is enabled on the `rider` table, restricting visibility to active (`enabled = true`) accounts.
-
 ---
 
 ## Security Features
@@ -282,6 +198,6 @@ If you'd like to contribute code, please open an issue first to discuss the chan
 
 <div align="center">
 
-Built with ❤️ by a rider, for riders — from Davao City.
+Built with <3 by a rider, for riders — from Davao City.
 
 </div>
